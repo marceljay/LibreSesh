@@ -1024,39 +1024,41 @@ export function SchedulePage() {
                    and every line of it is height the grid wanted. `Rail`
                    carries the arrows that say the line goes on — without them
                    a week past the edge was simply a week you never found. */
-                <Rail
-                  label="Weeks"
-                  className="mx-auto max-w-6xl gap-1.5 px-4 pb-2"
-                >
-                  {weeks.map((week, i) => {
-                    const first = week[0] as string;
-                    const last = week[week.length - 1] as string;
-                    const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
-                    const holdsToday = week.includes(today);
-                    return (
-                      <button
-                        key={first}
-                        type="button"
-                        onClick={() => filters.set({ day: holdsToday ? today : first })}
-                        aria-pressed={i === weekIndex}
-                        aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
-                        className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
-                          i === weekIndex
-                            ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
-                            : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"
-                        }`}
-                      >
-                        Week {i + 1}
-                        <span className="ml-1.5 text-stone-400 dark:text-stone-500">
-                          {dayRangeLabel(first, last)}
-                        </span>
-                        {holdsToday && !week.includes(day) && (
-                          <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </Rail>
+                /* The rail's own box is exactly the line of chips: the space
+                   under it is this wrapper's, because the arrows are centred
+                   on the rail and padding inside it would sit them low. */
+                <div className="mx-auto max-w-6xl pb-2">
+                  <Rail label="Weeks" className="gap-1.5 px-4">
+                    {weeks.map((week, i) => {
+                      const first = week[0] as string;
+                      const last = week[week.length - 1] as string;
+                      const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
+                      const holdsToday = week.includes(today);
+                      return (
+                        <button
+                          key={first}
+                          type="button"
+                          onClick={() => filters.set({ day: holdsToday ? today : first })}
+                          aria-pressed={i === weekIndex}
+                          aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
+                          className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
+                            i === weekIndex
+                              ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
+                              : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"
+                          }`}
+                        >
+                          Week {i + 1}
+                          <span className="ml-1.5 text-stone-400 dark:text-stone-500">
+                            {dayRangeLabel(first, last)}
+                          </span>
+                          {holdsToday && !week.includes(day) && (
+                            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </Rail>
+                </div>
               )}
 
               <div
@@ -1172,7 +1174,7 @@ export function SchedulePage() {
                       title="Manage Event"
                       className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
                     >
-                      <span aria-hidden="true">⚙</span>
+                      <SettingsIcon className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Manage Event</span>
                     </Link>
                   )}

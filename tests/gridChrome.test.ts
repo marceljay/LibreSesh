@@ -142,7 +142,7 @@ describe('the header folds once you are into the day', () => {
     // A rail that wraps costs a whole header line per extra row, on exactly
     // the screens with the least of them to spare. It scrolls sideways like
     // the day strip instead, so its chips cannot shrink or be cut in half.
-    expect(schedule).toMatch(/<Rail\n\s*label="Weeks"/);
+    expect(schedule).toMatch(/<Rail label="Weeks"/);
     expect(rail).toContain('overflow-x-auto');
     expect(rail).toContain('no-scrollbar');
     expect(rail).not.toContain('flex-wrap');
@@ -190,6 +190,26 @@ describe('a rail says when the line goes on', () => {
     // Less than a full screenful, so the chip you were reading is still there
     // after the press.
     expect(rail).toMatch(/el\.clientWidth \* 0\.8/);
+  });
+
+  it('centres its arrows on the line itself', () => {
+    // The arrows are absolute over the rail's own box, so any vertical padding
+    // inside that box sits them below the chips they belong to. The space
+    // under the rail is the caller's, outside it.
+    expect(rail).toContain('absolute inset-y-0');
+    expect(schedule).toMatch(/<div className="mx-auto max-w-6xl pb-2">\n\s*<Rail label="Weeks" className="gap-1.5 px-4">/);
+  });
+
+  it('draws its arrows rather than setting them as text', () => {
+    // ‹ and › sit on the text baseline at the font's own optical size: small,
+    // and low against the chips. Drawn, they are centred by the same flexbox
+    // that centres everything else in the row.
+    expect(rail).toContain('<Chevron className="h-4 w-4" />');
+    // The note explaining the change quotes the glyphs it replaced, so read
+    // the code rather than the prose.
+    const code = rail.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toContain('‹');
+    expect(code).not.toContain('›');
   });
 
   it('does not put two dead stops in the tab order', () => {

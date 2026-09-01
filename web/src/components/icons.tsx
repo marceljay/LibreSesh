@@ -127,3 +127,20 @@ export function InfoIcon({ className }: { className?: string }) {
     </Icon>
   );
 }
+
+/** A chevron each way — the rail continues past this edge. */
+export function ChevronLeftIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M10 3.5 5.5 8l4.5 4.5" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M6 3.5 10.5 8 6 12.5" />
+    </Icon>
+  );
+}

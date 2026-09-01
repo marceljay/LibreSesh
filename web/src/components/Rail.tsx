@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { ChevronLeftIcon, ChevronRightIcon } from './icons';
+
 /**
  * One line that scrolls sideways, with an arrow at the end where there is more
  * to see.
@@ -22,7 +24,9 @@ export function Rail({
 }: {
   /** Names the row for a screen reader — "Weeks", not "Week 1". */
   label: string;
-  /** Layout for the line itself: width, padding, gap. */
+  /** Layout for the line itself: horizontal padding and the gap between its
+   *  items. Vertical spacing belongs *outside* the rail — the arrows are
+   *  centred on this box, so padding under the row would sit them low. */
   className?: string;
   children: React.ReactNode;
 }) {
@@ -63,24 +67,31 @@ export function Rail({
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' });
   };
 
-  const arrow = (side: 'back' | 'on'): JSX.Element => (
-    <button
-      type="button"
-      // Pointer affordance only — see the note above.
-      tabIndex={-1}
-      aria-hidden="true"
-      onClick={() => nudge(side === 'back' ? -1 : 1)}
-      className={`absolute inset-y-0 z-10 flex w-10 items-center transition-opacity duration-150 motion-reduce:transition-none ${
-        side === 'back'
-          ? 'left-0 justify-start bg-gradient-to-r pl-1'
-          : 'right-0 justify-end bg-gradient-to-l pr-1'
-      } from-stone-50 via-stone-50/90 to-transparent text-stone-500 hover:text-stone-900 dark:from-stone-900 dark:via-stone-900/90 dark:text-stone-400 dark:hover:text-stone-100 ${
-        more[side] ? 'opacity-100' : 'pointer-events-none opacity-0'
-      }`}
-    >
-      <span className="text-base leading-none">{side === 'back' ? '‹' : '›'}</span>
-    </button>
-  );
+  const arrow = (side: 'back' | 'on'): JSX.Element => {
+    const Chevron = side === 'back' ? ChevronLeftIcon : ChevronRightIcon;
+    return (
+      <button
+        type="button"
+        // Pointer affordance only — see the note above.
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => nudge(side === 'back' ? -1 : 1)}
+        className={`absolute inset-y-0 z-10 flex w-11 items-center transition-opacity duration-150 motion-reduce:transition-none ${
+          side === 'back'
+            ? 'left-0 justify-start bg-gradient-to-r pl-0.5'
+            : 'right-0 justify-end bg-gradient-to-l pr-0.5'
+        } from-stone-50 via-stone-50/90 to-transparent text-stone-500 hover:text-stone-900 dark:from-stone-900 dark:via-stone-900/90 dark:text-stone-400 dark:hover:text-stone-100 ${
+          more[side] ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      >
+        {/* Drawn, not set as text: ‹ and › are set on the text baseline and at
+            the font's own optical size, so they came out small and sitting
+            low against the chips they belong to. An icon is centred by the
+            same flexbox that centres everything else in the row. */}
+        <Chevron className="h-4 w-4" />
+      </button>
+    );
+  };
 
   return (
     <div className="relative">
