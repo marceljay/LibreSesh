@@ -238,7 +238,12 @@ export function SearchBox({
         aria-autocomplete="list"
         placeholder="Search sessions…"
         aria-label="Search sessions"
-        className="w-44 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-56 sm:focus:w-72"
+        /* `w-52` rather than `w-44` on a phone: text entry is floored at 16px
+           on a touch screen — under that, Safari zooms the page in on focus and
+           does not zoom back out — and "Search sessions…" needs the extra
+           2rem to fit at that size. Above `sm` the pointer is fine and the
+           field keeps its designed width. */
+        className="w-52 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-56 sm:focus:w-72"
       />
       {query && (
         <button
