@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { BreakDto, RoomDto, SessionDto, TagDto } from '@shared/types';
+import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, speakerLine } from '../lib/format';
 
 export interface ListViewProps {
@@ -164,8 +165,8 @@ export function ListView({
                       return (
                         <span
                           key={id}
-                          className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                          style={{ background: tag.color }}
+                          className="rounded-full px-2 py-0.5 text-xs font-medium"
+                          style={{ background: tag.color, color: readableInk(tag.color) }}
                         >
                           {tag.name}
                         </span>

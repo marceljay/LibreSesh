@@ -9,6 +9,7 @@ import type {
   SessionDto,
   TagDto,
 } from '@shared/types';
+import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
@@ -150,8 +151,8 @@ export function SessionDetail({
             return (
               <span
                 key={id}
-                className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                style={{ background: tag.color }}
+                className="rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ background: tag.color, color: readableInk(tag.color) }}
               >
                 {tag.name}
               </span>

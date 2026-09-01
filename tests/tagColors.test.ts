@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { TAG_COLORS } from '../server/src/shared/tagColors.js';
+import { TAG_COLORS, readableInk } from '../server/src/shared/tagColors.js';
 import { actorWithRole, makeHarness, seedEvent, type Harness } from './helpers.js';
 
 /**
@@ -51,13 +51,38 @@ describe('a new tag takes a colour nobody is using', () => {
     expect(res.body.color).toBe('#123456');
   });
 
-  it('offers colours a white label can be read on', () => {
-    // Tags are drawn everywhere as a filled pill with the name in white on it,
-    // so a colour that cannot carry white text is not a tag colour however
-    // bright it looks in the picker. 4.5:1 is the small-text threshold.
+  it('is the Okabe–Ito palette, and every chip picks ink it can be read in', () => {
+    // Eight colours chosen to stay distinct to the common forms of colour
+    // blindness: a tag is a chip a few characters wide, and "told apart" has
+    // to hold for the roughly one in twelve men who would read a red/green
+    // pair as the same chip.
+    expect(TAG_COLORS).toEqual([
+      '#0072B2',
+      '#D55E00',
+      '#009E73',
+      '#CC79A7',
+      '#E69F00',
+      '#56B4E9',
+      '#F0E442',
+      '#000000',
+    ]);
+
+    // The palette is bright, so a chip cannot assume white text the way the
+    // old dark one could — white on Okabe–Ito's yellow is 1.1:1, which is a
+    // chip with no text on it as far as anyone reading it is concerned.
     for (const colour of TAG_COLORS) {
-      expect(contrastWithWhite(colour)).toBeGreaterThanOrEqual(4.5);
+      const ink = readableInk(colour);
+      const ratio =
+        ink === '#FFFFFF' ? contrastWithWhite(colour) : contrastWithBlack(colour);
+      expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('falls back to white ink rather than throwing on a colour it cannot read', () => {
+    // A custom colour is free text on the way in and a stored string ever
+    // after; a chip still has to render.
+    expect(readableInk('nonsense')).toBe('#FFFFFF');
+    expect(readableInk('#fff')).toBe('#000000');
   });
 });
 
@@ -100,6 +125,15 @@ describe('one colour picker, everywhere', () => {
     expect(strays).toEqual([]);
   });
 
+  it('makes the tag list the chips themselves, so pressing one edits it', () => {
+    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
+    // A neutral pill with a colour dot beside it showed the colour at a size
+    // nobody could judge it at, and gave no hint the row was a way in.
+    expect(admin).toMatch(/onClick=\{\(\) => setEditingTag\(tag\)\}/);
+    expect(admin).toContain('style={{ background: tag.color, color: readableInk(tag.color) }}');
+    expect(admin).toMatch(/title=\{`Edit \$\{tag\.name\}`\}/);
+  });
+
   it('is used by tags, tracks and rooms alike', () => {
     const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
     const rooms = readFileSync(join(WEB_SRC, 'pages', 'AdminRooms.tsx'), 'utf8');
@@ -117,3 +151,12 @@ describe('one colour picker, everywhere', () => {
     expect(admin).toContain('setTagColor(null);');
   });
 });
+
+/**
+ * The same, against black. The two ratios are `1.05 / (L + 0.05)` and
+ * `(L + 0.05) / 0.05`, so their product is always 21 — which is one way of
+ * saying no colour can be poor against both.
+ */
+function contrastWithBlack(hex: string): number {
+  return 21 / contrastWithWhite(hex);
+}

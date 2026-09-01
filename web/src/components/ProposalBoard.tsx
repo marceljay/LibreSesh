@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { BundleDto, ProposalDto } from '@shared/types';
 import { dateRange } from '@shared/time';
+import { readableInk } from '@shared/tagColors';
 import { ApiError, api, type PlaceWrite, type ProposalWrite } from '../lib/api';
 import { dayLabel, todayInZone } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
@@ -370,8 +371,8 @@ function ProposalCard({
             return (
               <span
                 key={id}
-                className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                style={{ background: tag.color }}
+                className="rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ background: tag.color, color: readableInk(tag.color) }}
               >
                 {tag.name}
               </span>

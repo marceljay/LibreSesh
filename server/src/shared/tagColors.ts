@@ -1,26 +1,28 @@
 /**
- * Tag colours. Bright and saturated, which is the opposite of `ROOM_COLORS`
- * and deliberately so: a room colour is a column that text sits on all day, so
- * it has to stay out of the way, while a tag is a chip a few characters wide
- * that has to be picked out at a glance from across a session block.
+ * Tag colours: the Okabe–Ito palette, eight colours chosen to stay distinct to
+ * the common forms of colour blindness. A tag is a chip a few characters wide
+ * that has to be told apart at a glance from across a session block, and
+ * "told apart" has to hold for the roughly one in twelve men who would read a
+ * red/green pair as the same chip.
  *
- * Every one of these carries white text at 4.5:1 or better, because that is
- * how a tag is drawn everywhere it appears — a filled pill with the tag's name
- * in white on it. A brighter yellow or a mid-green would read well as a dot
- * and be unreadable as a chip, which is why the list stops where it does.
+ * It is the opposite of `ROOM_COLORS` and deliberately so: a room colour is a
+ * column that text sits on all day, so it stays out of the way; a tag is meant
+ * to be spotted.
  *
- * Shared so the client renders swatches from the same list the server assigns
- * defaults from.
+ * These are bright rather than dark, so a chip cannot assume white text the
+ * way it used to — yellow and sky blue carry black, blue and vermillion carry
+ * white. `readableInk` in the client picks per colour, which is also what
+ * keeps a custom colour someone types in legible.
  */
 export const TAG_COLORS = [
-  '#2563EB', // blue
-  '#E11D48', // rose
-  '#047857', // emerald
-  '#7C3AED', // violet
-  '#B45309', // amber
-  '#0E7490', // cyan
-  '#C026D3', // fuchsia
-  '#4D7C0F', // lime
+  '#0072B2', // blue
+  '#D55E00', // vermillion
+  '#009E73', // bluish green
+  '#CC79A7', // reddish purple
+  '#E69F00', // orange
+  '#56B4E9', // sky blue
+  '#F0E442', // yellow
+  '#000000', // black
 ] as const;
 
 /**
@@ -40,4 +42,35 @@ export function nextTagColor(taken: readonly string[]): string {
   const used = new Set(taken.map((c) => c.toLowerCase()));
   const free = TAG_COLORS.find((c) => !used.has(c.toLowerCase()));
   return free ?? TAG_COLORS[taken.length % TAG_COLORS.length];
+}
+
+/**
+ * Black or white, whichever can be read on `hex`. WCAG relative luminance,
+ * then the plain contrast ratio against each — white on Okabe–Ito's yellow is
+ * 1.1:1, which is a chip with no text on it as far as anyone reading it is
+ * concerned.
+ *
+ * Shared because the same question is asked of a custom colour someone typed
+ * in, and there is no palette to look that one up in.
+ */
+export function readableInk(hex: string): '#000000' | '#FFFFFF' {
+  const value = hex.replace('#', '');
+  const full =
+    value.length === 3
+      ? value
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : value;
+  if (full.length !== 6 || /[^0-9a-f]/i.test(full)) return '#FFFFFF';
+  const channel = (pair: string): number => {
+    const c = parseInt(pair, 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance =
+    0.2126 * channel(full.slice(0, 2)) +
+    0.7152 * channel(full.slice(2, 4)) +
+    0.0722 * channel(full.slice(4, 6));
+  // Against white the ratio is 1.05 / (L + 0.05); against black, (L + 0.05) / 0.05.
+  return (luminance + 0.05) / 0.05 > 1.05 / (luminance + 0.05) ? '#000000' : '#FFFFFF';
 }

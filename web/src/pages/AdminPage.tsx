@@ -10,7 +10,7 @@ import type {
   ViewMode,
 } from '@shared/types';
 import { ROOM_COLORS } from '@shared/roomColors';
-import { TAG_COLORS, nextTagColor } from '@shared/tagColors';
+import { TAG_COLORS, nextTagColor, readableInk } from '@shared/tagColors';
 
 import { ColorPicker } from '../components/ColorPicker';
 import { windowLabel } from '@shared/trackHours';
@@ -757,17 +757,19 @@ export function AdminPage() {
             <ul className="mb-4 flex flex-wrap gap-2">
               {bundle.tags.map((tag) => (
                 <li key={tag.id}>
+                  {/* The tag as it is actually drawn on the schedule, and
+                      pressing it is how you change it. A neutral pill with a
+                      colour dot beside it showed the colour at a size nobody
+                      could judge it at, and gave no hint that the row was a
+                      way in to the editor. */}
                   <button
                     type="button"
                     onClick={() => setEditingTag(tag)}
-                    className="flex items-center gap-2 rounded-full bg-stone-50 py-1 pl-2 pr-3 hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700"
+                    title={`Edit ${tag.name}`}
+                    style={{ background: tag.color, color: readableInk(tag.color) }}
+                    className="rounded-full px-2.5 py-1 text-xs font-medium ring-offset-2 ring-offset-white hover:ring-2 hover:ring-stone-400 dark:ring-offset-stone-900"
                   >
-                    <span
-                      aria-hidden="true"
-                      style={{ backgroundColor: tag.color }}
-                      className="h-3.5 w-3.5 shrink-0 rounded-full"
-                    />
-                    <span className="text-xs font-medium">{tag.name}</span>
+                    {tag.name}
                     <span className="sr-only">— edit this tag</span>
                   </button>
                 </li>
