@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type { Role } from '@shared/types';
 import { CloseIcon } from './icons';
 
@@ -414,7 +415,18 @@ export function Modal({
 
   const Body = onSubmit ? 'form' : 'div';
 
-  return (
+  /* Rendered into `body`, not where it was written.
+   *
+   * `position: fixed` is only fixed to the viewport while no ancestor has a
+   * filter, transform or `backdrop-filter` — any of those become the
+   * containing block for fixed descendants instead. The schedule header has
+   * `backdrop-blur`, so a dialog opened from a menu up there (About, device
+   * linking) was laid out inside the header's own box: the backdrop covered a
+   * strip at the top of the page, and the panel, which sits at the bottom of
+   * its container on a phone, was pushed off the screen entirely. A portal
+   * takes it out of that box without moving it in the React tree, so the
+   * handlers and state stay exactly where they were written. */
+  return createPortal(
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
       {/* Fixed, not absolute: the backdrop must cover the viewport whatever the
           panel does. */}
@@ -479,7 +491,8 @@ export function Modal({
           </Body>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
