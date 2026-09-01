@@ -6,6 +6,8 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **About LibreSesh links to the source.** Under the "?", beside the licence.
+
 - **The organiser says which view a schedule opens in.** Manage Event →
   Settings has an **Opens in** choice: the list, one column in time order, or
   the calendar, a grid of rooms. New events open in the list.
@@ -599,6 +601,32 @@ All notable changes to this project are documented here.
   instance one; the README gained a section on the same distinction.
 
 ### Fixed
+
+- **Dialogs opened from the schedule header appeared off screen.** About
+  LibreSesh, and device linking before it, were laid out inside the header
+  rather than over the page: the dark backdrop covered a strip at the top and
+  the panel itself — which sits at the bottom of its container on a phone —
+  was pushed off the bottom of the screen.
+
+  `position: fixed` is only fixed to the viewport while no ancestor has a
+  transform, a filter or a `backdrop-filter`. Any of those quietly become the
+  containing block for every fixed descendant, and the schedule header has
+  `backdrop-blur`. Dialogs now render into the page body through a portal, so
+  where a dialog is written no longer decides where it lands — which fixes
+  every dialog opened from anywhere blurred, not just the two that showed it.
+
+- **The header folds in the grid too, and by the button as well as by
+  scrolling.** The fold listened to one named box: first the grid's own
+  scroller, later the grid's in one view and `<main>` in the other. Which box
+  actually has the overflow depends on the day's length, the header's height
+  and whether a banner is up, so a name fixed in advance kept leaving the fold
+  listening to something that never moved — the grid, most recently. It now
+  listens to both and reads whichever one has somewhere to scroll.
+
+- **No permanent scrollbars across the day.** On the platforms that draw them,
+  a horizontal bar sat along the bottom of the grid for the whole time you
+  were reading it, saying what the room cards and the time gutter already say.
+  The grid hides its bars, like the day strip and the week rail above it.
 
 - **The header folds in the list view too.** Folding was pinned to the grid's
   own scroller, so in the list — which has none of its own — there was nothing

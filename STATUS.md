@@ -98,6 +98,22 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
+- **The commit in About LibreSesh comes out empty.** Reported 2026-09-01,
+  against the About dialog that landed the same day (`52a11fc`). The Version
+  and Built lines read; Commit is blank. Blank, not `unknown`, which is the
+  clue: `HelpMenu` falls back with `??`, so it only defaults on `undefined` —
+  an *empty string* passes straight through, and `web/vite.config.ts` builds
+  the value as `process.env.BUILD_COMMIT || git('git rev-parse --short HEAD')
+  || 'unknown'`, then hands it over through `process.env`, which stringifies.
+  So the likely shape is: git fails in the container (no `.git` on the Docker
+  build stage, or `dubious ownership` on a bind mount), the fallback chain
+  produces something empty rather than `'unknown'`, and the dialog prints it.
+  Worth checking `VITE_BUILD_COMMIT` in the running dev server before changing
+  code — the same stamp feeds Version and Built, and those two arrive intact,
+  which the "git is missing" story does not fully explain. Two fixes, both
+  cheap once it is understood: treat empty as missing in `HelpMenu`, and make
+  the vite stamp say why it could not read git rather than passing a blank on.
+
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
