@@ -153,21 +153,10 @@ export function SchedulePage() {
 
   const closeTour = useCallback(() => setTourOpen(false), []);
 
-  // First visit to this event auto-starts the tour, once the schedule has
-  // painted and storage doesn't already say it's been seen.
-  //
-  // Not for organisers: they arrive to run the event, usually straight from
-  // creating it, and coach-marks explaining how to read a schedule are in the
-  // way of the first thing they actually want to do. The "?" button still
-  // opens it on request — this only stops it appearing uninvited.
-  const autoTourRole = data.bundle?.role;
-  useEffect(() => {
-    if (data.status !== "ready" || autoTourRole === "admin" || tourSeen(slug)) return;
-    const raf = requestAnimationFrame(() => {
-      if (document.querySelector("[data-tour]")) setTourOpen(true);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [data.status, autoTourRole, slug]);
+  // The tour never opens by itself. It used to start on a first visit, which
+  // meant everyone's first sight of a schedule was a stack of coach-marks over
+  // it — in the way of the one thing they came to read. It is the "?" button in
+  // the action row, and only that.
 
   const bundle = data.bundle;
   const event = bundle?.event;
@@ -1542,7 +1531,7 @@ export function SchedulePage() {
       )}
 
       {tourOpen && (
-        <Tour steps={tourSteps} eventKey={slug} onClose={closeTour} />
+        <Tour steps={tourSteps} onClose={closeTour} />
       )}
     </div>
   );

@@ -15,37 +15,9 @@ export interface TourStep {
   body: string;
 }
 
-const STORAGE_KEY = 'libresesh.tour.v1';
-
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
 const selectorFor = (id: string): string => `[data-tour="${id}"]`;
-
-// Every storage touch is wrapped: private windows and blocked site data throw
-// on access, and the tour must still run when persistence is unavailable.
-function readSeen(): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed: unknown = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
-
-/** Whether this device has already finished or skipped the tour for `eventKey`. */
-export function tourSeen(eventKey: string): boolean {
-  return readSeen()[eventKey] === true;
-}
-
-function markSeen(eventKey: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...readSeen(), [eventKey]: true }));
-  } catch {
-    // Storage unavailable — nothing to persist, the tour simply reappears next visit.
-  }
-}
 
 interface Placement {
   top: number;
@@ -55,11 +27,9 @@ interface Placement {
 
 export function Tour({
   steps,
-  eventKey,
   onClose,
 }: {
   steps: TourStep[];
-  eventKey: string;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -73,10 +43,11 @@ export function Tour({
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
 
+  // Nothing is remembered about having taken it: the tour is asked for now, so
+  // the next press of "?" should give you the same tour again.
   const finish = useCallback(() => {
-    markSeen(eventKey);
     onClose();
-  }, [eventKey, onClose]);
+  }, [onClose]);
 
   /** Nearest step in `dir` from `from` whose target is currently in the DOM. */
   const resolveFrom = useCallback(
