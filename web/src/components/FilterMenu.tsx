@@ -59,6 +59,8 @@ export function FilterMenu({
       <button
         ref={refs.setReference}
         type="button"
+        aria-label="Filter"
+        title="Filter"
         {...getReferenceProps({ onClick: () => setOpen((o) => !o) })}
         className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
           count > 0 || open
@@ -66,16 +68,18 @@ export function FilterMenu({
             : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500'
         }`}
       >
+        {/* The word goes below `sm`, like Manage and Add above it: the icon
+            and the count say the same thing in a third of the width, on the
+            screens with none to spare. The ▾ that used to sit at the end is
+            gone at every width — it repeated what a panel opening under the
+            button already says, and cost the row two characters for it. */}
         <FilterIcon className="h-3.5 w-3.5" />
-        Filter
+        <span className="hidden sm:inline">Filter</span>
         {count > 0 && (
           <span className="rounded-full bg-white/20 px-1.5 text-[10px] font-semibold text-white dark:bg-stone-900/20 dark:text-stone-900">
             {count}
           </span>
         )}
-        <span aria-hidden="true" className="text-[10px] opacity-70">
-          ▾
-        </span>
       </button>
 
       {/* `initialFocus={-1}`: the first control in the panel is a text input,

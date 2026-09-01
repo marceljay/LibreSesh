@@ -157,3 +157,30 @@ export function SettingsIcon({ className }: { className?: string }) {
     </Icon>
   );
 }
+
+/** A chevron down and up — show or hide the rows folded away above. */
+export function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M3.5 6 8 10.5 12.5 6" />
+    </Icon>
+  );
+}
+
+export function ChevronUpIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M3.5 10 8 5.5l4.5 4.5" />
+    </Icon>
+  );
+}
+
+/** A month block — the day picker this button puts away and brings back. */
+export function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="2.25" y="3.25" width="11.5" height="10.5" rx="1.75" />
+      <path d="M2.25 6.5h11.5M5.5 2v2.5M10.5 2v2.5" />
+    </Icon>
+  );
+}

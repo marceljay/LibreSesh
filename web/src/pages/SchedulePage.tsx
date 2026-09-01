@@ -30,7 +30,12 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SessionDetail } from "../components/SessionDetail";
 import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
 import { Gate } from "../components/Gate";
-import { SettingsIcon } from "../components/icons";
+import {
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SettingsIcon,
+} from "../components/icons";
 import { ListView } from "../components/ListView";
 import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
@@ -548,12 +553,11 @@ export function SchedulePage() {
    * Past the first screenful of a day, the event bar, the week rail and the
    * day strip are paying for themselves in room the grid wants: you are
    * reading the afternoon, not choosing a day. They fold away and leave one
-   * row — which day, search, filters, Now — and come back the moment you
-   * scroll to the top of the day again, or press the ⌄ button, which is the
-   * only way back that does not cost you your place in the day.
+   * row — search, filters, Now — and come back the moment you scroll to the
+   * top of the day again, or press the calendar button, which is the only way
+   * back that does not cost you your place in the day.
    */
   const foldable = view === "cal" && !fullPage;
-  const foldedDay = dayLabel(day, today);
 
   /**
    * The header folds itself away once you are into the day, and the ⌄/⌃ button
@@ -1258,14 +1262,17 @@ export function SchedulePage() {
                 }
                 className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
               >
-                <span aria-hidden="true">{folded ? "⌄" : "⌃"}</span>
-                {folded && (
-                  <>
-                    {foldedDay.top}{" "}
-                    <span className="text-stone-400 dark:text-stone-500">
-                      {foldedDay.sub}
-                    </span>
-                  </>
+                {/* A calendar and an arrow, at both states and at every width.
+                    The folded button used to carry the day as text, which made
+                    it a different width in each state and a different width
+                    again on a Tuesday than on a Wednesday — a control that
+                    moves under the thumb that is reaching for it. The calendar
+                    says what comes back; the arrow says which way. */}
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {folded ? (
+                  <ChevronDownIcon className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronUpIcon className="h-3.5 w-3.5" />
                 )}
               </button>
               <SearchBox

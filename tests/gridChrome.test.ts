@@ -83,7 +83,13 @@ describe('the header folds once you are into the day', () => {
     // states: a control that disappears the moment you press it reads as a
     // control that did not work.
     expect(schedule).toMatch(/aria-expanded=\{!folded\}/);
-    expect(schedule).toMatch(/\{folded \? "⌄" : "⌃"\}/);
+    // The same two icons in both states, so the button is the same width
+    // whichever way it is pointing — and on a Tuesday as on a Wednesday. It
+    // used to carry the day as text, which moved it under the thumb reaching
+    // for it.
+    expect(schedule).toMatch(/<CalendarIcon className="h-3\.5 w-3\.5" \/>/);
+    expect(schedule).toMatch(/folded \? \(\n\s*<ChevronDownIcon/);
+    expect(schedule).not.toContain('foldedDay');
   });
 
   it('does not let a nudge undo a header opened by hand', () => {

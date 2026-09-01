@@ -236,14 +236,15 @@ export function SearchBox({
         aria-expanded={showPanel}
         aria-controls="search-results"
         aria-autocomplete="list"
-        placeholder="Search sessions…"
         aria-label="Search sessions"
-        /* `w-52` rather than `w-44` on a phone: text entry is floored at 16px
-           on a touch screen — under that, Safari zooms the page in on focus and
-           does not zoom back out — and "Search sessions…" needs the extra
-           2rem to fit at that size. Above `sm` the pointer is fine and the
-           field keeps its designed width. */
-        className="w-52 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-56 sm:focus:w-72"
+        placeholder="Search…"
+        /* Sized for what it holds rather than for the placeholder it used to
+           spell out: a query is a word or two, and the field grows on focus
+           anyway. `Search sessions…` is still the accessible name, and on a
+           touch screen the text is floored at 16px — under that Safari zooms
+           the page in on focus and does not zoom back out — which the shorter
+           placeholder leaves room for. */
+        className="w-36 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-44 sm:focus:w-72"
       />
       {query && (
         <button
