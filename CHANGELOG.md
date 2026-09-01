@@ -416,6 +416,22 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **A room's column header is its name, and nothing else.** The header used to
+  carry a second line — the seats, and "attendees may book this room" — in the
+  176 pixels of a column card, where it truncated, while the organiser's
+  directions sat behind the ⓘ. That asked a reader to look in two places for
+  one room, and spent the busiest space on the schedule on a standing claim
+  that never changes.
+
+  The card is now just the room. The seats, the booking permission and the
+  directions are together behind the info button, which appears whenever there
+  is any of the three and stays away when there is none — so its presence still
+  means there is something to read.
+
+  Track columns keep their second line: what it says there — how many sessions
+  are on the track, the hours it is keeping today — changes with the day on
+  screen, and that is worth seeing without a hover.
+
 - **A room card says what the room is, not what the database lacks.** Every
   room without a capacity announced "no capacity set" under its name on the
   schedule — a note about an empty column, told to attendees, on most rooms of

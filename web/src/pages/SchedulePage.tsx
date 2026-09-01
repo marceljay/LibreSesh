@@ -3,6 +3,7 @@ import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
 import type {
   ContributionDto,
   ContributionKind,
+  RoomDto,
   SessionDto,
   TrackDto,
 } from "@shared/types";
@@ -21,7 +22,7 @@ import {
 import { useEventData } from "../lib/useEventData";
 import { matchesQuery } from "../lib/search";
 import { useFilters } from "../lib/useFilters";
-import { roomNote, seatsLabel } from "../lib/rooms";
+import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
 import { trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
 import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
@@ -52,9 +53,33 @@ const NOW_TICK_MS = 30_000;
 const UNTRACKED = -1;
 
 /**
- * What the hours on a track card do not say for themselves: that they are a
- * rule rather than a description, who it binds, and whether this day keeps its
- * own window. The times themselves stay on the card and are not repeated here.
+ * Everything about a room, in one place: the organiser's directions first,
+ * then the facts.
+ *
+ * The card used to carry the seats and the booking permission on a second
+ * line, and this panel deliberately held only what the card had no room for.
+ * That split asked a reader to look in two places for one room, and put a
+ * standing claim — "attendees may book this room" — in the busiest 176px on
+ * the schedule. The card is a name now, and everything about the room is
+ * behind the ⓘ.
+ */
+function RoomInfo({ room }: { room: RoomDto }) {
+  const note = roomNote(room);
+  const seats = seatsLabel(room.capacity);
+  return (
+    <div className="space-y-1.5">
+      {note && <p className="whitespace-pre-line">{note}</p>}
+      {seats && <p>{seats}</p>}
+      {room.openBooking && <p>Attendees may schedule their own sessions here.</p>}
+    </div>
+  );
+}
+
+/**
+ * What a track is for, and what the hours on its card do not say for
+ * themselves: that they are a rule rather than a description, who it binds,
+ * and whether this day keeps its own window. The times themselves stay on the
+ * card, so they are not repeated here.
  */
 function TrackInfo({
   track,
@@ -207,25 +232,15 @@ export function SchedulePage() {
   const columns = useMemo(() => {
     if (axis === "room") {
       return (bundle?.rooms ?? []).map((room) => {
-        const seats = seatsLabel(room.capacity);
-        // Seats and the booking permission fit on the card; the organiser's
-        // directions do not, so they are the whole of what the button reveals.
-        const note = roomNote(room);
+        // The card is the room's name and nothing else. Seats, the booking
+        // permission and the directions are all the same kind of thing — facts
+        // about a room — so they live together behind the ⓘ rather than being
+        // split across a truncating second line and a panel.
         return {
           id: room.id,
           name: room.name,
           color: room.color,
-          detail: (
-            <div className="text-xs text-stone-600">
-              {room.openBooking && (
-                <div className="truncate font-medium text-stone-800">
-                  attendees may book this room
-                </div>
-              )}
-              {seats && <div className="truncate">{seats}</div>}
-            </div>
-          ),
-          info: note ? <p className="whitespace-pre-line">{note}</p> : undefined,
+          info: roomHasInfo(room) ? <RoomInfo room={room} /> : undefined,
         };
       });
     }

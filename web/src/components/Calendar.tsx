@@ -198,23 +198,30 @@ export interface CalendarColumn {
   id: number;
   name: string;
   color: string;
-  /** Second line on the column card: seats, booking permission, session count. */
+  /** Second line on the column card, for a fact that changes with the day: a
+   *  track's session count and the hours it is keeping. Rooms leave this unset
+   *  — a room card is its name, and everything else is behind the ⓘ. */
   detail?: ReactNode;
-  /** What the card has no room for — where the room is, what its hours mean.
-   *  Present only when there is something the card does not already say; the
-   *  info button appears with it and is absent without it. */
+  /** Everything the card does not say. Present only when there is something to
+   *  say; the info button appears with it and is absent without it. */
   info?: ReactNode;
 }
 
 /**
  * A column's header card, and the panel behind its info button.
  *
- * The card is 176px wide, so what it shows has to be the short version: a name
- * and a line that truncates. Anything longer — how to find the room, what a
- * track's hours mean — sits behind the ⓘ, and *only* what the card does not
- * already say goes there. A panel that repeats the line above it is noise
- * twice. The button appears only when a column has something more to give, so
- * its presence is itself the signal that there is more.
+ * The card is 176px wide, so anything on it has to survive truncation at that
+ * width. That is a hard enough budget that a room spends all of it on the
+ * name: its seats, its booking permission and its directions are all behind
+ * the ⓘ, together, rather than split between a clipped second line and a
+ * panel. A track keeps a `detail` line because what it says there changes with
+ * the day on screen — how many sessions are on it, the hours it is keeping —
+ * and a reader comparing days needs that visible without a hover.
+ *
+ * Whatever is on the card is not repeated in the panel: a panel that says
+ * again what is already on screen is noise twice. The button appears only when
+ * a column has something more to give, so its presence is itself the signal
+ * that there is more.
  *
  * Hover and focus open it for mouse and keyboard; a click opens it on touch,
  * where there is no hover at all.

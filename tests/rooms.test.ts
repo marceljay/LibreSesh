@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { roomNote, seatsLabel, type RoomFactsInput } from '../web/src/lib/rooms.js';
+import {
+  roomHasInfo,
+  roomNote,
+  seatsLabel,
+  type RoomFactsInput,
+} from '../web/src/lib/rooms.js';
 
 const room = (over: Partial<RoomFactsInput> = {}): RoomFactsInput => ({
   capacity: null,
   description: '',
+  openBooking: false,
   ...over,
 });
 
@@ -34,7 +40,27 @@ describe('roomNote', () => {
     );
   });
 
-  it('says nothing about seats — those stay on the card', () => {
+  it('is the directions alone — seats are seatsLabel\'s job', () => {
     expect(roomNote(room({ capacity: 60 }))).toBe('');
+  });
+});
+
+describe('roomHasInfo', () => {
+  it('is false for a room with nothing to say, so the card is a bare name', () => {
+    expect(roomHasInfo(room())).toBe(false);
+    expect(roomHasInfo(room({ description: '  ' }))).toBe(false);
+  });
+
+  it('is true for each thing the panel can draw on its own', () => {
+    // The card no longer carries seats or the booking permission, so either
+    // one alone has to be enough to put the button there — otherwise the fact
+    // is in the app and reachable from nowhere.
+    expect(roomHasInfo(room({ description: 'Past the café' }))).toBe(true);
+    expect(roomHasInfo(room({ capacity: 40 }))).toBe(true);
+    expect(roomHasInfo(room({ openBooking: true }))).toBe(true);
+  });
+
+  it('counts a deliberate zero capacity, which is a real thing to say', () => {
+    expect(roomHasInfo(room({ capacity: 0 }))).toBe(true);
   });
 });
