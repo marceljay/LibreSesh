@@ -153,6 +153,7 @@ export function SchedulePage() {
   // has a real dependency to recompute against.
   const [clock, setClock] = useState(() => Date.now());
   const calRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setClock(Date.now()), NOW_TICK_MS);
@@ -558,7 +559,21 @@ export function SchedulePage() {
    * top of the day again, or press the calendar button, which is the only way
    * back that does not cost you your place in the day.
    */
-  const foldable = view === "cal" && !fullPage;
+  const foldable = !fullPage;
+
+  /**
+   * Whichever box is doing the scrolling. The grid owns its own scroller so
+   * its room cards can stick to it; the list has none of its own and scrolls
+   * `<main>`. Everything the fold does — reading how far down the day you are,
+   * the way back to the top — asks for it through here, which is what made
+   * folding work in the list at all: it was pinned to the grid's ref, so in
+   * the list the scroll listener had nothing to listen to and the header
+   * simply never folded.
+   */
+  const scroller = useCallback(
+    (): HTMLElement | null => (view === "cal" ? calRef.current : mainRef.current),
+    [view],
+  );
 
   /**
    * The header folds itself away once you are into the day, and the ⌄/⌃ button
@@ -598,7 +613,7 @@ export function SchedulePage() {
     foldable && (chromeMode === "shut" || (chromeMode === "auto" && autoFolded));
 
   const readFold = useCallback(() => {
-    const el = calRef.current;
+    const el = scroller();
     if (!el) return;
     const top = el.scrollTop;
     setPastTop(top > TOP_BUTTON_AT);
@@ -626,19 +641,19 @@ export function SchedulePage() {
       }
       return mode;
     });
-  }, []);
+  }, [scroller]);
 
   const toggleChrome = useCallback(() => {
-    const top = calRef.current?.scrollTop ?? 0;
+    const top = scroller()?.scrollTop ?? 0;
     overrideFrom.current = top;
     beenDown.current = top > FOLD_AT;
     setChromeMode(folded ? "open" : "shut");
-  }, [folded]);
+  }, [folded, scroller]);
 
   const jumpToTop = useCallback(() => {
     setChromeMode("auto");
-    calRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+    scroller()?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [scroller]);
 
   /**
    * The fold takes time, so "folded" and "gone" are two different moments and
@@ -664,7 +679,7 @@ export function SchedulePage() {
   }, [folded, readFold]);
 
   useEffect(() => {
-    const el = calRef.current;
+    const el = scroller();
     if (!el || !foldable) {
       setAutoFolded(false);
       setChromeMode("auto");
@@ -674,7 +689,7 @@ export function SchedulePage() {
     readFold();
     el.addEventListener("scroll", readFold, { passive: true });
     return () => el.removeEventListener("scroll", readFold);
-  }, [foldable, readFold, bundle?.rooms.length, day]);
+  }, [foldable, readFold, scroller, bundle?.rooms.length, day]);
 
   /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
   const moveSession = useCallback(
@@ -1348,7 +1363,10 @@ export function SchedulePage() {
           />
         </main>
       ) : (
-      <main className="mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col overflow-y-auto px-0 sm:px-4">
+      <main
+        ref={mainRef}
+        className="mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col overflow-y-auto px-0 sm:px-4"
+      >
         {showClashBanner && (
           <div className="mx-4 mt-2 shrink-0 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-100 dark:bg-amber-950/60 p-3 text-amber-900 dark:text-amber-200 sm:mx-0">
             <div className="flex items-start gap-2">

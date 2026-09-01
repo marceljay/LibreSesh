@@ -166,6 +166,19 @@ describe('the header folds once you are into the day', () => {
     expect(chips).toBeGreaterThan(now);
   });
 
+  it('folds in the list as well as the grid', () => {
+    // The fold was pinned to the grid's own scroller, so in the list — which
+    // has none of its own and scrolls <main> — the listener had nothing to
+    // listen to and the header never folded. Now that the list is where an
+    // event opens by default, that was most of the readers.
+    expect(schedule).toMatch(/const foldable = !fullPage;/);
+    expect(schedule).toMatch(
+      /view === "cal" \? calRef\.current : mainRef\.current/,
+    );
+    expect(schedule).toMatch(/const el = scroller\(\);/);
+    expect(schedule).toMatch(/<main\n\s*ref=\{mainRef\}/);
+  });
+
   it('pins the folding rows to the width that is there', () => {
     // The fold wraps each row in a grid, and a grid's default column is `auto`
     // — a track that grows to its content instead of constraining it. A row
