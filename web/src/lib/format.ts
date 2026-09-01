@@ -98,3 +98,20 @@ export const nowMinuteOfDay = (timezone: string, instant: Date = new Date()): nu
 /** The date `instant` falls on in the event's timezone. */
 export const todayInZone = (timezone: string, instant: Date = new Date()): string =>
   localDate(instant, timezone);
+
+/**
+ * The bill as one line: "Ada Lovelace", "Ada Lovelace & Grace Hopper", "Ada
+ * Lovelace, Grace Hopper & Radia Perlman". Empty when nobody is credited, so a
+ * caller can treat it as the whole "is there a speaker?" question.
+ *
+ * The ampersand on the last pair is how a poster reads, and it is one
+ * character where "and" is three — this line is drawn inside a grid block a
+ * couple of hundred pixels wide.
+ */
+export function speakerLine(speakers: readonly { name: string }[]): string {
+  if (speakers.length === 0) return '';
+  if (speakers.length === 1) return speakers[0].name;
+  const names = speakers.map((p) => p.name);
+  const last = names.pop() as string;
+  return `${names.join(', ')} & ${last}`;
+}

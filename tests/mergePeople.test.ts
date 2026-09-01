@@ -34,7 +34,7 @@ describe('merging people', () => {
       .send({
         roomId,
         title: `Talk by ${speakerName}`,
-        speakerName,
+        speakers: [speakerName],
         startsAt: at(DAY_ONE, startMin),
         endsAt: at(DAY_ONE, startMin + 30),
       })
@@ -43,8 +43,8 @@ describe('merging people', () => {
   it('repoints sessions and pitches, then soft-deletes the duplicate', async () => {
     const a = await makeSession('Ada Lovelace');
     const b = await makeSession('A. Lovelace', 700);
-    const survivorId = a.body.speakerId as number;
-    const loserId = b.body.speakerId as number;
+    const survivorId = a.body.speakers[0].id as number;
+    const loserId = b.body.speakers[0].id as number;
     await admin
       .post('/api/e/testconf/proposals')
       .send({ title: 'Pitch', speakerId: loserId })
@@ -58,7 +58,9 @@ describe('merging people', () => {
 
     const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
     expect(bundle.body.people.map((p: { id: number }) => p.id)).toEqual([survivorId]);
-    for (const s of bundle.body.sessions) expect(s.speakerId).toBe(survivorId);
+    for (const s of bundle.body.sessions) {
+      expect(s.speakers.map((p: { id: number }) => p.id)).toEqual([survivorId]);
+    }
     const proposal = harness.db
       .prepare<[], { speaker_id: number }>('SELECT speaker_id FROM proposals')
       .get();
@@ -69,7 +71,7 @@ describe('merging people', () => {
     // The organiser typed "Ada" on a session; later Ada claims her own profile
     // under a variant name. The merge should hand her the surviving record.
     const a = await makeSession('Ada Lovelace');
-    const survivorId = a.body.speakerId as number;
+    const survivorId = a.body.speakers[0].id as number;
     const claimed = await user
       .patch('/api/e/testconf/me/profile')
       .send({ name: 'Ada L.', bio: 'hi' })
@@ -108,7 +110,7 @@ describe('merging people', () => {
 
   it('refuses self-merge, unknown profiles, and non-admins', async () => {
     const a = await makeSession('Solo');
-    const id = a.body.speakerId as number;
+    const id = a.body.speakers[0].id as number;
     await admin.post(`/api/e/testconf/people/${id}/merge`).send({ from: id }).expect(400);
     await admin.post(`/api/e/testconf/people/${id}/merge`).send({ from: 9999 }).expect(404);
     await user.post(`/api/e/testconf/people/${id}/merge`).send({ from: id }).expect(403);
@@ -246,8 +248,8 @@ describe('merging people', () => {
     it('dies when the survivor keeps an identity of its own', async () => {
       const a = await makeSession('Ada Lovelace');
       const b = await makeSession('A. Lovelace', 700);
-      const survivorId = a.body.speakerId as number;
-      const loserId = b.body.speakerId as number;
+      const survivorId = a.body.speakers[0].id as number;
+      const loserId = b.body.speakers[0].id as number;
 
       // Both profiles have been claimed — the survivor by its own code.
       await mint(survivorId);
@@ -267,8 +269,8 @@ describe('merging people', () => {
     it('follows the survivor when the survivor inherits that identity', async () => {
       const a = await makeSession('Ada Lovelace');
       const b = await makeSession('A. Lovelace', 700);
-      const survivorId = a.body.speakerId as number;
-      const loserId = b.body.speakerId as number;
+      const survivorId = a.body.speakers[0].id as number;
+      const loserId = b.body.speakers[0].id as number;
 
       // Only the duplicate was ever claimed, so the merge hands the survivor
       // that identity — and the phrase already emailed to that speaker still

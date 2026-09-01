@@ -25,7 +25,7 @@ import {
 import { MAX_REPEAT_DAYS, repeatDays, repeatSchema } from '../repeat.js';
 import { addDays, dateToUtcMs, DAY_MS } from '../shared/repeat.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from '../shared/time.js';
-import { resolveSpeaker, speaksFor } from '../speakers.js';
+import { resolveSpeakers, setSessionSpeakers, speaksFor } from '../speakers.js';
 import { parse, sessionPatchSchema, sessionSchema } from '../validation.js';
 
 /** The session form's fields, plus the run of days to put them on. */
@@ -70,14 +70,14 @@ export function sessionRoutes(ctx: Ctx): Router {
 
     const now = new Date().toISOString();
     const id = ctx.db.transaction((): number => {
-      const speakerId = resolveSpeaker(ctx.db, req.event.id, body, null);
+      const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? []);
       const info = ctx.db
         .prepare(
           `INSERT INTO sessions
             (event_id, room_id, track_id, type, blocks_open_booking, title,
-             description, speaker, speaker_id, livestream_url, starts_at, ends_at,
+             description, speaker, livestream_url, starts_at, ends_at,
              created_by, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           req.event.id,
@@ -87,7 +87,6 @@ export function sessionRoutes(ctx: Ctx): Router {
           blocks ? 1 : 0,
           body.title,
           body.description ?? '',
-          speakerId,
           body.livestreamUrl ?? '',
           window.startsAt.toISOString(),
           window.endsAt.toISOString(),
@@ -97,6 +96,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         );
       const newId = Number(info.lastInsertRowid);
       setTags(ctx, newId, tagIds);
+      setSessionSpeakers(ctx.db, newId, speakerIds);
       return newId;
     })();
 
@@ -184,13 +184,13 @@ export function sessionRoutes(ctx: Ctx): Router {
 
       const now = new Date().toISOString();
       const ids = ctx.db.transaction((): number[] => {
-        const speakerId = resolveSpeaker(ctx.db, req.event.id, body, null);
+        const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? []);
         const insert = ctx.db.prepare(
           `INSERT INTO sessions
             (event_id, room_id, track_id, type, blocks_open_booking, title,
-             description, speaker, speaker_id, livestream_url, starts_at, ends_at,
+             description, speaker, livestream_url, starts_at, ends_at,
              created_by, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
         );
         return windows.map((window) => {
           const newId = Number(
@@ -202,7 +202,6 @@ export function sessionRoutes(ctx: Ctx): Router {
               blocks ? 1 : 0,
               body.title,
               body.description ?? '',
-              speakerId,
               body.livestreamUrl ?? '',
               window.startsAt.toISOString(),
               window.endsAt.toISOString(),
@@ -212,6 +211,9 @@ export function sessionRoutes(ctx: Ctx): Router {
             ).lastInsertRowid,
           );
           setTags(ctx, newId, tagIds);
+          // Each repeat is its own session from the moment it exists, billing
+          // included — the same people, written once per row.
+          setSessionSpeakers(ctx.db, newId, speakerIds);
           return newId;
         });
       })();
@@ -303,11 +305,10 @@ export function sessionRoutes(ctx: Ctx): Router {
 
     const now = new Date().toISOString();
     ctx.db.transaction(() => {
-      const speakerId = resolveSpeaker(ctx.db, req.event.id, body, existing.speaker_id);
       ctx.db
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, type = ?, blocks_open_booking = ?,
-                  title = ?, description = ?, speaker_id = ?,
+                  title = ?, description = ?,
                   livestream_url = ?, starts_at = ?, ends_at = ?, updated_at = ?
             WHERE id = ?`,
         )
@@ -318,7 +319,6 @@ export function sessionRoutes(ctx: Ctx): Router {
           blocks ? 1 : 0,
           body.title ?? existing.title,
           body.description ?? existing.description,
-          speakerId,
           body.livestreamUrl ?? existing.livestream_url,
           window.startsAt.toISOString(),
           window.endsAt.toISOString(),
@@ -326,6 +326,15 @@ export function sessionRoutes(ctx: Ctx): Router {
           existing.id,
         );
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
+      // Absent means "leave the billing alone"; an empty array means "nobody",
+      // which is a thing an organiser is allowed to say.
+      if (body.speakers !== undefined) {
+        setSessionSpeakers(
+          ctx.db,
+          existing.id,
+          resolveSpeakers(ctx.db, req.event.id, body.speakers),
+        );
+      }
     })();
 
     const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, existing.id));

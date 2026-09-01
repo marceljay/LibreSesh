@@ -96,6 +96,13 @@ export interface EventDto extends EventSummary {
   defaultView: ViewMode;
 }
 
+/** A person as they appear on somebody else's record: id and name, nothing
+ *  more. The full profile is `PersonDto`. */
+export interface PersonRef {
+  id: number;
+  name: string;
+}
+
 export interface RoomDto {
   id: number;
   name: string;
@@ -191,9 +198,11 @@ export interface SessionDto {
   blocksOpenBooking: boolean;
   title: string;
   description: string;
-  /** Resolved from the linked person; empty when the session has no speaker. */
-  speaker: string;
-  speakerId: number | null;
+  /**
+   * Everyone giving this session, in billing order — the first name is the one
+   * a cramped block truncates to. Empty when nobody is credited.
+   */
+  speakers: PersonRef[];
   /** Watch-along link, http(s). Empty string means there is no stream, which
    *  is the default — the UI hides the field rather than showing it blank. */
   livestreamUrl: string;
@@ -380,7 +389,10 @@ export interface EventExport {
     type: SessionType;
     title: string;
     description: string;
-    speakerId: number | null;
+    /** Everyone giving it, in billing order. `speaker` is the first of them,
+     *  kept because a document is read by people as often as by programs and
+     *  most sessions have exactly one. */
+    speakers: string[];
     speaker: string;
     livestreamUrl: string;
     startsAt: string;

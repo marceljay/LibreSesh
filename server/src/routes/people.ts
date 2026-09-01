@@ -63,7 +63,10 @@ export function peopleRoutes(ctx: Ctx): Router {
     const person = load(req.event.id, Number(req.params.id));
     const sessions = ctx.db
       .prepare<[number, number], SessionRow>(
-        'SELECT * FROM sessions WHERE event_id = ? AND speaker_id = ? AND deleted_at IS NULL ORDER BY starts_at',
+        `SELECT s.* FROM sessions s
+           JOIN session_speakers ss ON ss.session_id = s.id
+          WHERE s.event_id = ? AND ss.person_id = ? AND s.deleted_at IS NULL
+          ORDER BY s.starts_at`,
       )
       .all(req.event.id, person.id);
 
@@ -237,14 +240,27 @@ export function peopleRoutes(ctx: Ctx): Router {
 
       const now = new Date().toISOString();
       const movedSessions = ctx.db
-        .prepare<[number], { id: number }>('SELECT id FROM sessions WHERE speaker_id = ?')
+        .prepare<[number], { id: number }>(
+          'SELECT session_id AS id FROM session_speakers WHERE person_id = ?',
+        )
         .all(loser.id)
         .map((r) => r.id);
       let rekeyed = { sessionIds: [] as number[], proposalIds: [] as number[] };
 
       ctx.db.transaction(() => {
+        // A session billed to both halves of a merge must not end up billed
+        // to the survivor twice — which the primary key would refuse anyway,
+        // taking the whole merge down with it. Drop the duplicate, then move
+        // what is left.
         ctx.db
-          .prepare('UPDATE sessions SET speaker_id = ? WHERE speaker_id = ?')
+          .prepare(
+            `DELETE FROM session_speakers
+              WHERE person_id = ?
+                AND session_id IN (SELECT session_id FROM session_speakers WHERE person_id = ?)`,
+          )
+          .run(loser.id, survivor.id);
+        ctx.db
+          .prepare('UPDATE session_speakers SET person_id = ? WHERE person_id = ?')
           .run(survivor.id, loser.id);
         ctx.db
           .prepare('UPDATE proposals SET speaker_id = ? WHERE speaker_id = ?')
@@ -372,7 +388,7 @@ export function peopleRoutes(ctx: Ctx): Router {
       const person = load(req.event.id, Number(req.params.id));
       // Sessions keep their slot; they just lose the speaker.
       ctx.db.transaction(() => {
-        ctx.db.prepare('UPDATE sessions SET speaker_id = NULL WHERE speaker_id = ?').run(person.id);
+        ctx.db.prepare('DELETE FROM session_speakers WHERE person_id = ?').run(person.id);
         ctx.db
           .prepare('UPDATE people SET deleted_at = ? WHERE id = ?')
           .run(new Date().toISOString(), person.id);

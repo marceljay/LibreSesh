@@ -17,6 +17,7 @@ import {
   fmtMin,
   nowMinuteOfDay,
   place,
+  speakerLine,
   todayInZone,
 } from "../lib/format";
 import { useEventData } from "../lib/useEventData";
@@ -1544,7 +1545,8 @@ export function SchedulePage() {
                       <div className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">
                         {label.top} {label.sub} · {fmtMin(startMin)}–
                         {fmtMin(endMin)}
-                        {session.speaker && ` · ${session.speaker}`}
+                        {session.speakers.length > 0 &&
+                          ` · ${speakerLine(session.speakers)}`}
                       </div>
                     </button>
                   </li>

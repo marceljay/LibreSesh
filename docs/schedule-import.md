@@ -177,6 +177,7 @@ nobody is there for is invisible, and silently so.
 | `tags` | | Names of declared tags, up to 20 |
 | `description` | | Markdown, up to 5000 characters |
 | `speaker` | | Free text. Matches an existing profile in this event, or creates an unclaimed one |
+| `speakers` | | The same, as a list, for a session given by more than one person — in billing order. Use either spelling; a row with both is billed to the list |
 | `type` | | `official` (default) or `open` |
 | `blocksOpenBooking` | | `true` holds the floor: while this session runs, attendees can add nothing anywhere in the event. Official sessions only. Default `false` |
 | `date`, `start`, `end` | ✓ | Local date and wall-clock times — see below |

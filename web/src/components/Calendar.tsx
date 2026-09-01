@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
-import { fmtMin, place } from '../lib/format';
+import { fmtMin, place, speakerLine } from '../lib/format';
 import { InfoIcon } from './icons';
 
 export const PX_PER_MIN = 1.6;
@@ -808,7 +808,7 @@ export function Calendar({
                 </div>
                 <div className="truncate text-xs text-stone-500 dark:text-stone-400">
                   {fmtMin(effectiveStart)}–{fmtMin(effectiveStart + effectiveDur)}
-                  {session.speaker && ` · ${session.speaker}`}
+                  {session.speakers.length > 0 && ` · ${speakerLine(session.speakers)}`}
                 </div>
                 {/* Where the session is, once the columns stopped saying so. */}
                 {subtitleOf && (

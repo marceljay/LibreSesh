@@ -13,7 +13,7 @@ import type {
 } from '../db.js';
 import { NameResolver, eventDisplayName } from '../eventIdentity.js';
 import {
-  speakerNames,
+  speakersBySession,
   tagIdsBySession,
   toBreakDto,
   toContributionDto,
@@ -85,7 +85,10 @@ export function bundleRoutes(ctx: Ctx): Router {
       sessions.map((s) => s.id),
     );
     const names = new NameResolver(ctx.db, eventId);
-    const speakers = speakerNames(ctx.db, eventId);
+    const speakers = speakersBySession(
+      ctx.db,
+      sessions.map((s) => s.id),
+    );
     const roster = req.role === 'admin' ? personRosterFacts(ctx.db, eventId) : undefined;
 
     // Admins see hidden contributions in the count; everyone else does not.
@@ -113,7 +116,7 @@ export function bundleRoutes(ctx: Ctx): Router {
           s,
           tagMap.get(s.id) ?? [],
           names.get(s.created_by),
-          s.speaker_id === null ? '' : (speakers.get(s.speaker_id) ?? ''),
+          speakers.get(s.id) ?? [],
         ),
       ),
       // Who holds each profile, and whether they have ever used it, is for

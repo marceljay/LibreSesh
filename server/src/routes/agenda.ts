@@ -7,6 +7,7 @@ import { unauthorized } from '../errors.js';
 import { buildCalendar, type IcsEvent } from '../ical.js';
 import { requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
+import { speakersBySession } from '../mappers.js';
 import { getSession } from '../sessionRules.js';
 
 /**
@@ -105,13 +106,9 @@ export function calendarRoutes(ctx: Ctx): Router {
         .all(event.id)
         .map((r) => [r.id, r.name]),
     );
-    const people = new Map(
-      ctx.db
-        .prepare<[number], { id: number; name: string }>(
-          'SELECT id, name FROM people WHERE event_id = ?',
-        )
-        .all(event.id)
-        .map((p) => [p.id, p.name]),
+    const speakers = speakersBySession(
+      ctx.db,
+      sessions.map((s) => s.id),
     );
     const tagsBySession = new Map<number, string[]>();
     for (const row of ctx.db
@@ -128,8 +125,14 @@ export function calendarRoutes(ctx: Ctx): Router {
 
     const base = `${req.protocol}://${req.get('host') ?? 'localhost'}`;
     const events: IcsEvent[] = sessions.map((s) => {
-      const speaker = s.speaker_id === null ? undefined : people.get(s.speaker_id);
-      const description = [speaker && `Speaker: ${speaker}`, s.description]
+      // "Speakers" once there are two of them, joined the way a poster would:
+      // a calendar entry is read at a glance, in a notification.
+      const credited = (speakers.get(s.id) ?? []).map((p) => p.name);
+      const billing =
+        credited.length === 0
+          ? undefined
+          : `${credited.length === 1 ? 'Speaker' : 'Speakers'}: ${credited.join(', ')}`;
+      const description = [billing, s.description]
         .filter(Boolean)
         .join('\n\n');
       return {

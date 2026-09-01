@@ -140,7 +140,7 @@ describe('proposal pool', () => {
 
       expect(res.body.session.title).toBe('Repair café');
       expect(res.body.session.tagIds).toEqual([tagId]);
-      expect(res.body.session.speaker).toBe('Ada');
+      expect(res.body.session.speakers.map((p: { name: string }) => p.name)).toEqual(['Ada']);
       // The pitcher keeps ownership so they can still edit their open session.
       expect(res.body.session.createdBy).toBe((await pitcher.get('/api/me')).body.id);
 

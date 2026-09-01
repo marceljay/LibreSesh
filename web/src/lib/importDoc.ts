@@ -72,10 +72,16 @@ export function summarise(doc: unknown): DocSummary {
 
   const speakers = new Set<string>();
   for (const session of Array.isArray(root.sessions) ? root.sessions : []) {
-    const name = str((session as Record<string, unknown> | null)?.speaker);
-    // Matching is case- and whitespace-insensitive on the server, so counting
-    // "Ada Lovelace" and "ada  lovelace" as two profiles would be a lie.
-    if (name) speakers.add(name.trim().replace(/\s+/g, ' ').toLowerCase());
+    const row = session as Record<string, unknown> | null;
+    // Either spelling: `speaker` for the one-name case, `speakers` for a
+    // session given by several people.
+    const listed = Array.isArray(row?.speakers) ? row.speakers : [];
+    for (const entry of [row?.speaker, ...listed]) {
+      const name = str(entry);
+      // Matching is case- and whitespace-insensitive on the server, so counting
+      // "Ada Lovelace" and "ada  lovelace" as two profiles would be a lie.
+      if (name) speakers.add(name.trim().replace(/\s+/g, ' ').toLowerCase());
+    }
   }
 
   return {

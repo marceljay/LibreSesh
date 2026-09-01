@@ -128,7 +128,7 @@ describe('event import from JSON', () => {
     expect(localDate(new Date(keynote!.startsAt), TEST_TIMEZONE)).toBe(DAY_ONE);
     expect(localMinuteOfDay(new Date(keynote!.startsAt), TEST_TIMEZONE)).toBe(9 * 60);
     expect(localMinuteOfDay(new Date(keynote!.endsAt), TEST_TIMEZONE)).toBe(10 * 60);
-    expect(keynote!.speaker).toBe('Ada Lovelace');
+    expect(keynote!.speakers.map((p) => p.name)).toEqual(['Ada Lovelace']);
     expect(keynote!.trackId).not.toBeNull();
     expect(keynote!.tagIds).toHaveLength(1);
   });

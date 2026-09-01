@@ -34,12 +34,12 @@ describe('speaker codes', () => {
         roomId,
         type: 'official',
         title: `Talk by ${name}`,
-        speakerName: name,
+        speakers: [name],
         startsAt: at(DAY_ONE, 600),
         endsAt: at(DAY_ONE, 660),
       })
       .expect(201);
-    return res.body.speakerId as number;
+    return res.body.speakers[0].id as number;
   };
 
   const mint = (personId: number) =>

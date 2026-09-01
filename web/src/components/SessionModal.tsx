@@ -83,10 +83,9 @@ export function SessionModal({
 
   const existing = session ? place(session, timezone) : null;
   const [title, setTitle] = useState(session?.title ?? '');
-  const [speaker, setSpeaker] = useState<SpeakerChoice>({
-    speakerId: session?.speakerId ?? null,
-    newName: '',
-  });
+  const [speakers, setSpeakers] = useState<SpeakerChoice[]>(
+    () => session?.speakers.map((p) => p.id) ?? [],
+  );
   const [description, setDescription] = useState(session?.description ?? '');
   const [livestreamUrl, setLivestreamUrl] = useState(session?.livestreamUrl ?? '');
   const [roomId, setRoomId] = useState<number>(session?.roomId ?? allowedRooms[0]?.id ?? 0);
@@ -169,7 +168,7 @@ export function SessionModal({
       type: isAdmin ? type : undefined,
       ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
       title: title.trim(),
-      ...(speaker.newName ? { speakerName: speaker.newName } : { speakerId: speaker.speakerId }),
+      speakers,
       description: description.trim(),
       livestreamUrl: livestreamUrl.trim(),
       startsAt: zonedTimeToUtc(day, startMin, timezone).toISOString(),
@@ -234,7 +233,7 @@ export function SessionModal({
             />
           </Field>
           <Field label="Speaker or host">
-            <SpeakerCombobox people={people} value={speaker} onChange={setSpeaker} />
+            <SpeakerCombobox people={people} value={speakers} onChange={setSpeakers} />
           </Field>
           <Field label="Description" hint="Markdown is supported.">
             <textarea

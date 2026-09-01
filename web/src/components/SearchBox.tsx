@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RoomDto, SessionDto } from '@shared/types';
-import { dayLabel, fmtMin, place } from '../lib/format';
+import { dayLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { bestField, matchRanges, rankSessions, searchTerms, snippet } from '../lib/search';
 import { ArrowRightIcon, SearchIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
@@ -93,10 +93,10 @@ export function SessionResultRow({
             </span>
           </>
         )}
-        {session.speaker && (
+        {session.speakers.length > 0 && (
           <>
             {' · '}
-            <Highlight text={session.speaker} terms={terms} />
+            <Highlight text={speakerLine(session.speakers)} terms={terms} />
           </>
         )}
       </div>

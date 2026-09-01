@@ -37,10 +37,11 @@ export function ProposalModal({
 }: ProposalModalProps) {
   const [title, setTitle] = useState(proposal?.title ?? '');
   const [description, setDescription] = useState(proposal?.description ?? '');
-  const [speaker, setSpeaker] = useState<SpeakerChoice>({
-    speakerId: proposal?.speakerId ?? null,
-    newName: '',
-  });
+  // A pitch is by one person, so this is a list of at most one — the control
+  // is shared with the session form, which takes as many as are giving it.
+  const [speaker, setSpeaker] = useState<SpeakerChoice[]>(
+    () => (proposal?.speakerId === null || proposal === undefined ? [] : [proposal.speakerId]),
+  );
   const [tagIds, setTagIds] = useState<number[]>(proposal?.tagIds ?? []);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +53,11 @@ export function ProposalModal({
     onSave({
       title: title.trim(),
       description: description.trim(),
-      ...(speaker.newName ? { speakerName: speaker.newName } : { speakerId: speaker.speakerId }),
+      ...(speaker.length === 0
+        ? { speakerId: null }
+        : typeof speaker[0] === 'number'
+          ? { speakerId: speaker[0] }
+          : { speakerName: speaker[0] }),
       tagIds,
     });
   };
@@ -89,7 +94,7 @@ export function ProposalModal({
         />
       </Field>
       <Field label="Speaker or host">
-        <SpeakerCombobox people={people} value={speaker} onChange={setSpeaker} />
+        <SpeakerCombobox people={people} value={speaker} onChange={setSpeaker} max={1} />
       </Field>
       <Field label="Description" hint="Markdown is supported.">
         <textarea

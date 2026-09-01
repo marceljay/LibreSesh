@@ -33,7 +33,7 @@ describe('personal agenda', () => {
       .send({
         roomId,
         title: 'Keynote; with a semicolon',
-        speakerName: 'Ada Lovelace',
+        speakers: ['Ada Lovelace'],
         startsAt: at(DAY_ONE, 600),
         endsAt: at(DAY_ONE, 660),
       })

@@ -10,7 +10,12 @@ import type {
   TrackRow,
 } from './db.js';
 import { NameResolver } from './eventIdentity.js';
-import { parseLinks, speakerNames, tagIdsBySession } from './mappers.js';
+import {
+  parseLinks,
+  speakerNames,
+  speakersBySession,
+  tagIdsBySession,
+} from './mappers.js';
 import { trackWindowsFor } from './trackHours.js';
 import type { EventExport } from './shared/types.js';
 
@@ -31,6 +36,15 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
   const eventId = event.id;
   const names = new NameResolver(db, eventId);
   const speakers = speakerNames(db, eventId);
+  const sessionSpeakers = speakersBySession(
+    db,
+    db
+      .prepare<[number], { id: number }>(
+        'SELECT id FROM sessions WHERE event_id = ? AND deleted_at IS NULL',
+      )
+      .all(eventId)
+      .map((r) => r.id),
+  );
   const speakerName = (id: number | null): string =>
     id === null ? '' : (speakers.get(id) ?? '');
 
@@ -185,8 +199,8 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       blocksOpenBooking: s.blocks_open_booking === 1,
       title: s.title,
       description: s.description,
-      speakerId: s.speaker_id,
-      speaker: speakerName(s.speaker_id),
+      speakers: (sessionSpeakers.get(s.id) ?? []).map((p) => p.name),
+      speaker: (sessionSpeakers.get(s.id) ?? [])[0]?.name ?? '',
       livestreamUrl: s.livestream_url,
       startsAt: s.starts_at,
       endsAt: s.ends_at,

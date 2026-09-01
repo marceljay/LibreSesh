@@ -74,7 +74,7 @@ export function ProfilePage() {
   const sessions = useMemo(() => {
     if (bundle) {
       return bundle.sessions
-        .filter((s) => s.speakerId === id)
+        .filter((s) => s.speakers.some((p) => p.id === id))
         .slice()
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     }

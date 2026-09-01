@@ -67,7 +67,7 @@ describe('speaker role', () => {
         roomId,
         type: 'official',
         title: 'Keynote',
-        speakerId: personId,
+        speakers: [personId],
         startsAt: at(DAY_ONE, 600),
         endsAt: at(DAY_ONE, 660),
       })
@@ -108,7 +108,7 @@ describe('speaker role', () => {
         roomId,
         type: 'official',
         title: 'Talk',
-        speakerId: profile.body.id,
+        speakers: [profile.body.id],
         startsAt: at(DAY_ONE, 800),
         endsAt: at(DAY_ONE, 860),
       })

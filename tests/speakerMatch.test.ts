@@ -36,19 +36,19 @@ describe('speaker matching', () => {
     });
 
   it('matches an existing person regardless of case and stray whitespace', async () => {
-    const first = await makeSession({ speakerName: 'Ada Lovelace' }).expect(201);
-    const second = await makeSession({ speakerName: '  ada   LOVELACE ' }, 700).expect(201);
-    expect(second.body.speakerId).toBe(first.body.speakerId);
+    const first = await makeSession({ speakers: ['Ada Lovelace'] }).expect(201);
+    const second = await makeSession({ speakers: ['  ada   LOVELACE '] }, 700).expect(201);
+    expect(second.body.speakers[0].id).toBe(first.body.speakers[0].id);
 
     const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
     expect(bundle.body.people).toHaveLength(1);
   });
 
   it('stores a new speaker with collapsed whitespace', async () => {
-    const res = await makeSession({ speakerName: ' Grace   Hopper ' }).expect(201);
+    const res = await makeSession({ speakers: [' Grace   Hopper '] }).expect(201);
     const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
     const person = bundle.body.people.find(
-      (p: { id: number }) => p.id === res.body.speakerId,
+      (p: { id: number }) => p.id === res.body.speakers[0].id,
     );
     expect(person.name).toBe('Grace Hopper');
   });
@@ -74,8 +74,8 @@ describe('speaker matching', () => {
         .run(eventId, identityId, now, now).lastInsertRowid,
     );
 
-    const res = await makeSession({ speakerName: 'SAM' }).expect(201);
-    expect(res.body.speakerId).toBe(claimed);
+    const res = await makeSession({ speakers: ['SAM'] }).expect(201);
+    expect(res.body.speakers[0].id).toBe(claimed);
   });
 
   it('rejects a speaker id from another event, on proposals too', async () => {
@@ -88,7 +88,7 @@ describe('speaker matching', () => {
         )
         .run().lastInsertRowid,
     );
-    await makeSession({ speakerId: foreign }).expect(400);
+    await makeSession({ speakers: [foreign] }).expect(400);
     await admin
       .post('/api/e/testconf/proposals')
       .send({ title: 'Pitch', speakerId: foreign })

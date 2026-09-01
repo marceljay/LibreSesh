@@ -12,7 +12,7 @@ import {
 } from '../mappers.js';
 import { getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
-import { resolveSpeaker } from '../speakers.js';
+import { resolveSpeaker, setSessionSpeakers } from '../speakers.js';
 import {
   assertMayPlace,
   assertNoOverlap,
@@ -242,9 +242,9 @@ export function proposalRoutes(ctx: Ctx): Router {
           ctx.db
             .prepare(
               `INSERT INTO sessions
-                (event_id, room_id, type, title, description, speaker, speaker_id,
+                (event_id, room_id, type, title, description, speaker,
                  starts_at, ends_at, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)`,
             )
             .run(
               req.event.id,
@@ -252,7 +252,6 @@ export function proposalRoutes(ctx: Ctx): Router {
               type,
               row.title,
               row.description,
-              row.speaker_id,
               window.startsAt.toISOString(),
               window.endsAt.toISOString(),
               // The pitcher keeps ownership, so they can still edit an open session.
@@ -261,6 +260,12 @@ export function proposalRoutes(ctx: Ctx): Router {
               now,
             ).lastInsertRowid,
         );
+        // And its speaker. A pitch names one person; the session it becomes
+        // can be given more later, which is the point of the join table.
+        if (row.speaker_id !== null) {
+          setSessionSpeakers(ctx.db, id, [row.speaker_id]);
+        }
+
         // Carry the pitch's tags onto the session.
         const tagIds = ctx.db
           .prepare<[number], { tag_id: number }>(

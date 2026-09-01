@@ -230,6 +230,7 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
       // Children first. `people`, `proposals` and `event_identities` were
       // missing here, so every reseed left rows pointing at a deleted event.
       db.prepare('DELETE FROM session_tags WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
+      db.prepare('DELETE FROM session_speakers WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
       db.prepare('DELETE FROM stars WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
       db.prepare('DELETE FROM contributions WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
       db.prepare('DELETE FROM proposal_interest WHERE proposal_id IN (SELECT id FROM proposals WHERE event_id = ?)').run(prior.id);
@@ -361,10 +362,19 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
 
     const insertSession = db.prepare(
       `INSERT INTO sessions
-        (event_id, room_id, track_id, type, title, description, speaker, speaker_id,
+        (event_id, room_id, track_id, type, title, description, speaker,
          starts_at, ends_at, created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)`,
     );
+    const insertSessionSpeaker = db.prepare(
+      'INSERT INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
+    );
+    /** Two different people, when the seed wants a session billed to a pair. */
+    const twoSpeakers = (): (number | null)[] => {
+      const first = pick(speakerChoices);
+      const rest = speakerChoices.filter((id) => id !== null && id !== first);
+      return rest.length === 0 ? [first] : [first, pick(rest)];
+    };
     const insertSessionTag = db.prepare(
       'INSERT OR IGNORE INTO session_tags (session_id, tag_id) VALUES (?, ?)',
     );
@@ -391,7 +401,6 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
               'official',
               OFFICIAL_TITLES[titleIndex % OFFICIAL_TITLES.length],
               'A short description of the session. Written in **markdown**, rendered safely.',
-              pick(speakerChoices),
               startsAt.toISOString(),
               endsAt.toISOString(),
               organiser,
@@ -400,6 +409,12 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
             ).lastInsertRowid,
           );
           sessionIds.push(id);
+          // A seeded event needs a pair on the bill somewhere: two speakers is
+          // the case the demo is there to show off, and to trip over.
+          const billing = titleIndex % 5 === 3 ? twoSpeakers() : [pick(speakerChoices)];
+          billing
+            .filter((personId): personId is number => personId !== null)
+            .forEach((personId, order) => insertSessionSpeaker.run(id, personId, order));
           titleIndex++;
           for (const tagId of new Set([pick(tagIds), pick(tagIds)])) insertSessionTag.run(id, tagId);
           // A break between sessions, rounded to the 5-minute grid.
@@ -425,7 +440,6 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
           'open',
           title,
           'Proposed on the day. Turn up, or do not.',
-          null,
           startsAt.toISOString(),
           endsAt.toISOString(),
           author,

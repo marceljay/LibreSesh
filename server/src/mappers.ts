@@ -6,6 +6,7 @@ import type {
   EventSummary,
   PersonDto,
   PersonLink,
+  PersonRef,
   ProposalDto,
   RoomDto,
   SessionDto,
@@ -183,7 +184,7 @@ export function toSessionDto(
   row: SessionRow,
   tagIds: number[],
   authorName: string,
-  speakerName: string,
+  speakers: PersonRef[],
 ): SessionDto {
   return {
     id: row.id,
@@ -193,8 +194,7 @@ export function toSessionDto(
     blocksOpenBooking: row.blocks_open_booking === 1,
     title: row.title,
     description: row.description,
-    speaker: speakerName,
-    speakerId: row.speaker_id,
+    speakers,
     livestreamUrl: row.livestream_url,
     startsAt: row.starts_at,
     endsAt: row.ends_at,
@@ -206,7 +206,32 @@ export function toSessionDto(
   };
 }
 
-/** Speaker names for a set of sessions, resolved in one query. */
+/**
+ * Everyone speaking at each of `sessionIds`, in billing order, in one query.
+ * Sessions with nobody credited are simply absent from the map.
+ */
+export function speakersBySession(db: Db, sessionIds: number[]): Map<number, PersonRef[]> {
+  const out = new Map<number, PersonRef[]>();
+  if (sessionIds.length === 0) return out;
+  const rows = db
+    .prepare<number[], { session_id: number; id: number; name: string }>(
+      `SELECT ss.session_id, p.id, p.name
+         FROM session_speakers ss
+         JOIN people p ON p.id = ss.person_id
+        WHERE ss.session_id IN (${sessionIds.map(() => '?').join(',')})
+          AND p.deleted_at IS NULL
+        ORDER BY ss.session_id, ss.sort_order, p.id`,
+    )
+    .all(...sessionIds);
+  for (const row of rows) {
+    const list = out.get(row.session_id);
+    if (list) list.push({ id: row.id, name: row.name });
+    else out.set(row.session_id, [{ id: row.id, name: row.name }]);
+  }
+  return out;
+}
+
+/** Speaker names for a set of proposals, resolved in one query. */
 export function speakerNames(db: Db, eventId: number): Map<number, string> {
   const rows = db
     .prepare<[number], { id: number; name: string }>(
@@ -216,17 +241,12 @@ export function speakerNames(db: Db, eventId: number): Map<number, string> {
   return new Map(rows.map((r) => [r.id, r.name]));
 }
 
-/** Load one session as a DTO (tags, author and speaker resolved). */
+/** Load one session as a DTO (tags, author and speakers resolved). */
 export function loadSessionDto(db: Db, row: SessionRow): SessionDto {
   const tagIds = tagIdsBySession(db, [row.id]).get(row.id) ?? [];
   const names = new NameResolver(db, row.event_id);
-  const speaker =
-    row.speaker_id === null
-      ? ''
-      : (db
-          .prepare<[number], { name: string }>('SELECT name FROM people WHERE id = ?')
-          .get(row.speaker_id)?.name ?? '');
-  return toSessionDto(row, tagIds, names.get(row.created_by), speaker);
+  const speakers = speakersBySession(db, [row.id]).get(row.id) ?? [];
+  return toSessionDto(row, tagIds, names.get(row.created_by), speakers);
 }
 
 /** Proposal DTOs need per-viewer interest, so they are built with the viewer. */

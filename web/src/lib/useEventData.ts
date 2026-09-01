@@ -234,10 +234,13 @@ function applyChange(state: State, change: ChangeEvent): State {
         bundle: {
           ...bundle,
           people: bundle.people.filter((p) => p.id !== id),
-          // The server detaches the person's sessions; mirror that so a stale
-          // speaker name never lingers on the grid.
+          // The server takes the person off every bill; mirror that so a stale
+          // name never lingers on the grid. The rest of the billing stays —
+          // one speaker leaving a panel does not un-bill the others.
           sessions: bundle.sessions.map((s) =>
-            s.speakerId === id ? { ...s, speakerId: null, speaker: '' } : s,
+            s.speakers.some((p) => p.id === id)
+              ? { ...s, speakers: s.speakers.filter((p) => p.id !== id) }
+              : s,
           ),
         },
       };

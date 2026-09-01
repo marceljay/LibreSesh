@@ -37,7 +37,7 @@ import { slugTaken } from './slugs.js';
 import { nextRoomColor } from './shared/roomColors.js';
 import type { ImportResult } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from './shared/time.js';
-import { resolveSpeaker } from './speakers.js';
+import { resolveSpeakers } from './speakers.js';
 import {
   colorSchema,
   dateSchema,
@@ -153,6 +153,10 @@ const importSessionSchema = z
     description: optionalTrimmed(5000).optional(),
     /** Free text, matched to an existing profile or given a new unclaimed one. */
     speaker: optionalTrimmed(120).optional(),
+    /** The same, for a session given by more than one person, in billing
+     *  order. `speaker` remains the one-name spelling; a document may use
+     *  either, and a document that uses both is billed to the list. */
+    speakers: z.array(trimmed(120)).max(12).optional(),
     /** Local date and times, as printed on the schedule. */
     date: dateSchema.optional(),
     start: startTimeSchema.optional(),
@@ -526,9 +530,12 @@ export function importEvent(
     const insertSession = db.prepare(
       `INSERT INTO sessions
         (event_id, room_id, track_id, type, blocks_open_booking, title,
-         description, speaker, speaker_id, livestream_url, starts_at, ends_at,
+         description, speaker, livestream_url, starts_at, ends_at,
          created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, '', ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?)`,
+    );
+    const insertSessionSpeaker = db.prepare(
+      'INSERT OR IGNORE INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
     );
     const linkTag = db.prepare(
       'INSERT OR IGNORE INTO session_tags (session_id, tag_id) VALUES (?, ?)',
@@ -585,12 +592,11 @@ export function importEvent(
         resolvedTags.push(tagId);
       }
 
-      const speakerId = resolveSpeaker(
-        db,
-        eventId,
-        session.speaker ? { speakerName: session.speaker } : {},
-        null,
-      );
+      // `speakers` is the list; `speaker` is the one-name spelling every
+      // document written before this used, and still the common case. Either
+      // is accepted, neither is required, and both together is the list.
+      const billed = session.speakers ?? (session.speaker ? [session.speaker] : []);
+      const speakerIds = resolveSpeakers(db, eventId, billed);
       const sessionType = session.type ?? 'official';
       if (session.blocksOpenBooking && sessionType !== 'official') {
         throw badRequest(`${errorLabel}: only an official session can hold the floor`);
@@ -610,7 +616,6 @@ export function importEvent(
           session.blocksOpenBooking ? 1 : 0,
           session.title,
           session.description ?? '',
-          speakerId,
           startsAt.toISOString(),
           endsAt.toISOString(),
           actorIdentityId,
@@ -619,6 +624,9 @@ export function importEvent(
         ).lastInsertRowid,
       );
       for (const tagId of new Set(resolvedTags)) linkTag.run(sessionId, tagId);
+      speakerIds.forEach((personId, order) =>
+        insertSessionSpeaker.run(sessionId, personId, order),
+      );
 
       // Outside the day viewport a session is in the database and off the top
       // or bottom of the grid — invisible, which reads as a failed import.

@@ -55,17 +55,52 @@ export function resolveSpeaker(
   );
 }
 
-/** Is this identity's claimed profile the session's speaker? */
-export function speaksFor(
+/**
+ * Everyone a session credits, as person ids in billing order.
+ *
+ * An entry is either a person id — someone the form picked out of the roster —
+ * or a name typed in for someone who is not on it yet, which
+ * `resolveSpeaker`'s rules then match or create. Order is kept and duplicates
+ * are dropped: the same person twice on one session is a slip of the form, not
+ * a billing.
+ */
+export function resolveSpeakers(
   db: Db,
-  identityId: number,
-  session: { speaker_id: number | null },
-): boolean {
-  if (session.speaker_id === null) return false;
+  eventId: number,
+  entries: readonly (number | string)[],
+): number[] {
+  const out: number[] = [];
+  for (const entry of entries) {
+    const id =
+      typeof entry === 'number'
+        ? resolveSpeaker(db, eventId, { speakerId: entry }, null)
+        : resolveSpeaker(db, eventId, { speakerName: entry }, null);
+    if (id !== null && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
+/** Replace who a session credits. The rows are the billing, so they are
+ *  rewritten wholesale rather than diffed — the order is part of the value. */
+export function setSessionSpeakers(db: Db, sessionId: number, personIds: number[]): void {
+  db.prepare('DELETE FROM session_speakers WHERE session_id = ?').run(sessionId);
+  const insert = db.prepare(
+    'INSERT INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
+  );
+  personIds.forEach((personId, i) => insert.run(sessionId, personId, i));
+}
+
+/** Is this identity's claimed profile among the session's speakers? Any of
+ *  them, not the first: a second name on the poster is giving the session as
+ *  much as the first one is, and edits it on the same terms. */
+export function speaksFor(db: Db, identityId: number, session: { id: number }): boolean {
   const row = db
-    .prepare<[number], { identity_id: number | null }>(
-      'SELECT identity_id FROM people WHERE id = ? AND deleted_at IS NULL',
+    .prepare<[number, number], { n: number }>(
+      `SELECT COUNT(*) AS n
+         FROM session_speakers ss
+         JOIN people p ON p.id = ss.person_id
+        WHERE ss.session_id = ? AND p.identity_id = ? AND p.deleted_at IS NULL`,
     )
-    .get(session.speaker_id);
-  return row?.identity_id === identityId;
+    .get(session.id, identityId);
+  return (row?.n ?? 0) > 0;
 }

@@ -14,7 +14,9 @@
 export interface SearchableSession {
   id: number;
   title: string;
-  speaker: string;
+  /** Everyone billed, in order. Searching matches any of them: "who is Ada
+   *  speaking with?" is the same question as "what is Ada speaking at". */
+  speakers: { name: string }[];
   description: string;
 }
 
@@ -60,7 +62,7 @@ function scoreField(folded: string, term: string, wordStart: number, inside: num
 export function scoreSession(session: SearchableSession, terms: string[]): number {
   if (terms.length === 0) return 0;
   const title = fold(session.title);
-  const speaker = fold(session.speaker);
+  const speaker = fold(session.speakers.map((p) => p.name).join(' '));
   const description = fold(session.description);
 
   let total = 0;
@@ -110,9 +112,13 @@ export function bestField(
   terms: string[],
 ): 'title' | 'speaker' | 'description' | null {
   if (terms.length === 0) return null;
-  const fields = ['title', 'speaker', 'description'] as const;
-  for (const field of fields) {
-    const folded = fold(session[field]);
+  const text = {
+    title: session.title,
+    speaker: session.speakers.map((p) => p.name).join(' '),
+    description: session.description,
+  };
+  for (const field of ['title', 'speaker', 'description'] as const) {
+    const folded = fold(text[field]);
     if (terms.some((t) => folded.includes(t))) return field;
   }
   return null;

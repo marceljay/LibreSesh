@@ -54,7 +54,7 @@ describe('per-event JSON export', () => {
         roomId,
         title: 'Opening',
         description: 'How this works',
-        speakerName: 'Ada',
+        speakers: ['Ada'],
         tagIds: [tagId],
         startsAt: at(DAY_ONE, 9 * 60),
         endsAt: at(DAY_ONE, 10 * 60),

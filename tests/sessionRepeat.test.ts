@@ -96,7 +96,7 @@ describe('repeating a session from the form', () => {
     const res = await repeat(admin, {
       title: 'Tech track',
       type: 'official',
-      speakerName: 'Ada Lovelace',
+      speakers: ['Ada Lovelace'],
       description: 'Same every day.',
       repeat: { until: '2026-06-03' },
     }).expect(201);
@@ -107,7 +107,7 @@ describe('repeating a session from the form', () => {
     for (const s of sessions) {
       expect(s.type).toBe('official');
       expect(s.roomId).toBe(roomId);
-      expect(s.speakerId).toBe(sessions[0]!.speakerId);
+      expect(s.speakers).toEqual(sessions[0]!.speakers);
       expect(s.description).toBe('Same every day.');
     }
     const people = (await admin.get('/api/e/testconf/bundle').expect(200)).body as {

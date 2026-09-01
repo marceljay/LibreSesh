@@ -3,7 +3,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { SessionDto } from '@shared/types';
 
 import { ApiError, api } from '../lib/api';
-import { dayLabel, fmtMin, nowMinuteOfDay, place, todayInZone } from '../lib/format';
+import {
+  dayLabel,
+  fmtMin,
+  nowMinuteOfDay,
+  place,
+  speakerLine,
+  todayInZone,
+} from '../lib/format';
 import { useEventData } from '../lib/useEventData';
 import { useMe } from '../lib/useMe';
 import { timeClashPairs } from '../components/Calendar';
@@ -261,10 +268,10 @@ export function AgendaPage() {
                                   {room.name}
                                 </span>
                               )}
-                              {session.speaker && (
+                              {session.speakers.length > 0 && (
                                 <>
                                   {room && ' · '}
-                                  {session.speaker}
+                                  {speakerLine(session.speakers)}
                                 </>
                               )}
                             </div>

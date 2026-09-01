@@ -38,36 +38,36 @@ describe('speaker profiles', () => {
     });
 
   it('creates a person when a session names an unknown speaker', async () => {
-    const res = await makeSession(admin, { speakerName: 'Ada Lovelace' }).expect(201);
-    expect(res.body.speaker).toBe('Ada Lovelace');
-    expect(res.body.speakerId).toBeGreaterThan(0);
+    const res = await makeSession(admin, { speakers: ['Ada Lovelace'] }).expect(201);
+    expect(res.body.speakers).toHaveLength(1);
+    expect(res.body.speakers[0].name).toBe('Ada Lovelace');
+    expect(res.body.speakers[0].id).toBeGreaterThan(0);
 
     const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
     expect(bundle.body.people.map((p: { name: string }) => p.name)).toEqual(['Ada Lovelace']);
   });
 
   it('reuses the existing person for the same name', async () => {
-    const first = await makeSession(admin, { speakerName: 'Grace Hopper' }).expect(201);
+    const first = await makeSession(admin, { speakers: ['Grace Hopper'] }).expect(201);
     const second = await makeSession(admin, {
-      speakerName: 'Grace Hopper',
+      speakers: ['Grace Hopper'],
       startsAt: at(DAY_ONE, 700),
       endsAt: at(DAY_ONE, 760),
     }).expect(201);
-    expect(second.body.speakerId).toBe(first.body.speakerId);
+    expect(second.body.speakers[0].id).toBe(first.body.speakers[0].id);
   });
 
   it('clears the speaker on an empty name and rejects an unknown id', async () => {
-    const created = await makeSession(admin, { speakerName: 'Temp' }).expect(201);
+    const created = await makeSession(admin, { speakers: ['Temp'] }).expect(201);
     const cleared = await admin
       .patch(`/api/e/testconf/sessions/${created.body.id}`)
-      .send({ speakerName: '' })
+      .send({ speakers: [] })
       .expect(200);
-    expect(cleared.body.speakerId).toBeNull();
-    expect(cleared.body.speaker).toBe('');
+    expect(cleared.body.speakers).toEqual([]);
 
     await admin
       .patch(`/api/e/testconf/sessions/${created.body.id}`)
-      .send({ speakerId: 9999 })
+      .send({ speakers: [9999] })
       .expect(400);
   });
 
@@ -79,13 +79,13 @@ describe('speaker profiles', () => {
       .post('/api/e/other/people')
       .send({ name: 'Elsewhere' })
       .expect(201);
-    await makeSession(admin, { speakerId: foreign.body.id }).expect(400);
+    await makeSession(admin, { speakers: [foreign.body.id] }).expect(400);
   });
 
   it('serves a profile with the sessions that person hosts', async () => {
-    const created = await makeSession(admin, { speakerName: 'Radia Perlman' }).expect(201);
+    const created = await makeSession(admin, { speakers: ['Radia Perlman'] }).expect(201);
     const detail = await viewer
-      .get(`/api/e/testconf/people/${created.body.speakerId}`)
+      .get(`/api/e/testconf/people/${created.body.speakers[0].id}`)
       .expect(200);
     expect(detail.body.person.name).toBe('Radia Perlman');
     expect(detail.body.sessions).toHaveLength(1);
@@ -115,12 +115,11 @@ describe('speaker profiles', () => {
   });
 
   it('detaches a deleted person from their sessions instead of losing them', async () => {
-    const session = await makeSession(admin, { speakerName: 'Ephemeral' }).expect(201);
-    await admin.delete(`/api/e/testconf/people/${session.body.speakerId}`).expect(204);
+    const session = await makeSession(admin, { speakers: ['Ephemeral'] }).expect(201);
+    await admin.delete(`/api/e/testconf/people/${session.body.speakers[0].id}`).expect(204);
 
     const after = await admin.get(`/api/e/testconf/sessions/${session.body.id}`).expect(200);
-    expect(after.body.session.speakerId).toBeNull();
-    expect(after.body.session.speaker).toBe('');
+    expect(after.body.session.speakers).toEqual([]);
   });
 
   it('rejects a non-http link and an overlong bio', async () => {
@@ -206,7 +205,7 @@ describe('speaker profiles', () => {
         .send({
           roomId,
           title: 'Mine',
-          speakerName: me.body.displayName,
+          speakers: [me.body.displayName],
           startsAt: at(DAY_ONE, 800),
           endsAt: at(DAY_ONE, 860),
         })
@@ -217,7 +216,7 @@ describe('speaker profiles', () => {
         .patch('/api/e/testconf/me/profile')
         .send({ bio: 'I ran this' })
         .expect(201);
-      expect(profile.body.id).toBe(session.body.speakerId);
+      expect(profile.body.id).toBe(session.body.speakers[0].id);
       expect(profile.body.isMine).toBe(true);
       expect(profile.body.bio).toBe('I ran this');
 
@@ -269,7 +268,7 @@ describe('speaker profiles', () => {
       }[];
 
     it('marks a profile nobody holds', async () => {
-      await makeSession(admin, { speakerName: 'Ada Lovelace' }).expect(201);
+      await makeSession(admin, { speakers: ['Ada Lovelace'] }).expect(201);
       const [ada] = await peopleFor(admin);
       expect(ada).toMatchObject({ name: 'Ada Lovelace', claimed: false, role: null });
       expect(ada?.codePending).toBe(false);
@@ -283,8 +282,8 @@ describe('speaker profiles', () => {
     });
 
     it('flags a speaker code that nobody has redeemed yet', async () => {
-      const res = await makeSession(admin, { speakerName: 'Ada Lovelace' }).expect(201);
-      const personId = res.body.speakerId as number;
+      const res = await makeSession(admin, { speakers: ['Ada Lovelace'] }).expect(201);
+      const personId = res.body.speakers[0].id as number;
       const code = await admin
         .post(`/api/e/testconf/people/${personId}/speaker-code`)
         .expect(200);

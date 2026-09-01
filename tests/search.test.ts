@@ -12,7 +12,7 @@ import {
 const session = (id: number, title: string, speaker = '', description = '') => ({
   id,
   title,
-  speaker,
+  speakers: speaker ? [{ name: speaker }] : [],
   description,
 });
 

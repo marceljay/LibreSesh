@@ -327,10 +327,12 @@ export interface SessionWrite {
   blocksOpenBooking?: boolean;
   title: string;
   description?: string;
-  /** Link to an existing person, or `null` to detach. */
-  speakerId?: number | null;
-  /** A name that matches nobody creates a person. Used instead of `speakerId`. */
-  speakerName?: string;
+  /**
+   * Everyone giving it, in billing order: a number for somebody already on the
+   * roster, a name for somebody new — a name that matches nobody creates a
+   * person. Omit to leave the billing alone; `[]` clears it.
+   */
+  speakers?: (number | string)[];
   /** Watch-along link, http(s). '' clears it. */
   livestreamUrl?: string;
   startsAt: string;

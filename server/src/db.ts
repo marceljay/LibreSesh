@@ -94,8 +94,9 @@ export interface SessionRow {
   blocks_open_booking: number;
   title: string;
   description: string;
+  /** Free text from before profiles existed. A historical record: nothing
+   *  reads it for display — the speakers are `session_speakers`. */
   speaker: string;
-  speaker_id: number | null;
   livestream_url: string;
   starts_at: string;
   ends_at: string;
@@ -103,6 +104,13 @@ export interface SessionRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+}
+
+/** Who is giving a session. Ordered, because the order is the billing. */
+export interface SessionSpeakerRow {
+  session_id: number;
+  person_id: number;
+  sort_order: number;
 }
 
 export interface PersonRow {
