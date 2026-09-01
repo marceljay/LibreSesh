@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
-import type { RoomDto, TagDto } from '@shared/types';
+import type { RoomDto, TagDto, TrackDto } from '@shared/types';
+import { UNTRACKED } from '../lib/tracks';
 import type { FilterApi } from '../lib/useFilters';
 import { FilterIcon, SearchIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
@@ -26,11 +27,17 @@ export function FilterMenu({
   filters,
   rooms,
   tags,
+  tracks,
+  hasUntracked,
   starredCount,
 }: {
   filters: FilterApi;
   rooms: RoomDto[];
   tags: TagDto[];
+  tracks: TrackDto[];
+  /** Whether any session is still without a track, which is what makes the
+   *  "Unassigned" chip worth offering. */
+  hasUntracked: boolean;
   starredCount: number;
 }) {
   const [open, setOpen] = useState(false);
@@ -42,6 +49,7 @@ export function FilterMenu({
   const count =
     filters.rooms.length +
     filters.tags.length +
+    filters.tracks.length +
     (filters.q.trim() ? 1 : 0) +
     (filters.soon ? 1 : 0) +
     (filters.mine ? 1 : 0);
@@ -129,6 +137,38 @@ export function FilterMenu({
               </>
             )}
 
+            {(tracks.length > 0 || hasUntracked) && (
+              <>
+                <h3 className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                  Tracks
+                </h3>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {tracks.map((t) => (
+                    <Chip
+                      key={t.id}
+                      dot={t.color}
+                      active={filters.tracks.includes(t.id)}
+                      onClick={() => filters.toggleTrack(t.id)}
+                    >
+                      {t.name}
+                    </Chip>
+                  ))}
+                  {/* Sessions nobody has put on a strand are programme too, and
+                      they are the ones an organiser goes looking for. Offered
+                      only when some session actually has no track. */}
+                  {hasUntracked && (
+                    <Chip
+                      active={filters.tracks.includes(UNTRACKED)}
+                      onClick={() => filters.toggleTrack(UNTRACKED)}
+                      title="Sessions with no track"
+                    >
+                      Unassigned
+                    </Chip>
+                  )}
+                </div>
+              </>
+            )}
+
             {tags.length > 0 && (
               <>
                 <h3 className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
@@ -182,10 +222,12 @@ export function ActiveFilters({
   filters,
   rooms,
   tags,
+  tracks,
 }: {
   filters: FilterApi;
   rooms: RoomDto[];
   tags: TagDto[];
+  tracks: TrackDto[];
 }) {
   if (!filters.active) return null;
   const remove = (label: string, onClick: () => void, key: string, dot?: string) => (
@@ -219,6 +261,14 @@ export function ActiveFilters({
       {filters.tags.map((id) => {
         const tag = tags.find((t) => t.id === id);
         return tag ? remove(tag.name, () => filters.toggleTag(id), `tag-${id}`, tag.color) : null;
+      })}
+      {filters.tracks.map((id) => {
+        if (id === UNTRACKED)
+          return remove('Unassigned', () => filters.toggleTrack(id), 'track-none');
+        const track = tracks.find((t) => t.id === id);
+        return track
+          ? remove(track.name, () => filters.toggleTrack(id), `track-${id}`, track.color)
+          : null;
       })}
       <button
         type="button"

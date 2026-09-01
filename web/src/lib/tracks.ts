@@ -15,3 +15,24 @@ export type TrackFactsInput = Pick<TrackDto, 'description'>;
  * because a panel that repeats the header gives a reader nothing for the tap.
  */
 export const trackNote = (track: TrackFactsInput): string => track.description.trim();
+
+/** The id a session with no track filters and columns under. Negative so it
+ *  cannot collide with a real track id, and low enough to sort last. */
+export const UNTRACKED = -1;
+
+/** Which track bucket a session belongs to — its own track, or unassigned. */
+export const trackBucket = (session: { trackId: number | null }): number =>
+  session.trackId ?? UNTRACKED;
+
+/**
+ * Does a session pass a track selection?
+ *
+ * An empty selection narrows nothing, exactly as the room and tag chips do.
+ * `UNTRACKED` is a selectable bucket rather than a special case: "show me the
+ * sessions nobody has put on a strand yet" is the question an organiser asks
+ * most, and it is unanswerable if the only choices are the tracks that exist.
+ */
+export const matchesTracks = (
+  selected: number[],
+  session: { trackId: number | null },
+): boolean => selected.length === 0 || selected.includes(trackBucket(session));

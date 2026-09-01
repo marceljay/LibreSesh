@@ -6,6 +6,23 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Filter the schedule by track — including the sessions on no track.** The
+  Filter panel gained a **Tracks** section beside Rooms and Tags, with a chip
+  per track and an **Unassigned** chip for sessions nobody has put on a strand
+  yet. It is the same shape as the other chips: several tracks can be on at
+  once, an empty selection narrows nothing, and each one comes off from the
+  active-filter row beside the button.
+
+  The **Unassigned** chip is the point of the change. Untracked sessions are
+  real programme — they already get their own column on the track axis — but
+  until now they were the one thing the filters could not ask for, and "what
+  still needs a strand?" is the question an organiser asks most while a
+  programme is being built. It appears only when some session actually has no
+  track, so an event that tracks everything never sees it.
+
+  Like every other filter, it lives in the URL (`?track=3,-1`, where `-1` is
+  the unassigned bucket), so a filtered view is a link somebody else can open.
+
 - **A track can say what it is for.** Tracks now carry a description, the way
   rooms always have. Manage Event → Tracks → **Edit** takes up to 500
   characters — "hands-on, bring a laptop", who the strand is aimed at, what to

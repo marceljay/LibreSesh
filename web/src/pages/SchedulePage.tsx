@@ -23,7 +23,7 @@ import { useEventData } from "../lib/useEventData";
 import { matchesQuery } from "../lib/search";
 import { useFilters } from "../lib/useFilters";
 import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
-import { trackNote } from "../lib/tracks";
+import { UNTRACKED, matchesTracks, trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
 import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
 import { DetailSheet } from "../components/DetailSheet";
@@ -48,9 +48,6 @@ import {
 
 const NOW_TICK_MS = 30_000;
 
-/** Column id for sessions with no track. Negative so it cannot collide with a
- *  real track id, and appended last so the programme proper reads first. */
-const UNTRACKED = -1;
 
 /**
  * Everything about a room, in one place: the organiser's directions first,
@@ -190,6 +187,9 @@ export function SchedulePage() {
   // Only offered when the event actually has tracks; otherwise there is one
   // sensible axis and no switch to show.
   const hasTracks = (bundle?.tracks.length ?? 0) > 0;
+  /** Whether the programme still holds sessions with no track — what makes the
+   *  "Unassigned" filter chip, and the column of the same name, worth showing. */
+  const hasUntracked = (bundle?.sessions ?? []).some((s) => s.trackId === null);
   const axis: "room" | "track" =
     hasTracks && filters.axis === "track" ? "track" : "room";
 
@@ -342,6 +342,7 @@ export function SchedulePage() {
             !s.tagIds.some((t) => filters.tags.includes(t))
           )
             return false;
+          if (!matchesTracks(filters.tracks, s)) return false;
           if (filters.mine && !starredIds.has(s.id)) return false;
           // Same matcher the search box uses: every word has to appear
           // somewhere in the session, in any order.
@@ -359,6 +360,7 @@ export function SchedulePage() {
     bundle,
     filters.rooms,
     filters.tags,
+    filters.tracks,
     filters.q,
     filters.soon,
     filters.mine,
@@ -1035,12 +1037,15 @@ export function SchedulePage() {
                 filters={filters}
                 rooms={bundle.rooms}
                 tags={bundle.tags}
+                tracks={bundle.tracks}
+                hasUntracked={hasUntracked}
                 starredCount={starredIds.size}
               />
               <ActiveFilters
                 filters={filters}
                 rooms={bundle.rooms}
                 tags={bundle.tags}
+                tracks={bundle.tracks}
               />
             </div>
           </div>

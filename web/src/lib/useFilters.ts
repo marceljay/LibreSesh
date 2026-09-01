@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import { UNTRACKED } from './tracks';
+
 export type ViewMode = 'cal' | 'list';
 /** What the grid's columns are. Only meaningful once the event has tracks. */
 export type Axis = 'room' | 'track';
@@ -11,6 +13,8 @@ export interface Filters {
   axis: Axis | null;
   rooms: number[];
   tags: number[];
+  /** Track ids, plus `UNTRACKED` for "no track chosen yet". */
+  tracks: number[];
   q: string;
   /** "happening now or next" quick filter. */
   soon: boolean;
@@ -23,15 +27,16 @@ export interface FilterApi extends Filters {
   set: (patch: Partial<Filters>) => void;
   toggleRoom: (id: number) => void;
   toggleTag: (id: number) => void;
+  toggleTrack: (id: number) => void;
   clear: () => void;
 }
 
-const parseIds = (raw: string | null): number[] =>
+const parseIds = (raw: string | null, extra?: number): number[] =>
   raw
     ? raw
         .split(',')
         .map(Number)
-        .filter((n) => Number.isInteger(n) && n > 0)
+        .filter((n) => Number.isInteger(n) && (n > 0 || n === extra))
     : [];
 
 const toggle = (list: number[], id: number): number[] =>
@@ -51,6 +56,9 @@ export function useFilters(): FilterApi {
       axis: axis === 'room' || axis === 'track' ? axis : null,
       rooms: parseIds(params.get('room')),
       tags: parseIds(params.get('tag')),
+      // `UNTRACKED` is a real value here, not a placeholder: `?track=-1` is a
+      // shareable link to the sessions still waiting for a strand.
+      tracks: parseIds(params.get('track'), UNTRACKED),
       q: params.get('q') ?? '',
       soon: params.get('soon') === '1',
       mine: params.get('mine') === '1',
@@ -71,6 +79,7 @@ export function useFilters(): FilterApi {
           if ('axis' in patch) write('axis', patch.axis ?? null);
           if ('rooms' in patch) write('room', (patch.rooms ?? []).join(','));
           if ('tags' in patch) write('tag', (patch.tags ?? []).join(','));
+          if ('tracks' in patch) write('track', (patch.tracks ?? []).join(','));
           if ('q' in patch) write('q', patch.q ?? null);
           if ('soon' in patch) write('soon', patch.soon ? '1' : null);
           if ('mine' in patch) write('mine', patch.mine ? '1' : null);
@@ -88,13 +97,16 @@ export function useFilters(): FilterApi {
       active:
         filters.rooms.length > 0 ||
         filters.tags.length > 0 ||
+        filters.tracks.length > 0 ||
         filters.q !== '' ||
         filters.soon ||
         filters.mine,
       set,
       toggleRoom: (id: number) => set({ rooms: toggle(filters.rooms, id) }),
       toggleTag: (id: number) => set({ tags: toggle(filters.tags, id) }),
-      clear: () => set({ rooms: [], tags: [], q: '', soon: false, mine: false }),
+      toggleTrack: (id: number) => set({ tracks: toggle(filters.tracks, id) }),
+      clear: () =>
+        set({ rooms: [], tags: [], tracks: [], q: '', soon: false, mine: false }),
     }),
     [filters, set],
   );
