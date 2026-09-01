@@ -52,6 +52,26 @@
   }
 }
 
+/* Safari on iOS zooms the page in when you focus a field whose text is under
+   16px, and it does not zoom back out when you leave it — you are left on a
+   magnified, half-off-screen layout, which is what the password gate did to
+   anyone signing in on an iPhone. Our fields are `text-sm` (14px) by design on
+   a desktop, so the floor is raised only where the zoom exists: a coarse
+   pointer. Checkboxes and radios carry no text and are left alone.
+
+   Not fixed with `maximum-scale=1` on the viewport, which cures it by taking
+   pinch-zoom away from everyone who needs it.
+
+   The `:not()` is load-bearing, not decoration: it lifts the selector to the
+   same specificity as the `text-sm` utility it has to beat. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea:not([hidden]),
+  select:not([hidden]) {
+    font-size: 16px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
