@@ -486,6 +486,39 @@ export function SchedulePage() {
     [bundle, data, reportError, slug],
   );
 
+  /**
+   * A schedule opened while the event is running should open at the current
+   * time. The day already defaults to today; without this the grid still
+   * started at the day's first hour, so anyone arriving mid-afternoon had to
+   * scroll past the whole morning — or find the Now button — before seeing
+   * what was on.
+   *
+   * Once per visit, and never over a position the reader asked for: an
+   * explicit `?day=` or a link to one session both mean the URL already says
+   * where to be. Outside the running day there is nothing to jump to — the now
+   * line is not in the grid — so the day opens at its start as before.
+   */
+  const jumped = useRef(false);
+  useEffect(() => {
+    if (jumped.current || data.status !== "ready" || !event) return;
+    if (sessionId || filters.day) return;
+    if (nowMin === null || nowMin < event.dayStartMin || nowMin > event.dayEndMin) {
+      return;
+    }
+    jumped.current = true;
+    // After paint: the grid is what we are scrolling and it has to exist first.
+    // No smooth scroll — this is where the page opens, not a journey to watch.
+    const raf = requestAnimationFrame(() => {
+      const el = calRef.current;
+      if (el) {
+        el.scrollTop =
+          (nowMin - event.dayStartMin) * PX_PER_MIN - el.clientHeight / 2;
+      }
+      document.getElementById("now-anchor")?.scrollIntoView({ block: "center" });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [data.status, event, filters.day, nowMin, sessionId]);
+
   const jumpToNow = useCallback(() => {
     if (today && days.includes(today)) filters.set({ day: today });
     requestAnimationFrame(() => {
