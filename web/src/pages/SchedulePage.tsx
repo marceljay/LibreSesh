@@ -909,8 +909,17 @@ export function SchedulePage() {
      `FOLD_MS`, so the grid growing into the space they leave reads as one
      gesture with the wheel that started it. `grid-rows-[0fr]` rather than a
      max-height because nothing then has to guess the height being animated —
-     the row keeps measuring itself all the way down. */
-  const foldRow = `grid transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
+     the row keeps measuring itself all the way down.
+
+     `grid-cols-[minmax(0,1fr)]` is not decoration. The default single column is
+     `auto`, and an auto track grows to its content: a row wider than the phone
+     — the event bar with a long role badge on it, the week rail — made the row
+     itself wider than the header instead of being made to fit, so its right
+     end (the profile menu) sat off the edge of the screen with
+     `overflow-x: clip` over the top of it. Pinning the column to the width
+     that is actually there hands the squeeze back to the rows, which each
+     already know how to take it: truncation, or a scroller of their own. */
+  const foldRow = `grid grid-cols-[minmax(0,1fr)] transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
     folded ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
   }`;
   /* Clipped while it moves and while it is away, open once it has settled: the

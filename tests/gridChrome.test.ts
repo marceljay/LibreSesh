@@ -149,6 +149,16 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/shrink-0 whitespace-nowrap rounded-full border/);
   });
 
+  it('pins the folding rows to the width that is there', () => {
+    // The fold wraps each row in a grid, and a grid's default column is `auto`
+    // — a track that grows to its content instead of constraining it. A row
+    // wider than the phone therefore made the row itself wider than the
+    // header: the week rail stopped scrolling and simply ran off the right
+    // edge, taking the profile menu at the end of the event bar with it, under
+    // an `overflow-x: clip` that hid the evidence.
+    expect(schedule).toContain('grid-cols-[minmax(0,1fr)]');
+  });
+
   it('keeps Now in the row that survives the fold', () => {
     // The action row folds away; the filter row does not. Now belongs with the
     // filters, between the Filter menu and the chips it puts up.
