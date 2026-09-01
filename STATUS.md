@@ -353,6 +353,31 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   Moving them over would delete the last two copies of the dismiss effect and
   let that allowlist go away.
 
+- **Revisit what Floating UI costs the first paint.** Adopting
+  `@floating-ui/react` for the popover fix (`3c3030c`) took the bundle from
+  134.3 to 152.5 kB gzipped — **+18.2 kB, about 13%** — on a single JS chunk
+  that is already 489 kB raw. Worth asking whether that is the right trade on a
+  phone at a conference venue, which is the network this app is actually used
+  on.
+
+  The argument *for* reducing: `@floating-ui/react-dom` is roughly a third of
+  the weight and does the whole job the bug needed — `strategy: 'fixed'`,
+  `shift`, `flip`, `size`. Everything above that line is convenience.
+
+  The argument *against*, which is why the fuller package was chosen: the extra
+  weight buys `useDismiss`, `useRole` and `FloatingFocusManager`. Dropping to
+  `react-dom` means hand-rolling the outside-click/Escape effect again in every
+  popdown — the four near-identical copies this change set out to delete — and
+  losing focus return on close, which is a real accessibility regression, not
+  just tidiness. `FloatingFocusManager` pulls in `tabbable` and is likely the
+  bulk of the 18 kB, so the cheap middle option is to keep `useDismiss`/
+  `useRole` and do focus return by hand.
+
+  Measure before deciding: most of the win may be elsewhere. Nothing is
+  code-split — one chunk carries the admin pages, the calendar and the gate
+  alike, and a route-level `React.lazy` on the admin section would likely dwarf
+  18 kB. Check that first; the popover dep may not be the thing worth cutting.
+
 - **A track window cannot close a day.** Noted 2026-09-01 when track hours
   landed. An override row is a window and a window must end after it starts, so
   "the workshops track does not run on the last day" cannot be said — the
