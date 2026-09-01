@@ -172,11 +172,22 @@ describe('the header folds once you are into the day', () => {
     // listen to and the header never folded. Now that the list is where an
     // event opens by default, that was most of the readers.
     expect(schedule).toMatch(/const foldable = !fullPage;/);
-    expect(schedule).toMatch(
-      /view === "cal" \? calRef\.current : mainRef\.current/,
-    );
-    expect(schedule).toMatch(/const el = scroller\(\);/);
     expect(schedule).toMatch(/<main\n\s*ref=\{mainRef\}/);
+  });
+
+  it('asks which box is scrolling rather than predicting it', () => {
+    // Naming the scroller in advance — the grid's, or the grid's in one view
+    // and <main> in the other — left the fold listening to a box that never
+    // moved, in one view or the other. Which one has the overflow depends on
+    // the day's length, the header's height and whether a banner is up.
+    expect(schedule).toMatch(/el\.scrollHeight > el\.clientHeight \+ 1/);
+    expect(schedule).toMatch(
+      /const boxes = \[calRef\.current, mainRef\.current\]/,
+    );
+    // And both are listened to: a listener on the wrong box hears nothing.
+    expect(schedule).toMatch(
+      /for \(const el of boxes\) el\.addEventListener\("scroll", readFold/,
+    );
   });
 
   it('pins the folding rows to the width that is there', () => {

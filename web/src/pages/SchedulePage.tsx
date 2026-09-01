@@ -562,18 +562,23 @@ export function SchedulePage() {
   const foldable = !fullPage;
 
   /**
-   * Whichever box is doing the scrolling. The grid owns its own scroller so
-   * its room cards can stick to it; the list has none of its own and scrolls
-   * `<main>`. Everything the fold does — reading how far down the day you are,
-   * the way back to the top — asks for it through here, which is what made
-   * folding work in the list at all: it was pinned to the grid's ref, so in
-   * the list the scroll listener had nothing to listen to and the header
-   * simply never folded.
+   * Whichever box is actually doing the scrolling.
+   *
+   * There are two candidates and no reliable way to name the winner in
+   * advance: the grid owns a scroller of its own so its room cards can stick
+   * to it, the list has none and scrolls `<main>`, and which of them ends up
+   * with the overflow depends on the day's length, the header's height and
+   * whether a banner is up. Naming one — first the grid's, then the grid's in
+   * one view and `<main>` in the other — is what kept leaving the fold
+   * listening to a box that never moved, in one view or the other. So ask the
+   * boxes instead of predicting them: the one with somewhere to scroll is the
+   * one the reader is scrolling. Both are listened to; this picks which one to
+   * read.
    */
-  const scroller = useCallback(
-    (): HTMLElement | null => (view === "cal" ? calRef.current : mainRef.current),
-    [view],
-  );
+  const scroller = useCallback((): HTMLElement | null => {
+    const boxes = [calRef.current, mainRef.current];
+    return boxes.find((el) => el && el.scrollHeight > el.clientHeight + 1) ?? mainRef.current;
+  }, []);
 
   /**
    * The header folds itself away once you are into the day, and the ⌄/⌃ button
@@ -679,17 +684,23 @@ export function SchedulePage() {
   }, [folded, readFold]);
 
   useEffect(() => {
-    const el = scroller();
-    if (!el || !foldable) {
+    const boxes = [calRef.current, mainRef.current].filter(
+      (el): el is HTMLElement => el !== null,
+    );
+    if (!foldable || boxes.length === 0) {
       setAutoFolded(false);
       setChromeMode("auto");
       setPastTop(false);
       return;
     }
     readFold();
-    el.addEventListener("scroll", readFold, { passive: true });
-    return () => el.removeEventListener("scroll", readFold);
-  }, [foldable, readFold, scroller, bundle?.rooms.length, day]);
+    // Both, not the one we think will scroll: a listener on the wrong box
+    // hears nothing, and which box scrolls is the grid's business, not ours.
+    for (const el of boxes) el.addEventListener("scroll", readFold, { passive: true });
+    return () => {
+      for (const el of boxes) el.removeEventListener("scroll", readFold);
+    };
+  }, [foldable, readFold, bundle?.rooms.length, day, view]);
 
   /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
   const moveSession = useCallback(
