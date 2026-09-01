@@ -81,7 +81,7 @@ Unknown top-level keys are refused rather than ignored, so `"session"` for
 | Field | Required | Notes |
 | --- | --- | --- |
 | `name` | ✓ | Up to 120 characters |
-| `slug` | ✓ | 3–40 of `a–z`, `0–9`, `-`. Must be free — a taken one is a `409` |
+| `slug` | ✓ | 3–40 of `a–z`, `0–9`, `-`. Must be free — a taken one is a `409`. A slug an existing event has been *renamed away from* still counts as taken, because old links keep resolving to it |
 | `timezone` | ✓ | IANA, e.g. `Europe/Berlin`. This is what turns printed times into instants |
 | `startDate`, `endDate` | ✓ | `YYYY-MM-DD`. Every session must fall inside them |
 | `dayStartMin`, `dayEndMin` | | Minutes from midnight for the visible hours. Default `480`–`1320` (08:00–22:00) |

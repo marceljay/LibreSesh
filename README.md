@@ -171,6 +171,15 @@ administered at all:
 Viewing an event requires the viewer password — schedules are never public.
 Display names are unique within an event, so nobody can take an organiser's.
 
+**Filtering.** The **Filter** button beside the search box narrows the grid:
+free text, "now / next", your starred agenda, and a chip per room, track and
+tag. Tracks include an **Unassigned** chip — the sessions nobody has put on a
+strand yet, which is the pile an organiser goes looking for while a programme
+is still being built, and which appears only while some session has no track.
+Chips of the same kind are an *or*: two rooms means either room. Every filter
+lives in the query string, so a narrowed view is a link that opens the same way
+for whoever you send it to.
+
 **Breaks.** An official session can be marked a *break* — lunch, dinner,
 coffee. It leaves the room columns and is drawn greyed out across the whole
 schedule, so nobody puts a session over it by accident. It blocks nothing:
@@ -198,7 +207,7 @@ stay exactly where they are.
 | Programme | Rooms, tracks and tags |
 | People | Everyone who has joined, plus speaker and host profiles: who holds each, at what role, and whether their code is still unused |
 | Permissions | Which roles may do what at this event |
-| Settings | Name, dates, day bounds, passwords, audit retention, duplicate, archive |
+| Settings | Name, address, dates, day bounds, passwords, audit retention, duplicate, archive |
 | Trash | Deleted sessions and contributions, with restore |
 | Backup | The event as JSON, and the encrypted whole-instance download |
 | Audit | Who created, edited, deleted or restored what, by name and UID |
@@ -212,6 +221,22 @@ attempts, and nobody can edit it — organisers included. It keeps the newest
 arrive. Settings changes the number, and 0 keeps everything. That is a real
 trade rather than a detail: a low cap means someone making a great many edits
 can push an earlier action off the end.
+
+### Renaming an event
+
+An event's address is its slug — `/e/valley-2026` — and Settings can change it
+after the fact, for the typo, the rebrand, or the slug picked before the event
+had a name. **The old address goes on working.** Every slug an event has ever
+had keeps resolving to it, so the invite link on a badge, a QR code taped to a
+door, a subscribed calendar feed and any script written against the old name
+all still answer; the app moves the address bar to the current slug when it
+notices. Nobody is signed out and nothing is re-entered either — a role is held
+against the event, not against its name, so organisers stay organisers and
+starred agendas stay starred. Open browsers follow the rename without a reload.
+
+A slug that still redirects cannot be claimed by a new event, a duplicate or a
+JSON import, so an old link can never be quietly re-pointed at somebody else's
+event. Renames appear in the audit log under their own word, *renamed*.
 
 ### Importing a schedule from JSON
 
