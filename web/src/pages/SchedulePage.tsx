@@ -600,6 +600,14 @@ export function SchedulePage() {
    *    `OVERRIDE_PX` down. The trackpad momentum still arriving when you press
    *    the button is not an instruction to fold it again.
    */
+  /** `?debug=fold` puts the fold's own arithmetic on screen. The fold depends
+   *  entirely on numbers no test in this project can see — a box's
+   *  `scrollHeight` against its `clientHeight` — so when it misbehaves on a
+   *  real device this is the difference between a guess and an answer. Off
+   *  unless asked for, and it reads state rather than changing any. */
+  const debugFold = new URLSearchParams(window.location.search).get("debug") === "fold";
+  const [foldStats, setFoldStats] = useState("");
+
   const [chromeMode, setChromeMode] = useState<"auto" | "open" | "shut">("auto");
   const [autoFolded, setAutoFolded] = useState(false);
   const [foldMoving, setFoldMoving] = useState(false);
@@ -622,6 +630,16 @@ export function SchedulePage() {
     if (!el) return;
     const top = el.scrollTop;
     setPastTop(top > TOP_BUTTON_AT);
+    if (debugFold) {
+      const gain =
+        (foldedBar.current?.offsetHeight ?? 0) +
+        (foldedRows.current?.offsetHeight ?? 0);
+      setFoldStats(
+        `${el === calRef.current ? "grid" : "main"} top=${Math.round(top)} ` +
+          `scrollH=${el.scrollHeight} clientH=${el.clientHeight} ` +
+          `slack=${el.scrollHeight - el.clientHeight} gain=${gain}`,
+      );
+    }
     if (foldInFlight.current) return;
     if (top > FOLD_AT) beenDown.current = true;
     const slack = el.scrollHeight - el.clientHeight;
@@ -632,7 +650,15 @@ export function SchedulePage() {
       const gain =
         (foldedBar.current?.offsetHeight ?? 0) +
         (foldedRows.current?.offsetHeight ?? 0);
-      return top > FOLD_AT && slack - top > gain + FOLD_AT;
+      // `slack`, not `slack - top`: what folding costs is the same wherever you
+      // are in the day — the box keeps its content and gains `gain` of
+      // viewport, so what is left to scroll afterwards is `slack - gain`. Ask
+      // whether *that* is still worth scrolling. The old form asked whether
+      // there was a screenful left below you as well, which is a different and
+      // much stricter question: it refused to fold in the bottom third of every
+      // day, and in a list — which is as long as its sessions rather than as
+      // long as the day — it refused almost everywhere.
+      return top > FOLD_AT && slack > gain + FOLD_AT;
     });
     setChromeMode((mode) => {
       if (mode === "auto") return mode;
@@ -646,7 +672,7 @@ export function SchedulePage() {
       }
       return mode;
     });
-  }, [scroller]);
+  }, [debugFold, scroller]);
 
   const toggleChrome = useCallback(() => {
     const top = scroller()?.scrollTop ?? 0;
@@ -1578,6 +1604,13 @@ export function SchedulePage() {
               : undefined
           }
         />
+      )}
+
+      {debugFold && (
+        <div className="pointer-events-none fixed bottom-2 left-2 right-2 z-50 rounded-lg bg-stone-900/90 px-2 py-1 font-mono text-[10px] leading-tight text-stone-100">
+          {view} · {foldStats || "no scroller yet"} · folded={String(folded)}{" "}
+          auto={String(autoFolded)} mode={chromeMode}
+        </div>
       )}
 
       {/* The day is long and the wheel back up is longer, so once you are past

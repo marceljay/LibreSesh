@@ -60,14 +60,18 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/return top > FOLD_AT &&/);
   });
 
-  it('refuses to fold when folding would move the day under you', () => {
-    // Folding hands the grid the height those rows were using. On a day not
-    // much longer than the screen that height is more scroll than is left, so
-    // the browser clamps back — a lurch, and at the top an instant unfold that
-    // leaves the header flickering one notch either side of the threshold.
-    // The rule measures the rows rather than assuming a height.
+  it('folds only where there is still something to scroll afterwards', () => {
+    // Folding hands the box `gain` of viewport and leaves its content alone,
+    // so what is left to scroll afterwards is `slack - gain`. If that is
+    // nothing, the scroll clamps to the top, the header unfolds at the top,
+    // and you are one notch from folding it again — a flicker.
+    //
+    // The question is about the box, not about where you are in it: an earlier
+    // form asked for a screenful below you as well, which refused to fold in
+    // the bottom third of every day and, in a list — as long as its sessions
+    // rather than as long as the day — almost everywhere.
     expect(schedule).toMatch(/const slack = el\.scrollHeight - el\.clientHeight;/);
-    expect(schedule).toMatch(/slack - top > gain \+ FOLD_AT/);
+    expect(schedule).toMatch(/return top > FOLD_AT && slack > gain \+ FOLD_AT;/);
     expect(schedule).toMatch(/foldedBar\.current\?\.offsetHeight \?\? 0/);
     expect(schedule).toMatch(/foldedRows\.current\?\.offsetHeight \?\? 0/);
   });
