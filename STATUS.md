@@ -465,28 +465,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   New commits are already clean: `.claude/CLAUDE.md` §Git Conventions now
   forbids the trailer.
 
-- **`POST /events` accepts `defaultView` and then throws it away.** Found
-  2026-09-01 by the cloud review, verified in the source.
-  `createEventSchema` takes `defaultView` (`server/src/validation.ts:122`), but
-  the INSERT at `server/src/routes/events.ts:38-56` lists thirteen columns and
-  `default_view` is not among them, so migration 008's `DEFAULT 'list'` fills
-  the row whatever the caller sent. The caller gets a 201 and an event that
-  opens in the wrong view, with no error to tell them the field did nothing.
-
-  Only the create route was missed — the clone route directly below it threads
-  `source.default_view` through (`events.ts:95-120`), `importEvent.ts` honours
-  the key, and the settings PATCH writes it. The browser never trips over this:
-  `api.createEvent` does not send the field and `NewEventPage` sets the view
-  afterwards with a PATCH, so this is an API-only lie, aimed at exactly the
-  person reading the schema or the changelog line that says the choice "carries
-  into a clone, exports with the event, and is honoured on import".
-
-  Fix is the clone route's shape: add `default_view` to the column list, one
-  more `?`, and `body.defaultView ?? 'list'` to the arguments. Testing policy
-  is tests-with-features, and `tests/defaultView.test.ts` already covers the
-  PATCH, the clone and the import — the create case is the one row missing from
-  that table.
-
 - **A track that closes at midnight reads as `18:00–00:00`.** Found 2026-09-01
   by the cloud review, verified in the source. `fmtMinute`
   (`server/src/shared/trackHours.ts:35`) and its twin `fmtMin`

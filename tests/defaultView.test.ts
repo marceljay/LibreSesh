@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { actorWithRole, makeHarness, seedEvent, type Harness } from './helpers.js';
+import { actorWithRole, agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
 
 /**
  * Where a schedule opens for someone who has not picked a view.
@@ -42,6 +42,31 @@ describe('an event says which view it opens in', () => {
   it('takes nothing else', async () => {
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
     await admin.patch('/api/e/testconf/settings').send({ defaultView: 'grid' }).expect(400);
+  });
+
+  it('is taken at creation, not only after it', async () => {
+    // The schema has always accepted it; the INSERT's column list did not, so
+    // the row quietly took the migration's default and the caller got a 201
+    // for a setting that never landed.
+    const maker = agentFor(harness);
+    await maker.get('/api/me').expect(200);
+    await maker
+      .post('/api/events')
+      .set('X-Instance-Key', 'instance-pw')
+      .send({
+        slug: 'gridconf',
+        name: 'Grid Conf',
+        timezone: 'Europe/Berlin',
+        startDate: '2027-06-01',
+        endDate: '2027-06-02',
+        defaultView: 'cal',
+        viewerPassword: 'viewer2',
+        userPassword: 'user222',
+        adminPassword: 'admin22',
+      })
+      .expect(201);
+    const res = await maker.get('/api/e/gridconf/bundle').expect(200);
+    expect(res.body.event.defaultView).toBe('cal');
   });
 
   it('carries into a clone, like the rest of the setup', async () => {

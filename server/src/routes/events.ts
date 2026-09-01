@@ -37,8 +37,9 @@ export function eventRoutes(ctx: Ctx): Router {
       .prepare(
         `INSERT INTO events
           (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-           viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+           viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label,
+           default_view, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
       )
       .run(
         body.slug,
@@ -52,6 +53,10 @@ export function eventRoutes(ctx: Ctx): Router {
         hashPassword(passwords.userPassword),
         hashPassword(passwords.adminPassword),
         body.userRoleLabel ?? 'attendee',
+        // `createEventSchema` has always taken this; the column list did not,
+        // so the row took migration 008's default and the caller got a 201 for
+        // a setting that never landed.
+        body.defaultView ?? 'list',
         now,
       );
 
