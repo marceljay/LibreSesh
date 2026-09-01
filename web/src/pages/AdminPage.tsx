@@ -9,6 +9,10 @@ import type {
   TrackWindowDto,
   ViewMode,
 } from '@shared/types';
+import { ROOM_COLORS } from '@shared/roomColors';
+import { TAG_COLORS, nextTagColor } from '@shared/tagColors';
+
+import { ColorPicker } from '../components/ColorPicker';
 import { windowLabel } from '@shared/trackHours';
 import { ApiError, api, type BreakWrite, type TrackWrite, type TrashDto } from '../lib/api';
 import { fmtMin, minutesOf, relativeTime, rowId, snapMinute, uid } from '../lib/format';
@@ -35,13 +39,11 @@ import {
   Section,
   Spinner,
   Toggle,
-  controlHeightClass,
   inputClass,
   linkClass,
   useToast,
 } from '../components/ui';
 
-const DEFAULT_TAG_COLOR = '#6B7280';
 
 const TABS = [
   { id: 'programme', label: 'Programme' },
@@ -79,7 +81,10 @@ export function AdminPage() {
   const [trackName, setTrackName] = useState('');
   const [editingTrack, setEditingTrack] = useState<TrackDto | null>(null);
   const [movingTracks, setMovingTracks] = useState(false);
-  const [tagColor, setTagColor] = useState(DEFAULT_TAG_COLOR);
+  /** `null` means "whatever the palette offers next" — the field follows the
+   *  tags that exist until someone picks a colour on purpose, and goes back to
+   *  following them once the tag is added. */
+  const [tagColor, setTagColor] = useState<string | null>(null);
   const [personName, setPersonName] = useState('');
 
   const bundle = data.bundle;
@@ -256,13 +261,19 @@ export function AdminPage() {
     }
   };
 
+  /** The first palette colour no live tag is wearing. The server picks the
+   *  same one for a tag created without a colour; doing it here as well means
+   *  the swatch shows what you are about to get rather than a surprise. */
+  const suggestedTagColor = nextTagColor((bundle?.tags ?? []).map((t) => t.color));
+  const newTagColor = tagColor ?? suggestedTagColor;
+
   const addTag = async () => {
     if (!tagName.trim()) return;
     try {
-      const created = await api.createTag(slug, { name: tagName.trim(), color: tagColor });
+      const created = await api.createTag(slug, { name: tagName.trim(), color: newTagColor });
       data.apply({ type: 'tag.created', entity: created });
       setTagName('');
-      setTagColor(DEFAULT_TAG_COLOR);
+      setTagColor(null);
     } catch (err) {
       fail(err);
     }
@@ -774,17 +785,19 @@ export function AdminPage() {
                   />
                 </Field>
               </div>
-              <input
-                type="color"
-                value={tagColor}
-                onChange={(e) => setTagColor(e.target.value)}
-                className={`${controlHeightClass} w-12 cursor-pointer rounded border border-stone-300 bg-white p-1 dark:border-stone-600 dark:bg-stone-900`}
-                aria-label="New tag colour"
-              />
               <PrimaryButton onClick={() => void addTag()} disabled={!tagName.trim()}>
                 Add tag
               </PrimaryButton>
             </FormRow>
+            <div className="mt-3">
+              <ColorPicker
+                value={newTagColor}
+                onChange={setTagColor}
+                palette={TAG_COLORS}
+                label="New tag colour"
+                hint="Picked for you from the colours no tag is using yet. Change it here if you would rather choose."
+              />
+            </div>
           </Section>
 
           {editingTag && (
@@ -1280,14 +1293,12 @@ function TagEditor({
             autoFocus
           />
         </Field>
-        <Field label="Colour">
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className={`${controlHeightClass} w-16 cursor-pointer rounded border border-stone-300 bg-white p-1 dark:border-stone-600 dark:bg-stone-900`}
-          />
-        </Field>
+        <ColorPicker
+          value={color}
+          onChange={setColor}
+          palette={TAG_COLORS}
+          label="Tag colour"
+        />
       </FormStack>
 
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
@@ -1542,14 +1553,13 @@ function TrackEditor({
             className={`${inputClass} resize-none`}
           />
         </Field>
-        <Field label="Colour" hint="Used for this track's column on the schedule.">
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className={`${controlHeightClass} w-16 cursor-pointer rounded border border-stone-300 bg-white p-1 dark:border-stone-600 dark:bg-stone-900`}
-          />
-        </Field>
+        <ColorPicker
+          value={color}
+          onChange={setColor}
+          palette={ROOM_COLORS}
+          label="Track colour"
+          hint="Used for this track's column on the schedule. The washed-out palette is deliberate: a column is something text sits on."
+        />
 
         <Toggle
           checked={limited}

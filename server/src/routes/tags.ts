@@ -6,9 +6,8 @@ import type { TagRow } from '../db.js';
 import { conflict, notFound } from '../errors.js';
 import { toTagDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
+import { nextTagColor } from '../shared/tagColors.js';
 import { parse, tagPatchSchema, tagSchema } from '../validation.js';
-
-const DEFAULT_TAG_COLOR = '#6B7280';
 
 export function tagRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
@@ -45,9 +44,18 @@ export function tagRoutes(ctx: Ctx): Router {
     } else if (clash) {
       throw conflict('A tag with that name already exists', 'tag_exists');
     } else {
+      // A tag with no colour asked for gets the first one no live tag is
+      // using, the way a room and a track already do. Every tag used to start
+      // the same grey, so an event's tags were told apart by reading them —
+      // which is most of what a colour on a chip is for.
+      const live = ctx.db
+        .prepare<[number], { color: string }>(
+          'SELECT color FROM tags WHERE event_id = ? AND deleted_at IS NULL',
+        )
+        .all(req.event.id);
       const info = ctx.db
         .prepare('INSERT INTO tags (event_id, name, color) VALUES (?, ?, ?)')
-        .run(req.event.id, body.name, body.color ?? DEFAULT_TAG_COLOR);
+        .run(req.event.id, body.name, body.color ?? nextTagColor(live.map((t) => t.color)));
       id = Number(info.lastInsertRowid);
     }
     const dto = toTagDto(load(req.event.id, id));

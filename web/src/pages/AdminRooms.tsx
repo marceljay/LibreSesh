@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { RoomDto } from "@shared/types";
 import { ROOM_COLORS } from "@shared/roomColors";
+
+import { ColorPicker } from "../components/ColorPicker";
 import {
   DangerButton,
   Field,
@@ -31,52 +33,6 @@ export interface RoomDraft {
   openBooking: boolean;
 }
 
-/** Palette swatches plus a free-form picker, so the defaults are one click
- *  away but nobody is limited to them. */
-function ColorChoice({
-  value,
-  onChange,
-  label,
-}: {
-  value: string;
-  onChange: (next: string) => void;
-  label: string;
-}) {
-  return (
-    <div role="group" aria-label={label}>
-      <span className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-300">
-        {label}
-      </span>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {ROOM_COLORS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-label={c}
-            aria-pressed={c.toLowerCase() === value.toLowerCase()}
-            onClick={() => onChange(c)}
-            style={{ background: c }}
-            className={`h-6 w-6 rounded-full border-2 ${
-              c.toLowerCase() === value.toLowerCase()
-                ? "border-stone-900 dark:border-stone-100"
-                : "border-transparent hover:border-stone-400"
-            }`}
-          />
-        ))}
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label="Custom colour"
-          className="h-6 w-8 cursor-pointer rounded border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
-        />
-        <span className="ml-1 font-mono text-xs uppercase text-stone-400 dark:text-stone-500">
-          {value}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 /** Digits only, four at most — a `type="number"` honours neither on a typed
  *  or pasted value, and no venue seats ten thousand. */
@@ -249,7 +205,12 @@ function RoomRow({
               />
             </Field>
 
-            <ColorChoice value={color} onChange={setColor} label="Colour" />
+            <ColorPicker
+              value={color}
+              onChange={setColor}
+              palette={ROOM_COLORS}
+              label="Room colour"
+            />
 
             <Toggle
               checked={openBooking}
