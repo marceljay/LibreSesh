@@ -46,15 +46,16 @@ CHANGELOG.md under `[0.2.0]`, and what has landed since is under
 
 ## Blockers
 
-- **UI changes cannot be confirmed: the browser shows an older app.**
-  Reported 2026-08-31 against the breaks band, and still what stands between
-  "written and green" and "seen working". Everything since has shipped on a
-  read-through: the breaks band, and on 2026-08-31/09-01 the room card's info
-  panel (`63d3f4d`, `48e9c12`, `c7ae002`), the track-hours editor with its
-  per-day rows (`e4eb832`) and, on 2026-09-01, the grid shell and the folding
-  header — the change that fixes the room names scrolling away is a layout
-  change above all, so it is the one most in need of a real browser. Server side everything checks out, and was verified
-  rather than assumed:
+- **The breaks band still has not been seen in a browser.** What is narrower
+  than it was: this was filed 2026-08-31 as "the browser shows an older app",
+  and that half is settled. The device feedback of 2026-09-01 describes the
+  folding header and the profile menu at the end of the event bar — chrome
+  that exists only in the build written that day — so the browser is being
+  served the current app, and three fixes came straight back out of it (fold
+  width, iOS focus zoom, the tour), all in CHANGELOG `[Unreleased]`. What is
+  left is the original question, unanswered: nobody has yet said whether the
+  band is on the grid. The checks below are kept as the record of what was
+  ruled out server side, and was verified rather than assumed:
   - `data/app.db` holds three breaks (democonf: Lunch 12:00–14:00, Coffee
     15:30–16:00; longconf: Lunch), all `date: null`, and the bundle returns
     them.
@@ -75,7 +76,8 @@ CHANGELOG.md under `[0.2.0]`, and what has landed since is under
   explains the earlier "state seems old", but not why the reloaded app still
   shows no breaks.
 
-  Unblocks on two checks from the browser that reports the problem: open
+  What it unblocked on, kept for the next time: two checks from the browser
+  that reports the problem — open
   `/src/pages/AdminBreaks.tsx` on the dev server (JS source = right server, so
   hard-reload the tab; app HTML or 404 = the forwarded port goes somewhere
   else), and hover the build pill bottom-right, which should read

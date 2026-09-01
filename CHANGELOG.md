@@ -6,6 +6,30 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **A running event opens at the current time.** The day already defaulted to
+  today, but the grid still opened at the day's first hour: arriving at half
+  past three meant scrolling past the whole morning, or finding **Now**, before
+  seeing what was actually on. A schedule opened while the event is running now
+  lands on the current time.
+
+  Once per visit, and never over a position you asked for. A link to one
+  session, or a URL carrying `?day=`, already says where to be and is left
+  alone; and outside the day's hours there is no now line to jump to, so the
+  day opens at its start as it always did. It lands rather than travels —
+  no animated scroll to sit through on the way in.
+
+- **The week rail says when the line goes on.** A long event's weeks scroll
+  sideways on one line, with the scrollbar hidden — which left nothing at all
+  to say there was more. Past the third or fourth chip the rail simply looked
+  like a shorter conference: on a touch screen you found out by flicking, and
+  on a desktop, with no horizontal wheel, you did not find out.
+
+  There is now an arrow at each end of the rail, up only while there is more
+  that way, and a press moves the line by most of a screenful — an overlap, so
+  the week you were reading is still there afterwards. They are pointer
+  affordances rather than tab stops: every chip they scroll to is a button of
+  its own, and tabbing to one already brings it into view.
+
 - **An event can be renamed, and its old address keeps working.** Manage Event
   → Settings has a **Slug** field. Changing it moves the event to the new URL —
   `/e/unconf-2026` becomes the real address, not a redirect to the old one —
@@ -557,6 +581,39 @@ All notable changes to this project are documented here.
   instance one; the README gained a section on the same distinction.
 
 ### Fixed
+
+- **The tour no longer shows up uninvited.** A first visit to an event opened
+  the schedule under a stack of coach-marks, before anyone had seen the thing
+  they came for. The tour is unchanged and is still one press away on the **?**
+  button beside your name — it just waits to be asked for now, every time,
+  rather than remembering whether it has been taken.
+
+- **Signing in on a phone no longer leaves the app zoomed in.** Safari on iOS
+  zooms the page whenever you focus a field whose text is under 16px, and it
+  does not zoom back out when you leave it. The event password gate is a text
+  field on an otherwise empty page, so the first thing an iPhone did with a
+  new event was magnify it and strand you there, with the right-hand side of
+  every screen off the edge and a pinch the only way back.
+
+  Text entry is floored at 16px on a touch screen, where that zoom exists;
+  fields stay their designed size on a desktop, where it does not. Pinch zoom
+  is untouched — the cheap cure for this is a viewport that forbids zooming
+  altogether, which takes it away from the people who need it to read.
+
+- **The folded header no longer runs off the right of the screen.** With the
+  header fold in, the profile menu at the end of the event bar sat half off the
+  edge on a phone, and a long event's week rail stopped scrolling and ran off
+  the same edge — everything past the third week was unreachable rather than
+  merely out of sight.
+
+  One cause for both. The fold wraps each row in a grid so it can animate its
+  own height, and a grid's default column grows to fit its content instead of
+  constraining it: a row wider than the phone made the row wider than the
+  header rather than being made to fit, and `overflow-x: clip` — the net that
+  stops a stray element widening the page — hid what was left. The column is
+  now pinned to the width that is actually there, which hands the squeeze back
+  to the rows, each of which already knows how to take it: the event bar
+  truncates, the rail scrolls.
 
 - **Scrolling down the grid no longer takes the room names with it.** Past the
   first screenful of a day the column labels were gone, while the event bar,
