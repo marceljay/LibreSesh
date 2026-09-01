@@ -986,9 +986,11 @@ export function SchedulePage() {
           <div ref={foldedRows} className={foldRow}>
             <div className={foldInner}>
               {weeks.length > 1 && (
-                <div
-                  className="mx-auto flex max-w-6xl flex-wrap items-center gap-1.5 px-4 pb-2"
-                >
+                /* One line that scrolls sideways, like the day strip below
+                   it, rather than a row that wraps: on a phone a four-week
+                   conference wrapped to two lines and a six-week one to three,
+                   and every line of it is height the grid wanted. */
+                <div className="no-scrollbar mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto px-4 pb-2">
                   {weeks.map((week, i) => {
                     const first = week[0] as string;
                     const last = week[week.length - 1] as string;
@@ -1001,7 +1003,7 @@ export function SchedulePage() {
                         onClick={() => filters.set({ day: holdsToday ? today : first })}
                         aria-pressed={i === weekIndex}
                         aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
-                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                        className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
                           i === weekIndex
                             ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
                             : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"

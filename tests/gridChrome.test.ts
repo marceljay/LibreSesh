@@ -137,6 +137,18 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/tabIndex=\{pastTop \? 0 : -1\}/);
   });
 
+  it('keeps the week rail to one line', () => {
+    // A rail that wraps costs a whole header line per extra row, on exactly
+    // the screens with the least of them to spare. It scrolls sideways like
+    // the day strip instead, so its chips cannot shrink or be cut in half.
+    const rail = schedule.match(/className="no-scrollbar[^"]*"/);
+    expect(rail).not.toBeNull();
+    const classes = (rail as RegExpMatchArray)[0] as string;
+    expect(classes).toContain('overflow-x-auto');
+    expect(classes).not.toContain('flex-wrap');
+    expect(schedule).toMatch(/shrink-0 whitespace-nowrap rounded-full border/);
+  });
+
   it('keeps Now in the row that survives the fold', () => {
     // The action row folds away; the filter row does not. Now belongs with the
     // filters, between the Filter menu and the chips it puts up.

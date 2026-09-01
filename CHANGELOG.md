@@ -453,6 +453,12 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The week rail is one line that scrolls, not two that wrap.** On a phone a
+  four-week conference wrapped its week chips onto a second line and a six-week
+  one onto a third, each of them header height the grid wanted. The rail now
+  scrolls sideways within a single line, the same way the day strip beside it
+  already did.
+
 - **A room's column header is its name, and nothing else.** The header used to
   carry a second line — the seats, and "attendees may book this room" — in the
   176 pixels of a column card, where it truncated, while the organiser's
