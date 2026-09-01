@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
 
 import { popoverPanelClass, usePopover } from './Popover';
-import { Modal } from './ui';
+import { Modal, linkClass } from './ui';
+
+/** Where the code lives — the answer to "can I run this myself?", which is
+ *  most of the point of it being open source. */
+const REPO_URL = 'https://github.com/marceljay/LibreSesh';
 
 const itemClass =
   'block w-full px-3 py-2 text-left text-xs font-medium text-stone-700 ' +
@@ -119,7 +123,18 @@ export function HelpMenu({ onTour, demo }: { onTour: () => void; demo: boolean }
               <dd className="select-all font-mono">{built}</dd>
             </dl>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              MIT licensed.
+              MIT licensed ·{' '}
+              {/* `noreferrer` with `noopener`: a link out of a schedule should
+                  not hand the destination the address of the event it came
+                  from. */}
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${linkClass} font-medium`}
+              >
+                Source on GitHub
+              </a>
             </p>
           </div>
         </Modal>
