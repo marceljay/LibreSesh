@@ -124,6 +124,36 @@ export function SessionDetail({
     }
   };
 
+  /**
+   * The primary way to star from the grid — the calendar blocks stay
+   * display-only because their pointer handling is drag-sensitive.
+   *
+   * The label it used to carry ("Add to my agenda" / "On my agenda") is gone
+   * from the surface and kept in `title` and `aria-label`. A filled star
+   * against a hollow one already says which state it is in, and the words were
+   * a full-width row of chrome at the top of a panel whose actual content —
+   * the description, the notes — is what somebody opened it for. The hollow
+   * outline is the affordance; the tooltip is there for anyone unsure.
+   */
+  const starButton = (
+    <button
+      type="button"
+      onClick={onToggleStar}
+      title={starred ? 'On my agenda — click to remove' : 'Add to my agenda'}
+      aria-label={starred ? `Unstar ${session.title}` : `Star ${session.title}`}
+      aria-pressed={starred}
+      // The same 36px square as the sheet's own header buttons, so the three
+      // read as one column rather than as a stack of different controls.
+      className={`grid h-9 w-9 place-items-center rounded-full text-lg leading-none ${
+        starred
+          ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/40'
+          : 'text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-300'
+      }`}
+    >
+      <span aria-hidden="true">{starred ? '★' : '☆'}</span>
+    </button>
+  );
+
   const header = (
     <div className={`flex items-start gap-2 ${page ? 'mb-6' : 'mb-3'}`}>
       <div className="min-w-0 flex-1">
@@ -187,29 +217,16 @@ export function SessionDetail({
               ))}
         </p>
       </div>
-      {headerActions}
+      {/* The star sits under the sheet's close button rather than in a row of
+          its own, which is where a control that acts on this session belongs —
+          beside the other two, not stacked above the description pushing it
+          down. On the full page there are no header actions, so it is simply
+          the top-right corner. */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {headerActions}
+        {starButton}
+      </div>
     </div>
-  );
-
-  // The primary way to star from the grid — the calendar blocks stay
-  // display-only because their pointer handling is drag-sensitive.
-  const starButton = (
-    <button
-      type="button"
-      onClick={onToggleStar}
-      aria-label={starred ? `Unstar ${session.title}` : `Star ${session.title}`}
-      aria-pressed={starred}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-        page ? 'w-full justify-center' : 'mb-4'
-      } ${
-        starred
-          ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-          : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'
-      }`}
-    >
-      <span aria-hidden="true">{starred ? '★' : '☆'}</span>
-      {starred ? 'On my agenda' : 'Add to my agenda'}
-    </button>
   );
 
   const descriptionBlock = description ? (
@@ -425,7 +442,6 @@ export function SessionDetail({
     return (
       <>
         {header}
-        {starButton}
         {descriptionBlock}
         {livestream}
         {ownerActions}
@@ -436,8 +452,9 @@ export function SessionDetail({
   }
 
   // Two columns from `lg`: the discussion is the long half and gets the width,
-  // while the things you act with — star, edit, composer — stay put in a
-  // sticky rail rather than sitting below a hundred notes. Below `lg` it falls
+  // while the things you act with — edit, composer — stay put in a sticky rail
+  // rather than sitting below a hundred notes. The star is not among them: it
+  // is in the header's top-right corner, the same place it is in the sheet. Below `lg` it falls
   // back to the same single stack as the sheet, with the rail's contents
   // ahead of the lists.
   return (
@@ -446,7 +463,6 @@ export function SessionDetail({
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:order-2 lg:col-span-1">
           <div className="lg:sticky lg:top-20 space-y-4">
-            {starButton}
             {ownerActions}
             {composer}
           </div>

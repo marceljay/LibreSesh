@@ -582,6 +582,15 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The star is an icon in the corner, not a row of text.** Opening a session
+  put "Add to my agenda" across the top of the panel, above the description and
+  the notes that are what somebody opened it for — a full-width button spelling
+  out what a hollow star already says. It is now a 36px star under the sheet's
+  close button, in the same column and the same shape as the expand and close
+  controls, with the words kept in the tooltip and the accessible label. The
+  full-page view drops it from the sticky rail and puts it in the same
+  top-right corner, so it is in one place wherever you meet a session.
+
 - **One colour control, and it is a circle.** Tags, tracks and rooms each drew
   the browser's own `<input type="color">` — a rectangle every browser paints
   to its own taste, which beside a row of round swatches read as a different
