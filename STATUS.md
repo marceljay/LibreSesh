@@ -20,19 +20,19 @@ multi-speaker sessions (`f26bde3`), the single Calendar menu item
 lives in `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`:
 
 - **Whole-app UI sweep.** The primitives landed, the admin page is done, and
-  as of 2026-08-31 every modal is on the `Modal` primitive — the last six
-  hand-rolled intro paragraphs and button rows are gone (`fb5c759`).
-  21 underline usages remain across ProfilePage (5), SchedulePage (4),
-  ProposalBoard (4), DetailSheet (4), EventListPage (1), NewEventPage (1),
-  Tour (1) and Gate (1, the "already here on another device" link added with
-  device linking). The count excludes the `[&_a]:underline` in prose wrappers —
-  links inside rendered markdown keep their underline deliberately — and the
-  five in `ui.tsx`, which are the primitives themselves. Re-counted 2026-08-31
-  after the Backup and Audit tabs and the gate's name-collision link: still 21,
-  because all three use the primitives (`secondaryButtonClass`, `linkClass`)
-  rather than a bare `underline`. Still 21 on 2026-09-01: the per-field
-  profile rework added no bare underline, because its "add a bio" affordance
-  is a `SecondaryButton` — it is an action, not navigation.
+  as of 2026-08-31 every modal is on the `Modal` primitive (`fb5c759`).
+  **Recounted against the tree on 2026-09-01: 37 bare `underline` usages, not
+  the 21 this entry claimed three times running.** The old number was counted
+  against a fixed list of files rather than the tree, so it could not move.
+  Excluding `ui.tsx` (6 — those are the primitives themselves) and the
+  `[&_a]:underline` in prose wrappers (links inside rendered markdown keep
+  their underline deliberately), the spread is: ProfilePage 5, SchedulePage 4,
+  ProposalBoard 4, FilterMenu 3, SessionDetail 3, AgendaPage 3, ImportPage 3,
+  Gate 2, EventListPage 2, NewEventPage 2, AdminAttendees 2, SearchPage 2,
+  Tour 1, AdminBackup 1. DetailSheet is now 0 — its four moved into
+  SessionDetail with the panel refactor, which is part of why the old list
+  drifted. Use `grep -rl underline web/src --include='*.tsx'` and subtract the
+  `[&_a]:` hits, rather than re-checking the files this entry happens to name.
 
 - **ARCHITECTURE.md concurrency paragraph.** §Realtime documents broadcast and
   heartbeats but never states the model: last-write-wins, `assertNotStale`
@@ -40,59 +40,18 @@ lives in `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`:
 
 ## Blockers
 
-- **The breaks band still has not been seen in a browser.** What is left of
-  this: nobody has yet said whether the band is on the grid. DONE, works.
+None. The breaks band was confirmed working in a browser on 2026-09-01, and
+the identity design question that sat here is decided and shipped — see
+`_planning/specs/identity-and-people.md` §Decisions and CHANGELOG
+`[Unreleased]`.
 
-  **The "older app" half is solved, 2026-09-01, and the answer was a process.**
-  A whole dev stack from 2026-08-31 was still running — `npm run dev` (pid
-  1005743), its vite holding port 3000 since the day before. Its API half had
-  stopped listening on 3001, which is what "not running anymore with the db"
-  turned out to be: a front end with nothing behind it. Everything the browser
-  loaded came from that Aug-31 vite. It also explains the empty commit in
-  About (see Backlog): the build stamp is read once at config load, so it was
-  reporting the 31st. Killed and restarted clean; API and web both answer 200,
-  and `data/app.db` is on migration `008_default_view.sql`.
-
-  **What to check first next time UI looks stale: `ss -tlnp | grep 3000` and
-  the start time of what owns it.** A vite that has been up for a day serves
-  current source through HMR — which is why this hid for so long — but its
-  config, its env stamp and its dep graph are from whenever it started.
-
-  The checks below are kept as the record of what was ruled out server side,
-  and was verified rather than assumed:ruled out server side, and was verified rather than assumed:
-  - `data/app.db` holds three breaks (democonf: Lunch 12:00–14:00, Coffee
-    15:30–16:00; longconf: Lunch), all `date: null`, and the bundle returns
-    them.
-  - The running vite serves the new modules — `AdminPage.tsx` imports
-    `AdminBreaks`, `SchedulePage.tsx` passes `breaks: bundle.breaks` to both
-    `Calendar` and `ListView`.
-  - `Calendar` rendered server-side with one break emits the band with the
-    right geometry (`top:384px;height:192px` for 12:00–14:00 on an 08:00 grid),
-    `aria-hidden` and `pointer-events-none` as designed.
-  - There is no service worker and no client-side bundle cache, so nothing
-    should be able to serve stale UI.
-  - An identity that is not ours (`6f257`, admin on both events) was hitting
-    this API live, and nothing listened on 3000 before the dev server started,
-    so the tab did load from this vite.
-
-  A stale build server on port 3221 (`node server/dist/index.js` from
-  2026-08-30, pointed at a scratchpad `bug.db`) was found and killed — that one
-  explains the earlier "state seems old", but not why the reloaded app still
-  shows no breaks.
-
-  What it unblocked on, kept for the next time: two checks from the browser
-  that reports the problem — open
-  `/src/pages/AdminBreaks.tsx` on the dev server (JS source = right server, so
-  hard-reload the tab; app HTML or 404 = the forwarded port goes somewhere
-  else), and read the build under **?** → **About LibreSesh**, which should
-  say `v0.2.0 · 5e53811-dirty` (it was a pill in the bottom-right corner until
-  2026-09-01). If it is the port, the next move is a second dev
-  server on a fresh port so VS Code auto-forwards it, side-stepping the fixed
-  `appPort` mapping in `.devcontainer/devcontainer.json`.
-
-The identity design question that sat here is decided and shipped — see
-`_planning/specs/identity-and-people.md` §Decisions for the reasoning and
-CHANGELOG `[Unreleased]` for what landed.
+**Kept from the breaks investigation, because it will happen again: when the
+UI looks stale, check `ss -tlnp | grep 3000` and the start time of whatever
+owns the port.** A vite that has been up for a day serves current source
+through HMR — which is why this hid for so long — but its config, its env
+stamp and its dependency graph are from whenever it started. That was the
+whole of the "older app" mystery: a dev stack from the previous day still
+holding 3000 with its API half no longer listening on 3001.
 
 ---
 
@@ -101,18 +60,6 @@ CHANGELOG `[Unreleased]` for what landed.
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
-
-- **The commit in About LibreSesh comes out empty — cause found, one line
-  left.** Reported 2026-09-01 against the About dialog (`52a11fc`). It was the
-  stale dev server (see the entry under Blockers): the build stamp is computed
-  once, when vite loads its config, and the process serving port 3000 had
-  loaded its config on 2026-08-31. Started fresh on 2026-09-01 the same page
-  serves `VITE_BUILD_COMMIT: "6654fab"`, so there is nothing wrong with the
-  stamping. What is still worth doing is one line of hardening: `HelpMenu`
-  falls back with `??`, which only catches `undefined`, so an empty string
-  would print as blank rather than `unknown` — `||`, or an explicit check.
-  Same for the `dirty` flag, which read `true` against a clean tree on the
-  fresh server and is worth a second look.
 
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
@@ -148,8 +95,10 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   and a disabled `Toggle` restyles, which is a visible change that is not a
   revert and could easily read as one.
 
-- **Pitch board.** Always show the creator, default the creator as host, and
-  split the board into hot/new. The plan is
+- **Pitch board.** Showing the creator is done — a card reads "pitched by
+  {name}" (`ProposalBoard.tsx:332`). What is left is defaulting the creator as
+  host (a new pitch starts with an empty speaker field,
+  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan is
   `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`, whose
   up/down-vote assumption is **withdrawn** (decided 2026-08-31): interest stays
   one-way, so no `proposal_votes` table, no migration, and `interestCount`
@@ -360,9 +309,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
   VPS deploy as their test. Railway notes: `_planning/deployment-guide.md` §10.
-- **No component test coverage, and no error boundary.** 384 tests, and the
-  only web-side ones (`format.test.ts`, `calendar.test.ts`) cover pure
-  functions — there is no jsdom/testing-library stack, so nothing renders a
+- **No component test coverage, and no error boundary.** 703 tests as of
+  2026-09-01, and the web-side ones cover pure functions or assert on source
+  text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a
   component. The drag maths, the SSE reducer and the clash detection are the
   parts most likely to regress silently, and the Calendar column refactor on
   2026-08-30 went in on a read-through alone. The build-stamp crash the same
@@ -415,7 +364,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
-- **There is no landing page — `/` is the list of every event.** A visitor to
+- **There is no landing page — `/` is the list of every event.** _In progress
+  2026-09-01 on `feat/landing-page`, in a separate worktree — do not start
+  this._ A visitor to
   the root gets the logo, an Import and a New event button, and the instance's
   events (`App.tsx:20`, `EventListPage.tsx`). Nothing says what LibreSesh is or
   what it is for; the About dialog behind the "?" says it, but only to someone
@@ -561,20 +512,6 @@ w-48`, the other `w-full` — so they are exempted by name in
   across pitches, not a click per pitch), so it wants its own schema and its
   own thinking rather than a column bolted onto `proposal_interest`.
 
-- **Numbered migrations again, before the first deployment that holds data.**
-  Since the squash the working practice has been to edit `001_baseline.sql` in
-  place — `public_id` went in that way on 2026-08-31. That is free exactly
-  while every database is disposable, and stops being free the moment one
-  isn't: the runner tracks migrations by filename, so an edit never reaches a
-  database that already recorded the file, and the symptom is not a migration
-  error but a crash at runtime (`table identities has no column named
-public_id` on the first request from a new browser). Nothing warns about it —
-  tests build fresh databases every time, and so does a reseed. Low priority
-  because no instance holds data yet, and the remedy until then is to delete
-  and recreate. What it wants is a line in the ARCHITECTURE §Migrations
-  section naming the deploy as the cut-over, so the first `002_*.sql` is
-  written deliberately rather than remembered.
-
 - **A one-line reset for the local database.** Wiping a dev instance is
   currently three commands: stop the api, `rm -f data/app.db data/app.db-wal
 data/app.db-shm`, restart and let boot reseed. Easy to get wrong in the
@@ -600,6 +537,12 @@ data/app.db-shm`, restart and let boot reseed. Easy to get wrong in the
   should not be touched at all. So it is three decisions, not one
   find-and-replace: 222 identifier hits across the TypeScript alone, plus
   README, ARCHITECTURE, CHANGELOG and the SPEC.
+
+- **`HelpMenu` falls back with `??`, which only catches `undefined`.** So an
+  empty `VITE_BUILD_COMMIT` prints blank rather than `unknown`
+  (`HelpMenu.tsx:26-27`); `||` fixes it. All that is left of the "About shows
+  no commit" report from 2026-09-01 — the cause was a stale dev server, not
+  the stamping, and a fresh one stamps correctly. Two characters.
 
 - **Print / PDF grid.** Unconferences put the grid on a wall. A print
   stylesheet would cover most of it.
