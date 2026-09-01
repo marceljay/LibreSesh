@@ -108,6 +108,42 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
+- **The ⓘ on a column card cannot be opened by touch.** Found 2026-09-01 by the
+  cloud review of `dev` → `main`, and verified in the source: the button in
+  `ColumnCard` (`web/src/components/Calendar.tsx:254-270`) carries both
+  `onMouseEnter={() => setOpen(true)}` and `onClick={() => setOpen((v) => !v)}`.
+  A touch browser synthesises the mouse sequence on tap — `mouseenter`, then
+  `focus`, then `click` — as separate DOM events, so React commits `true` on the
+  enter and the click's toggle immediately flips it back to `false`. Every tap
+  flashes the panel open and closes it; the panel cannot be pinned.
+
+  This matters more than a stray handler because of what the redesign put behind
+  that button. `e265ec0` reduced a room column card to the room's name alone and
+  moved seats, `Attendees may schedule` and the organiser's directions into the
+  panel; the track-hours work (`e4eb832`, `5738ac6`) put the strand description
+  and the rule-vs-day-window explanation there too. On a phone — how an attendee
+  standing in a corridor actually reads the schedule — none of it is reachable.
+  The doc comment above the component (`Calendar.tsx:226`) states the opposite,
+  "a click opens it on touch, where there is no hover at all"; that sentence is
+  the assumption to fix, not just the code.
+
+  Three fixes, cheapest first:
+  1. `onClick={() => setOpen(true)}`. The card's `onMouseLeave`, `onBlur` and
+     Escape already close it, so the toggle earns nothing.
+  2. Gate the hover openers on a hover-capable pointer —
+     `window.matchMedia('(hover: hover)').matches` — and keep the toggle for
+     touch. Honest about the two input models, one more branch to hold.
+  3. Move it onto `usePopover`/`useDismiss` like `SearchBox`, `FilterMenu` and
+     `HelpMenu`, whose `useHover` is `mouseOnly` and gets this right by
+     construction. This is where the codebase is going anyway (see the
+     Medium-Priority popdown item), and it deletes a hand-rolled dismiss.
+
+  Note it is untestable the way the rest of the calendar is tested: there is no
+  DOM in the container, so the tap sequence cannot be asserted, and a unit test
+  over an `openOnTap`-style helper would only restate the fix. This one needs a
+  real phone, or at least a browser with touch emulation — same standing gap as
+  the drop-flicker item below.
+
 - **The commit in About LibreSesh comes out empty — cause found, one line
   left.** Reported 2026-09-01 against the About dialog (`52a11fc`). It was the
   stale dev server (see the entry under Blockers): the build stamp is computed
@@ -428,6 +464,50 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
   New commits are already clean: `.claude/CLAUDE.md` §Git Conventions now
   forbids the trailer.
+
+- **`POST /events` accepts `defaultView` and then throws it away.** Found
+  2026-09-01 by the cloud review, verified in the source.
+  `createEventSchema` takes `defaultView` (`server/src/validation.ts:122`), but
+  the INSERT at `server/src/routes/events.ts:38-56` lists thirteen columns and
+  `default_view` is not among them, so migration 008's `DEFAULT 'list'` fills
+  the row whatever the caller sent. The caller gets a 201 and an event that
+  opens in the wrong view, with no error to tell them the field did nothing.
+
+  Only the create route was missed — the clone route directly below it threads
+  `source.default_view` through (`events.ts:95-120`), `importEvent.ts` honours
+  the key, and the settings PATCH writes it. The browser never trips over this:
+  `api.createEvent` does not send the field and `NewEventPage` sets the view
+  afterwards with a PATCH, so this is an API-only lie, aimed at exactly the
+  person reading the schema or the changelog line that says the choice "carries
+  into a clone, exports with the event, and is honoured on import".
+
+  Fix is the clone route's shape: add `default_view` to the column list, one
+  more `?`, and `body.defaultView ?? 'list'` to the arguments. Testing policy
+  is tests-with-features, and `tests/defaultView.test.ts` already covers the
+  PATCH, the clone and the import — the create case is the one row missing from
+  that table.
+
+- **A track that closes at midnight reads as `18:00–00:00`.** Found 2026-09-01
+  by the cloud review, verified in the source. `fmtMinute`
+  (`server/src/shared/trackHours.ts:35`) and its twin `fmtMin`
+  (`web/src/lib/format.ts:20`) both take the hour as
+  `Math.floor(minute / 60) % 24`, so 1440 folds back to `00:00` and
+  `windowLabel` prints a window that appears to end before it starts.
+
+  1440 is a real input, not a defensive edge case: the importer explicitly
+  admits `"24:00"` as an end and says so in a comment (`importEvent.ts:56-61`),
+  `minuteOfDaySchema` is `.max(1440)` (`validation.ts:94`), and the docs promote
+  the spelling. Nothing between the request and the row clamps it. The wrong
+  label then shows up in the calendar column detail, the `SessionModal` track
+  picker (`SessionModal.tsx:302`), the AdminPage track rows, and — worst — the
+  server's refusal to an attendee, which tells them the track "only takes
+  sessions between 18:00–00:00" as the reason their session was rejected.
+
+  Display only: `assertWithinTrackHours` compares raw minutes and rejects
+  correctly. Fix is one guard in each helper — return `'24:00'` when the minute
+  is 1440, before the `% 24` folds it — and the two helpers should keep matching
+  each other, which is the reason to do them in the same commit rather than
+  fixing whichever one is noticed first.
 
 ## Low Priority / Ideas
 
