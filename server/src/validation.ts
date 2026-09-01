@@ -19,6 +19,9 @@ export const displayNameSchema = trimmed(40);
 /** Day count at which the schedule switches to a week rail. One would mean
  *  every event gets one; beyond a quarter the rail is unusable either way. */
 export const weekRailFromSchema = z.coerce.number().int().min(1).max(90);
+
+/** Where a schedule opens for a reader who has not picked a view. */
+export const defaultViewSchema = z.enum(['cal', 'list']);
 /**
  * Audit entries kept per event. 0 means keep everything; anything else has a
  * floor, because a cap of five would make the log a rolling toy rather than a
@@ -116,6 +119,7 @@ export const createEventSchema = z
     userPassword: passwordSchema.optional(),
     adminPassword: passwordSchema.optional(),
     userRoleLabel: roleLabelSchema.optional(),
+    defaultView: defaultViewSchema.optional(),
   })
   .refine((v) => v.endDate >= v.startDate, {
     message: 'End date must not be before the start date',
@@ -407,6 +411,7 @@ export const settingsSchema = z
     dayStartMin: minuteOfDaySchema.optional(),
     dayEndMin: minuteOfDaySchema.optional(),
     weekRailFrom: weekRailFromSchema.optional(),
+    defaultView: defaultViewSchema.optional(),
     viewerPassword: passwordSchema.optional(),
     userPassword: passwordSchema.optional(),
     adminPassword: passwordSchema.optional(),

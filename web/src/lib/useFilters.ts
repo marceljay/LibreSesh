@@ -1,9 +1,14 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import type { ViewMode } from '@shared/types';
+
 import { UNTRACKED } from './tracks';
 
-export type ViewMode = 'cal' | 'list';
+/** Re-exported so the components that read a view off the URL do not each have
+ *  to know it is the same two words the event stores as its default. */
+export type { ViewMode };
+
 /** What the grid's columns are. Only meaningful once the event has tracks. */
 export type Axis = 'room' | 'track';
 

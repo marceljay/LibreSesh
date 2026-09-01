@@ -7,6 +7,7 @@ import type {
   TagDto,
   TrackDto,
   TrackWindowDto,
+  ViewMode,
 } from '@shared/types';
 import { windowLabel } from '@shared/trackHours';
 import { ApiError, api, type BreakWrite, type TrackWrite, type TrashDto } from '../lib/api';
@@ -92,6 +93,7 @@ export function AdminPage() {
   const [dayEnd, setDayEnd] = useState('');
   const [weekRailFrom, setWeekRailFrom] = useState('8');
   const [auditKeep, setAuditKeep] = useState('1000');
+  const [defaultView, setDefaultView] = useState<ViewMode>('list');
   const [userRoleLabel, setUserRoleLabel] = useState('');
   const [viewerPassword, setViewerPassword] = useState('');
   const [userPassword, setUserPassword] = useState('');
@@ -159,6 +161,7 @@ export function AdminPage() {
     setDayEnd(fmtMin(event.dayEndMin));
     setWeekRailFrom(String(event.weekRailFrom));
     setAuditKeep(String(event.auditKeep));
+    setDefaultView(event.defaultView);
     setUserRoleLabel(event.userRoleLabel);
     // Clear the duplicate form too, so it isn't pre-filled after a clone.
     setCloneName('');
@@ -463,6 +466,7 @@ export function AdminPage() {
         dayEndMin: toMinutes(dayEnd),
         weekRailFrom: Number(weekRailFrom) || 8,
         auditKeep: Number(auditKeep),
+        defaultView,
         ...(userRoleLabel.trim() ? { userRoleLabel: userRoleLabel.trim() } : {}),
         ...(viewerPassword ? { viewerPassword } : {}),
         ...(userPassword ? { userPassword } : {}),
@@ -951,6 +955,19 @@ export function AdminPage() {
                     : ' · one row of tabs for this event'}
                 </span>
               </div>
+            </Field>
+            <Field
+              label="Opens in"
+              hint="Which view someone gets who has not chosen one. The switch above the grid still works for everybody, and a view somebody picks travels in the link they share. The list reads well at any size; the grid earns its place once there are several rooms to compare."
+            >
+              <select
+                value={defaultView}
+                onChange={(e) => setDefaultView(e.target.value === 'cal' ? 'cal' : 'list')}
+                className={`${inputClass} w-48`}
+              >
+                <option value="list">List — one column, in time order</option>
+                <option value="cal">Calendar — a grid of rooms</option>
+              </select>
             </Field>
             <Field
               label="Audit entries to keep"

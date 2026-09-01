@@ -95,8 +95,8 @@ export function eventRoutes(ctx: Ctx): Router {
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
              week_rail_from, viewer_pw_hash, user_pw_hash, admin_pw_hash, archived,
-             user_role_label, audit_keep, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+             user_role_label, audit_keep, default_view, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
         )
         .run(
           body.newSlug,
@@ -114,6 +114,8 @@ export function eventRoutes(ctx: Ctx): Router {
           // A retention choice is a preference about how this organiser keeps
           // records, so it carries over with the rest of the setup.
           source.audit_keep,
+          // As does how the copy opens: a clone is the same event again.
+          source.default_view,
           now,
         );
       const id = Number(info.lastInsertRowid);

@@ -135,7 +135,7 @@ export function settingsRoutes(ctx: Ctx): Router {
           .prepare(
             `UPDATE events SET name = ?, start_date = ?, end_date = ?, day_start_min = ?,
                     day_end_min = ?, week_rail_from = ?, viewer_pw_hash = ?, user_pw_hash = ?, admin_pw_hash = ?,
-                    archived = ?, user_role_label = ?, audit_keep = ?
+                    archived = ?, user_role_label = ?, audit_keep = ?, default_view = ?
               WHERE id = ?`,
           )
           .run(
@@ -151,6 +151,7 @@ export function settingsRoutes(ctx: Ctx): Router {
             body.archived === undefined ? current.archived : body.archived ? 1 : 0,
             body.userRoleLabel ?? current.user_role_label,
             body.auditKeep ?? current.audit_keep,
+            body.defaultView ?? current.default_view,
             current.id,
           );
       })();

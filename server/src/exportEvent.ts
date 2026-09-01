@@ -137,6 +137,7 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       dayEndMin: event.day_end_min,
       weekRailFrom: event.week_rail_from,
       userRoleLabel: event.user_role_label,
+      defaultView: event.default_view === 'cal' ? 'cal' : 'list',
       archived: event.archived === 1,
       createdAt: event.created_at,
     },

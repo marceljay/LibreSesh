@@ -193,9 +193,15 @@ export function SchedulePage() {
   const axis: "room" | "track" =
     hasTracks && filters.axis === "track" ? "track" : "room";
 
-  const view =
-    filters.view ??
-    (typeof window !== "undefined" && window.innerWidth < 640 ? "list" : "cal");
+  /* Where a reader who has not picked a view lands. It used to be a guess
+     about the device — under 640px the list, above it the grid — which is the
+     browser answering a question about the event: a dense multi-room
+     programme is unreadable as a list on a laptop, and a single-track
+     unconference is a column of empty grid on a desktop. The organiser sets it
+     in Manage Event → Settings, and until they do it is the list, the view
+     that survives every shape of event. The switch still works either way, and
+     a chosen view goes in the URL, which is what a shared link reproduces. */
+  const view = filters.view ?? event?.defaultView ?? "list";
 
   const dayLabels = useMemo(
     () =>

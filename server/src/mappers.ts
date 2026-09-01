@@ -45,6 +45,7 @@ export const toEventDto = (e: EventRow): EventDto => ({
   dayEndMin: e.day_end_min,
   userRoleLabel: e.user_role_label,
   auditKeep: e.audit_keep,
+  defaultView: e.default_view === 'cal' ? 'cal' : 'list',
 });
 
 export const toRoomDto = (r: RoomRow): RoomDto => ({

@@ -22,6 +22,7 @@ import type {
   TagDto,
   TrackDto,
   TrackWindowDto,
+  ViewMode,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
 
@@ -416,5 +417,7 @@ export interface SettingsWrite {
   adminPassword?: string;
   userRoleLabel?: string;
   auditKeep?: number;
+  /** Where the schedule opens for a reader who has not picked a view. */
+  defaultView?: ViewMode;
   archived?: boolean;
 }

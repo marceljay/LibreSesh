@@ -1,0 +1,16 @@
+-- Which view a schedule opens in for someone who has not chosen one.
+--
+-- The choice was the browser's before this: under 640px wide you got the list,
+-- above it the grid. That is a guess about the device standing in for a
+-- decision about the event, and it was wrong in both directions — a dense
+-- multi-room programme is unreadable as a list on a laptop, and a single-track
+-- unconference is a column of empty grid on a desktop. The first thing anyone
+-- sees of an event is the organiser's call, so it belongs to the event.
+--
+-- 'list' is the default because it is the view that survives every shape of
+-- event: one room or twenty, a phone or a projector. An organiser who wants
+-- the grid says so in Manage Event → Settings.
+--
+-- Only the *default*: the view switch still works, and once a reader has
+-- picked one the URL carries it, which is what a shared link then reproduces.
+ALTER TABLE events ADD COLUMN default_view TEXT NOT NULL DEFAULT 'list';

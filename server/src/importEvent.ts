@@ -41,6 +41,7 @@ import { resolveSpeaker } from './speakers.js';
 import {
   colorSchema,
   dateSchema,
+  defaultViewSchema,
   distinctPasswordsRefinement,
   isoInstantSchema,
   minuteOfDaySchema,
@@ -207,6 +208,7 @@ export const eventImportSchema = z
         dayStartMin: minuteOfDaySchema.optional(),
         dayEndMin: minuteOfDaySchema.optional(),
         userRoleLabel: roleLabelSchema.optional(),
+        defaultView: defaultViewSchema.optional(),
         // Blank fields are filled in and handed back once, exactly as when an
         // event is created by hand — nobody transcribing a schedule should
         // have to invent three passwords to get it in.
@@ -397,8 +399,9 @@ export function importEvent(
         .prepare(
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-             viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+             viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label,
+             default_view, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
         )
         .run(
           doc.event.slug,
@@ -412,6 +415,7 @@ export function importEvent(
           hashPassword(passwords.userPassword),
           hashPassword(passwords.adminPassword),
           doc.event.userRoleLabel ?? 'attendee',
+          doc.event.defaultView ?? 'list',
           now,
         ).lastInsertRowid,
     );

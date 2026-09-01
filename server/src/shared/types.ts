@@ -75,6 +75,10 @@ export interface EventSummary {
   archived: boolean;
 }
 
+/** The two ways a schedule can be read: the day as a grid of rooms, or as one
+ *  column in time order. */
+export type ViewMode = 'cal' | 'list';
+
 export interface EventDto extends EventSummary {
   id: number;
   timezone: string;
@@ -87,6 +91,9 @@ export interface EventDto extends EventSummary {
   userRoleLabel: string;
   /** How many audit entries this event keeps; 0 keeps everything. */
   auditKeep: number;
+  /** The view a reader who has not picked one gets. The switch still works;
+   *  this is only where the schedule opens. */
+  defaultView: ViewMode;
 }
 
 export interface RoomDto {
@@ -329,6 +336,7 @@ export interface EventExport {
     dayEndMin: number;
     weekRailFrom: number;
     userRoleLabel: string;
+    defaultView: ViewMode;
     archived: boolean;
     createdAt: string;
   };

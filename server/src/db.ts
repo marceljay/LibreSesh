@@ -25,6 +25,8 @@ export interface EventRow {
   user_role_label: string;
   /** Audit entries kept for this event; 0 keeps everything. */
   audit_keep: number;
+  /** Which view the schedule opens in when the reader has not picked one. */
+  default_view: string;
   created_at: string;
 }
 
