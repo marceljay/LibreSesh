@@ -581,12 +581,27 @@ All notable changes to this project are documented here.
   current time is the thing you reach for mid-scroll and the row it used to
   live in is one of the rows that folds.
 
-  Scrolling back to the top of the day brings everything back. So does the ⌄
-  button at the head of the row that stays, which is the way back that does not
-  cost you your place in the day; the next deliberate scroll down folds the
-  header again. It unfolds only at the very top and folds at 24px rather than
-  swapping on one threshold in both directions — folding resizes the grid it is
-  measuring, and a single threshold would let that resize flicker the header.
+  Scrolling back to the top of the day brings everything back. So does the
+  ⌄/⌃ button at the head of the row that stays: it is the way back that does
+  not cost you your place in the day, and it folds the header by hand from the
+  other side. A header you opened stays open until you deliberately scroll
+  another 120px down — the momentum still arriving from the flick that folded
+  it is not an instruction to fold it again — and one you folded by hand stays
+  folded until you come back to the top of the day.
+
+  The fold and the button used to fight, which made the button look broken: you
+  pressed it, the header came back, and the next flick of the wheel put it
+  away. Three rules keep them apart. The header unfolds at the very top and
+  folds at 24px rather than swapping on one threshold in both directions.
+  Nothing folds while a fold is still moving, because every height the
+  animation passes through fires scroll events of its own. And it will not fold
+  when folding would move the day under you: the rows hand the grid the height
+  they were using, and on a day not much longer than the screen that is more
+  scroll than is left, so the browser clamps the position back — a lurch, and
+  at the top an instant unfold, leaving the header flickering a notch either
+  side of the threshold. Days that short do not fold at all. The rule measures
+  the rows rather than assuming a height, so a wrapped filter row on a phone
+  and a week rail on a long conference are both accounted for.
 
   The fold takes 700ms and is a movement rather than a cut: the rows shrink to
   nothing while the grid grows into the space, so it reads as one gesture with
@@ -596,9 +611,10 @@ All notable changes to this project are documented here.
   empty space and be wrong the day a row wraps onto another line. Anyone who
   has asked their system for less motion gets the old instant swap.
 
-  Past the fold, a **↑** button appears in the bottom-right corner: one press
-  back to the top of the day, however far down it you are. It scrolls rather
-  than jumps, so the header unfolds on the way up.
+  Past 160px into the day, a **↑** button appears in the bottom-right corner:
+  one press back to the top, however far down you are. It scrolls rather than
+  jumps, so the header unfolds on the way up. It has its own threshold rather
+  than riding on the fold's, so it still appears on a day too short to fold.
 
 - **The filter panel no longer shoves the page sideways on a phone.** Opening
   **Filter** on mobile zoomed the whole schedule out and left you pinching back

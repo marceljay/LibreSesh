@@ -52,12 +52,44 @@ describe('the header folds once you are into the day', () => {
     // Two thresholds, not one: a header that folded and unfolded on the same
     // scroll position would flicker, because folding resizes the grid it is
     // measuring.
-    expect(schedule).toMatch(/setChromeFolded\(\(was\) => top > \(was \? 0 : 24\)\)/);
+    expect(schedule).toMatch(/if \(was\) return top > 0;/);
+    expect(schedule).toMatch(/return top > FOLD_AT &&/);
+  });
+
+  it('refuses to fold when folding would move the day under you', () => {
+    // Folding hands the grid the height those rows were using. On a day not
+    // much longer than the screen that height is more scroll than is left, so
+    // the browser clamps back — a lurch, and at the top an instant unfold that
+    // leaves the header flickering one notch either side of the threshold.
+    // The rule measures the rows rather than assuming a height.
+    expect(schedule).toMatch(/const slack = el\.scrollHeight - el\.clientHeight;/);
+    expect(schedule).toMatch(/slack - top > gain \+ FOLD_AT/);
+    expect(schedule).toMatch(/foldedBar\.current\?\.offsetHeight \?\? 0/);
+    expect(schedule).toMatch(/foldedRows\.current\?\.offsetHeight \?\? 0/);
+  });
+
+  it('ignores the scroll events the fold itself causes', () => {
+    // Every height the animation passes through moves the scroll position, and
+    // none of those movements are the reader scrolling.
+    expect(schedule).toMatch(/if \(foldInFlight\.current\) return;/);
+    expect(schedule).toMatch(/foldInFlight\.current = false;\n\s*setFoldMoving\(false\);\n\s*readFold\(\);/);
   });
 
   it('keeps a way back that does not cost you your place in the day', () => {
-    expect(schedule).toMatch(/aria-label="Show the event bar and the day picker"/);
-    expect(schedule).toMatch(/onClick=\{\(\) => setChromePinned\(true\)\}/);
+    expect(schedule).toMatch(/aria-label=\{\n\s*folded\n\s*\? "Show the event bar and the day picker"/);
+    expect(schedule).toMatch(/onClick=\{toggleChrome\}/);
+    // The toggle is in the row that never folds, and is rendered in both
+    // states: a control that disappears the moment you press it reads as a
+    // control that did not work.
+    expect(schedule).toMatch(/aria-expanded=\{!folded\}/);
+    expect(schedule).toMatch(/\{folded \? "⌄" : "⌃"\}/);
+  });
+
+  it('does not let a nudge undo a header opened by hand', () => {
+    // The momentum still arriving when the button is pressed is not an
+    // instruction to fold the header again.
+    expect(schedule).toMatch(/top > overrideFrom\.current \+ OVERRIDE_PX/);
+    expect(schedule).toMatch(/const OVERRIDE_PX = 120;/);
   });
 
   it('folds over time rather than switching', () => {
@@ -99,8 +131,10 @@ describe('the header folds once you are into the day', () => {
     // Scrolled, not jumped: the same scroll the fold listens to, so the header
     // comes back on the way up rather than blinking into place at the top.
     expect(schedule).toMatch(/scrollTo\(\{ top: 0, behavior: "smooth" \}\)/);
+    // Its own rule, so it still shows on a day too short to fold.
+    expect(schedule).toMatch(/setPastTop\(top > TOP_BUTTON_AT\)/);
     // Out of the way means out of reach, not merely invisible.
-    expect(schedule).toMatch(/tabIndex=\{chromeFolded \? 0 : -1\}/);
+    expect(schedule).toMatch(/tabIndex=\{pastTop \? 0 : -1\}/);
   });
 
   it('keeps Now in the row that survives the fold', () => {

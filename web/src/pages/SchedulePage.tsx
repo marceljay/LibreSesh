@@ -118,6 +118,12 @@ function TrackInfo({
 
 /** Matches `duration-700` on the folding rows; see `foldRow` below. */
 const FOLD_MS = 700;
+/** Scroll this far into the day before the header folds itself away. */
+const FOLD_AT = 24;
+/** And this far down again before a header opened by hand gives way. */
+const OVERRIDE_PX = 120;
+/** Past this, the way back to the top of the day is worth a button. */
+const TOP_BUTTON_AT = 160;
 
 export function SchedulePage() {
   const { slug = "", sessionId } = useParams();
@@ -516,14 +522,86 @@ export function SchedulePage() {
    * scroll to the top of the day again, or press the ⌄ button, which is the
    * only way back that does not cost you your place in the day.
    */
-  const [chromeFolded, setChromeFolded] = useState(false);
-  const [chromePinned, setChromePinned] = useState(false);
   const foldable = view === "cal" && !fullPage;
-  const folded = foldable && chromeFolded && !chromePinned;
   const foldedDay = dayLabel(day, today);
 
+  /**
+   * The header folds itself away once you are into the day, and the ⌄/⌃ button
+   * beside the filters overrides whichever way it went. The two used to fight,
+   * which is what made the button look broken — you pressed it, the header came
+   * back, and the next flick of the wheel put it away again. Three rules keep
+   * them apart:
+   *
+   *  - It only folds when folding will not move the day under you. Folding
+   *    hands the grid the ~150px those rows were using; if the day is not that
+   *    much longer than the screen, the browser clamps the scroll back up to
+   *    fit, which reads as a lurch — and when it clamps all the way to the top
+   *    it unfolds the header again, one notch from folding it. A day that
+   *    short simply does not fold.
+   *  - Nothing auto-folds while the fold is moving: every height the animation
+   *    passes through fires scroll events of its own, and they are not the
+   *    reader scrolling.
+   *  - A header opened by hand stays open until you deliberately scroll another
+   *    `OVERRIDE_PX` down. The trackpad momentum still arriving when you press
+   *    the button is not an instruction to fold it again.
+   */
+  const [chromeMode, setChromeMode] = useState<"auto" | "open" | "shut">("auto");
+  const [autoFolded, setAutoFolded] = useState(false);
+  const [foldMoving, setFoldMoving] = useState(false);
+  /** Far enough down the day that scrolling back is work worth a button. */
+  const [pastTop, setPastTop] = useState(false);
+  /** Where the grid was when the button last overrode the scroll rule. */
+  const overrideFrom = useRef(0);
+  /** Whether the reader has been down into the day since that override. */
+  const beenDown = useRef(false);
+  /** The fold is mid-animation. A ref because the scroll listener reads it. */
+  const foldInFlight = useRef(false);
+  const foldedBar = useRef<HTMLDivElement>(null);
+  const foldedRows = useRef<HTMLDivElement>(null);
+
+  const folded =
+    foldable && (chromeMode === "shut" || (chromeMode === "auto" && autoFolded));
+
+  const readFold = useCallback(() => {
+    const el = calRef.current;
+    if (!el) return;
+    const top = el.scrollTop;
+    setPastTop(top > TOP_BUTTON_AT);
+    if (foldInFlight.current) return;
+    if (top > FOLD_AT) beenDown.current = true;
+    const slack = el.scrollHeight - el.clientHeight;
+    setAutoFolded((was) => {
+      // Unfolds at the very top, folds at FOLD_AT: one threshold in both
+      // directions would flicker, because folding resizes the grid it reads.
+      if (was) return top > 0;
+      const gain =
+        (foldedBar.current?.offsetHeight ?? 0) +
+        (foldedRows.current?.offsetHeight ?? 0);
+      return top > FOLD_AT && slack - top > gain + FOLD_AT;
+    });
+    setChromeMode((mode) => {
+      if (mode === "auto") return mode;
+      // Coming back to the top of the day spends the override either way: it
+      // is where the header is open anyway, and where the scroll rule and the
+      // button agree again. "Coming back" is the point — folding by hand while
+      // already at the top would otherwise undo itself on the spot.
+      if (top <= 0 && beenDown.current) return "auto";
+      if (mode === "open" && top > overrideFrom.current + OVERRIDE_PX) {
+        return "auto";
+      }
+      return mode;
+    });
+  }, []);
+
+  const toggleChrome = useCallback(() => {
+    const top = calRef.current?.scrollTop ?? 0;
+    overrideFrom.current = top;
+    beenDown.current = top > FOLD_AT;
+    setChromeMode(folded ? "open" : "shut");
+  }, [folded]);
+
   const jumpToTop = useCallback(() => {
-    setChromePinned(false);
+    setChromeMode("auto");
     calRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
@@ -532,40 +610,36 @@ export function SchedulePage() {
    * the rows need to know which one they are in: mid-move they have to be
    * clipped, and only once they have finished leaving can they drop out of the
    * tab order. Nothing measures the transition — this is the same 700ms the
-   * classes below spend, kept beside them.
+   * classes below spend, kept beside them. The scroll position is read again
+   * at the end, because the resize may have moved it while we were not
+   * listening.
    */
-  const [foldMoving, setFoldMoving] = useState(false);
   const wasFolded = useRef(folded);
   useEffect(() => {
     if (wasFolded.current === folded) return;
     wasFolded.current = folded;
+    foldInFlight.current = true;
     setFoldMoving(true);
-    const timer = setTimeout(() => setFoldMoving(false), FOLD_MS);
+    const timer = setTimeout(() => {
+      foldInFlight.current = false;
+      setFoldMoving(false);
+      readFold();
+    }, FOLD_MS);
     return () => clearTimeout(timer);
-  }, [folded]);
+  }, [folded, readFold]);
 
   useEffect(() => {
     const el = calRef.current;
     if (!el || !foldable) {
-      setChromeFolded(false);
+      setAutoFolded(false);
+      setChromeMode("auto");
+      setPastTop(false);
       return;
     }
-    let last = el.scrollTop;
-    const onScroll = () => {
-      const top = el.scrollTop;
-      // Fold at 24px, unfold only back at the very top: a header that swapped
-      // on either side of one threshold would flicker whenever the grid it
-      // resizes lands the scroll position back on that threshold.
-      setChromeFolded((was) => top > (was ? 0 : 24));
-      // A deliberate scroll down retires the ⌄ button's override; anything
-      // else — the resize the fold itself causes, a nudge upward — leaves it.
-      if (top > last + 8) setChromePinned(false);
-      last = top;
-    };
-    onScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [foldable, bundle?.rooms.length, day]);
+    readFold();
+    el.addEventListener("scroll", readFold, { passive: true });
+    return () => el.removeEventListener("scroll", readFold);
+  }, [foldable, readFold, bundle?.rooms.length, day]);
 
   /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
   const moveSession = useCallback(
@@ -834,7 +908,7 @@ export function SchedulePage() {
        on a phone `vh` counts the strip behind the address bar. */
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
-        <div className={foldRow}>
+        <div ref={foldedBar} className={foldRow}>
           <div className={foldInner}>
             <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
               <Link
@@ -909,7 +983,7 @@ export function SchedulePage() {
             for its context and drops the rest. */}
         {!fullPage && (
           <>
-          <div className={foldRow}>
+          <div ref={foldedRows} className={foldRow}>
             <div className={foldInner}>
               {weeks.length > 1 && (
                 <div
@@ -1114,24 +1188,38 @@ export function SchedulePage() {
               data-tour="filters"
               className="flex flex-wrap items-center gap-1.5"
             >
-              {/* Folded, this row is the whole header, so it carries the way
-                  back — and the day it is showing, since the day strip that
-                  usually answers that is one of the things put away. */}
-              {folded && (
-                <button
-                  type="button"
-                  onClick={() => setChromePinned(true)}
-                  aria-label="Show the event bar and the day picker"
-                  title="Show the event bar and the day picker"
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
-                >
-                  <span aria-hidden="true">⌄</span>
-                  {foldedDay.top}{" "}
-                  <span className="text-stone-400 dark:text-stone-500">
-                    {foldedDay.sub}
-                  </span>
-                </button>
-              )}
+              {/* This row is the whole header once the rest folds away, so it
+                  carries the way back — and the day it is showing, since the
+                  day strip that usually answers that is one of the things put
+                  away. The button stays put in both states rather than
+                  appearing with the fold: a control that vanishes the moment
+                  you press it reads as one that did not work. */}
+              <button
+                type="button"
+                onClick={toggleChrome}
+                aria-expanded={!folded}
+                aria-label={
+                  folded
+                    ? "Show the event bar and the day picker"
+                    : "Fold the event bar and the day picker away"
+                }
+                title={
+                  folded
+                    ? "Show the event bar and the day picker"
+                    : "Fold the event bar and the day picker away"
+                }
+                className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+              >
+                <span aria-hidden="true">{folded ? "⌄" : "⌃"}</span>
+                {folded && (
+                  <>
+                    {foldedDay.top}{" "}
+                    <span className="text-stone-400 dark:text-stone-500">
+                      {foldedDay.sub}
+                    </span>
+                  </>
+                )}
+              </button>
               <SearchBox
                 sessions={bundle.sessions}
                 rooms={bundle.rooms}
@@ -1420,14 +1508,14 @@ export function SchedulePage() {
         <button
           type="button"
           onClick={jumpToTop}
-          aria-hidden={!chromeFolded}
-          tabIndex={chromeFolded ? 0 : -1}
+          aria-hidden={!pastTop}
+          tabIndex={pastTop ? 0 : -1}
           aria-label="Back to the top of the day"
           title="Back to the top of the day"
           className={`fixed right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-lg transition-all duration-300 hover:border-stone-400 hover:text-stone-900 motion-reduce:transition-none dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100 ${
             arrange ? "bottom-16" : "bottom-4"
           } ${
-            chromeFolded
+            pastTop
               ? "opacity-100"
               : "pointer-events-none translate-y-2 opacity-0"
           }`}
