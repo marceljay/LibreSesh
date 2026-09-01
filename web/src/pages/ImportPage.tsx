@@ -127,8 +127,10 @@ export function ImportPage() {
         <h1 className="mb-1 text-lg font-semibold tracking-tight">Schedule imported</h1>
         <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
           You are its admin already. These passwords were generated for the roles the
-          document left blank — <strong>write them down now</strong>. They are stored
-          hashed, so this screen is the only place they can be read.
+          document left blank. No need to write them down: a password this instance
+          generated stays readable in <strong>Manage Event → Settings → Event
+          passwords</strong>. Only one written into the document yourself is stored
+          hashed and unrecoverable.
         </p>
         <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
           {rows.map(([label, value]) =>

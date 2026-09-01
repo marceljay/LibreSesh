@@ -37,9 +37,10 @@ export function eventRoutes(ctx: Ctx): Router {
       .prepare(
         `INSERT INTO events
           (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-           viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label,
+           viewer_pw_hash, user_pw_hash, admin_pw_hash,
+           viewer_pw_plain, user_pw_plain, admin_pw_plain, archived, user_role_label,
            default_view, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
       )
       .run(
         body.slug,
@@ -52,6 +53,11 @@ export function eventRoutes(ctx: Ctx): Router {
         hashPassword(passwords.viewerPassword),
         hashPassword(passwords.userPassword),
         hashPassword(passwords.adminPassword),
+        // Only what this server invented. A password the creator typed is
+        // theirs — see migration 010 — so its column stays NULL.
+        generated.viewerPassword ?? null,
+        generated.userPassword ?? null,
+        generated.adminPassword ?? null,
         body.userRoleLabel ?? 'attendee',
         // `createEventSchema` has always taken this; the column list did not,
         // so the row took migration 008's default and the caller got a 201 for
@@ -72,8 +78,9 @@ export function eventRoutes(ctx: Ctx): Router {
     });
 
     const row = ctx.db.prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?').get(eventId);
-    // The only time these leave the server: they are hashed on the way in and
-    // unrecoverable afterwards, so the creator has to see them now or never.
+    // Still shown here, because this is the one moment the creator is holding
+    // all three and has somewhere to write them. They are no longer *only*
+    // here: a generated one can be read again from Manage Event → Settings.
     res.status(201).json({ ...toEventSummary(row as EventRow), generatedPasswords: generated });
   });
 
@@ -93,15 +100,25 @@ export function eventRoutes(ctx: Ctx): Router {
     }
     if (body.newSlug === source.slug) throw badRequest('Pick a different slug');
 
+    // Blank fields are filled in rather than rejected, exactly as on creation.
+    // A duplicate is a fresh event and gets fresh passwords: the source's are
+    // deliberately not copied, because the point of duplicating last year's
+    // conference is usually that this year's room is a different room.
+    const { passwords, generated } = resolveEventPasswords(
+      body,
+      isDemoEvent(ctx.config, body.newSlug),
+    );
+
     const now = new Date().toISOString();
     const newId = ctx.db.transaction((): number => {
       const info = ctx.db
         .prepare(
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-             week_rail_from, viewer_pw_hash, user_pw_hash, admin_pw_hash, archived,
+             week_rail_from, viewer_pw_hash, user_pw_hash, admin_pw_hash,
+             viewer_pw_plain, user_pw_plain, admin_pw_plain, archived,
              user_role_label, audit_keep, default_view, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
         )
         .run(
           body.newSlug,
@@ -112,9 +129,12 @@ export function eventRoutes(ctx: Ctx): Router {
           source.day_start_min,
           source.day_end_min,
           source.week_rail_from,
-          hashPassword(body.viewerPassword),
-          hashPassword(body.userPassword),
-          hashPassword(body.adminPassword),
+          hashPassword(passwords.viewerPassword),
+          hashPassword(passwords.userPassword),
+          hashPassword(passwords.adminPassword),
+          generated.viewerPassword ?? null,
+          generated.userPassword ?? null,
+          generated.adminPassword ?? null,
           source.user_role_label,
           // A retention choice is a preference about how this organiser keeps
           // records, so it carries over with the rest of the setup.
@@ -150,7 +170,7 @@ export function eventRoutes(ctx: Ctx): Router {
     });
 
     const row = ctx.db.prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?').get(newId);
-    res.status(201).json(toEventSummary(row as EventRow));
+    res.status(201).json({ ...toEventSummary(row as EventRow), generatedPasswords: generated });
   });
 
   return router;

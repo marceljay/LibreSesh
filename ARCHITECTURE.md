@@ -53,7 +53,7 @@ every failure as `{ error: { code, message } }`.
 
 | Table | Notes |
 | --- | --- |
-| `events` | Three bcrypt password hashes, timezone, day viewport, archive flag |
+| `events` | Three bcrypt password hashes — plus the plaintext of any of the three *this server generated*, so an organiser can read it back (§Reading an event's passwords) — timezone, day viewport, archive flag |
 | `event_slugs` | Every slug an event has been renamed away from; `getEventBySlug` falls back to it, so old links keep resolving |
 | `identities` | Anonymous cookie token, the display-name seed, optional iCal token |
 | `link_codes` | Hashed phrases that adopt an identity: device phrases (single-use, 10 minutes) and admin-minted speaker codes (per person, live until revoked) |
@@ -343,6 +343,71 @@ is a row keyed on (identity, event); a display name is a row keyed on (event,
 identity). Signing out of an event deletes the role, never the identity — which
 is what lets authorship survive it.
 
+### Reading an event's passwords
+
+An event password is not a credential. It is a shared door code: this server
+invents it, an organiser reads it out at a registration desk, it goes on a
+badge and into a QR taped to a wall, and two hundred people type it. Its whole
+purpose is to be told to strangers.
+
+Storing only three bcrypt hashes treated it as the other thing, and the cost
+showed up as two dead ends. An organiser who closed the "written down now?"
+screen after creating the event had no way back to the code they were supposed
+to be handing out — only rotation, which is not a recovery when the old code is
+already on two hundred badges. And an event whose organisers had all lost their
+password was finished: no account, so no reset link, and nothing short of shell
+access to the SQLite file.
+
+So migration 010 adds `viewer_pw_plain`, `user_pw_plain`, `admin_pw_plain`, and
+the split is the whole design:
+
+- **A password this server generated is kept in clear** beside its hash, and
+  `GET /e/:slug/passwords` (admin only, audited as `reveal_passwords`) hands
+  all three back to the event's organiser.
+- **A password a person typed is not stored.** Its column is NULL and the panel
+  says "set by you — not stored", because it may well be a password they use
+  somewhere else and it is not ours to keep. Typing your own is therefore also
+  how you opt out of this.
+
+`PATCH /settings` NULLs the plaintext of any password it replaces — a stored
+string for a password that no longer opens anything would be worse than
+nothing.
+
+**What it costs.** The threat table's "leaked whole-database backup" row now
+includes live event passwords. That is a smaller step than it reads:
+`identities.token` is already stored in clear, so whoever can read the file can
+already *be* an existing organiser (§Security, "the database file is the room
+key"). What is new is that they could also walk in the front door and re-use a
+code the event keeps using afterwards. The instance host was already trusted
+with the first; this stays inside the same boundary rather than moving it.
+
+**Replacing one, and the locked-out event.** `POST /e/:slug/passwords/:role/reset`
+mints a fresh phrase for one role and returns it. It answers to two callers,
+because it is one operation:
+
+- an **organiser**, for any of the three — which is what makes a typed password
+  recoverable too: it is not lost work, it is one button;
+- **whoever holds the instance password**, for `admin` only. This is the
+  lockout path, offered as "Nobody can get in as organiser" at the bottom of
+  the gate.
+
+The instance key still grants no role and reads nothing here — it replaces one
+secret and returns the replacement, which is the smallest thing that unsticks
+an event, and the caller then types it at the gate like anybody else. `admin`
+only, because recovery needs exactly one way back in and the new organiser can
+reset the rest from inside; a deploy secret that could rewrite every password
+on the instance would be the master key it is deliberately not. It is audited
+as `reset_pw_instance` rather than `reset_pw_admin`, and the audit page tints
+that row: it is the one line in the log meaning somebody took an event back
+from outside it.
+
+The route lives in `routes/eventAuth.ts`, beside `/auth` and for the same
+reason — `app.ts` puts `requireRole(db, 'viewer')` in front of every router
+mounted after it, and the whole point of the instance-key path is the event
+where nobody has a role left. Generated phrases never collide with a role that
+already exists (`roleForPassword` is asked, and the phrase re-rolled), because
+the three strings are the only thing telling the roles apart.
+
 ### Invite QR codes, and why the password rides in the fragment
 
 An organiser can turn one of the three event passwords into a QR code — Manage
@@ -400,9 +465,11 @@ be there for the organiser code, which is the one that matters.
 The panel that draws it lives in `web/src/pages/AdminInvite.tsx`, and two
 things about it follow from the storage model rather than from taste:
 
-- **The organiser has to type the password.** `events` holds bcrypt hashes and
-  nothing else, so the server cannot produce a plaintext to encode, for an
-  admin or for anyone.
+- **The organiser has to type the password.** The panel predates migration
+  010 and still asks, which is correct in the case that matters: a password
+  the organiser typed has only ever been hashed, so there is nothing to
+  prefill. For a *generated* one the server could now offer it — filling the
+  box from `GET /passwords` is queued in STATUS.md, not done.
 - **So the server confirms the typing instead.** `POST /e/:slug/password-role`
   is admin-only, rate-limited on the same bucket as the gate, and answers with
   the role a password grants without granting it. It exists because a QR is
@@ -749,14 +816,20 @@ explicitly *not* built to withstand a targeted attacker with time.
 | Leaking one person's agenda | Stars and interest are never broadcast and never attributed in any payload; only aggregate counts are exposed |
 | A leaked calendar URL | The token grants only what its owner's role already allows, and only for that one event; revoking the role kills the feed |
 | A leaked `COOKIE_SECRET` | Little on its own — a forged signature still needs a real 131-bit token, and an unknown one just mints an anonymous identity. Kept out of the database's volume so a copied DB and the secret do not leak together |
-| A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget |
+| A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget. Note what it now contains: generated event passwords in clear (§Reading an event's passwords) |
 
 **Out of scope, accepted:**
 
 - **Shared passwords cannot be revoked per person.** Anyone who learns the admin
-  password is an admin until it is changed. Rotating it (admin settings) is the
-  only remedy, and it does not evict existing role grants — those are rows in
-  `roles`, deliberately, so a rotation does not sign the whole room out mid-event.
+  password is an admin until it is changed. Rotating it (admin settings, or
+  Replace under Event passwords) is the only remedy, and it does not evict
+  existing role grants — those are rows in `roles`, deliberately, so a rotation
+  does not sign the whole room out mid-event.
+- **A generated event password is stored in clear.** Reading the database file
+  therefore reveals it, on top of everything the row below already gives away.
+  Deliberately inside the same trust boundary and not an extension of it — see
+  §Reading an event's passwords for why an event password is a door code rather
+  than a credential, and for the line that keeps a *typed* password out of it.
 - **Identity is a cookie, not a person.** Clearing cookies makes you a new
   attendee. A device-link phrase carries one identity onto a second device, but
   that is continuity, not authentication: whoever types a live phrase becomes

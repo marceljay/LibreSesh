@@ -1,0 +1,35 @@
+-- An event password the server invented is readable by that event's organiser.
+--
+-- Three bcrypt hashes were the whole story, which made "shown once, on the
+-- screen right after creation, or never again" the entire recovery story too.
+-- That is the wrong shape for what these actually are. An event password is
+-- not a personal credential: it is a shared door code, invented by this server,
+-- handed to a room of people, printed on a badge and encoded into a QR on the
+-- wall. Its whole purpose is to be told to strangers. Treating it like a login
+-- meant an organiser who closed that screen had nothing left but rotation —
+-- and rotating a code two hundred people already hold is not a recovery, it is
+-- an outage.
+--
+-- So the plaintext is kept, but only for the passwords this server generated.
+-- A password the organiser typed is theirs, may well be one they use elsewhere,
+-- and is not ours to keep: those columns stay NULL and the admin page says
+-- "set by you — not stored" rather than showing a blank. Typing your own
+-- password is therefore also how you opt out of this, which is the right
+-- default for anyone who wants it.
+--
+-- What this costs: the threat table's "leaked whole-database backup" row now
+-- includes live event passwords. That is a smaller step than it reads —
+-- `identities.token` is already stored in clear, so a copied database already
+-- lets the reader *be* an existing organiser (ARCHITECTURE §Security, "the
+-- database file is the room key"). What is new is that they could also walk in
+-- through the front door, and re-use a code the event kept using afterwards.
+-- The instance host was already trusted with the first; this is deliberately
+-- inside the same boundary and does not move it.
+--
+-- Existing events get NULL, which reads as "set by you". That is not true of
+-- every one of them — some hold a phrase this server generated before this
+-- migration, whose plaintext is genuinely gone — but "not stored" is the
+-- honest answer in both cases, and it is the answer that does not invent one.
+ALTER TABLE events ADD COLUMN viewer_pw_plain TEXT;
+ALTER TABLE events ADD COLUMN user_pw_plain TEXT;
+ALTER TABLE events ADD COLUMN admin_pw_plain TEXT;

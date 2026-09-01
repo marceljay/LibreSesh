@@ -30,13 +30,29 @@ export interface LinkCodeDto {
 }
 
 /**
- * Passwords the server invented for roles the creator left blank. Returned
- * once, on creation: they are stored hashed and cannot be read back later.
+ * Passwords the server invented for roles the creator left blank. Returned on
+ * creation because that is the one moment somebody is holding all three — a
+ * generated one can also be read again later by the event's organiser
+ * (`EventPasswords`); a typed one never can.
  */
 export interface GeneratedPasswords {
   viewerPassword?: string;
   userPassword?: string;
   adminPassword?: string;
+}
+
+/**
+ * What the organiser can read back of their own event's passwords.
+ *
+ * `null` is not "no password" — every event has all three. It means this one
+ * was typed by a person rather than generated here, so only its bcrypt hash
+ * was ever stored and there is nothing to show. The panel says so in those
+ * words; anything vaguer reads as "the password is empty".
+ */
+export interface EventPasswords {
+  viewer: string | null;
+  user: string | null;
+  admin: string | null;
 }
 
 /** What one import document put on the grid, repeats already expanded. */

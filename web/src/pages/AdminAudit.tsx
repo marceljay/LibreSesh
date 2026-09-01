@@ -33,6 +33,11 @@ const ACTIONS: Record<string, string> = {
   speaker_code_mint: 'minted a speaker code for',
   speaker_code_revoke: 'revoked the speaker code for',
   invite_qr: 'made an invite QR for',
+  reveal_passwords: 'read the passwords of',
+  reset_pw_viewer: 'replaced the viewer password on',
+  reset_pw_user: 'replaced the attendee password on',
+  reset_pw_admin: 'replaced the organiser password on',
+  reset_pw_instance: 'replaced the organiser password, with the instance password, on',
   permissions: 'changed',
 };
 
@@ -53,6 +58,9 @@ const ENTITIES: Record<string, string> = {
 /** Deletions and failures are what an organiser is scanning for. */
 const TONE: Record<string, string> = {
   delete: 'text-red-700 dark:text-red-400',
+  // Not a failure, but the one line in this log that means somebody took an
+  // event back from outside it. Worth finding without reading every row.
+  reset_pw_instance: 'text-amber-700 dark:text-amber-400',
   auth_failed: 'text-amber-700 dark:text-amber-400',
   link_failed: 'text-amber-700 dark:text-amber-400',
   merge: 'text-amber-700 dark:text-amber-400',

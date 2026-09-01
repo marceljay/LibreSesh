@@ -3,7 +3,7 @@ import { hashPassword, requireRole, roleForPassword } from '../auth.js';
 import { audit, pruneAudit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
-import type { Role } from '../shared/types.js';
+import type { EventPasswords, Role } from '../shared/types.js';
 import { badRequest, conflict, forbidden } from '../errors.js';
 import { toEventDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
@@ -13,6 +13,35 @@ import { authSchema, parse, permissionsSchema, settingsSchema } from '../validat
 
 export function settingsRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
+
+  /**
+   * The event's own passwords, as far as they can be read.
+   *
+   * Only the ones this server generated have a plaintext to return (migration
+   * 010); a password the organiser typed is theirs and was only ever hashed,
+   * so it comes back `null` and the panel says "set by you — not stored".
+   *
+   * Admin-only and audited. An organiser reading the passwords is not a
+   * suspicious act — they are the person whose job it is to hand them out —
+   * but "who had all three, and when" is exactly the question the log exists
+   * to answer after an event goes wrong, and the organiser password is the one
+   * that hands over everything.
+   */
+  router.get('/passwords', requireRole(ctx.db, 'admin'), limit(ctx.limiter, 'read'), (req, res) => {
+    audit(ctx.db, {
+      identityId: req.identity.id,
+      eventId: req.event.id,
+      action: 'reveal_passwords',
+      entity: 'event',
+      entityId: req.event.id,
+    });
+    const body: EventPasswords = {
+      viewer: req.event.viewer_pw_plain,
+      user: req.event.user_pw_plain,
+      admin: req.event.admin_pw_plain,
+    };
+    res.json(body);
+  });
 
   /**
    * Confirm the caller knows the organiser password. Grants nothing and
@@ -135,6 +164,7 @@ export function settingsRoutes(ctx: Ctx): Router {
           .prepare(
             `UPDATE events SET name = ?, start_date = ?, end_date = ?, day_start_min = ?,
                     day_end_min = ?, week_rail_from = ?, viewer_pw_hash = ?, user_pw_hash = ?, admin_pw_hash = ?,
+                    viewer_pw_plain = ?, user_pw_plain = ?, admin_pw_plain = ?,
                     archived = ?, user_role_label = ?, audit_keep = ?, default_view = ?
               WHERE id = ?`,
           )
@@ -148,6 +178,14 @@ export function settingsRoutes(ctx: Ctx): Router {
             body.viewerPassword ? hashPassword(body.viewerPassword) : current.viewer_pw_hash,
             body.userPassword ? hashPassword(body.userPassword) : current.user_pw_hash,
             body.adminPassword ? hashPassword(body.adminPassword) : current.admin_pw_hash,
+            // Typing a password here replaces a generated one, so the stored
+            // plaintext has to go with it — leaving the old string behind
+            // would have the admin page confidently showing a password that
+            // no longer opens anything. A typed password is never stored
+            // (migration 010), so what replaces it is NULL either way.
+            body.viewerPassword ? null : current.viewer_pw_plain,
+            body.userPassword ? null : current.user_pw_plain,
+            body.adminPassword ? null : current.admin_pw_plain,
             body.archived === undefined ? current.archived : body.archived ? 1 : 0,
             body.userRoleLabel ?? current.user_role_label,
             body.auditKeep ?? current.audit_keep,

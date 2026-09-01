@@ -87,10 +87,18 @@ to each **event**, and they do different jobs:
   thing telling the roles apart, so two roles sharing one password would grant
   whichever is higher.
 
-The three event password fields are optional when you create one: leave any of
-them blank and a four-word phrase is generated for it and shown once, on the
-confirmation screen. They are stored hashed, so that screen is the only place
-they can ever be read.
+The three event password fields are optional when you create one — and when you
+duplicate one: leave any of them blank and a four-word phrase is generated for
+it and shown on the confirmation screen. A generated phrase stays readable
+afterwards under **Manage Event → Settings → Event passwords**, because an
+event password is a door code you hand out rather than a login. A password you
+type yourself is stored hashed and cannot be read back; use **Replace** on that
+panel if you want a readable one.
+
+If every organiser of an event has lost the password, the gate's "Nobody can
+get in as organiser" link takes the **instance password** and mints a fresh
+organiser password for that event. It is a reset, not a sign-in: the instance
+password still grants no role anywhere.
 
 In development the Vite dev server owns port 3000 and proxies `/api` to the API
 on 3001, so the port you open is the same in dev and in production — where a

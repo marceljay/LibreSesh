@@ -239,13 +239,15 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     `deserializeErrors` issue does not apply (no SSR). Every navigation we
     build is prefixed with a literal `/e/`, so a path cannot start `//` or
     `\\`. Fix is react-router-dom@7 (breaking).
-- **Cloning still demands all three passwords.** Creating an event lets you
-  leave any of them blank — a four-word phrase is generated and shown once on
-  a confirmation screen — but `POST /events/:slug/clone` kept the old
-  all-required schema. Deliberate for now: the clone UI has nowhere to reveal
-  a generated secret, and an organiser who never sees one cannot hand it out.
-  Wants the same reveal screen, then `resolveEventPasswords` wired into the
-  clone route so the two creation paths stop disagreeing.
+- **The invite QR still makes the organiser type a password it could now
+  fill in.** `AdminInvite` asks for the password and confirms it against
+  `POST /password-role` before drawing a code, because the server used to hold
+  only hashes. For a *generated* password that is no longer true — `GET
+  /passwords` has the plaintext — so the panel could offer the three by name
+  and keep the typing box only for a password the organiser set themselves.
+  The confirm step stays either way: it is what catches a typo before two
+  hundred people are standing at the door. Left out of the password work
+  deliberately, as it is a change to a different screen's flow.
 
 - **Manual browser pass — now with a specific backlog.** Automated coverage is
   server-side, so everything below shipped on a read-through alone (no browser

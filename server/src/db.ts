@@ -21,6 +21,15 @@ export interface EventRow {
   viewer_pw_hash: string;
   user_pw_hash: string;
   admin_pw_hash: string;
+  /**
+   * The plaintext of a password *this server generated*, kept so the event's
+   * organiser can read it back — see migration 010. NULL means the organiser
+   * typed their own, which is not ours to store; the admin page reads that as
+   * "set by you — not stored", never as an empty password.
+   */
+  viewer_pw_plain: string | null;
+  user_pw_plain: string | null;
+  admin_pw_plain: string | null;
   archived: number;
   user_role_label: string;
   /** Audit entries kept for this event; 0 keeps everything. */

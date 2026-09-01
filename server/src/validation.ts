@@ -137,9 +137,14 @@ export const cloneEventSchema = z
     newName: trimmed(120),
     startDate: dateSchema,
     endDate: dateSchema,
-    viewerPassword: passwordSchema,
-    userPassword: passwordSchema,
-    adminPassword: passwordSchema,
+    // Optional, exactly as on `createEventSchema` and for the same reason: a
+    // blank field is filled in by `resolveEventPasswords` rather than
+    // rejected. Duplicating an event was the one path that still demanded all
+    // three be invented on the spot, which made copying an event harder than
+    // creating one from nothing.
+    viewerPassword: passwordSchema.optional(),
+    userPassword: passwordSchema.optional(),
+    adminPassword: passwordSchema.optional(),
   })
   .refine((v) => v.endDate >= v.startDate, {
     message: 'End date must not be before the start date',

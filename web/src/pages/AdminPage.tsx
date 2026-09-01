@@ -25,6 +25,7 @@ import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminAttendees } from './AdminAttendees';
 import { AdminInvite } from './AdminInvite';
+import { AdminPasswords } from './AdminPasswords';
 import {
   DangerButton,
   Modal,
@@ -529,14 +530,17 @@ export function AdminPage() {
   // The organiser on this page is already the event admin, so no instance key
   // is needed — the endpoint accepts either.
   const cloneSlugValue = cloneSlug || slugify(cloneName);
+  // Passwords are no longer part of "ready": blank ones are generated, exactly
+  // as on the creation form. Duplicating an event used to be the one path that
+  // still demanded three invented on the spot, which made copying last year's
+  // conference harder than starting from nothing. A password that has been
+  // *started* still has to be a real one.
   const cloneReady =
     cloneName.trim().length > 0 &&
     /^[a-z0-9-]{3,40}$/.test(cloneSlugValue) &&
     cloneStart.length > 0 &&
     cloneEnd.length > 0 &&
-    cloneViewer.length >= 6 &&
-    cloneUser.length >= 6 &&
-    cloneAdmin.length >= 6;
+    [cloneViewer, cloneUser, cloneAdmin].every((pw) => pw === '' || pw.length >= 6);
 
   const cloneEvent = async () => {
     setCloning(true);
@@ -546,12 +550,14 @@ export function AdminPage() {
         newSlug: cloneSlugValue,
         startDate: cloneStart,
         endDate: cloneEnd,
-        viewerPassword: cloneViewer,
-        userPassword: cloneUser,
-        adminPassword: cloneAdmin,
+        // Omitted rather than sent blank: '' is a password six characters too
+        // short, while absent is the field the server fills in.
+        ...(cloneViewer ? { viewerPassword: cloneViewer } : {}),
+        ...(cloneUser ? { userPassword: cloneUser } : {}),
+        ...(cloneAdmin ? { adminPassword: cloneAdmin } : {}),
       });
       toast.show('Event duplicated — you are its organiser');
-      navigate(`/e/${created.slug}/admin`);
+      navigate(`/e/${created.slug}/admin?tab=settings`);
     } catch (err) {
       fail(err);
       setCloning(false);
@@ -1040,7 +1046,10 @@ export function AdminPage() {
                 Change passwords
               </p>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                Leave blank to keep the current one.
+                Leave blank to keep the current one. A password you type here is yours —
+                it is stored hashed and cannot be read back, so it will show as “set by
+                you” under Event passwords. Use Replace there instead to get one this
+                instance generates and can show you again.
               </p>
             </div>
             <FormGrid cols={3}>
@@ -1065,6 +1074,8 @@ export function AdminPage() {
             </div>
             </FormStack>
           </Section>
+
+          <AdminPasswords slug={slug} userRoleLabel={userRoleLabel} />
 
           <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
 
@@ -1124,7 +1135,11 @@ export function AdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
                   New passwords
                 </p>
-                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">At least 6 characters each.</p>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                  Optional — leave any of them blank and one is generated, which you can
+                  read under Event passwords in the copy. At least 6 characters if you do
+                  type one. The copy never inherits this event’s passwords.
+                </p>
               </div>
               <FormGrid cols={3}>
                 <Field label="Viewer">

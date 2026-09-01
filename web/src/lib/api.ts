@@ -7,6 +7,7 @@ import type {
   ContributionKind,
   EventDto,
   EventSummary,
+  EventPasswords,
   GeneratedPasswords,
   ImportResult,
   LinkCodeDto,
@@ -119,13 +120,15 @@ export const api = {
       newName: string;
       startDate: string;
       endDate: string;
-      viewerPassword: string;
-      userPassword: string;
-      adminPassword: string;
+      // Omit one and the server generates it, exactly as on creation, and
+      // returns it in `generatedPasswords`.
+      viewerPassword?: string;
+      userPassword?: string;
+      adminPassword?: string;
     },
     instanceKey?: string,
   ) =>
-    request<EventSummary>(
+    request<EventSummary & { generatedPasswords: GeneratedPasswords }>(
       'POST',
       `/events/${encode(slug)}/clone`,
       body,
@@ -145,6 +148,25 @@ export const api = {
    *  bcrypt hashes and cannot check the organiser's typing any other way. */
   passwordRole: (slug: string, password: string) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/password-role`, { password }),
+  /**
+   * The event's passwords, for its organiser. A `null` means that one was
+   * typed by a person rather than generated here, so only its hash was stored
+   * and there is nothing to show — never that the password is empty.
+   */
+  eventPasswords: (slug: string) =>
+    request<EventPasswords>('GET', `/e/${encode(slug)}/passwords`),
+  /**
+   * Mint a fresh password for one role and return it. An organiser may reset
+   * any of the three; `instanceKey` is the way in for an event with no
+   * organiser left to sign in, and resets the admin one only.
+   */
+  resetEventPassword: (slug: string, role: 'viewer' | 'user' | 'admin', instanceKey?: string) =>
+    request<{ role: Role; password: string }>(
+      'POST',
+      `/e/${encode(slug)}/passwords/${role}/reset`,
+      undefined,
+      instanceKey ? { 'X-Instance-Key': instanceKey } : {},
+    ),
   /** Rename yourself inside one event. 409 if the name is taken there. */
   renameInEvent: (slug: string, displayName: string) =>
     request<{ displayName: string }>('PATCH', `/e/${encode(slug)}/me`, { displayName }),

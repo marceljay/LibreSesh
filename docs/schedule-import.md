@@ -68,8 +68,11 @@ The response is the same either way:
 
 `eventId` is `null` on a dry run — nothing was written, so there is no id to
 give. `counts.sessions` is what actually lands, repeats expanded, so it is the
-first thing to read back against the programme. **Keep `generatedPasswords`**: they are stored hashed and that response
-is the only place they can ever be read.
+first thing to read back against the programme. `generatedPasswords` is what the server invented for the roles the
+document left blank; a generated one stays readable afterwards under Manage
+Event → Settings → Event passwords, so this response is a convenience rather
+than the only copy. A password written into the document is stored hashed and
+is not readable anywhere.
 
 ## The document
 

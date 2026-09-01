@@ -40,6 +40,45 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   // The device-link path: type the phrase your other device shows, become it.
   const [linkMode, setLinkMode] = useState(false);
   const [phrase, setPhrase] = useState('');
+  /**
+   * The lockout path: an event whose organisers can all no longer get in.
+   *
+   * Shared passwords have no "forgot it" flow by design — there is no address
+   * to send one to, because there are no accounts. Until now that made a lost
+   * organiser password terminal for everybody except whoever had shell access
+   * to the database. The instance password is the answer: it is the deploy's
+   * own secret, it already gates creating an event here, and it can now
+   * replace this event's organiser password and show the replacement.
+   *
+   * It is a link at the bottom of the gate rather than a mode beside the
+   * password box, because it is the rarest thing anyone does here and it is
+   * not a way *in* — it hands back a password you then type above like anyone
+   * else. Whoever holds the instance key could create their own event on this
+   * instance regardless; what it deliberately does not become is a role.
+   */
+  const [recoverMode, setRecoverMode] = useState(false);
+  const [instanceKey, setInstanceKey] = useState('');
+  const [recovered, setRecovered] = useState<string | null>(null);
+
+  const recover = async () => {
+    if (!instanceKey.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { password: fresh } = await api.resetEventPassword(slug, 'admin', instanceKey.trim());
+      setRecovered(fresh);
+      // Straight into the box above, so the next step is pressing Enter rather
+      // than copying a phrase between two fields on the same screen.
+      setPassword(fresh);
+      setInstanceKey('');
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Could not reach the server',
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const link = async () => {
     if (!phrase.trim() || busy) return;
@@ -336,6 +375,56 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               className="text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
             >
               I’m already here on another device
+            </button>
+          )}
+        </div>
+
+        <div className="mt-4 border-t border-stone-100 pt-4 dark:border-stone-800">
+          {recovered ? (
+            <>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                New organiser password for this event. It is in the box above — press
+                Enter schedule. You can read it again later under Manage Event →
+                Settings, so there is nothing to write down.
+              </p>
+              <p className="mt-1.5 select-all break-all font-mono text-sm">{recovered}</p>
+            </>
+          ) : recoverMode ? (
+            <>
+              <Field
+                label="Instance password"
+                hint="The one this server was deployed with — not an event password. It replaces this event’s organiser password with a fresh one and shows it to you. The old one stops working."
+              >
+                <input
+                  type="password"
+                  value={instanceKey}
+                  onChange={(e) => setInstanceKey(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void recover()}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className={inputClass}
+                />
+              </Field>
+              {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
+              <PrimaryButton
+                className="mt-3 w-full py-2 text-sm"
+                onClick={() => void recover()}
+                disabled={busy}
+              >
+                {busy ? 'Resetting…' : 'Reset the organiser password'}
+              </PrimaryButton>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setRecoverMode(true);
+                setError(null);
+              }}
+              className="text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+            >
+              Nobody can get in as organiser
             </button>
           )}
         </div>

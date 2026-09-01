@@ -90,8 +90,9 @@ export function NewEventPage() {
         <h1 className="mb-1 text-lg font-semibold tracking-tight">Event created</h1>
         <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
           You are its admin already. These passwords were generated for the roles you
-          left blank — <strong>write them down now</strong>. They are stored hashed, so
-          this screen is the only place they can be read.
+          left blank. No need to write them down: a password this instance generated
+          stays readable in <strong>Manage Event → Settings → Event passwords</strong>.
+          Only one you type yourself is stored hashed and unrecoverable.
         </p>
         <dl className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-sm">
           {rows.map(([label, value]) =>
@@ -208,8 +209,10 @@ export function NewEventPage() {
           Event passwords
         </p>
         <p className="-mt-2 text-xs text-stone-500 dark:text-stone-400">
-          Leave any of them blank and one is generated for you, shown once on the next
-          screen. All three must differ — they are what tell the roles apart.
+          Leave any of them blank and one is generated for you, shown on the next screen
+          and readable afterwards under Manage Event → Settings. A password you type is
+          stored hashed and cannot be read back. All three must differ — they are what
+          tell the roles apart.
         </p>
         <Field label="Viewer — read the schedule" hint="Optional — blank generates one.">
           <input

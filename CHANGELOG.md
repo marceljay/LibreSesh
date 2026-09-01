@@ -6,6 +6,39 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **An organiser can read their event's passwords.** They were three bcrypt
+  hashes and nothing else, which treated a shared door code as if it were a
+  login. The consequences were two dead ends: an organiser who closed the
+  "write these down now" screen had no way back to the code they were meant to
+  be handing out at the desk, and an event whose organisers had all lost the
+  password was finished — no account, so no reset link, and nothing short of
+  shell access to the SQLite file.
+
+  **Manage Event → Settings → Event passwords** now shows them. Only the ones
+  this instance generated: a password somebody typed may well be one they use
+  elsewhere and is not ours to keep, so its column stays NULL and the row says
+  "set by you — not stored". Typing your own is how you opt out. Each row has
+  **Replace**, which mints a fresh phrase and shows it — so a typed password
+  nobody remembers is one button rather than lost work. The panel stays hidden
+  until asked for, because Settings gets opened at a registration desk with a
+  queue in front of it.
+
+  What it costs is in ARCHITECTURE §Reading an event's passwords and in the
+  threat table: a leaked database now also leaks live event passwords. That is
+  a smaller step than it sounds — `identities.token` is already stored in
+  clear, so whoever can read the file can already *be* an organiser — but it is
+  a real one, and it is written down rather than assumed.
+
+- **A locked-out event can be recovered with the instance password.** The
+  gate's "Nobody can get in as organiser" link takes the instance password —
+  the deploy's own secret, which already gates creating an event here — and
+  mints a fresh organiser password for that one event. Deliberately a reset and
+  not a sign-in: it grants no role, reads nothing, and hands back a password
+  you then type at the gate like anybody else. Organiser role only, because
+  recovery needs exactly one way back in and the new organiser can reset the
+  rest from inside. Audited as its own action, and tinted in the log: it is the
+  one line there that means somebody took an event back from outside it.
+
 - **A session can be given by more than one person.** `sessions.speaker_id`
   held exactly one, which is wrong for most of what an unconference actually
   runs: a panel, a pair, a workshop with two facilitators, a talk and its
@@ -668,6 +701,15 @@ All notable changes to this project are documented here.
   instance one; the README gained a section on the same distinction.
 
 ### Fixed
+
+- **Duplicating an event no longer demands three passwords.** Creating an event
+  has always let you leave any of them blank and filled it in with a generated
+  phrase; duplicating one insisted on all three, which made copying last year's
+  conference harder than starting from nothing. It now takes the same path —
+  blank fields are filled in, not rejected, and the copy lands on its own
+  Settings tab where the generated passwords can be read. Passwords are still
+  never inherited from the source event: duplicating last year usually means
+  this year's room is a different room.
 
 - **Number fields no longer accept nonsense.** Every typed number in the app
   was a `type="number"` input, which enforces `min` and `max` on the spinner

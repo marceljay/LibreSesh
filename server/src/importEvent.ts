@@ -403,9 +403,10 @@ export function importEvent(
         .prepare(
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-             viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label,
+             viewer_pw_hash, user_pw_hash, admin_pw_hash,
+             viewer_pw_plain, user_pw_plain, admin_pw_plain, archived, user_role_label,
              default_view, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
         )
         .run(
           doc.event.slug,
@@ -418,6 +419,11 @@ export function importEvent(
           hashPassword(passwords.viewerPassword),
           hashPassword(passwords.userPassword),
           hashPassword(passwords.adminPassword),
+          // Only the ones generated here; a password written into the import
+          // document was typed by a person and is not ours to keep.
+          generated.viewerPassword ?? null,
+          generated.userPassword ?? null,
+          generated.adminPassword ?? null,
           doc.event.userRoleLabel ?? 'attendee',
           doc.event.defaultView ?? 'list',
           now,
