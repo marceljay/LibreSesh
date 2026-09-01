@@ -80,8 +80,9 @@ CHANGELOG.md under `[0.2.0]`, and what has landed since is under
   that reports the problem — open
   `/src/pages/AdminBreaks.tsx` on the dev server (JS source = right server, so
   hard-reload the tab; app HTML or 404 = the forwarded port goes somewhere
-  else), and hover the build pill bottom-right, which should read
-  `v0.2.0 · 5e53811-dirty`. If it is the port, the next move is a second dev
+  else), and read the build under **?** → **About LibreSesh**, which should
+  say `v0.2.0 · 5e53811-dirty` (it was a pill in the bottom-right corner until
+  2026-09-01). If it is the port, the next move is a second dev
   server on a fresh port so VS Code auto-forwards it, side-stepping the fixed
   `appPort` mapping in `.devcontainer/devcontainer.json`.
 

@@ -86,6 +86,7 @@ Unknown top-level keys are refused rather than ignored, so `"session"` for
 | `startDate`, `endDate` | ✓ | `YYYY-MM-DD`. Every session must fall inside them |
 | `dayStartMin`, `dayEndMin` | | Minutes from midnight for the visible hours. Default `480`–`1320` (08:00–22:00) |
 | `userRoleLabel` | | What this event calls its middle role. Default `attendee` |
+| `defaultView` | | Which view the schedule opens in for a reader who has not picked one: `list` or `cal`. Default `list` |
 | `viewerPassword`, `userPassword`, `adminPassword` | | Leave any out and a four-word phrase is generated for it and returned once. All three must differ |
 
 The importer does **not** become an organiser by virtue of importing. Roles are
