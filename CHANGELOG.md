@@ -6,6 +6,26 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **An event can be renamed, and its old address keeps working.** Manage Event
+  → Settings has a **Slug** field. Changing it moves the event to the new URL —
+  `/e/unconf-2026` becomes the real address, not a redirect to the old one —
+  and every slug the event has ever had goes on resolving to it.
+
+  Nobody loses anything in the move. A role is stored against the event, never
+  against its name, and identity is a cross-event cookie, so an organiser stays
+  an organiser and an attendee's starred agenda is still there: no one is
+  signed out and nothing is re-entered. The links already handed out keep
+  working too, and not merely in the browser — the invite URL on a badge, a
+  QR code taped to a door, a subscribed calendar feed and any API caller
+  written against the old slug all still answer, because the old name resolves
+  server-side rather than 302-ing. Open tabs move themselves to the new address
+  when the rename is broadcast; nothing needs reloading.
+
+  A slug that still redirects cannot be claimed by a new event, a clone or a
+  JSON import, so an old link can never be quietly re-pointed at somebody
+  else's event. Renames are logged in the audit trail under their own word,
+  *renamed*, rather than as a generic edit.
+
 - **Filter the schedule by track — including the sessions on no track.** The
   Filter panel gained a **Tracks** section beside Rooms and Tags, with a chip
   per track and an **Unassigned** chip for sessions nobody has put on a strand

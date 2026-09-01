@@ -4,10 +4,11 @@ import { audit, pruneAudit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
 import type { Role } from '../shared/types.js';
-import { badRequest, forbidden } from '../errors.js';
+import { badRequest, conflict, forbidden } from '../errors.js';
 import { toEventDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
 import { getPermissions, setPermissions } from '../permissions.js';
+import { renameEvent, slugTaken } from '../slugs.js';
 import { authSchema, parse, permissionsSchema, settingsSchema } from '../validation.js';
 
 export function settingsRoutes(ctx: Ctx): Router {
@@ -116,28 +117,43 @@ export function settingsRoutes(ctx: Ctx): Router {
         }
       }
 
-      ctx.db
-        .prepare(
-          `UPDATE events SET name = ?, start_date = ?, end_date = ?, day_start_min = ?,
-                  day_end_min = ?, week_rail_from = ?, viewer_pw_hash = ?, user_pw_hash = ?, admin_pw_hash = ?,
-                  archived = ?, user_role_label = ?, audit_keep = ?
-            WHERE id = ?`,
-        )
-        .run(
-          body.name ?? current.name,
-          startDate,
-          endDate,
-          dayStartMin,
-          dayEndMin,
-          body.weekRailFrom ?? current.week_rail_from,
-          body.viewerPassword ? hashPassword(body.viewerPassword) : current.viewer_pw_hash,
-          body.userPassword ? hashPassword(body.userPassword) : current.user_pw_hash,
-          body.adminPassword ? hashPassword(body.adminPassword) : current.admin_pw_hash,
-          body.archived === undefined ? current.archived : body.archived ? 1 : 0,
-          body.userRoleLabel ?? current.user_role_label,
-          body.auditKeep ?? current.audit_keep,
-          current.id,
-        );
+      // Renaming the event is renaming its address. Nothing in the database
+      // points at an event by slug — roles, sessions and identities all key
+      // off `event_id` — so this moves one string and costs nobody their
+      // place: an organiser stays an organiser, a starred agenda stays
+      // starred. The slug being left behind keeps resolving (see `slugs.ts`),
+      // so the links already handed out do not become 404s.
+      const nextSlug = body.slug ?? current.slug;
+      const renaming = nextSlug !== current.slug;
+      if (renaming && slugTaken(ctx.db, nextSlug, current.id)) {
+        throw conflict('That slug is already taken', 'slug_taken');
+      }
+
+      ctx.db.transaction(() => {
+        if (renaming) renameEvent(ctx.db, current.id, current.slug, nextSlug);
+        ctx.db
+          .prepare(
+            `UPDATE events SET name = ?, start_date = ?, end_date = ?, day_start_min = ?,
+                    day_end_min = ?, week_rail_from = ?, viewer_pw_hash = ?, user_pw_hash = ?, admin_pw_hash = ?,
+                    archived = ?, user_role_label = ?, audit_keep = ?
+              WHERE id = ?`,
+          )
+          .run(
+            body.name ?? current.name,
+            startDate,
+            endDate,
+            dayStartMin,
+            dayEndMin,
+            body.weekRailFrom ?? current.week_rail_from,
+            body.viewerPassword ? hashPassword(body.viewerPassword) : current.viewer_pw_hash,
+            body.userPassword ? hashPassword(body.userPassword) : current.user_pw_hash,
+            body.adminPassword ? hashPassword(body.adminPassword) : current.admin_pw_hash,
+            body.archived === undefined ? current.archived : body.archived ? 1 : 0,
+            body.userRoleLabel ?? current.user_role_label,
+            body.auditKeep ?? current.audit_keep,
+            current.id,
+          );
+      })();
 
       // Apply a tightened cap now rather than at the next hundredth write —
       // an organiser who sets it to trim the log expects the log to be trimmed.
@@ -151,12 +167,20 @@ export function settingsRoutes(ctx: Ctx): Router {
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: current.id,
-        action: 'update',
+        // A rename is the one settings change that alters what the event is
+        // reachable at, so it gets its own word in the log rather than hiding
+        // inside a generic "edited".
+        action: renaming ? 'rename' : 'update',
         entity: 'event',
         entityId: current.id,
       });
       const dto = toEventDto(updated);
-      ctx.broker.publish(updated.slug, 'event.updated', dto);
+      // Everyone with the event open is subscribed to the channel for the slug
+      // they arrived on, so the announcement of a rename has to go out on the
+      // *old* one — nobody is listening on the new channel yet. The new one is
+      // published to as well for anything that got there first.
+      ctx.broker.publish(current.slug, 'event.updated', dto);
+      if (renaming) ctx.broker.publish(updated.slug, 'event.updated', dto);
       res.json(dto);
     },
   );

@@ -85,6 +85,7 @@ export function AdminPage() {
   const event = bundle?.event;
 
   const [name, setName] = useState('');
+  const [slugField, setSlugField] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [dayStart, setDayStart] = useState('');
@@ -151,6 +152,7 @@ export function AdminPage() {
   if (event && loadedForSlug !== event.slug) {
     setLoadedForSlug(event.slug);
     setName(event.name);
+    setSlugField(event.slug);
     setStartDate(event.startDate);
     setEndDate(event.endDate);
     setDayStart(fmtMin(event.dayStartMin));
@@ -452,6 +454,9 @@ export function AdminPage() {
     try {
       const updated = await api.updateSettings(slug, {
         name: name.trim(),
+        // Only when it actually changed: sending the current slug back is a
+        // no-op the server would still log as a rename.
+        ...(slugField && slugField !== event?.slug ? { slug: slugField } : {}),
         startDate,
         endDate,
         dayStartMin: toMinutes(dayStart),
@@ -891,6 +896,26 @@ export function AdminPage() {
             <FormStack>
             <Field label="Name">
               <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+            </Field>
+            {/* Renaming an event is renaming its address, which sounds more
+                dangerous than it is: roles are held against the event itself,
+                not its slug, so nobody is signed out or demoted — and the old
+                address goes on working rather than 404ing. The hint says both,
+                because an organiser who does not know that will not touch
+                this field. */}
+            <Field
+              label="Slug"
+              hint={
+                slugField && slugField !== event?.slug
+                  ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
+                  : `Used in the URL: /e/${slugField || event?.slug}`
+              }
+            >
+              <input
+                value={slugField}
+                onChange={(e) => setSlugField(slugify(e.target.value))}
+                className={inputClass}
+              />
             </Field>
             <FormGrid>
               <Field label="Start date">

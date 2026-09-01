@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type {
   BreakDto,
   BundleDto,
@@ -309,6 +310,36 @@ export interface EventData extends State {
 export function useEventData(slug: string): EventData {
   const [state, dispatch] = useReducer(reducer, initial);
   const hadError = useRef(false);
+  const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+
+  /**
+   * Put the event's current slug in the address bar.
+   *
+   * An event can be renamed, and every slug it ever had goes on answering — so
+   * arriving on an old link works, and this is what quietly moves the URL on
+   * afterwards. It covers the other direction too: an organiser renaming the
+   * event from Manage Event is standing on a page whose URL just became an old
+   * one, and the `event.updated` broadcast lands here the same way, so their
+   * tab and everyone else's follow without a reload.
+   *
+   * `replace`, not push: the old address is not a place anyone should be able
+   * to press Back into.
+   *
+   * The hash is deliberately dropped rather than carried across. It is where an
+   * invite link keeps its password, and `takeInvite` strips it with a raw
+   * `history.replaceState` the router never sees — so carrying `location.hash`
+   * here would put a password the gate had already scrubbed back into the URL.
+   * Nothing else uses the fragment.
+   */
+  const canonicalSlug = state.bundle?.event.slug;
+  useEffect(() => {
+    if (!canonicalSlug || canonicalSlug === slug) return;
+    const from = `/e/${encodeURIComponent(slug)}`;
+    if (!pathname.startsWith(from)) return;
+    const to = `/e/${encodeURIComponent(canonicalSlug)}${pathname.slice(from.length)}`;
+    navigate(`${to}${search}`, { replace: true });
+  }, [canonicalSlug, slug, pathname, search, navigate]);
 
   const reload = useCallback(async () => {
     dispatch({ kind: 'loading' });

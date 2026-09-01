@@ -404,6 +404,8 @@ export interface PersonWrite {
 
 export interface SettingsWrite {
   name?: string;
+  /** Moves the event to a new address; the old one keeps resolving. */
+  slug?: string;
   startDate?: string;
   endDate?: string;
   weekRailFrom?: number;

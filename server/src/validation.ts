@@ -399,6 +399,9 @@ export const myProfileSchema = z.object({
 export const settingsSchema = z
   .object({
     name: trimmed(120).optional(),
+    // The event's address. Changing it moves the event; the slug it moves off
+    // keeps resolving, so this is not the one-way door it looks like.
+    slug: slugSchema.optional(),
     startDate: dateSchema.optional(),
     endDate: dateSchema.optional(),
     dayStartMin: minuteOfDaySchema.optional(),

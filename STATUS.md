@@ -93,18 +93,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
-- **A track has no description, so its info panel has little to say.** Filed
-  2026-09-01. A room carries `description` — which floor, which door, what to
-  bring — and the schedule now reads it through the ⓘ on the column card. A
-  track carries only a name, a colour and, since `e4eb832`, its hours, so the
-  same button can explain what the hours mean but not what the strand *is*.
-  Wanted: `tracks.description`, a field in the track editor beside the hours,
-  and the text shown through the panel that already exists — the presentation
-  is built, so this is a column, a validation line, an editor field, a mapper
-  and the export/import pair. Worth doing in the same pass: `ColumnCard` takes
-  whatever node the page hands it and two callers now build that node by hand;
-  a third is the point to give it a shape.
-
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
@@ -415,6 +403,15 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   forbids the trailer.
 
 ## Low Priority / Ideas
+
+- **Show an organiser the old addresses an event still answers to.** Renaming
+  an event landed 2026-09-01 and every former slug goes on resolving, but
+  nothing in the UI lists them — the only trail is the *renamed* rows in the
+  audit log. `formerSlugs` was written for this and then removed rather than
+  left as dead code (`git show` the rename commit for the four lines). Worth it
+  only if an organiser ever asks "which names are burned?"; the guarantee they
+  actually care about — the old link still works — is already in the Slug
+  field's hint.
 
 - **A real series, and a root event other events inherit from.** Deferred
   2026-08-31, deliberately and not for want of time. `repeat` expands to

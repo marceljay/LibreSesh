@@ -244,6 +244,7 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
       db.prepare('DELETE FROM event_identities WHERE event_id = ?').run(prior.id);
       db.prepare('DELETE FROM roles WHERE event_id = ?').run(prior.id);
       db.prepare('DELETE FROM audit WHERE event_id = ?').run(prior.id);
+      db.prepare('DELETE FROM event_slugs WHERE event_id = ?').run(prior.id);
       db.prepare('DELETE FROM events WHERE id = ?').run(prior.id);
     }
 

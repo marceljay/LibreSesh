@@ -33,6 +33,7 @@ import { badRequest, conflict, HttpError } from './errors.js';
 import { resolveEventPasswords } from './eventPasswords.js';
 import { assertValidTimes } from './sessionRules.js';
 import { describeRepeat, repeatDays, repeatSchema } from './repeat.js';
+import { slugTaken } from './slugs.js';
 import { nextRoomColor } from './shared/roomColors.js';
 import type { ImportResult } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from './shared/time.js';
@@ -370,7 +371,12 @@ export function importEvent(
   const existing = db
     .prepare<[string], { id: number }>('SELECT id FROM events WHERE slug = ?')
     .get(doc.event.slug);
-  if (existing) throw conflict('That slug is already taken', 'slug_taken');
+  // Also refuse a slug that some other event has been renamed away from: it
+  // still resolves to that event, and handing it to a new one would silently
+  // steal every old link pointing at it.
+  if (existing || slugTaken(db, doc.event.slug)) {
+    throw conflict('That slug is already taken', 'slug_taken');
+  }
 
   const { passwords, generated } = resolveEventPasswords(
     doc.event,

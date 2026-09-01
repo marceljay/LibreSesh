@@ -54,6 +54,7 @@ every failure as `{ error: { code, message } }`.
 | Table | Notes |
 | --- | --- |
 | `events` | Three bcrypt password hashes, timezone, day viewport, archive flag |
+| `event_slugs` | Every slug an event has been renamed away from; `getEventBySlug` falls back to it, so old links keep resolving |
 | `identities` | Anonymous cookie token, the display-name seed, optional iCal token |
 | `link_codes` | Hashed phrases that adopt an identity: device phrases (single-use, 10 minutes) and admin-minted speaker codes (per person, live until revoked) |
 | `event_identities` | `(event, identity) → display name`, unique within the event |
@@ -77,6 +78,20 @@ do not "simplify" this by comparing UTC minutes.
 **Soft deletes everywhere.** `deleted_at` rather than `DELETE`, so an organiser
 can undo vandalism (`/trash` and the restore endpoints). A hard delete of a
 session would orphan its contributions and stars.
+
+**The slug is an address, not a key.** Nothing in the database references an
+event by slug — every other table joins on `event_id`, and a role is stored
+against `event_id` too — so renaming an event moves exactly one string and
+costs nobody their place: an organiser stays an organiser, a starred agenda
+stays starred, because none of that was ever attached to the name. What a
+rename *would* break is the links already handed out, which is what
+`event_slugs` is for: the slug being left behind keeps resolving in
+`getEventBySlug`, so the invite URL on a badge, a subscribed calendar feed and
+an API caller written against the old name all still answer. The web app
+notices `event.slug` differs from the one in its URL and replaces the address
+bar; that is cosmetic, and nothing server-side depends on it happening.
+Uniqueness is checked across both tables (`slugTaken`), so a slug that still
+redirects cannot be handed to a new event.
 
 ### Sessions that hold the floor
 

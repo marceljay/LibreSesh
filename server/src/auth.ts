@@ -41,8 +41,26 @@ declare global {
   }
 }
 
+/**
+ * The event this slug names — its current one, or any it has been renamed
+ * away from.
+ *
+ * The fallback is what makes a rename safe: an old link is not a redirect the
+ * browser has to follow, it simply still works, so the invite URL on a badge,
+ * a subscribed calendar feed and an API caller written against the old name
+ * all keep answering. The web app rewrites the address bar to the current slug
+ * when it notices the difference; nothing here depends on it doing so.
+ */
 export function getEventBySlug(db: Db, slug: string): EventRow | undefined {
-  return db.prepare<[string], EventRow>('SELECT * FROM events WHERE slug = ?').get(slug);
+  const own = db.prepare<[string], EventRow>('SELECT * FROM events WHERE slug = ?').get(slug);
+  if (own) return own;
+  return db
+    .prepare<[string], EventRow>(
+      `SELECT e.* FROM events e
+         JOIN event_slugs a ON a.event_id = e.id
+        WHERE a.slug = ?`,
+    )
+    .get(slug);
 }
 
 export function getRole(db: Db, identityId: number, eventId: number): Role | undefined {

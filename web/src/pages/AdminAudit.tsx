@@ -15,6 +15,7 @@ import { EmptyState, SecondaryButton, Section, Spinner, inputClass, useToast } f
 const ACTIONS: Record<string, string> = {
   create: 'created',
   update: 'edited',
+  rename: 'renamed',
   delete: 'deleted',
   restore: 'restored',
   place: 'scheduled',
