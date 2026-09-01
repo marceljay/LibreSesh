@@ -46,16 +46,26 @@ CHANGELOG.md under `[0.2.0]`, and what has landed since is under
 
 ## Blockers
 
-- **The breaks band still has not been seen in a browser.** What is narrower
-  than it was: this was filed 2026-08-31 as "the browser shows an older app",
-  and that half is settled. The device feedback of 2026-09-01 describes the
-  folding header and the profile menu at the end of the event bar — chrome
-  that exists only in the build written that day — so the browser is being
-  served the current app, and three fixes came straight back out of it (fold
-  width, iOS focus zoom, the tour), all in CHANGELOG `[Unreleased]`. What is
-  left is the original question, unanswered: nobody has yet said whether the
-  band is on the grid. The checks below are kept as the record of what was
-  ruled out server side, and was verified rather than assumed:
+- **The breaks band still has not been seen in a browser.** What is left of
+  this: nobody has yet said whether the band is on the grid.
+
+  **The "older app" half is solved, 2026-09-01, and the answer was a process.**
+  A whole dev stack from 2026-08-31 was still running — `npm run dev` (pid
+  1005743), its vite holding port 3000 since the day before. Its API half had
+  stopped listening on 3001, which is what "not running anymore with the db"
+  turned out to be: a front end with nothing behind it. Everything the browser
+  loaded came from that Aug-31 vite. It also explains the empty commit in
+  About (see Backlog): the build stamp is read once at config load, so it was
+  reporting the 31st. Killed and restarted clean; API and web both answer 200,
+  and `data/app.db` is on migration `008_default_view.sql`.
+
+  **What to check first next time UI looks stale: `ss -tlnp | grep 3000` and
+  the start time of what owns it.** A vite that has been up for a day serves
+  current source through HMR — which is why this hid for so long — but its
+  config, its env stamp and its dep graph are from whenever it started.
+
+  The checks below are kept as the record of what was ruled out server side,
+  and was verified rather than assumed:ruled out server side, and was verified rather than assumed:
   - `data/app.db` holds three breaks (democonf: Lunch 12:00–14:00, Coffee
     15:30–16:00; longconf: Lunch), all `date: null`, and the bundle returns
     them.
@@ -98,21 +108,17 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
-- **The commit in About LibreSesh comes out empty.** Reported 2026-09-01,
-  against the About dialog that landed the same day (`52a11fc`). The Version
-  and Built lines read; Commit is blank. Blank, not `unknown`, which is the
-  clue: `HelpMenu` falls back with `??`, so it only defaults on `undefined` —
-  an *empty string* passes straight through, and `web/vite.config.ts` builds
-  the value as `process.env.BUILD_COMMIT || git('git rev-parse --short HEAD')
-  || 'unknown'`, then hands it over through `process.env`, which stringifies.
-  So the likely shape is: git fails in the container (no `.git` on the Docker
-  build stage, or `dubious ownership` on a bind mount), the fallback chain
-  produces something empty rather than `'unknown'`, and the dialog prints it.
-  Worth checking `VITE_BUILD_COMMIT` in the running dev server before changing
-  code — the same stamp feeds Version and Built, and those two arrive intact,
-  which the "git is missing" story does not fully explain. Two fixes, both
-  cheap once it is understood: treat empty as missing in `HelpMenu`, and make
-  the vite stamp say why it could not read git rather than passing a blank on.
+- **The commit in About LibreSesh comes out empty — cause found, one line
+  left.** Reported 2026-09-01 against the About dialog (`52a11fc`). It was the
+  stale dev server (see the entry under Blockers): the build stamp is computed
+  once, when vite loads its config, and the process serving port 3000 had
+  loaded its config on 2026-08-31. Started fresh on 2026-09-01 the same page
+  serves `VITE_BUILD_COMMIT: "6654fab"`, so there is nothing wrong with the
+  stamping. What is still worth doing is one line of hardening: `HelpMenu`
+  falls back with `??`, which only catches `undefined`, so an empty string
+  would print as blank rather than `unknown` — `||`, or an explicit check.
+  Same for the `dirty` flag, which read `true` against a clean tree on the
+  fresh server and is worth a second look.
 
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
