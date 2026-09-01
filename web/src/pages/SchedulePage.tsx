@@ -30,6 +30,7 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SessionDetail } from "../components/SessionDetail";
 import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
 import { Gate } from "../components/Gate";
+import { HelpMenu } from "../components/HelpMenu";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -995,15 +996,10 @@ export function SchedulePage() {
                   header had five controls competing for the width left over after
                   the event name. */}
               <div className="ml-auto flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setTourOpen(true)}
-                  aria-label="Take the tour"
-                  title="Take the tour"
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-xs font-medium text-stone-500 dark:text-stone-400 hover:border-stone-400 dark:hover:border-stone-500"
-                >
-                  ?
-                </button>
+                <HelpMenu
+                  onTour={() => setTourOpen(true)}
+                  demo={me?.demoMode === true}
+                />
                 <ProfileMenu
                   onCalendar={setCalendar}
                   displayName={bundle.displayName}

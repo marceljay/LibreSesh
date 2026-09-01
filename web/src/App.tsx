@@ -1,5 +1,4 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { BuildInfo } from './components/BuildInfo';
 import { ProposalBoard } from './components/ProposalBoard';
 import { ToastProvider } from './components/ui';
 import { AdminPage } from './pages/AdminPage';
@@ -9,12 +8,7 @@ import { ImportPage } from './pages/ImportPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
-import { MeProvider, useMe } from './lib/useMe';
-
-function Chrome() {
-  const { me } = useMe();
-  return <BuildInfo demo={me?.demoMode === true} />;
-}
+import { MeProvider } from './lib/useMe';
 
 export function App() {
   return (
@@ -39,7 +33,6 @@ export function App() {
           <Route path="/e/:slug/admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <Chrome />
       </ToastProvider>
       </MeProvider>
     </BrowserRouter>
