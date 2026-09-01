@@ -43,6 +43,9 @@ describe('the schedule is a shell, not a document', () => {
 
   it('sizes the grid from the shell rather than guessing the header', () => {
     expect(calendar).toContain('h-full overflow-auto');
+    // No permanent bars across the day: the horizontal one in particular sat
+    // along the bottom of the grid for the whole time you were reading it.
+    expect(calendar).toContain('no-scrollbar h-full overflow-auto');
     expect(calendar).not.toContain('100vh');
     expect(calendar).not.toContain('maxHeight');
   });

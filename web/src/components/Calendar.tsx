@@ -559,7 +559,13 @@ export function Calendar({
        keeps the sticky room cards below on screen all day. */
     <div
       ref={scrollRef}
-      className="h-full overflow-auto border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 sm:rounded-xl sm:border"
+      /* `no-scrollbar`: the grid scrolls both ways, and on the platforms that
+         draw a permanent bar the horizontal one sat across the bottom of the
+         day for the whole time you were reading it. The room cards and the
+         time gutter say which way the grid goes; the bars only said it again,
+         in the space the day was using. Both go — CSS hides scrollbars per
+         box, not per axis. */
+      className="no-scrollbar h-full overflow-auto border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 sm:rounded-xl sm:border"
     >
       <div className="relative" style={{ width: GUTTER_W + columns.length * COL_W }}>
         {/*
