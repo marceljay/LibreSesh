@@ -893,7 +893,13 @@ export function SchedulePage() {
   // room and length included — through Edit session, which is the same change
   // made by naming it rather than by aiming at it. The server never knew about
   // Arrange; it gates the underlying edit, and that rule is unchanged.
-  const canArrange = !event.archived && role === "admin";
+  //
+  // Grid only. `arrange` is read by `Calendar` and by nothing else — the list
+  // has no geometry to drag against — so in the list the button was a toggle
+  // for a mode with no effect: it lit up, said "Done arranging", and changed
+  // nothing on the page under it. Editing from the list is unaffected; it
+  // never went through Arrange, it is Edit session on the row.
+  const canArrange = !event.archived && role === "admin" && view === "cal";
 
   // Ordered coach-marks. Role-conditional controls are dropped here; the Tour
   // itself also skips any target that isn't in the DOM. Not memoised because
@@ -1165,7 +1171,13 @@ export function SchedulePage() {
                     <button
                       key={v}
                       type="button"
-                      onClick={() => filters.set({ view: v })}
+                      onClick={() => {
+                        filters.set({ view: v });
+                        // Leaving the grid also leaves Arrange, rather than
+                        // holding a drag mode open behind a button that is no
+                        // longer on screen to turn it off.
+                        if (v !== "cal") setArrange(false);
+                      }}
                       aria-pressed={view === v}
                       className={`rounded-md px-3 py-1.5 text-xs font-medium ${
                         view === v

@@ -711,6 +711,13 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Arrange is gone from the list view.** `arrange` is read by the calendar
+  grid and by nothing else, so in the list the button toggled a mode with no
+  effect — it lit up, said "Done arranging", and changed nothing under it.
+  Switching away from the grid now also turns the mode off, rather than leaving
+  it open behind a button that is no longer on screen. Editing from the list is
+  unaffected: it never went through Arrange.
+
 - **Duplicating an event no longer demands three passwords.** Creating an event
   has always let you leave any of them blank and filled it in with a generated
   phrase; duplicating one insisted on all three, which made copying last year's
