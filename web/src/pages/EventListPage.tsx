@@ -34,7 +34,11 @@ export function EventListPage() {
         {/* The logo carries the wordmark and the tagline as artwork, so the
             page's real heading is the screen-reader one. */}
         <h1 className="sr-only">LibreSesh — live schedules for conferences and unconferences</h1>
-        <Logo className="h-11 w-auto sm:h-14" />
+        {/* The list is no longer the front door, so the logo has somewhere to
+            go: `/` is what this is, for whoever landed here first. */}
+        <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
+          <Logo className="h-11 w-auto sm:h-14" />
+        </Link>
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
           <Link

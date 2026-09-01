@@ -119,7 +119,7 @@ export function AgendaPage() {
       <EmptyState>
         {data.error ?? 'Could not load this event.'}
         <div className="mt-3">
-          <Link to="/" className="underline">
+          <Link to="/events" className="underline">
             Back to all events
           </Link>
         </div>
@@ -131,7 +131,7 @@ export function AgendaPage() {
     <div className="min-h-screen bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-          <Link to="/" className="flex shrink-0 items-center" aria-label="All events">
+          <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
             <span className="flex items-center sm:hidden">
               <Logo variant="mark" className="h-6 w-auto" />
             </span>

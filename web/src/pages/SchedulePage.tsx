@@ -876,7 +876,7 @@ export function SchedulePage() {
       <EmptyState>
         {data.error ?? "Could not load this event."}
         <div className="mt-3">
-          <Link to="/" className="underline">
+          <Link to="/events" className="underline">
             Back to all events
           </Link>
         </div>
@@ -1017,7 +1017,7 @@ export function SchedulePage() {
               <Link
                 to="/"
                 className="flex shrink-0 items-center"
-                aria-label="All events"
+                aria-label="LibreSesh home"
               >
                 {/* Below `sm` the wordmark's width belongs to the event name, so
                     the phone header gets the near-square mark instead. The swap

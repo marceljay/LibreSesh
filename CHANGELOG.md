@@ -580,6 +580,20 @@ All notable changes to this project are documented here.
   duplicate, a claim on the duplicate moves to the survivor, and the duplicate
   is soft-deleted. Audited; not undoable via /trash, hence admin-only.
 
+- **A landing page at `/`.** The root said nothing about what LibreSesh is —
+  that copy lived in the About dialog, behind the "?" you cannot reach until
+  you are inside an event and past its password, so the one page a stranger is
+  guaranteed to see was the one page that explained nothing. `/` now answers
+  what this is, the licence, and what to do if you are holding an event link.
+  The list of every event moved to `/events`, which also stops a public
+  instance enumerating every event on the box to anyone who loads the root.
+
+  Its hero is markup rather than the design draft's screenshot: the app has a
+  light theme and a dark one, so a single PNG is wrong half the time, and a
+  pair goes stale the first time a card changes because nothing renders it.
+  `BoardPreview` is built from the classes `ListView` uses, and is
+  `aria-hidden` behind a real caption — the sessions in it are not real.
+
 ### Changed
 
 - **The star is an icon in the corner, not a row of text.** Opening a session
@@ -1119,6 +1133,15 @@ All notable changes to this project are documented here.
   treatment was already avoiding. The move also puts them outside the part of
   the header that folds away as you scroll into a day — Arrange in particular
   is a thing you reach for mid-scroll, and it used to fold out from under you.
+
+- **The logo means home, and home is `/`.** The logo in the schedule, agenda,
+  search and event-list headers used to be labelled "All events" and open the
+  list; it goes to the landing page now, as does the catch-all for a URL that
+  no longer resolves — most often a stale or mistyped event link, which the
+  page explaining what to do with an event link answers better than a list of
+  events that are not yours. The "back to all events" links in the error
+  states and the back links on Import and New event are about the list, not
+  about home, and still point at `/events`.
 
 
 ## [0.2.0] — 2026-08-30

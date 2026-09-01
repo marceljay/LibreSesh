@@ -211,17 +211,27 @@ export function Chip({
   );
 }
 
+/** Exported for the same reason `secondaryButtonClass` is: the landing page's
+ *  call to action is a router `<Link>`, which owns its own element.
+ *
+ *  Deliberately *not* `inline-flex`, which `secondaryButtonClass` does carry.
+ *  A `<button>` centres its label by the UA's `text-align: center`; make it a
+ *  flex container and the label becomes a flex item at `flex-start` instead,
+ *  which silently left-aligns all eight full-width PrimaryButtons — the gate's
+ *  "Enter schedule" among them. An `<a>` that wants the button's box adds
+ *  `inline-flex items-center` itself, the way `SessionDetail` already adds
+ *  `justify-center` to the one wide SecondaryButton. */
+export const primaryButtonClass =
+  'rounded-lg border border-transparent bg-stone-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-stone-700 disabled:opacity-40 ' +
+  'dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300';
+
 export function PrimaryButton({
   children,
   className = '',
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      type="button"
-      {...rest}
-      className={`rounded-lg border border-transparent bg-stone-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-stone-700 disabled:opacity-40 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300 ${className}`}
-    >
+    <button type="button" {...rest} className={`${primaryButtonClass} ${className}`}>
       {children}
     </button>
   );

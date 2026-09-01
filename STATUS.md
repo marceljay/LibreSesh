@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-01
+Last updated: 2026-09-02
 
 ## In Progress
 
@@ -363,24 +363,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   claim, or whether that belongs on the People tab where the two lists meet.
 
 ## Medium Priority
-
-- **There is no landing page — `/` is the list of every event.** _In progress
-  2026-09-01 on `feat/landing-page`, in a separate worktree — do not start
-  this._ A visitor to
-  the root gets the logo, an Import and a New event button, and the instance's
-  events (`App.tsx:20`, `EventListPage.tsx`). Nothing says what LibreSesh is or
-  what it is for; the About dialog behind the "?" says it, but only to someone
-  already inside an event. On a public instance the list is also the front
-  door, so every event on the box is enumerable by anyone who loads the page,
-  which is a second reason not to lead with it.
-
-  Wants a simple page at `/` — what this is, one line on the licence, the way
-  in for someone holding an event link, and a way through to the list. The
-  list itself then wants its own address (`/events`), and the catch-all
-  redirect at `App.tsx:39` has to follow it rather than keep pointing at `/`.
-  The copy already exists in the About dialog and the README; this is mostly a
-  decision about what the list is for once it is not the first thing anyone
-  sees.
 
 - **Put the last two popdowns on `usePopover`.** `ProfileMenu` and
   `SpeakerCombobox` still position themselves and still carry their own

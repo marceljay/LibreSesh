@@ -154,7 +154,7 @@ export function ImportPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link to="/" className={`text-xs ${linkClass} underline`}>
+      <Link to="/events" className={`text-xs ${linkClass} underline`}>
         ← All events
       </Link>
       <h1 className="mb-1 mt-3 text-lg font-semibold tracking-tight">Import a schedule</h1>
