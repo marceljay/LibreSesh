@@ -588,6 +588,18 @@ All notable changes to this project are documented here.
   swapping on one threshold in both directions — folding resizes the grid it is
   measuring, and a single threshold would let that resize flicker the header.
 
+  The fold takes 700ms and is a movement rather than a cut: the rows shrink to
+  nothing while the grid grows into the space, so it reads as one gesture with
+  the wheel that started it instead of the header being chopped off. The height
+  animates `grid-template-rows` from `0fr` to `1fr`, which means nothing has to
+  name a max-height larger than the content — a number that would ease through
+  empty space and be wrong the day a row wraps onto another line. Anyone who
+  has asked their system for less motion gets the old instant swap.
+
+  Past the fold, a **↑** button appears in the bottom-right corner: one press
+  back to the top of the day, however far down it you are. It scrolls rather
+  than jumps, so the header unfolds on the way up.
+
 - **The filter panel no longer shoves the page sideways on a phone.** Opening
   **Filter** on mobile zoomed the whole schedule out and left you pinching back
   in to read it. The panel was positioned `absolute left-0` inside a wrapper

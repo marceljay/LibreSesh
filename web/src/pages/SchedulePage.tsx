@@ -116,6 +116,9 @@ function TrackInfo({
   );
 }
 
+/** Matches `duration-700` on the folding rows; see `foldRow` below. */
+const FOLD_MS = 700;
+
 export function SchedulePage() {
   const { slug = "", sessionId } = useParams();
   const navigate = useNavigate();
@@ -519,6 +522,28 @@ export function SchedulePage() {
   const folded = foldable && chromeFolded && !chromePinned;
   const foldedDay = dayLabel(day, today);
 
+  const jumpToTop = useCallback(() => {
+    setChromePinned(false);
+    calRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  /**
+   * The fold takes time, so "folded" and "gone" are two different moments and
+   * the rows need to know which one they are in: mid-move they have to be
+   * clipped, and only once they have finished leaving can they drop out of the
+   * tab order. Nothing measures the transition — this is the same 700ms the
+   * classes below spend, kept beside them.
+   */
+  const [foldMoving, setFoldMoving] = useState(false);
+  const wasFolded = useRef(folded);
+  useEffect(() => {
+    if (wasFolded.current === folded) return;
+    wasFolded.current = folded;
+    setFoldMoving(true);
+    const timer = setTimeout(() => setFoldMoving(false), FOLD_MS);
+    return () => clearTimeout(timer);
+  }, [folded]);
+
   useEffect(() => {
     const el = calRef.current;
     if (!el || !foldable) {
@@ -784,6 +809,23 @@ export function SchedulePage() {
     body: "Everyone else sees your changes within a second, with no refresh needed.",
   });
 
+  /* Folding is a movement rather than a cut: the rows shrink to nothing over
+     `FOLD_MS`, so the grid growing into the space they leave reads as one
+     gesture with the wheel that started it. `grid-rows-[0fr]` rather than a
+     max-height because nothing then has to guess the height being animated —
+     the row keeps measuring itself all the way down. */
+  const foldRow = `grid transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
+    folded ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+  }`;
+  /* Clipped while it moves and while it is away, open once it has settled: the
+     profile menu drops out of the event bar, and a permanent `overflow-hidden`
+     here would cut it off. `invisible` only at the end, because a row that is
+     still on its way out is still on screen, and one that has gone should not
+     be a tab stop. */
+  const foldInner = `${folded || foldMoving ? "overflow-hidden" : ""}${
+    folded && !foldMoving ? " invisible" : ""
+  }`;
+
   return (
     /* An app shell, not a document: the viewport holds the header and the
        grid, and the grid is what scrolls. When the page scrolled instead, the
@@ -792,71 +834,73 @@ export function SchedulePage() {
        on a phone `vh` counts the strip behind the address bar. */
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
-        <div
-          className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl items-center gap-3 px-4 py-3`}
-        >
-          <Link
-            to="/"
-            className="flex shrink-0 items-center"
-            aria-label="All events"
-          >
-            {/* Below `sm` the wordmark's width belongs to the event name, so
-                the phone header gets the near-square mark instead. The swap
-                lives on wrappers because Logo spends its own display classes
-                on the theme. */}
-            <span className="flex items-center sm:hidden">
-              <Logo variant="mark" className="h-6 w-auto" />
-            </span>
-            <span className="hidden items-center sm:flex">
-              <Logo variant="oneline" className="h-6 w-auto" />
-            </span>
-          </Link>
-          <span
-            aria-hidden="true"
-            className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
-          />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold tracking-tight">
-              {event.name}
+        <div className={foldRow}>
+          <div className={foldInner}>
+            <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+              <Link
+                to="/"
+                className="flex shrink-0 items-center"
+                aria-label="All events"
+              >
+                {/* Below `sm` the wordmark's width belongs to the event name, so
+                    the phone header gets the near-square mark instead. The swap
+                    lives on wrappers because Logo spends its own display classes
+                    on the theme. */}
+                <span className="flex items-center sm:hidden">
+                  <Logo variant="mark" className="h-6 w-auto" />
+                </span>
+                <span className="hidden items-center sm:flex">
+                  <Logo variant="oneline" className="h-6 w-auto" />
+                </span>
+              </Link>
+              <span
+                aria-hidden="true"
+                className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
+              />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold tracking-tight">
+                  {event.name}
+                </div>
+                <div
+                  data-tour="live"
+                  className="truncate text-xs text-stone-500 dark:text-stone-400"
+                >
+                  {days.length} day{days.length > 1 ? "s" : ""} ·{" "}
+                  {event.archived
+                    ? "archived — read-only"
+                    : data.connected
+                      ? "schedule is live"
+                      : "reconnecting…"}
+                </div>
+              </div>
+              {/* Theme moved into the profile menu and Manage Event down to the
+                  action row, where it belongs beside Add session. On a phone this
+                  header had five controls competing for the width left over after
+                  the event name. */}
+              <div className="ml-auto flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTourOpen(true)}
+                  aria-label="Take the tour"
+                  title="Take the tour"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-xs font-medium text-stone-500 dark:text-stone-400 hover:border-stone-400 dark:hover:border-stone-500"
+                >
+                  ?
+                </button>
+                <ProfileMenu
+                  onCalendar={setCalendar}
+                  displayName={bundle.displayName}
+                  slug={slug}
+                  role={role}
+                  userLabel={event.userRoleLabel}
+                  people={bundle.people}
+                  publicId={me?.uid ?? ""}
+                  onSignOut={() => {
+                    void api.logout(slug).then(() => void data.reload());
+                  }}
+                />
+              </div>
             </div>
-            <div
-              data-tour="live"
-              className="truncate text-xs text-stone-500 dark:text-stone-400"
-            >
-              {days.length} day{days.length > 1 ? "s" : ""} ·{" "}
-              {event.archived
-                ? "archived — read-only"
-                : data.connected
-                  ? "schedule is live"
-                  : "reconnecting…"}
-            </div>
-          </div>
-          {/* Theme moved into the profile menu and Manage Event down to the
-              action row, where it belongs beside Add session. On a phone this
-              header had five controls competing for the width left over after
-              the event name. */}
-          <div className="ml-auto flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setTourOpen(true)}
-              aria-label="Take the tour"
-              title="Take the tour"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-xs font-medium text-stone-500 dark:text-stone-400 hover:border-stone-400 dark:hover:border-stone-500"
-            >
-              ?
-            </button>
-            <ProfileMenu
-              onCalendar={setCalendar}
-              displayName={bundle.displayName}
-              slug={slug}
-              role={role}
-              userLabel={event.userRoleLabel}
-              people={bundle.people}
-              publicId={me?.uid ?? ""}
-              onSignOut={() => {
-                void api.logout(slug).then(() => void data.reload());
-              }}
-            />
           </div>
         </div>
 
@@ -865,191 +909,195 @@ export function SchedulePage() {
             for its context and drops the rest. */}
         {!fullPage && (
           <>
-          {weeks.length > 1 && (
-            <div
-              className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl flex-wrap items-center gap-1.5 px-4 pb-2`}
-            >
-              {weeks.map((week, i) => {
-                const first = week[0] as string;
-                const last = week[week.length - 1] as string;
-                const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
-                const holdsToday = week.includes(today);
-                return (
-                  <button
-                    key={first}
-                    type="button"
-                    onClick={() => filters.set({ day: holdsToday ? today : first })}
-                    aria-pressed={i === weekIndex}
-                    aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                      i === weekIndex
-                        ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
-                        : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"
-                    }`}
-                  >
-                    Week {i + 1}
-                    <span className="ml-1.5 text-stone-400 dark:text-stone-500">
-                      {dayRangeLabel(first, last)}
-                    </span>
-                    {holdsToday && !week.includes(day) && (
-                      <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <div
-            className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl flex-wrap items-center gap-2 px-4 pb-3`}
-          >
-            <div
-              data-tour="days"
-              className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
-            >
-              {stripDays.map((d) => {
-                const label = dayLabel(d, today);
-                return (
-                  <button
-                    key={d}
-                    type="button"
-                    onClick={() => filters.set({ day: d })}
-                    aria-pressed={day === d}
-                    className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
-                      day === d
-                        ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                        : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
-                    } ${day !== d && (perDay.get(d) ?? 0) === 0 ? "opacity-40" : ""}`}
-                  >
-                    {label.top}{" "}
-                    <span
-                      className={
-                        day === d
-                          ? "text-stone-300 dark:text-stone-600"
-                          : "text-stone-400 dark:text-stone-500"
-                      }
-                    >
-                      {label.sub}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div
-              data-tour="view"
-              className="flex rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5"
-            >
-              {(["cal", "list"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => filters.set({ view: v })}
-                  aria-pressed={view === v}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                    view === v
-                      ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                      : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
-                  }`}
+          <div className={foldRow}>
+            <div className={foldInner}>
+              {weeks.length > 1 && (
+                <div
+                  className="mx-auto flex max-w-6xl flex-wrap items-center gap-1.5 px-4 pb-2"
                 >
-                  {v === "cal" ? "Grid" : "List"}
-                </button>
-              ))}
-            </div>
+                  {weeks.map((week, i) => {
+                    const first = week[0] as string;
+                    const last = week[week.length - 1] as string;
+                    const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
+                    const holdsToday = week.includes(today);
+                    return (
+                      <button
+                        key={first}
+                        type="button"
+                        onClick={() => filters.set({ day: holdsToday ? today : first })}
+                        aria-pressed={i === weekIndex}
+                        aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                          i === weekIndex
+                            ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
+                            : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"
+                        }`}
+                      >
+                        Week {i + 1}
+                        <span className="ml-1.5 text-stone-400 dark:text-stone-500">
+                          {dayRangeLabel(first, last)}
+                        </span>
+                        {holdsToday && !week.includes(day) && (
+                          <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* Only when the event has tracks, and only in the grid — the list
-                is an agenda in time order, with no columns to lay out. */}
-            {hasTracks && view === "cal" && (
               <div
-                data-tour="axis"
-                className="flex rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
+                className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 pb-3"
               >
-                {(["room", "track"] as const).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    onClick={() => filters.set({ axis: a })}
-                    aria-pressed={axis === a}
-                    className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                      axis === a
-                        ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
-                        : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-                    }`}
+                <div
+                  data-tour="days"
+                  className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
+                >
+                  {stripDays.map((d) => {
+                    const label = dayLabel(d, today);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => filters.set({ day: d })}
+                        aria-pressed={day === d}
+                        className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
+                          day === d
+                            ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
+                            : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
+                        } ${day !== d && (perDay.get(d) ?? 0) === 0 ? "opacity-40" : ""}`}
+                      >
+                        {label.top}{" "}
+                        <span
+                          className={
+                            day === d
+                              ? "text-stone-300 dark:text-stone-600"
+                              : "text-stone-400 dark:text-stone-500"
+                          }
+                        >
+                          {label.sub}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
+                  data-tour="view"
+                  className="flex rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5"
+                >
+                  {(["cal", "list"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => filters.set({ view: v })}
+                      aria-pressed={view === v}
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                        view === v
+                          ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
+                          : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
+                      }`}
+                    >
+                      {v === "cal" ? "Grid" : "List"}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Only when the event has tracks, and only in the grid — the list
+                    is an agenda in time order, with no columns to lay out. */}
+                {hasTracks && view === "cal" && (
+                  <div
+                    data-tour="axis"
+                    className="flex rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
                   >
-                    {a === "room" ? "Rooms" : "Tracks"}
-                  </button>
-                ))}
-              </div>
-            )}
+                    {(["room", "track"] as const).map((a) => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => filters.set({ axis: a })}
+                        aria-pressed={axis === a}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                          axis === a
+                            ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
+                            : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
+                        }`}
+                      >
+                        {a === "room" ? "Rooms" : "Tracks"}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-            {/* Everyone needs the board: attendees pitch there, viewers can
-                register interest. It sits with the other ways of looking at the
-                programme, not up with the account chrome. */}
-            <Link
-              data-tour="pitches"
-              to={`/e/${slug}/proposals`}
-              className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-            >
-              Pitches
-              {bundle.proposals.filter((p) => p.placedSessionId === null).length >
-                0 && (
-                <span className="ml-1 text-stone-400 dark:text-stone-500">
-                  {bundle.proposals.filter((p) => p.placedSessionId === null)
-                    .length}
-                </span>
-              )}
-            </Link>
-
-            {/* Manage / Arrange / Add travel together at every width — an
-                organiser's three actions belong in one place, not split between
-                the header and here. Each keeps its glyph and drops its label
-                below `sm`, which is what buys the room on a phone. */}
-            <div className="ml-auto flex items-center gap-2">
-              {role === "admin" && (
+                {/* Everyone needs the board: attendees pitch there, viewers can
+                    register interest. It sits with the other ways of looking at the
+                    programme, not up with the account chrome. */}
                 <Link
-                  data-tour="manage"
-                  to={`/e/${slug}/admin`}
-                  aria-label="Manage Event"
-                  title="Manage Event"
-                  className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                  data-tour="pitches"
+                  to={`/e/${slug}/proposals`}
+                  className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
                 >
-                  <span aria-hidden="true">⚙</span>
-                  <span className="hidden sm:inline">Manage Event</span>
+                  Pitches
+                  {bundle.proposals.filter((p) => p.placedSessionId === null).length >
+                    0 && (
+                    <span className="ml-1 text-stone-400 dark:text-stone-500">
+                      {bundle.proposals.filter((p) => p.placedSessionId === null)
+                        .length}
+                    </span>
+                  )}
                 </Link>
-              )}
-              {canArrange && (
-                <button
-                  type="button"
-                  data-tour="arrange"
-                  onClick={() => setArrange((a) => !a)}
-                  aria-pressed={arrange}
-                  aria-label={arrange ? "Done arranging" : "Arrange sessions"}
-                  title={arrange ? "Done arranging" : "Arrange sessions"}
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
-                    arrange
-                      ? "border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                      : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                  }`}
-                >
-                  <span aria-hidden="true">{arrange ? "✓" : "↕"}</span>
-                  <span className="hidden sm:inline">
-                    {arrange ? "Done arranging" : "Arrange Sessions"}
-                  </span>
-                </button>
-              )}
-              {canWrite && (
-                <button
-                  type="button"
-                  data-tour="add"
-                  onClick={() => setEditing({})}
-                  aria-label="Add session"
-                  title="Add session"
-                  className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
-                >
-                  <span aria-hidden="true">+</span>
-                  <span className="hidden sm:inline">Add session</span>
-                </button>
-              )}
+
+                {/* Manage / Arrange / Add travel together at every width — an
+                    organiser's three actions belong in one place, not split between
+                    the header and here. Each keeps its glyph and drops its label
+                    below `sm`, which is what buys the room on a phone. */}
+                <div className="ml-auto flex items-center gap-2">
+                  {role === "admin" && (
+                    <Link
+                      data-tour="manage"
+                      to={`/e/${slug}/admin`}
+                      aria-label="Manage Event"
+                      title="Manage Event"
+                      className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                    >
+                      <span aria-hidden="true">⚙</span>
+                      <span className="hidden sm:inline">Manage Event</span>
+                    </Link>
+                  )}
+                  {canArrange && (
+                    <button
+                      type="button"
+                      data-tour="arrange"
+                      onClick={() => setArrange((a) => !a)}
+                      aria-pressed={arrange}
+                      aria-label={arrange ? "Done arranging" : "Arrange sessions"}
+                      title={arrange ? "Done arranging" : "Arrange sessions"}
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        arrange
+                          ? "border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
+                          : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                      }`}
+                    >
+                      <span aria-hidden="true">{arrange ? "✓" : "↕"}</span>
+                      <span className="hidden sm:inline">
+                        {arrange ? "Done arranging" : "Arrange Sessions"}
+                      </span>
+                    </button>
+                  )}
+                  {canWrite && (
+                    <button
+                      type="button"
+                      data-tour="add"
+                      onClick={() => setEditing({})}
+                      aria-label="Add session"
+                      title="Add session"
+                      className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
+                    >
+                      <span aria-hidden="true">+</span>
+                      <span className="hidden sm:inline">Add session</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1057,7 +1105,11 @@ export function SchedulePage() {
               edge: find a session anywhere (the box), or narrow the day on
               screen (the panel). Whatever the panel is currently doing shows
               up beside it as chips you can take off one at a time. */}
-          <div className={`mx-auto max-w-6xl px-4 pb-3 ${folded ? "pt-2" : ""}`}>
+          <div
+            className={`mx-auto max-w-6xl px-4 pb-3 transition-[padding] duration-700 ease-in-out motion-reduce:transition-none ${
+              folded ? "pt-2" : "pt-0"
+            }`}
+          >
             <div
               data-tour="filters"
               className="flex flex-wrap items-center gap-1.5"
@@ -1358,6 +1410,30 @@ export function SchedulePage() {
               : undefined
           }
         />
+      )}
+
+      {/* The day is long and the wheel back up is longer, so once you are past
+          the fold there is a way to the top of it in one press. It scrolls
+          rather than jumping, and the header unfolds on the way up because the
+          scroll it makes is the same scroll the fold listens to. */}
+      {foldable && (
+        <button
+          type="button"
+          onClick={jumpToTop}
+          aria-hidden={!chromeFolded}
+          tabIndex={chromeFolded ? 0 : -1}
+          aria-label="Back to the top of the day"
+          title="Back to the top of the day"
+          className={`fixed right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-lg transition-all duration-300 hover:border-stone-400 hover:text-stone-900 motion-reduce:transition-none dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100 ${
+            arrange ? "bottom-16" : "bottom-4"
+          } ${
+            chromeFolded
+              ? "opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0"
+          }`}
+        >
+          <span aria-hidden="true">↑</span>
+        </button>
       )}
 
       {arrange && (

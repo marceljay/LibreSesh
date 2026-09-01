@@ -60,6 +60,49 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/onClick=\{\(\) => setChromePinned\(true\)\}/);
   });
 
+  it('folds over time rather than switching', () => {
+    // A fold that happens in one frame reads as the header being cut off, and
+    // as a jump in the grid that grows into the space. Long enough to follow,
+    // short enough not to be waited on.
+    expect(schedule).toMatch(/const FOLD_MS = 700;/);
+    expect(schedule).toContain('duration-700');
+  });
+
+  it('animates a height that nothing had to guess', () => {
+    // `0fr` → `1fr` keeps the row measuring itself the whole way down. A
+    // max-height fold needs a number larger than the content, which then eases
+    // through empty space and arrives late — and is wrong the day the row
+    // wraps onto a third line.
+    expect(schedule).toContain('grid-rows-[0fr]');
+    expect(schedule).toContain('grid-rows-[1fr]');
+    expect(schedule).not.toMatch(/max-h-\[\d/);
+  });
+
+  it('clips the folding rows only while they are folding', () => {
+    // The profile menu drops out of the event bar, so `overflow-hidden` can
+    // only be on while the row is moving or away — permanently, it would cut
+    // the menu off at the bar's bottom edge.
+    expect(schedule).toMatch(/folded \|\| foldMoving \? "overflow-hidden"/);
+    // And a row that has finished leaving is not a tab stop.
+    expect(schedule).toMatch(/folded && !foldMoving \? " invisible"/);
+  });
+
+  it('holds still for anyone who asked for less motion', () => {
+    const moving = schedule.match(/transition-\[[^\]]+\]/g) ?? [];
+    const spared = schedule.match(/motion-reduce:transition-none/g) ?? [];
+    expect(moving.length).toBeGreaterThan(0);
+    expect(spared.length).toBeGreaterThanOrEqual(moving.length);
+  });
+
+  it('offers one press back to the top of the day', () => {
+    expect(schedule).toMatch(/aria-label="Back to the top of the day"/);
+    // Scrolled, not jumped: the same scroll the fold listens to, so the header
+    // comes back on the way up rather than blinking into place at the top.
+    expect(schedule).toMatch(/scrollTo\(\{ top: 0, behavior: "smooth" \}\)/);
+    // Out of the way means out of reach, not merely invisible.
+    expect(schedule).toMatch(/tabIndex=\{chromeFolded \? 0 : -1\}/);
+  });
+
   it('keeps Now in the row that survives the fold', () => {
     // The action row folds away; the filter row does not. Now belongs with the
     // filters, between the Filter menu and the chips it puts up.
