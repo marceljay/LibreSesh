@@ -158,4 +158,68 @@ describe('tracks', () => {
       expect(kept.trackId).toBeNull();
     });
   });
+  describe('description', () => {
+    it('is empty for a track created without one, so nothing changes for existing events', async () => {
+      const res = await admin.post('/api/e/testconf/tracks').send({ name: 'Design' }).expect(201);
+      expect(res.body.description).toBe('');
+    });
+
+    it('is kept, trimmed, and reaches the bundle every attendee reads', async () => {
+      const made = await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops', description: '  Hands-on. Bring a laptop.  ' })
+        .expect(201);
+      expect(made.body.description).toBe('Hands-on. Bring a laptop.');
+
+      const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
+      expect(bundle.body.tracks[0].description).toBe('Hands-on. Bring a laptop.');
+    });
+
+    it('survives a rename, because omitting a field is not clearing it', async () => {
+      const made = await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops', description: 'Bring a laptop.' })
+        .expect(201);
+      const patched = await admin
+        .patch(`/api/e/testconf/tracks/${made.body.id}`)
+        .send({ name: 'Hands-on' })
+        .expect(200);
+      expect(patched.body.name).toBe('Hands-on');
+      expect(patched.body.description).toBe('Bring a laptop.');
+    });
+
+    it("clears on an explicit '', which is the only way to take it back", async () => {
+      const made = await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops', description: 'Bring a laptop.' })
+        .expect(201);
+      const patched = await admin
+        .patch(`/api/e/testconf/tracks/${made.body.id}`)
+        .send({ description: '' })
+        .expect(200);
+      expect(patched.body.description).toBe('');
+    });
+
+    it('is not carried over by a revived track, which is a new strand under an old name', async () => {
+      const made = await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops', description: 'Bring a laptop.' })
+        .expect(201);
+      await admin.delete(`/api/e/testconf/tracks/${made.body.id}`).expect(204);
+
+      const revived = await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops' })
+        .expect(201);
+      expect(revived.body.id).toBe(made.body.id);
+      expect(revived.body.description).toBe('');
+    });
+
+    it('refuses more than a card can hold', async () => {
+      await admin
+        .post('/api/e/testconf/tracks')
+        .send({ name: 'Workshops', description: 'x'.repeat(501) })
+        .expect(400);
+    });
+  });
 });

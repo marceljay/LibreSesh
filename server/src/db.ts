@@ -133,6 +133,8 @@ export interface TrackRow {
   id: number;
   event_id: number;
   name: string;
+  /** The organiser's context for the strand; '' when they gave none. */
+  description: string;
   color: string;
   sort_order: number;
   /** Local minutes-of-day the track accepts sessions between. Both null = any

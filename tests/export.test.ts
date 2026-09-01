@@ -79,6 +79,18 @@ describe('per-event JSON export', () => {
     expect(dump.people.map((p) => p.name)).toContain('Ada');
   });
 
+  it("carries a track's context, so an export can rebuild what it said", async () => {
+    await admin
+      .post('/api/e/testconf/tracks')
+      .send({ name: 'Workshops', description: 'Hands-on. Bring a laptop.' })
+      .expect(201);
+    await admin.post('/api/e/testconf/tracks').send({ name: 'Talks' }).expect(201);
+
+    const dump = await fetchExport(admin);
+    expect(dump.tracks.map((t) => t.name)).toEqual(['Workshops', 'Talks']);
+    expect(dump.tracks.map((t) => t.description)).toEqual(['Hands-on. Bring a laptop.', '']);
+  });
+
   it('keeps contributions with the name that wrote them', async () => {
     const created = await admin
       .post('/api/e/testconf/sessions')

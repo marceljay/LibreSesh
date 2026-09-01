@@ -1,0 +1,14 @@
+-- A track's own context: what the strand is for, who it is aimed at, what to
+-- bring.
+--
+-- Rooms have carried a description since the baseline, and the schedule shows
+-- it behind the info button on the column header — the one thing about a
+-- column that does not fit on the card. A track is the other kind of column
+-- and had nowhere to say the same thing, so "the workshops track is
+-- hands-on, bring a laptop" lived in the event description, in a pinned
+-- session, or nowhere.
+--
+-- Empty by default, which is what every existing track becomes: a track with
+-- nothing to say shows no more than it did before, and the info button stays
+-- off its header unless the track also keeps hours.
+ALTER TABLE tracks ADD COLUMN description TEXT NOT NULL DEFAULT '';

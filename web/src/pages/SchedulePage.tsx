@@ -22,6 +22,7 @@ import { useEventData } from "../lib/useEventData";
 import { matchesQuery } from "../lib/search";
 import { useFilters } from "../lib/useFilters";
 import { roomNote, seatsLabel } from "../lib/rooms";
+import { trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
 import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
 import { DetailSheet } from "../components/DetailSheet";
@@ -55,19 +56,39 @@ const UNTRACKED = -1;
  * rule rather than a description, who it binds, and whether this day keeps its
  * own window. The times themselves stay on the card and are not repeated here.
  */
-function TrackInfo({ track, day }: { track: TrackDto; day: string }) {
+function TrackInfo({
+  track,
+  day,
+  note,
+  hours,
+}: {
+  track: TrackDto;
+  day: string;
+  /** The organiser's context for the strand, or '' if they gave none. */
+  note: string;
+  /** Whether the card is showing hours that need explaining. */
+  hours: boolean;
+}) {
   const ownDay = track.windows.some((w) => w.date === day);
   return (
     <div className="space-y-1.5">
-      <p>
-        The hours on the card are a rule: a session outside them is refused, unless an organiser
-        places it.
-      </p>
-      {ownDay && <p>Today keeps its own window — other days differ.</p>}
-      {!ownDay && track.windows.length > 0 && (
-        <p>
-          Other days differ: {track.windows.map((w) => `${w.date} ${windowLabel(w)}`).join(", ")}.
-        </p>
+      {/* The organiser's words first: a reader who tapped the button wants to
+          know what the strand is, and the hours are a footnote to that. */}
+      {note && <p className="whitespace-pre-line">{note}</p>}
+      {hours && (
+        <>
+          <p>
+            The hours on the card are a rule: a session outside them is refused, unless an organiser
+            places it.
+          </p>
+          {ownDay && <p>Today keeps its own window — other days differ.</p>}
+          {!ownDay && track.windows.length > 0 && (
+            <p>
+              Other days differ:{" "}
+              {track.windows.map((w) => `${w.date} ${windowLabel(w)}`).join(", ")}.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
@@ -215,6 +236,10 @@ export function SchedulePage() {
       // on a day with its own window the default is not the rule, and printing
       // it under the column would be a lie about what will be accepted.
       const hours = windowOn(track, day);
+      // The strand's own context, exactly as a room's directions are handled:
+      // the session count and the hours are on the card, so the panel carries
+      // what the card has no room for.
+      const note = trackNote(track);
       return {
         id: track.id,
         name: track.name,
@@ -227,7 +252,10 @@ export function SchedulePage() {
             {hours && <div className="truncate tabular-nums">{windowLabel(hours)}</div>}
           </div>
         ),
-        info: hours ? <TrackInfo track={track} day={day} /> : undefined,
+        info:
+          note || hours ? (
+            <TrackInfo track={track} day={day} note={note} hours={Boolean(hours)} />
+          ) : undefined,
       };
     });
     if (sessions.some((x) => x.trackId === null)) {

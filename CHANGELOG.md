@@ -6,6 +6,23 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **A track can say what it is for.** Tracks now carry a description, the way
+  rooms always have. Manage Event → Tracks → **Edit** takes up to 500
+  characters — "hands-on, bring a laptop", who the strand is aimed at, what to
+  expect — and the schedule shows it behind the info button on the track's
+  column header.
+
+  That is deliberately the same place a room's directions appear, because a
+  track column and a room column are the same furniture: the card carries what
+  fits on a card (the session count, the hours the track keeps) and the button
+  carries the one thing that does not. A track with nothing to say and no hours
+  still has no info button, so nothing changes for an event that does not use
+  the field.
+
+  It travels with the event too — it is written by the JSON import (`tracks[].
+  description`) and comes back in the export, so a transcribed schedule keeps
+  the context it was transcribed with.
+
 - **Enter an event by scanning a QR code.** Manage Event → Settings → **Invite
   by QR** turns one of the three event passwords into a code for a badge, a
   poster or a sheet of paper at the door. Scanning it opens the gate with the

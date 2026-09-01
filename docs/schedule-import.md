@@ -109,9 +109,13 @@ Array order is column order on the grid: list them the way they are printed.
 | Field | Required | Notes |
 | --- | --- | --- |
 | `name` | ✓ | 60 characters for a track, 40 for a tag. Unique within its own list |
+| `description` | | Tracks only. Up to 500 characters — what the strand is for, who it is aimed at |
 | `color` | | `#RRGGBB`. Tracks take one from the palette, tags default to grey |
 
-Both are optional, and both are declared here or not at all.
+Both are optional, and both are declared here or not at all. A track's
+`description` reaches attendees the same way a room's does: behind the info
+button on the column header, where the schedule keeps what will not fit on the
+card itself.
 
 A track may also state the hours it keeps, which is how "workshops run in the
 mornings" gets said once instead of being watched for:

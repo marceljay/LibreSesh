@@ -26,7 +26,10 @@ const document = () => ({
     endDate: DAY_TWO,
   },
   rooms: [{ name: 'Main hall', capacity: 200 }, { name: 'Side room' }],
-  tracks: [{ name: 'Design' }, { name: 'Infrastructure' }],
+  tracks: [
+    { name: 'Design', description: 'Craft, research and critique.' },
+    { name: 'Infrastructure' },
+  ],
   tags: [{ name: 'beginner' }],
   sessions: [
     {
@@ -100,7 +103,7 @@ describe('event import from JSON', () => {
     const admin = await actorWithRole(harness, 'photoconf', result.generatedPasswords.adminPassword!);
     const bundle = (await admin.get('/api/e/photoconf/bundle').expect(200)).body as {
       rooms: { name: string; capacity: number | null }[];
-      tracks: { name: string }[];
+      tracks: { name: string; description: string }[];
       sessions: {
         title: string;
         startsAt: string;
@@ -113,6 +116,9 @@ describe('event import from JSON', () => {
 
     // Array order is column order: the rooms come back as they were printed.
     expect(bundle.rooms.map((r) => r.name)).toEqual(['Main hall', 'Side room']);
+    // A transcribed track keeps its context, and one declared without any
+    // arrives blank rather than absent.
+    expect(bundle.tracks.map((t) => t.description)).toEqual(['Craft, research and critique.', '']);
     expect(bundle.rooms[0]?.capacity).toBe(200);
     expect(bundle.tracks.map((t) => t.name)).toEqual(['Design', 'Infrastructure']);
 

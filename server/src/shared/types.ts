@@ -244,6 +244,11 @@ export interface TrackWindowDto {
 export interface TrackDto {
   id: number;
   name: string;
+  /**
+   * What the strand is for, in the organiser's words — the same job a room's
+   * description does, for the other kind of column. '' when unset.
+   */
+  description: string;
   color: string;
   sortOrder: number;
   /**
@@ -339,6 +344,7 @@ export interface EventExport {
   tracks: {
     id: number;
     name: string;
+    description: string;
     color: string;
     sortOrder: number;
     /** The hours the track keeps, as local minutes; null means any hour. */

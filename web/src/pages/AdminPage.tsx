@@ -653,7 +653,15 @@ export function AdminPage() {
                         className="h-5 w-5 shrink-0 rounded-full border border-stone-300 dark:border-stone-600"
                         style={{ background: track.color }}
                       />
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium">{track.name}</p>
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {track.name}
+                        {track.description && (
+                          <span className="font-normal text-stone-500 dark:text-stone-400">
+                            {' · '}
+                            {track.description}
+                          </span>
+                        )}
+                      </p>
                       {track.startMin !== null && (
                         <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
                           {windowLabel({ startMin: track.startMin, endMin: track.endMin ?? 1440 })}
@@ -1402,6 +1410,7 @@ function TrackEditor({
   onClose: () => void;
 }) {
   const [name, setName] = useState(track.name);
+  const [description, setDescription] = useState(track.description);
   const [color, setColor] = useState(track.color);
   const [limited, setLimited] = useState(track.startMin !== null);
   const [start, setStart] = useState(fmtMin(track.startMin ?? 9 * 60));
@@ -1416,6 +1425,7 @@ function TrackEditor({
 
   const dirty =
     name.trim() !== track.name ||
+    description.trim() !== track.description ||
     color !== track.color ||
     hours.startMin !== track.startMin ||
     hours.endMin !== track.endMin ||
@@ -1425,7 +1435,17 @@ function TrackEditor({
     if (!name.trim() || !hoursValid || busy) return;
     setBusy(true);
     try {
-      if (await onPatch(track, { name: name.trim(), color, ...hours, windows })) onClose();
+      if (
+        await onPatch(track, {
+          name: name.trim(),
+          description: description.trim(),
+          color,
+          ...hours,
+          windows,
+        })
+      ) {
+        onClose();
+      }
     } finally {
       setBusy(false);
     }
@@ -1466,6 +1486,18 @@ function TrackEditor({
             maxLength={60}
             className={inputClass}
             autoFocus
+          />
+        </Field>
+        <Field
+          label="Description"
+          hint="Shown to attendees behind the column's info button. What the strand is for, who it is aimed at."
+        >
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={2}
+            maxLength={500}
+            className={`${inputClass} resize-none`}
           />
         </Field>
         <Field label="Colour" hint="Used for this track's column on the schedule.">

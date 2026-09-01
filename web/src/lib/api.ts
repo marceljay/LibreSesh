@@ -341,6 +341,8 @@ export interface SessionWrite {
 
 export interface TrackWrite {
   name?: string;
+  /** '' clears it; omitting it leaves the stored one alone. */
+  description?: string;
   color?: string;
   /**
    * The hours the track accepts sessions in, as local minutes on the 5-minute

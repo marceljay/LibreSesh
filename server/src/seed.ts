@@ -86,9 +86,21 @@ const TAGS = [
 /** Only seeded for a long event: a two-day unconference has no strands to
  *  speak of, and with no tracks the schedule never mentions them. */
 const TRACKS = [
-  { name: 'Build', color: '#BFD7E8' },
-  { name: 'Community', color: '#CFE3CE' },
-  { name: 'Operations', color: '#EDE2C6' },
+  {
+    name: 'Build',
+    color: '#BFD7E8',
+    description: 'Writing the thing. Code, schemas and the arguments behind them.',
+  },
+  {
+    name: 'Community',
+    color: '#CFE3CE',
+    description: 'Governance, contributors and the people around the project.',
+  },
+  {
+    name: 'Operations',
+    color: '#EDE2C6',
+    description: 'Running it for other people: deploys, backups, the pager.',
+  },
 ];
 
 const OFFICIAL_TITLES = [
@@ -338,9 +350,10 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
           Number(
             db
               .prepare(
-                'INSERT INTO tracks (event_id, name, color, sort_order) VALUES (?, ?, ?, ?)',
+                `INSERT INTO tracks (event_id, name, description, color, sort_order)
+                 VALUES (?, ?, ?, ?, ?)`,
               )
-              .run(eventId, track.name, track.color, i).lastInsertRowid,
+              .run(eventId, track.name, track.description, track.color, i).lastInsertRowid,
           ),
         )
       : [];

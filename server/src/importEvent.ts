@@ -75,6 +75,7 @@ const importRoomSchema = z.object({
 const importTrackSchema = z
   .object({
     name: trimmed(60),
+    description: optionalTrimmed(500).optional(),
     color: colorSchema.optional(),
     start: startTimeSchema.optional(),
     end: endTimeSchema.optional(),
@@ -437,8 +438,8 @@ export function importEvent(
     assertNamesDistinct(tracks, 'tracks');
     const trackIds = new Map<string, number>();
     const insertTrack = db.prepare(
-      `INSERT INTO tracks (event_id, name, color, sort_order, start_min, end_min)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tracks (event_id, name, description, color, sort_order, start_min, end_min)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     );
     const insertTrackWindow = db.prepare(
       `INSERT INTO track_windows (track_id, date, start_min, end_min, created_at)
@@ -452,6 +453,7 @@ export function importEvent(
       const id = insertTrack.run(
         eventId,
         track.name,
+        track.description ?? '',
         color,
         order,
         hours.startMin,

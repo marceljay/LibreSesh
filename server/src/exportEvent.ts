@@ -152,6 +152,7 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
     tracks: tracks.map((t) => ({
       id: t.id,
       name: t.name,
+      description: t.description,
       color: t.color,
       sortOrder: t.sort_order,
       startMin: t.start_min,

@@ -214,6 +214,7 @@ const checkTrackHours = (
 export const trackSchema = z
   .object({
     name: trimmed(60),
+    description: optionalTrimmed(500).optional(),
     color: colorSchema.optional(),
     ...trackHoursShape,
   })
@@ -221,6 +222,7 @@ export const trackSchema = z
 export const trackPatchSchema = z
   .object({
     name: trimmed(60).optional(),
+    description: optionalTrimmed(500).optional(),
     color: colorSchema.optional(),
     ...trackHoursShape,
   })

@@ -60,6 +60,7 @@ export const toRoomDto = (r: RoomRow): RoomDto => ({
 export const toTrackDto = (t: TrackRow, windows: TrackWindowDto[] = []): TrackDto => ({
   id: t.id,
   name: t.name,
+  description: t.description,
   color: t.color,
   startMin: t.start_min,
   endMin: t.end_min,

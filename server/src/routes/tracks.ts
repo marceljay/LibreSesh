@@ -61,10 +61,17 @@ export function trackRoutes(ctx: Ctx): Router {
     if (clash && clash.deleted_at !== null) {
       ctx.db
         .prepare(
-          `UPDATE tracks SET color = ?, deleted_at = NULL, sort_order = ?, start_min = ?, end_min = ?
-            WHERE id = ?`,
+          `UPDATE tracks SET description = ?, color = ?, deleted_at = NULL, sort_order = ?,
+            start_min = ?, end_min = ? WHERE id = ?`,
         )
-        .run(body.color ?? clash.color, live.length, startMin, endMin, clash.id);
+        .run(
+          body.description ?? '',
+          body.color ?? clash.color,
+          live.length,
+          startMin,
+          endMin,
+          clash.id,
+        );
       id = clash.id;
     } else if (clash) {
       throw conflict('A track with that name already exists', 'track_exists');
@@ -72,10 +79,18 @@ export function trackRoutes(ctx: Ctx): Router {
       id = Number(
         ctx.db
           .prepare(
-            `INSERT INTO tracks (event_id, name, color, sort_order, start_min, end_min)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO tracks (event_id, name, description, color, sort_order, start_min, end_min)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
           )
-          .run(req.event.id, body.name, color, live.length, startMin, endMin).lastInsertRowid,
+          .run(
+            req.event.id,
+            body.name,
+            body.description ?? '',
+            color,
+            live.length,
+            startMin,
+            endMin,
+          ).lastInsertRowid,
       );
     }
     // A revived track keeps nothing of the hours it kept before it was deleted.
@@ -104,8 +119,20 @@ export function trackRoutes(ctx: Ctx): Router {
     const startMin = body.startMin === undefined ? existing.start_min : body.startMin;
     const endMin = body.endMin === undefined ? existing.end_min : body.endMin;
     ctx.db
-      .prepare('UPDATE tracks SET name = ?, color = ?, start_min = ?, end_min = ? WHERE id = ?')
-      .run(body.name ?? existing.name, body.color ?? existing.color, startMin, endMin, existing.id);
+      .prepare(
+        `UPDATE tracks SET name = ?, description = ?, color = ?, start_min = ?, end_min = ?
+          WHERE id = ?`,
+      )
+      .run(
+        body.name ?? existing.name,
+        // '' is a real value here — it is how a description is cleared — so
+        // only an omitted field falls back to what is stored.
+        body.description ?? existing.description,
+        body.color ?? existing.color,
+        startMin,
+        endMin,
+        existing.id,
+      );
     if (body.windows) replaceTrackWindows(ctx.db, existing.id, body.windows);
 
     // Sessions already on the track are left exactly where they are, whatever
