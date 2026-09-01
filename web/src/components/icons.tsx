@@ -144,3 +144,16 @@ export function ChevronRightIcon({ className }: { className?: string }) {
     </Icon>
   );
 }
+
+/** A cog — the settings behind Manage Event. Eight stubs rather than drawn
+ *  teeth: at 16px a real toothed gear silts up into a grey disc, and the stubs
+ *  keep the 1.6 stroke the rest of the set is drawn at. */
+export function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <circle cx="8" cy="8" r="3" />
+      <path d="M12.5 8H14M8 3.5V2M3.5 8H2M8 12.5V14" />
+      <path d="m11.18 4.82 1.06-1.06M4.82 4.82 3.76 3.76M4.82 11.18l-1.06 1.06M11.18 11.18l1.06 1.06" />
+    </Icon>
+  );
+}

@@ -30,6 +30,7 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SessionDetail } from "../components/SessionDetail";
 import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
 import { Gate } from "../components/Gate";
+import { SettingsIcon } from "../components/icons";
 import { ListView } from "../components/ListView";
 import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
