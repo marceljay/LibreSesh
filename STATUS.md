@@ -252,7 +252,21 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **Manual browser pass — now with a specific backlog.** Automated coverage is
   server-side, so everything below shipped on a read-through alone (no browser
   in this dev container, no component tests). Each wants a real look, ideally
-  on a phone. From 2026-08-31:
+  on a phone. From 2026-09-01:
+  - the **session star**, now a 36px icon under the sheet's close button rather
+    than a labelled row. Two things to see: that the sheet's right-hand column
+    reading expand / close / star does not crowd the title on a narrow phone,
+    and that the star still reads as a control at all without its label — the
+    hollow-vs-filled distinction carries the whole state now;
+  - **Event passwords** in Manage Event → Settings: that "Show passwords"
+    reveals three rows, that a typed one reads "set by you — not stored"
+    rather than looking broken, and that Replace's confirm dialog is legible
+    on a phone;
+  - the gate's **"Nobody can get in as organiser"** panel: it is the only
+    place a wrong instance password is typed, and the error has never been
+    seen rendered.
+
+  From 2026-08-31:
   - the **Repeat** control in the session form — the only part of it with no
     automated coverage, since the server route is tested and the modal is not.
     Worth watching: the weekday chips wrapping under `sm` inside a `FormGrid`
