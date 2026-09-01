@@ -6,6 +6,24 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **The organiser says which view a schedule opens in.** Manage Event →
+  Settings has an **Opens in** choice: the list, one column in time order, or
+  the calendar, a grid of rooms. New events open in the list.
+
+  It used to be the browser's call — under 640px wide you got the list, above
+  it the grid — which answers a question about the device when the question is
+  about the event. A dense multi-room programme is unreadable as a list on a
+  laptop; a single-track unconference is a column of empty grid on a desktop.
+  Only the *default* moves: the view switch above the grid still works for
+  everybody, and a view somebody picks travels in the link they share. The
+  choice carries into a clone, exports with the event, and is honoured on
+  import.
+
+- **A help menu behind the "?", with the version in it.** The button beside
+  your name now opens two things: **Take the tour**, and **About LibreSesh** —
+  what this is, and the exact build you are looking at, selectable, which is
+  the first thing anyone is asked for when they report something odd.
+
 - **A running event opens at the current time.** The day already defaulted to
   today, but the grid still opened at the day's first hour: arriving at half
   past three meant scrolling past the whole morning, or finding **Now**, before
@@ -581,6 +599,31 @@ All notable changes to this project are documented here.
   instance one; the README gained a section on the same distinction.
 
 ### Fixed
+
+- **The header folds in the list view too.** Folding was pinned to the grid's
+  own scroller, so in the list — which has none of its own — there was nothing
+  for it to listen to and the header simply never folded. With the list now
+  where an event opens by default, that was most people.
+
+- **A filter row that fits a phone.** Three things were spending width nobody
+  had: the collapse button carried the day as text, so it was a different size
+  in each state and a different size again on a Tuesday than on a Wednesday —
+  a control that moves under the thumb reaching for it. It is a calendar and
+  an arrow now, the same width in both states. The **Filter** button drops its
+  label below `sm`, like Manage and Add above it, and has lost the ▾ at every
+  width — a panel opening under the button already says that. And the search
+  field is sized for what it holds rather than for its own placeholder.
+
+- **The version pill is gone from the corner of every page.** It sat over the
+  bottom-right of the grid on a phone, permanently, for a question asked twice
+  a year. It is in **About LibreSesh** under the "?" now.
+
+- **The week rail's arrows are drawn rather than typed.** ‹ and › are set on
+  the text baseline at the font's own optical size, so they came out small and
+  sitting low against the chips they belong to. They are icons now, centred by
+  the same flexbox that centres the rest of the row — as is the cog on
+  **Manage Event**, which was a ⚙ glyph and rendered at a different size and
+  weight in every browser.
 
 - **The tour no longer shows up uninvited.** A first visit to an event opened
   the schedule under a stack of coach-marks, before anyone had seen the thing
