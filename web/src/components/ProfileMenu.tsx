@@ -160,6 +160,20 @@ export function ProfileMenu({
           >
             View / edit profile
           </button>
+          {/* First, and above the exports: it is the thing this menu is
+              opened for during an event, and the two calendar items below are
+              ways of taking the same list somewhere else. */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate(`/e/${slug}/agenda`);
+            }}
+            className={itemClass}
+          >
+            My agenda
+          </button>
           <button
             type="button"
             role="menuitem"

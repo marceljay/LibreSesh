@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProposalBoard } from './components/ProposalBoard';
 import { ToastProvider } from './components/ui';
 import { AdminPage } from './pages/AdminPage';
+import { AgendaPage } from './pages/AgendaPage';
 import { EventListPage } from './pages/EventListPage';
 import { NewEventPage } from './pages/NewEventPage';
 import { ImportPage } from './pages/ImportPage';
@@ -28,6 +29,10 @@ export function App() {
           {/* Search spans the whole programme, so it is its own page rather
               than something the day-scoped schedule can show. */}
           <Route path="/e/:slug/search" element={<SearchPage />} />
+          {/* Your starred sessions, the whole event at once. A page rather
+              than a panel for the same reason search is one: it spans every
+              day, and the schedule is day-scoped by construction. */}
+          <Route path="/e/:slug/agenda" element={<AgendaPage />} />
           <Route path="/e/:slug/proposals" element={<ProposalBoard />} />
           <Route path="/e/:slug/p/:personId" element={<ProfilePage />} />
           <Route path="/e/:slug/admin" element={<AdminPage />} />
