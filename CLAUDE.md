@@ -4,6 +4,9 @@ A simple, open-source scheduling tool for (un)conferences.
 
 Dev port: 3000
 Commit policy: atomic — one commit per feature or improvement
+Commit messages: subject + body. The body says what was wrong, why this is
+the fix and not another, and what the diff cannot show. Exempt: typos,
+formatting, version bumps.
 Testing policy: tests-with-features
 
 ## Commands
