@@ -552,6 +552,42 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Scrolling down the grid no longer takes the room names with it.** Past the
+  first screenful of a day the column labels were gone, while the event bar,
+  the week rail and the day strip — the chrome you were done with — stayed
+  exactly where they were. What was left was an unlabelled field of blocks: you
+  could see a 14:00 session but not which room it was in, and getting the
+  answer meant scrolling back up.
+
+  The cause was two scrollers, one of them accidental. The room cards are
+  `sticky top-0` inside the grid's own scroll box, so they hold their place
+  only while the grid is the thing being scrolled. That box was sized
+  `calc(100vh - 200px)` — a guess at the header's height — and the header is
+  routinely taller than 200px, with a week rail on a multi-week event and a
+  filter row that wraps on a phone. The surplus made the *document* scrollable
+  too, so once the grid hit its bottom the page took over, the sticky header
+  slid up under the page header, and the labels went with it.
+
+  The schedule is now an app shell: the viewport holds the header and the grid,
+  the page itself cannot scroll, and the grid takes the height that is left
+  rather than guessing at it. The room cards stay on screen for the whole day,
+  at every header height, on every screen.
+
+- **The schedule header folds itself away once you are into the day.** Reading
+  the afternoon of a conference on a laptop, the top ~150px went on choosing a
+  day you had already chosen. Past 24px of scroll the event bar, the week rail
+  and the day strip fold away, leaving one row: which day you are on, search,
+  filters, and **Now** — moved down beside **Filter**, because jumping to the
+  current time is the thing you reach for mid-scroll and the row it used to
+  live in is one of the rows that folds.
+
+  Scrolling back to the top of the day brings everything back. So does the ⌄
+  button at the head of the row that stays, which is the way back that does not
+  cost you your place in the day; the next deliberate scroll down folds the
+  header again. It unfolds only at the very top and folds at 24px rather than
+  swapping on one threshold in both directions — folding resizes the grid it is
+  measuring, and a single threshold would let that resize flicker the header.
+
 - **The filter panel no longer shoves the page sideways on a phone.** Opening
   **Filter** on mobile zoomed the whole schedule out and left you pinching back
   in to read it. The panel was positioned `absolute left-0` inside a wrapper

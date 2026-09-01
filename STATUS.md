@@ -50,8 +50,10 @@ CHANGELOG.md under `[0.2.0]`, and what has landed since is under
   Reported 2026-08-31 against the breaks band, and still what stands between
   "written and green" and "seen working". Everything since has shipped on a
   read-through: the breaks band, and on 2026-08-31/09-01 the room card's info
-  panel (`63d3f4d`, `48e9c12`, `c7ae002`) and the track-hours editor with its
-  per-day rows (`e4eb832`). Server side everything checks out, and was verified
+  panel (`63d3f4d`, `48e9c12`, `c7ae002`), the track-hours editor with its
+  per-day rows (`e4eb832`) and, on 2026-09-01, the grid shell and the folding
+  header — the change that fixes the room names scrolling away is a layout
+  change above all, so it is the one most in need of a real browser. Server side everything checks out, and was verified
   rather than assumed:
   - `data/app.db` holds three breaks (democonf: Lunch 12:00–14:00, Coffee
     15:30–16:00; longconf: Lunch), all `date: null`, and the bundle returns

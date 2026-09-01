@@ -505,6 +505,43 @@ export function SchedulePage() {
     });
   }, [days, event, filters, timezone, today]);
 
+  /**
+   * Past the first screenful of a day, the event bar, the week rail and the
+   * day strip are paying for themselves in room the grid wants: you are
+   * reading the afternoon, not choosing a day. They fold away and leave one
+   * row — which day, search, filters, Now — and come back the moment you
+   * scroll to the top of the day again, or press the ⌄ button, which is the
+   * only way back that does not cost you your place in the day.
+   */
+  const [chromeFolded, setChromeFolded] = useState(false);
+  const [chromePinned, setChromePinned] = useState(false);
+  const foldable = view === "cal" && !fullPage;
+  const folded = foldable && chromeFolded && !chromePinned;
+  const foldedDay = dayLabel(day, today);
+
+  useEffect(() => {
+    const el = calRef.current;
+    if (!el || !foldable) {
+      setChromeFolded(false);
+      return;
+    }
+    let last = el.scrollTop;
+    const onScroll = () => {
+      const top = el.scrollTop;
+      // Fold at 24px, unfold only back at the very top: a header that swapped
+      // on either side of one threshold would flicker whenever the grid it
+      // resizes lands the scroll position back on that threshold.
+      setChromeFolded((was) => top > (was ? 0 : 24));
+      // A deliberate scroll down retires the ⌄ button's override; anything
+      // else — the resize the fold itself causes, a nudge upward — leaves it.
+      if (top > last + 8) setChromePinned(false);
+      last = top;
+    };
+    onScroll();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [foldable, bundle?.rooms.length, day]);
+
   /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
   const moveSession = useCallback(
     async (
@@ -748,9 +785,16 @@ export function SchedulePage() {
   });
 
   return (
-    <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
-      <header className="sticky top-0 z-30 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+    /* An app shell, not a document: the viewport holds the header and the
+       grid, and the grid is what scrolls. When the page scrolled instead, the
+       grid's room cards — sticky to the grid, not to the window — rode up
+       under the header and left the day with no column labels. `dvh` because
+       on a phone `vh` counts the strip behind the address bar. */
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
+      <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
+        <div
+          className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl items-center gap-3 px-4 py-3`}
+        >
           <Link
             to="/"
             className="flex shrink-0 items-center"
@@ -822,7 +866,9 @@ export function SchedulePage() {
         {!fullPage && (
           <>
           {weeks.length > 1 && (
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-1.5 px-4 pb-2">
+            <div
+              className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl flex-wrap items-center gap-1.5 px-4 pb-2`}
+            >
               {weeks.map((week, i) => {
                 const first = week[0] as string;
                 const last = week[week.length - 1] as string;
@@ -854,7 +900,9 @@ export function SchedulePage() {
             </div>
           )}
 
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 pb-3">
+          <div
+            className={`mx-auto ${folded ? "hidden" : "flex"} max-w-6xl flex-wrap items-center gap-2 px-4 pb-3`}
+          >
             <div
               data-tour="days"
               className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
@@ -952,15 +1000,6 @@ export function SchedulePage() {
               )}
             </Link>
 
-            <button
-              type="button"
-              data-tour="now"
-              onClick={jumpToNow}
-              className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-stone-900 shadow-sm hover:brightness-95"
-            >
-              ● Now {fmtMin(nowMinuteOfDay(timezone))}
-            </button>
-
             {/* Manage / Arrange / Add travel together at every width — an
                 organiser's three actions belong in one place, not split between
                 the header and here. Each keeps its glyph and drops its label
@@ -1018,11 +1057,29 @@ export function SchedulePage() {
               edge: find a session anywhere (the box), or narrow the day on
               screen (the panel). Whatever the panel is currently doing shows
               up beside it as chips you can take off one at a time. */}
-          <div className="mx-auto max-w-6xl px-4 pb-3">
+          <div className={`mx-auto max-w-6xl px-4 pb-3 ${folded ? "pt-2" : ""}`}>
             <div
               data-tour="filters"
               className="flex flex-wrap items-center gap-1.5"
             >
+              {/* Folded, this row is the whole header, so it carries the way
+                  back — and the day it is showing, since the day strip that
+                  usually answers that is one of the things put away. */}
+              {folded && (
+                <button
+                  type="button"
+                  onClick={() => setChromePinned(true)}
+                  aria-label="Show the event bar and the day picker"
+                  title="Show the event bar and the day picker"
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+                >
+                  <span aria-hidden="true">⌄</span>
+                  {foldedDay.top}{" "}
+                  <span className="text-stone-400 dark:text-stone-500">
+                    {foldedDay.sub}
+                  </span>
+                </button>
+              )}
               <SearchBox
                 sessions={bundle.sessions}
                 rooms={bundle.rooms}
@@ -1041,6 +1098,17 @@ export function SchedulePage() {
                 hasUntracked={hasUntracked}
                 starredCount={starredIds.size}
               />
+              {/* Now lives with the filters rather than up in the action row:
+                  this row is what survives folding, and jumping to the current
+                  time is the thing you reach for mid-scroll. */}
+              <button
+                type="button"
+                data-tour="now"
+                onClick={jumpToNow}
+                className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-stone-900 shadow-sm hover:brightness-95"
+              >
+                ● Now {fmtMin(nowMinuteOfDay(timezone))}
+              </button>
               <ActiveFilters
                 filters={filters}
                 rooms={bundle.rooms}
@@ -1054,7 +1122,7 @@ export function SchedulePage() {
       </header>
 
       {fullPage && selected ? (
-        <main className="mx-auto max-w-5xl px-4 py-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6">
           <Link
             to={sheetUrl}
             className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
@@ -1089,9 +1157,9 @@ export function SchedulePage() {
           />
         </main>
       ) : (
-      <main className="mx-auto max-w-6xl px-0 sm:px-4">
+      <main className="mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col overflow-y-auto px-0 sm:px-4">
         {showClashBanner && (
-          <div className="mx-4 mt-2 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-100 dark:bg-amber-950/60 p-3 text-amber-900 dark:text-amber-200 sm:mx-0">
+          <div className="mx-4 mt-2 shrink-0 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-100 dark:bg-amber-950/60 p-3 text-amber-900 dark:text-amber-200 sm:mx-0">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1 text-sm">
                 <p className="font-medium">
@@ -1134,33 +1202,38 @@ export function SchedulePage() {
             )}
           </EmptyState>
         ) : view === "cal" ? (
-          <Calendar
-            scrollRef={calRef}
-            columns={columns}
-            columnOf={columnOf}
-            axis={axis === "track" ? "Track" : "Room"}
-            moveBetweenColumns={axis === "room"}
-            subtitleOf={axis === "track" ? roomNameOf : undefined}
-            tags={bundle.tags}
-            sessions={daySessions}
-            breaks={bundle.breaks}
-            matchedIds={matchedIds}
-            starredIds={starredIds}
-            starCounts={bundle.starCounts}
-            timezone={timezone}
-            day={day}
-            dayStartMin={event.dayStartMin}
-            dayEndMin={event.dayEndMin}
-            nowMin={nowMin}
-            // Guarded, not just hidden: the toggle disappears when the role
-            // changes but the state it left behind does not.
-            arrange={arrange && canArrange}
-            canEdit={canEdit}
-            onOpen={openSession}
-            onMove={(s, startMin, durMin, roomId) =>
-              void moveSession(s, startMin, durMin, roomId)
-            }
-          />
+          /* The grid takes the height the header leaves and scrolls inside
+             it. `min-h-0` so this flex item may shrink below its content, and
+             a floor so a banner above cannot squeeze the day to nothing. */
+          <div className="min-h-[16rem] min-w-0 flex-1 sm:pt-2">
+            <Calendar
+              scrollRef={calRef}
+              columns={columns}
+              columnOf={columnOf}
+              axis={axis === "track" ? "Track" : "Room"}
+              moveBetweenColumns={axis === "room"}
+              subtitleOf={axis === "track" ? roomNameOf : undefined}
+              tags={bundle.tags}
+              sessions={daySessions}
+              breaks={bundle.breaks}
+              matchedIds={matchedIds}
+              starredIds={starredIds}
+              starCounts={bundle.starCounts}
+              timezone={timezone}
+              day={day}
+              dayStartMin={event.dayStartMin}
+              dayEndMin={event.dayEndMin}
+              nowMin={nowMin}
+              // Guarded, not just hidden: the toggle disappears when the role
+              // changes but the state it left behind does not.
+              arrange={arrange && canArrange}
+              canEdit={canEdit}
+              onOpen={openSession}
+              onMove={(s, startMin, durMin, roomId) =>
+                void moveSession(s, startMin, durMin, roomId)
+              }
+            />
+          </div>
         ) : (
           <ListView
             rooms={bundle.rooms}

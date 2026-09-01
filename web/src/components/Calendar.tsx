@@ -554,10 +554,12 @@ export function Calendar({
   const halfHourCount = Math.ceil((dayEndMin - dayStartMin) / 30);
 
   return (
+    /* The height comes from the shell around it, not from a guess at what the
+       header costs: the page does not scroll, this box does, and that is what
+       keeps the sticky room cards below on screen all day. */
     <div
       ref={scrollRef}
-      className="overflow-auto border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 sm:mt-2 sm:rounded-xl sm:border"
-      style={{ maxHeight: 'calc(100vh - 200px)' }}
+      className="h-full overflow-auto border-t border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 sm:rounded-xl sm:border"
     >
       <div className="relative" style={{ width: GUTTER_W + columns.length * COL_W }}>
         {/*
