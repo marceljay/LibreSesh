@@ -30,6 +30,9 @@ export interface ProfileMenuProps {
    */
   publicId: string;
   /** Opens the calendar modal on one of its two halves. */
+  /** Opens the calendar dialog at one of its halves. The menu only ever asks
+   *  for the top one now — the dialog holds both, and "Subscribe" as a second
+   *  menu row said the same word twice for the same dialog. */
   onCalendar: (section: 'download' | 'subscribe') => void;
   onSignOut: () => void;
 }
@@ -183,18 +186,7 @@ export function ProfileMenu({
             }}
             className={itemClass}
           >
-            Calendar export
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onCalendar('subscribe');
-            }}
-            className={itemClass}
-          >
-            Subscribe
+            Calendar
           </button>
           <button
             type="button"
