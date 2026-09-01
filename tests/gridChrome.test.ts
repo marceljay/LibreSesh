@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 const WEB_SRC = join(__dirname, '..', 'web', 'src');
 const schedule = readFileSync(join(WEB_SRC, 'pages', 'SchedulePage.tsx'), 'utf8');
 const calendar = readFileSync(join(WEB_SRC, 'components', 'Calendar.tsx'), 'utf8');
+const rail = readFileSync(join(WEB_SRC, 'components', 'Rail.tsx'), 'utf8');
 
 describe('the schedule is a shell, not a document', () => {
   it('gives the page the viewport height and no scroll of its own', () => {
@@ -141,22 +142,11 @@ describe('the header folds once you are into the day', () => {
     // A rail that wraps costs a whole header line per extra row, on exactly
     // the screens with the least of them to spare. It scrolls sideways like
     // the day strip instead, so its chips cannot shrink or be cut in half.
-    const rail = schedule.match(/className="no-scrollbar[^"]*"/);
-    expect(rail).not.toBeNull();
-    const classes = (rail as RegExpMatchArray)[0] as string;
-    expect(classes).toContain('overflow-x-auto');
-    expect(classes).not.toContain('flex-wrap');
+    expect(schedule).toMatch(/<Rail\n\s*label="Weeks"/);
+    expect(rail).toContain('overflow-x-auto');
+    expect(rail).toContain('no-scrollbar');
+    expect(rail).not.toContain('flex-wrap');
     expect(schedule).toMatch(/shrink-0 whitespace-nowrap rounded-full border/);
-  });
-
-  it('pins the folding rows to the width that is there', () => {
-    // The fold wraps each row in a grid, and a grid's default column is `auto`
-    // — a track that grows to its content instead of constraining it. A row
-    // wider than the phone therefore made the row itself wider than the
-    // header: the week rail stopped scrolling and simply ran off the right
-    // edge, taking the profile menu at the end of the event bar with it, under
-    // an `overflow-x: clip` that hid the evidence.
-    expect(schedule).toContain('grid-cols-[minmax(0,1fr)]');
   });
 
   it('keeps Now in the row that survives the fold', () => {
@@ -169,4 +159,44 @@ describe('the header folds once you are into the day', () => {
     expect(now).toBeGreaterThan(filter);
     expect(chips).toBeGreaterThan(now);
   });
+
+  it('pins the folding rows to the width that is there', () => {
+    // The fold wraps each row in a grid, and a grid's default column is `auto`
+    // — a track that grows to its content instead of constraining it. A row
+    // wider than the phone therefore made the row itself wider than the
+    // header: the week rail stopped scrolling and simply ran off the right
+    // edge, taking the profile menu at the end of the event bar with it, under
+    // an `overflow-x: clip` that hid the evidence.
+    expect(schedule).toContain('grid-cols-[minmax(0,1fr)]');
+  });
+});
+
+describe('a rail says when the line goes on', () => {
+  it('shows an arrow at an end only while there is more that way', () => {
+    // The scrollbar is hidden, so without these a week past the right edge is
+    // a week nobody finds — there is no horizontal wheel on a desktop.
+    expect(rail).toMatch(/setMore\(\{ back: el\.scrollLeft > 1, on: el\.scrollLeft < max - 1 \}\)/);
+    expect(rail).toMatch(/more\[side\] \? 'opacity-100' : 'pointer-events-none opacity-0'/);
+  });
+
+  it('keeps measuring rather than measuring once', () => {
+    // The line changes width without the window resizing: a chip drops off as
+    // the event runs, and the fold hands the row a different width.
+    expect(rail).toContain('new ResizeObserver(read)');
+    expect(rail).toMatch(/el\.addEventListener\('scroll', read, \{ passive: true \}\)/);
+  });
+
+  it('moves the line rather than replacing it', () => {
+    // Less than a full screenful, so the chip you were reading is still there
+    // after the press.
+    expect(rail).toMatch(/el\.clientWidth \* 0\.8/);
+  });
+
+  it('does not put two dead stops in the tab order', () => {
+    // Every chip the arrows scroll to is a button, and tabbing to one brings
+    // it into view by itself.
+    expect(rail).toContain('tabIndex={-1}');
+    expect(rail).toContain('aria-hidden="true"');
+  });
+
 });

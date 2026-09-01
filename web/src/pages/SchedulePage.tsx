@@ -33,9 +33,10 @@ import { Gate } from "../components/Gate";
 import { ListView } from "../components/ListView";
 import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
+import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
 import { SessionModal } from "../components/SessionModal";
-import { Tour, tourSeen, type TourStep } from "../components/Tour";
+import { Tour, type TourStep } from "../components/Tour";
 import {
   EmptyState,
   Modal,
@@ -1020,8 +1021,13 @@ export function SchedulePage() {
                 /* One line that scrolls sideways, like the day strip below
                    it, rather than a row that wraps: on a phone a four-week
                    conference wrapped to two lines and a six-week one to three,
-                   and every line of it is height the grid wanted. */
-                <div className="no-scrollbar mx-auto flex max-w-6xl items-center gap-1.5 overflow-x-auto px-4 pb-2">
+                   and every line of it is height the grid wanted. `Rail`
+                   carries the arrows that say the line goes on — without them
+                   a week past the edge was simply a week you never found. */
+                <Rail
+                  label="Weeks"
+                  className="mx-auto max-w-6xl gap-1.5 px-4 pb-2"
+                >
                   {weeks.map((week, i) => {
                     const first = week[0] as string;
                     const last = week[week.length - 1] as string;
@@ -1050,7 +1056,7 @@ export function SchedulePage() {
                       </button>
                     );
                   })}
-                </div>
+                </Rail>
               )}
 
               <div
