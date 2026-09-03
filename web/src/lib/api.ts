@@ -260,14 +260,46 @@ export const api = {
 
   createSession: (slug: string, body: SessionWrite) =>
     request<SessionDto>('POST', `/e/${encode(slug)}/sessions`, body),
-  /** The same session on every day of a run. Organisers only; see `repeat.ts`
-   *  for why what comes back is a plain list and not a series. */
-  createSessionRepeat: (slug: string, body: SessionWrite & { repeat: Repeat }) =>
+  /** The same session on every day of a run. Organisers only; see `repeat.ts`.
+   *  `link` keeps the run as a series so a later edit can apply to the rest. */
+  createSessionRepeat: (slug: string, body: SessionWrite & { repeat: Repeat; link?: boolean }) =>
     request<{ sessions: SessionDto[] }>('POST', `/e/${encode(slug)}/sessions/repeat`, body),
-  updateSession: (slug: string, id: number, body: Partial<SessionWrite> & { expectedUpdatedAt?: string }) =>
-    request<SessionDto>('PATCH', `/e/${encode(slug)}/sessions/${id}`, body),
+  /** `applyTo` reaches the rest of a linked series: 'later' or 'all'. The reply
+   *  carries `seriesApply` counts when it did. */
+  updateSession: (
+    slug: string,
+    id: number,
+    body: Partial<SessionWrite> & {
+      expectedUpdatedAt?: string;
+      applyTo?: 'one' | 'later' | 'all';
+    },
+  ) =>
+    request<SessionDto & { seriesApply?: { applied: number; considered: number } }>(
+      'PATCH',
+      `/e/${encode(slug)}/sessions/${id}`,
+      body,
+    ),
   deleteSession: (slug: string, id: number) =>
     request<void>('DELETE', `/e/${encode(slug)}/sessions/${id}`),
+
+  /** Sessions the signed-in user could link to `id`: same title, theirs. */
+  sessionLinkCandidates: (slug: string, id: number) =>
+    request<{ candidates: SessionDto[] }>(
+      'GET',
+      `/e/${encode(slug)}/sessions/${id}/link-candidates`,
+    ),
+  /** Link a chosen set of sessions into one series. */
+  linkSessions: (slug: string, sessionIds: number[]) =>
+    request<{ seriesId: string; sessions: SessionDto[] }>(
+      'POST',
+      `/e/${encode(slug)}/sessions/link`,
+      { sessionIds },
+    ),
+  /** Drop one session out of its series. */
+  unlinkSession: (slug: string, sessionId: number) =>
+    request<{ sessions: SessionDto[] }>('POST', `/e/${encode(slug)}/sessions/unlink`, {
+      sessionId,
+    }),
 
   addContribution: (
     slug: string,

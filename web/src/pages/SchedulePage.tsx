@@ -8,7 +8,6 @@ import type {
   TrackDto,
 } from "@shared/types";
 import { can } from '@shared/capabilities';
-import type { Repeat } from "@shared/repeat";
 import { dateRange, zonedTimeToUtc } from "@shared/time";
 import { windowLabel, windowOn } from "@shared/trackHours";
 import { ApiError, api, type SessionWrite } from "../lib/api";
@@ -45,7 +44,7 @@ import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
-import { SessionModal } from "../components/SessionModal";
+import { SessionModal, type SaveOpts } from "../components/SessionModal";
 import { Tour, type TourStep } from "../components/Tour";
 import {
   EmptyState,
@@ -821,25 +820,45 @@ export function SchedulePage() {
   );
 
   const saveSession = useCallback(
-    async (body: SessionWrite, repeat?: Repeat) => {
+    async (body: SessionWrite, opts?: SaveOpts) => {
       setSaving(true);
       try {
         if (editing?.session) {
           const updated = await api.updateSession(slug, editing.session.id, {
             ...body,
             expectedUpdatedAt: editing.session.updatedAt,
+            ...(opts?.applyTo ? { applyTo: opts.applyTo } : {}),
           });
           data.apply({ type: "session.updated", entity: updated });
-          toast.show("Session updated");
-        } else if (repeat) {
+          // Siblings the edit reached arrive over the live channel; a series
+          // edit says how far it got, since some may not have been the user's.
+          const reach = updated.seriesApply;
+          if (reach && reach.applied < reach.considered) {
+            toast.show(
+              `Applied to ${reach.applied} of ${reach.considered} — the rest weren't yours to change`,
+            );
+          } else if (reach) {
+            toast.show(`Applied to ${reach.applied} linked sessions`);
+          } else {
+            toast.show("Session updated");
+          }
+        } else if (opts?.repeat) {
           // One request, then every session it made applied here: the server
           // broadcasts them too, and `apply` is idempotent, but a grid that
           // waited for the echo would sit empty on a slow connection.
-          const { sessions } = await api.createSessionRepeat(slug, { ...body, repeat });
+          const { sessions } = await api.createSessionRepeat(slug, {
+            ...body,
+            repeat: opts.repeat,
+            ...(opts.link ? { link: true } : {}),
+          });
           for (const created of sessions) {
             data.apply({ type: "session.created", entity: created });
           }
-          toast.show(`${sessions.length} sessions added`);
+          toast.show(
+            opts.link
+              ? `${sessions.length} linked sessions added`
+              : `${sessions.length} sessions added`,
+          );
         } else {
           const created = await api.createSession(slug, body);
           data.apply({ type: "session.created", entity: created });
@@ -853,6 +872,25 @@ export function SchedulePage() {
       }
     },
     [data, editing, reportError, slug, toast],
+  );
+
+  const unlinkSession = useCallback(
+    async (session: SessionDto) => {
+      try {
+        const { sessions } = await api.unlinkSession(slug, session.id);
+        for (const updated of sessions) {
+          data.apply({ type: "session.updated", entity: updated });
+        }
+        // Keep the form open on the now-unlinked session, so its own DTO is
+        // fresh and the linked controls fall away.
+        const mine = sessions.find((s) => s.id === session.id);
+        if (mine) setEditing({ session: mine });
+        toast.show("Unlinked from its series");
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [data, reportError, slug, toast],
   );
 
   const deleteSession = useCallback(
@@ -1688,11 +1726,16 @@ export function SchedulePage() {
           dayEndMin={event.dayEndMin}
           saving={saving}
           onCancel={() => setEditing(null)}
-          onSave={(body, repeat) => void saveSession(body, repeat)}
+          onSave={(body, opts) => void saveSession(body, opts)}
           canMove={canMove(editing.session)}
           onDelete={
             editing.session && canDelete(editing.session)
               ? () => void deleteSession(editing.session as SessionDto)
+              : undefined
+          }
+          onUnlink={
+            editing.session?.seriesId
+              ? () => void unlinkSession(editing.session as SessionDto)
               : undefined
           }
         />
