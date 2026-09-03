@@ -707,12 +707,15 @@ export function SessionModal({
               />
               {repeating && (
                 <div className="mt-3 space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-                  <FormGrid cols={2}>
+                  {/* One line on desktop, wrapping on a narrow screen: "Until"
+                      sizes to its content and the seven day chips take the
+                      rest, so neither is stretched and both fit across. */}
+                  <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
                     <Field label="Until">
                       <select
                         value={until}
                         onChange={(e) => setUntilChoice(e.target.value)}
-                        className={inputClass}
+                        className={`${inputClass} w-auto`}
                       >
                         {days
                           .filter((d) => d > day)
@@ -741,7 +744,7 @@ export function SessionModal({
                         ))}
                       </div>
                     </Field>
-                  </FormGrid>
+                  </div>
                   <Toggle
                     checked={repeatLink}
                     onChange={setRepeatLink}
