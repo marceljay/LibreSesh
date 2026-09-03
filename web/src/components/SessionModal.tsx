@@ -357,7 +357,12 @@ export function SessionModal({
               says what kind of session it is. */}
           {isAdmin && (
             <Field label="Placement">
-              <div className="flex items-center gap-1.5">
+              {/* Wraps, like the Attendance row below it. Without it the two
+                  chips and the "?" were one non-wrapping line, and on a phone
+                  the tail of "Non-official: allow parallel sessions" ran off
+                  the edge and clipped — 22 characters gone with room to spare
+                  a line down. */}
+              <div className="flex flex-wrap items-center gap-1.5">
                 {PLACEMENTS.map((p) => (
                   <Chip key={p.value} active={type === p.value} onClick={() => setType(p.value)}>
                     {p.label}
