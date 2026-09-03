@@ -159,4 +159,76 @@ describe('linked sessions', () => {
     const b = await make(user, 'Morning Yoga', DAY_TWO);
     await agentFor(harness).post('/api/e/testconf/sessions/link').send({ sessionIds: [a.id, b.id] }).expect(401);
   });
+
+  const patch = (agent: Agent, id: number, body: Record<string, unknown>) =>
+    agent.patch(`/api/e/testconf/sessions/${id}`).send(body);
+
+  const sessionsById = async (agent: Agent) => {
+    const bundle = await agent.get('/api/e/testconf/bundle').expect(200);
+    return new Map(
+      (bundle.body.sessions as { id: number; title: string; description: string; startsAt: string }[]).map(
+        (s) => [s.id, s],
+      ),
+    );
+  };
+
+  it('applyTo "all" propagates content to the whole series but never the time', async () => {
+    const a = await make(user, 'Morning Yoga', DAY_ONE, 540);
+    const b = await make(user, 'Morning Yoga', DAY_TWO, 540);
+    await link(user, [a.id, b.id]).expect(200);
+
+    const res = await patch(user, a.id, {
+      description: 'Bring a mat',
+      applyTo: 'all',
+    }).expect(200);
+    expect(res.body.seriesApply).toEqual({ applied: 2, considered: 2 });
+
+    const after = await sessionsById(user);
+    expect(after.get(a.id)!.description).toBe('Bring a mat');
+    expect(after.get(b.id)!.description).toBe('Bring a mat'); // propagated
+    // Each keeps its own slot: b is still on day two, not moved to a's day.
+    expect(after.get(b.id)!.startsAt).toBe(at(DAY_TWO, 540));
+  });
+
+  it('applyTo "later" leaves earlier members of the series alone', async () => {
+    const early = await make(user, 'Standup', DAY_ONE, 540);
+    const mid = await make(user, 'Standup', DAY_ONE, 600);
+    const late = await make(user, 'Standup', DAY_TWO, 540);
+    await link(user, [early.id, mid.id, late.id]).expect(200);
+
+    const res = await patch(user, mid.id, {
+      description: 'Now in room 2',
+      applyTo: 'later',
+    }).expect(200);
+    expect(res.body.seriesApply).toEqual({ applied: 2, considered: 2 }); // mid + late
+
+    const after = await sessionsById(user);
+    expect(after.get(early.id)!.description).toBe(''); // untouched
+    expect(after.get(mid.id)!.description).toBe('Now in room 2');
+    expect(after.get(late.id)!.description).toBe('Now in room 2');
+  });
+
+  it('defaults to this-session-only and never touches siblings', async () => {
+    const a = await make(user, 'Morning Yoga', DAY_ONE, 540);
+    const b = await make(user, 'Morning Yoga', DAY_TWO, 540);
+    await link(user, [a.id, b.id]).expect(200);
+
+    const res = await patch(user, a.id, { description: 'Just today' }).expect(200);
+    expect(res.body.seriesApply).toBeUndefined();
+
+    const after = await sessionsById(user);
+    expect(after.get(a.id)!.description).toBe('Just today');
+    expect(after.get(b.id)!.description).toBe(''); // untouched
+  });
+
+  it('propagating a rename keeps the series titles in step', async () => {
+    const a = await make(user, 'Morning Yoga', DAY_ONE, 540);
+    const b = await make(user, 'Morning Yoga', DAY_TWO, 540);
+    await link(user, [a.id, b.id]).expect(200);
+
+    await patch(user, a.id, { title: 'Sunrise Yoga', applyTo: 'all' }).expect(200);
+    const after = await sessionsById(user);
+    expect(after.get(a.id)!.title).toBe('Sunrise Yoga');
+    expect(after.get(b.id)!.title).toBe('Sunrise Yoga');
+  });
 });

@@ -29,6 +29,7 @@ import { addDays, dateToUtcMs, DAY_MS } from '../shared/repeat.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from '../shared/time.js';
 import { resolveSpeakers, setSessionSpeakers, speaksFor, type Actor } from '../speakers.js';
 import {
+  canMutate,
   linkCandidates,
   linkSessions,
   seriesMembers,
@@ -291,8 +292,9 @@ export function sessionRoutes(ctx: Ctx): Router {
 
   router.patch('/sessions/:id', ...userEdit, (req, res) => {
     const existing = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const matrix = getPermissions(ctx.db, req.event.id);
     const speaksHere = speaksFor(ctx.db, req.identity.id, existing);
-    assertMayMutate(getPermissions(ctx.db, req.event.id), req.role, req.identity.id, existing, speaksHere);
+    assertMayMutate(matrix, req.role, req.identity.id, existing, speaksHere);
 
     const body = parse(sessionPatchSchema, req.body);
     assertNotStale(existing, body.expectedUpdatedAt);
@@ -379,7 +381,59 @@ export function sessionRoutes(ctx: Ctx): Router {
     assertFormatBelongs(ctx.db, req.event.id, nextFormatId);
 
     const now = new Date().toISOString();
-    ctx.db.transaction(() => {
+    const nextTitle = body.title ?? existing.title;
+    const nextDescription = body.description ?? existing.description;
+    const nextLivestreams =
+      body.livestreams === undefined ? existing.livestreams : JSON.stringify(body.livestreams);
+    const scope = body.applyTo ?? 'one';
+
+    /**
+     * Apply the edit to a linked sibling — **content only, never its slot**.
+     * Each occurrence keeps its own `starts_at`/`ends_at`; moving Tuesday does
+     * not move the rest even when the actor asked to apply to all. A sibling the
+     * actor may not edit, or one where the new room clashes at *its* time, is
+     * skipped and reported rather than failing the whole save. Returns whether
+     * it was written.
+     */
+    const applyToSibling = (t: SessionRow): boolean => {
+      if (!canMutate(ctx.db, matrix, req.role, req.identity.id, t)) return false;
+      const roomMoves = room.id !== t.room_id;
+      const typeMoves = type !== t.type;
+      const tWindow = { startsAt: new Date(t.starts_at), endsAt: new Date(t.ends_at) };
+      try {
+        // A non-organiser may rewrite an official session's words but not its
+        // slot, and a propagated room or type is the slot — the same line the
+        // anchor is held to.
+        if (req.role !== 'admin' && t.type === 'official' && (roomMoves || typeMoves)) return false;
+        if (roomMoves || typeMoves) assertMayPlace(matrix, req.role, room, type);
+        if (req.role !== 'admin') {
+          if (roomMoves) assertNoOverlap(ctx.db, req.event.id, room.id, tWindow, t.id);
+          if (nextTrackId !== t.track_id) {
+            assertWithinTrackHours(ctx.db, req.event, req.role, nextTrackId, tWindow);
+          }
+        }
+      } catch {
+        return false;
+      }
+      ctx.db
+        .prepare(
+          `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
+                  blocks_open_booking = ?, title = ?, description = ?,
+                  livestreams = ?, updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(room.id, nextTrackId, nextFormatId, type, blocks ? 1 : 0, nextTitle, nextDescription, nextLivestreams, now, t.id);
+      if (body.tagIds) setTags(ctx, t.id, body.tagIds);
+      return true;
+    };
+
+    const outcome = ctx.db.transaction((): { touched: number[]; considered: number } => {
+      // Resolve the billing once — it can mint people — and reuse it for every
+      // session the edit touches, so a name typed once lands the same everywhere.
+      const speakerIds =
+        body.speakers !== undefined
+          ? resolveSpeakers(ctx.db, req.event.id, body.speakers, actor(req, existing))
+          : null;
       ctx.db
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
@@ -393,9 +447,9 @@ export function sessionRoutes(ctx: Ctx): Router {
           nextFormatId,
           type,
           blocks ? 1 : 0,
-          body.title ?? existing.title,
-          body.description ?? existing.description,
-          body.livestreams === undefined ? existing.livestreams : JSON.stringify(body.livestreams),
+          nextTitle,
+          nextDescription,
+          nextLivestreams,
           window.startsAt.toISOString(),
           window.endsAt.toISOString(),
           now,
@@ -404,25 +458,56 @@ export function sessionRoutes(ctx: Ctx): Router {
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
       // Absent means "leave the billing alone"; an empty array means "nobody",
       // which is a thing an organiser is allowed to say.
-      if (body.speakers !== undefined) {
-        setSessionSpeakers(
-          ctx.db,
-          existing.id,
-          resolveSpeakers(ctx.db, req.event.id, body.speakers, actor(req, existing)),
+      if (speakerIds !== null) setSessionSpeakers(ctx.db, existing.id, speakerIds);
+
+      const touched = [existing.id];
+      let considered = 1;
+      if (scope !== 'one' && existing.series_id) {
+        const siblings = seriesMembers(ctx.db, existing.series_id).filter(
+          (m) => m.id !== existing.id,
         );
+        // "This and later" is from the anchor's own day onward; "all" is the
+        // whole series. Instants sort lexically, so a string compare is enough.
+        const targets =
+          scope === 'all'
+            ? siblings
+            : siblings.filter((m) => m.starts_at >= existing.starts_at);
+        considered += targets.length;
+        for (const t of targets) {
+          if (applyToSibling(t)) {
+            if (speakerIds !== null) setSessionSpeakers(ctx.db, t.id, speakerIds);
+            touched.push(t.id);
+          }
+        }
       }
+      return { touched, considered };
     })();
 
-    const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, existing.id));
-    audit(ctx.db, {
-      identityId: req.identity.id,
-      eventId: req.event.id,
-      action: 'update',
-      entity: 'session',
-      entityId: existing.id,
+    // One audit row and one broadcast per session the edit actually changed.
+    const dtos = outcome.touched.map((id) => {
+      const d = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action: 'update',
+        entity: 'session',
+        entityId: id,
+      });
+      ctx.broker.publish(req.event.slug, 'session.updated', d);
+      return d;
     });
-    ctx.broker.publish(req.event.slug, 'session.updated', dto);
-    res.json(dto);
+
+    const dto = dtos[0];
+    // A series edit reports how far it reached, so the form can say "applied to
+    // four of five — one wasn't yours to change" rather than claim all of them.
+    if (scope !== 'one' && existing.series_id) {
+      res.json({
+        ...dto,
+        seriesApply: { applied: outcome.touched.length, considered: outcome.considered },
+      });
+    } else {
+      res.json(dto);
+    }
   });
 
   router.delete('/sessions/:id', ...userEdit, (req, res) => {

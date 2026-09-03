@@ -355,6 +355,12 @@ export const sessionSchema = z.object({
 });
 export const sessionPatchSchema = sessionSchema.partial().extend({
   expectedUpdatedAt: isoInstantSchema.optional(),
+  /**
+   * How far a linked edit reaches: just this session (the default), this one
+   * and the later members of its series, or every member. Ignored on a session
+   * that is not linked. Never carries time — each occurrence keeps its own slot.
+   */
+  applyTo: z.enum(['one', 'later', 'all']).optional(),
 });
 
 export const contributionSchema = z
