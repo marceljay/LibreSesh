@@ -101,6 +101,9 @@ export interface SessionModalProps {
   onDelete?: () => void;
   /** Drop this session out of its series. Present only when it is linked. */
   onUnlink?: () => void;
+  /** Open the picker to link this session with others of the same name. Present
+   *  only on a saved session the user may link. */
+  onLinkExisting?: () => void;
 }
 
 export interface SaveOpts {
@@ -130,6 +133,7 @@ export function SessionModal({
   onSave,
   onDelete,
   onUnlink,
+  onLinkExisting,
 }: SessionModalProps) {
   const isAdmin = role === 'admin';
   // Users may only place sessions in rooms that allow booking (SPEC §5.1).
@@ -367,6 +371,15 @@ export function SessionModal({
               </p>
             )}
           </div>
+        )}
+        {!isLinked && session && onLinkExisting && (
+          <button
+            type="button"
+            onClick={onLinkExisting}
+            className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+          >
+            Link matching sessions…
+          </button>
         )}
         <FieldGroup>
           {/* An organiser who defines none would otherwise see the row simply

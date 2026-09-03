@@ -45,6 +45,7 @@ import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
 import { SessionModal, type SaveOpts } from "../components/SessionModal";
+import { LinkSessionsModal } from "../components/LinkSessionsModal";
 import { Tour, type TourStep } from "../components/Tour";
 import {
   EmptyState,
@@ -152,6 +153,8 @@ export function SchedulePage() {
   );
   const [clashDismissed, setClashDismissed] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
+  // The session whose "Link matching sessions…" picker is open, over the editor.
+  const [linkingExisting, setLinkingExisting] = useState<SessionDto | null>(null);
   const [saving, setSaving] = useState(false);
   // The wall clock is state, not a counter, so everything derived from "now"
   // has a real dependency to recompute against.
@@ -1738,6 +1741,29 @@ export function SchedulePage() {
               ? () => void unlinkSession(editing.session as SessionDto)
               : undefined
           }
+          onLinkExisting={
+            editing.session ? () => setLinkingExisting(editing.session as SessionDto) : undefined
+          }
+        />
+      )}
+
+      {linkingExisting && (
+        <LinkSessionsModal
+          session={linkingExisting}
+          slug={slug}
+          timezone={timezone}
+          onClose={() => setLinkingExisting(null)}
+          reportError={reportError}
+          onLinked={(sessions) => {
+            for (const updated of sessions) {
+              data.apply({ type: "session.updated", entity: updated });
+            }
+            // Reopen the editor on the fresh anchor so its linked controls appear.
+            const anchor = sessions.find((s) => s.id === linkingExisting.id);
+            if (anchor) setEditing({ session: anchor });
+            setLinkingExisting(null);
+            toast.show(`Linked ${sessions.length} sessions`);
+          }}
         />
       )}
 
