@@ -46,6 +46,12 @@ import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
 import { SessionModal, type SaveOpts } from "../components/SessionModal";
 import { LinkSessionsModal } from "../components/LinkSessionsModal";
+import {
+  canDeleteSession,
+  canEditSession,
+  canMoveSession,
+  type Viewer,
+} from "../lib/sessionPerms";
 import { Tour, type TourStep } from "../components/Tour";
 import {
   EmptyState,
@@ -485,50 +491,28 @@ export function SchedulePage() {
     () => new Set((bundle?.people ?? []).filter((p) => p.isMine).map((p) => p.id)),
     [bundle?.people],
   );
-  const speaksOn = useCallback(
-    (session: SessionDto) => session.speakers.some((p) => myPersonIds.has(p.id)),
-    [myPersonIds],
+
+  /** Who this device is, for the permission predicates in `sessionPerms` —
+   *  the same rules the server's `assertMayMutate` applies, extracted so they
+   *  are unit-tested rather than trusted by eye. */
+  const viewer = useMemo(
+    (): Viewer => ({
+      role: bundle?.role ?? "viewer",
+      identityId: me?.id ?? null,
+      myPersonIds,
+      permissions: bundle?.permissions ?? {},
+    }),
+    [bundle?.role, bundle?.permissions, me?.id, myPersonIds],
   );
 
-  /**
-   * Mirrors `assertMayMutate` on the server. Being credited on a session is
-   * enough on its own — one of five co-hosts as much as the only one, and an
-   * official session as much as an open one, because the official one is
-   * precisely the one an organiser typed your name onto. Whether you may
-   * *move* it is a separate question; see `canMove`.
-   */
-  const canEdit = useCallback(
-    (session: SessionDto) =>
-      bundle?.role === "admin" ||
-      speaksOn(session) ||
-      (bundle !== null &&
-        can(bundle.permissions, bundle.role, "session.edit_own") &&
-        session.type === "open" &&
-        session.createdBy === me?.id),
-    [bundle, me?.id, speaksOn],
-  );
-
-  /** Deleting is the creator's and the organiser's, never a co-speaker's:
-   *  being billed on a session is not a mandate to remove it from the
-   *  programme. The server draws the same line — it never passes `speaksHere`
-   *  to `assertMayMutate` on a delete. */
+  const canEdit = useCallback((session: SessionDto) => canEditSession(session, viewer), [viewer]);
   const canDelete = useCallback(
-    (session: SessionDto) =>
-      bundle?.role === "admin" ||
-      (bundle !== null &&
-        can(bundle.permissions, bundle.role, "session.edit_own") &&
-        session.type === "open" &&
-        session.createdBy === me?.id),
-    [bundle, me?.id],
+    (session: SessionDto) => canDeleteSession(session, viewer),
+    [viewer],
   );
-
-  /** An official session's slot belongs to the organisers, so a speaker
-   *  editing one gets the words and not the placement — the fields are
-   *  disabled rather than left to fail on save. */
   const canMove = useCallback(
-    (session: SessionDto | undefined) =>
-      bundle?.role === "admin" || session === undefined || session.type !== "official",
-    [bundle?.role],
+    (session: SessionDto | undefined) => canMoveSession(session, viewer.role),
+    [viewer.role],
   );
 
   const reportError = useCallback(
