@@ -112,7 +112,16 @@ export function SessionDetail({
 
   const page = layout === 'page';
   const room = rooms.find((r) => r.id === session.roomId);
-  const { startMin, endMin } = place(session, timezone);
+  const { date, startMin, endMin } = place(session, timezone);
+  // The grid says which day a session is on by which column it sits in, but the
+  // panel is reached from search too, which jumps across days — so it names the
+  // date itself rather than leaving you to remember how you got here. Noon keeps
+  // the wall-clock date away from any midnight timezone edge.
+  const dayText = new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
   const description = useMemo(
     () => (session.description ? renderMarkdown(session.description) : ''),
     [session.description],
@@ -220,7 +229,7 @@ export function SessionDetail({
         <p
           className={`mt-1 text-stone-500 dark:text-stone-400 ${page ? 'text-base' : 'text-sm'}`}
         >
-          {fmtMin(startMin)}–{fmtMin(endMin)} · {room?.name ?? 'unknown room'} ·{' '}
+          {dayText} · {fmtMin(startMin)}–{fmtMin(endMin)} · {room?.name ?? 'unknown room'} ·{' '}
           {/* One link each: a name on the bill is a person with a profile,
               and a panel of four is four people to read about. */}
           {session.speakers.length === 0
