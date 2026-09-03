@@ -736,9 +736,13 @@ Three consequences worth knowing:
   `server/src/repeat.ts` adds the zod schema and turns a refusal into a 400.
   On top of that sit `planSessions` in `importEvent.ts` (a `repeat` key on a
   document row) and `POST /sessions/repeat` (the **Repeat** control in the
-  session form, organisers only — placing sixty sessions is programme-building,
-  not what the `session.create_open` capability is for). A run that one refuses
-  is refused by the other, because there is only one thing to refuse it.
+  session form). Anyone who may place a single open session may place a run of
+  them — the attendee running morning yoga every day, not organisers alone —
+  and a non-organiser's run is held per occurrence to exactly the rules a single
+  open session is (open room, inside the event window, no clash, not under a
+  hold). An organiser's run may be official and hold the floor. A run that one
+  front door refuses is refused by the other, because there is only one thing to
+  refuse it.
 
 Nothing reads an export back. Doing so would need decisions this route does not
 have to make — a new slug, fresh ids, and what to do with authorship that names
@@ -753,9 +757,11 @@ the id only powers an offer. `server/src/series.ts` holds the rules; the spec is
 `_planning/specs/linked-sessions.md`.
 
 - **Two ways to link.** `POST /sessions/repeat` with `link: true` stamps a run as
-  it is created (organisers, off by default). `POST /sessions/link` links a chosen
-  set that already exists — the attendee case: someone running morning yoga picks
-  their same-titled sessions from `GET /sessions/:id/link-candidates`. Candidates
+  it is created — the fast path for the morning-yoga case now that anyone who may
+  place a session may repeat one (the form defaults the link on for
+  non-organisers, off for organisers, whose runs are usually loose programme
+  rows). `POST /sessions/link` links a chosen set that *already* exists: someone
+  picks their same-titled sessions from `GET /sessions/:id/link-candidates`. Candidates
   share a *title key* (`seriesTitleKey`: trimmed, whitespace-collapsed, folded)
   and are the actor's to edit. `POST /sessions/unlink` drops one out, collapsing a
   series left with a single member.

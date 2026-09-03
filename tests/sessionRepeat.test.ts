@@ -19,6 +19,7 @@ import {
  */
 describe('repeating a session from the form', () => {
   let harness: Harness;
+  let eventId: number;
   let roomId: number;
   let admin: Agent;
   let user: Agent;
@@ -29,7 +30,7 @@ describe('repeating a session from the form', () => {
 
   beforeEach(async () => {
     harness = makeHarness();
-    const eventId = seedEvent(harness.db, { startDate: MONDAY, endDate: SUNDAY });
+    eventId = seedEvent(harness.db, { startDate: MONDAY, endDate: SUNDAY });
     roomId = seedRoom(harness.db, eventId, { name: 'Main Hall', openBooking: 1 });
     admin = await actorWithRole(harness, 'testconf', 'admin-pw');
     user = await actorWithRole(harness, 'testconf', 'user-pw');
@@ -147,18 +148,44 @@ describe('repeating a session from the form', () => {
     }
   });
 
-  it('is for organisers only', async () => {
-    await repeat(user).expect(403);
-    // And the single-session route is untouched by any of this.
-    await user
-      .post('/api/e/testconf/sessions')
-      .send({
-        roomId,
-        title: 'Just the one',
-        startsAt: at(MONDAY, 10 * 60),
-        endsAt: at(MONDAY, 11 * 60),
-      })
-      .expect(201);
+  it('lets an attendee place a run of their own open sessions', async () => {
+    const res = await repeat(user).expect(201);
+    const sessions = res.body.sessions as SessionDto[];
+    expect(sessions).toHaveLength(7); // Mon–Sun, the morning-yoga case
+    for (const s of sessions) expect(s.type).toBe('open'); // never official
+  });
+
+  it('forces an attendee run to open even if it asks for official', async () => {
+    const res = await repeat(user, { type: 'official' }).expect(201);
+    for (const s of res.body.sessions as SessionDto[]) expect(s.type).toBe('open');
+  });
+
+  it('links an attendee run when asked', async () => {
+    const res = await repeat(user, { link: true }).expect(201);
+    const ids = new Set((res.body.sessions as SessionDto[]).map((s) => s.seriesId));
+    expect(ids.size).toBe(1);
+    expect([...ids][0]).toBeTruthy();
+  });
+
+  it('holds an attendee run to rooms open for booking', async () => {
+    const closed = seedRoom(harness.db, eventId, { name: 'Locked', openBooking: 0 });
+    const res = await repeat(user, { roomId: closed }).expect(403);
+    expect(res.body.error.message).toMatch(/not open for booking/i);
+  });
+
+  it('keeps every day of an attendee run inside the day viewport', async () => {
+    // 07:00 is before the event's 08:00 day start; the run must refuse rather
+    // than place a session outside the viewport an attendee is held to.
+    const res = await repeat(user, {
+      startsAt: at(MONDAY, 7 * 60),
+      endsAt: at(MONDAY, 7 * 60 + 30),
+    }).expect(400);
+    expect(res.body.error.message).toMatch(/2026-06-0/); // prefixed with the day
+  });
+
+  it('still lets an admin place a run, official and all', async () => {
+    const res = await repeat(admin, { type: 'official' }).expect(201);
+    for (const s of res.body.sessions as SessionDto[]) expect(s.type).toBe('official');
   });
 
   it('refuses a run that contradicts the session it belongs to', async () => {
