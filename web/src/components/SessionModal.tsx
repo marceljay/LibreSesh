@@ -337,50 +337,6 @@ export function SessionModal({
       )}
 
       <div className="space-y-5">
-        {isLinked && (
-          <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                Linked session
-              </span>
-              {onUnlink && (
-                <button
-                  type="button"
-                  onClick={onUnlink}
-                  className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                >
-                  Unlink this one
-                </button>
-              )}
-            </div>
-            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">Apply your changes to</p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Chip active={applyScope === 'one'} onClick={() => setApplyScope('one')}>
-                This session only
-              </Chip>
-              <Chip active={applyScope === 'later'} onClick={() => setApplyScope('later')}>
-                This and later
-              </Chip>
-              <Chip active={applyScope === 'all'} onClick={() => setApplyScope('all')}>
-                All in the series
-              </Chip>
-            </div>
-            {applyScope !== 'one' && (
-              <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-                The others keep their own time — only the words, room and details change.
-              </p>
-            )}
-          </div>
-        )}
-        {!isLinked && session && onLinkExisting && (
-          <button
-            type="button"
-            onClick={onLinkExisting}
-            className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-          >
-            Link matching sessions…
-          </button>
-        )}
         <FieldGroup>
           {/* An organiser who defines none would otherwise see the row simply
               missing, which reads as "this app has no formats" rather than
@@ -759,6 +715,56 @@ export function SessionModal({
                       : 'They are not linked: moving or deleting one afterwards leaves the rest where they are, so a day that runs late is a day you fix on its own.'}
                   </p>
                 </div>
+              )}
+            </Field>
+          )}
+
+          {(isLinked || (session && onLinkExisting)) && (
+            <Field label="Series">
+              {isLinked ? (
+                <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                      Linked session
+                    </span>
+                    {onUnlink && (
+                      <button
+                        type="button"
+                        onClick={onUnlink}
+                        className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                      >
+                        Unlink this one
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    Apply your changes to
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Chip active={applyScope === 'one'} onClick={() => setApplyScope('one')}>
+                      This session only
+                    </Chip>
+                    <Chip active={applyScope === 'later'} onClick={() => setApplyScope('later')}>
+                      This and later
+                    </Chip>
+                    <Chip active={applyScope === 'all'} onClick={() => setApplyScope('all')}>
+                      All in the series
+                    </Chip>
+                  </div>
+                  {applyScope !== 'one' && (
+                    <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+                      The others keep their own time — only the words, room and details change.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onLinkExisting}
+                  className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                >
+                  Link matching sessions…
+                </button>
               )}
             </Field>
           )}
