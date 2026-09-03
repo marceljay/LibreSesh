@@ -40,6 +40,8 @@ const ACTIONS: Record<string, string> = {
   claim_decline: 'turned down a request to hold',
   invite_qr: 'made an invite QR for',
   permissions: 'changed',
+  series_link: 'linked',
+  series_unlink: 'unlinked',
 };
 
 const ENTITIES: Record<string, string> = {

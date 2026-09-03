@@ -8,17 +8,51 @@ Last updated: 2026-09-03
 ## In Progress
 
 Working on `dev`; `main` is the released line and only takes merges.
-**`dev` is well ahead of `origin/dev`, which is still at `5142d10`** —
-everything from `79e5044` onwards is unpushed, including the 0.2.3
-release commit. That whole spec
+`dev` is ahead of `origin/dev` (unpushed as of 2026-09-03). Suite at
+**883**, lint clean, build clean.
+
+- **Linked sessions** landed on `dev`. A soft `series_id` (migration 017)
+  that lets an edit offer to apply to the rest without forcing it; content
+  propagates, never time; attendees can link their own same-named
+  sessions. Spec at `_planning/specs/linked-sessions.md`, written up in
+  ARCHITECTURE §Linked sessions and CHANGELOG `[Unreleased]`. Follow-up
+  from first testing (2026-09-03): the "Until"/weekday repeat row is back
+  on one line; the series controls moved from the top of the form into the
+  When-and-where **Series** field; and the client edit-permission rules
+  were extracted to `web/src/lib/sessionPerms.ts` and unit-tested (the
+  "attendee can edit anyone's session" report was a dev artifact — one
+  device keeps one identity across role switches). **What is left is the
+  browser pass.** Auto-detecting matches is now a Medium-Priority backlog
+  item, with tz-aware propagation and export/import.
+
+- **Form-layer overhaul** (`_planning/forms_overhaul_strategy.md`, an
+  external strategy brief; audit confirmed in
+  `_planning/forms-phase0-findings.md`, context in
+  `_planning/forms-overview.md`). Six phases, one PR each. **Phase 0**
+  (audit) and **Phase 1** are done: Phase 1 added the field primitives
+  — `Field` owning id/label-association/error, `ControlShell` owning
+  the border/height-floor/focus-ring/invalid, `TextInput` bare and
+  16px-on-mobile — proven by rebuilding `NumberField`, no call sites
+  converted. Landed on `dev` via PR #28 (`671c668`). **Next up: Phase 2**
+  — convert the `inputClass` call sites (`git grep inputClass` is the
+  worklist) and add the ESLint guardrails, *narrowed* per Phase 0 to
+  banning raw `<input>`/`<textarea>` outside `ui.tsx` and allowlisting
+  `<select>` (the plan's `<button>` ban is dropped — 82 legitimate raw
+  buttons across 24 files). Phase 3 tokens use **paired** contrast
+  values, not single (light needs ≥stone-500, dark needs ≤stone-400).
+  The **Forms backlog group** below is now governed by this brief;
+  "Expect someone" is its Phase 5 inline-create.
+
+The pre-existing spec work still awaiting a browser pass:
+That whole spec
 (`_planning/specs/self-as-speaker-and-merge-ux.md`, six steps, plan at
 `_planning/plans/2026-09-02-everyone-is-a-person.md`) is code-complete as
 of 2026-09-02 and written up in CHANGELOG `[Unreleased]`; the suite stood at
-730 then and is at **844** now, lint clean, build clean. What is left of it is the browser pass under Blockers.
+730 then and is at **858** now, lint clean, build clean. What is left of it is the browser pass in **Awaiting your review**.
 The breaks rework has landed — `feat/event-level-breaks` (`5e53811`) is an
 ancestor of `dev` — so its code half is done and written up in CHANGELOG
 `[Unreleased]` and ARCHITECTURE §Breaks; what is left of it is the browser
-confirmation under Blockers. 0.2.0 was tagged 2026-08-30; what shipped is in
+confirmation in **Awaiting your review**. 0.2.0 was tagged 2026-08-30; what shipped is in
 CHANGELOG.md under `[0.2.0]`, and what has landed since is under
 `[Unreleased]` — including tag colours (`3f723ac`, `0b08a00`),
 multi-speaker sessions (`f26bde3`), the single Calendar menu item
@@ -30,7 +64,7 @@ the top of the session form, and the word "open" left the UI in favour of an
 opt-in **Official** badge. The same evening fixed a speaker being unable to
 edit their own session — reported from use, three rules deep. All of it is
 code-complete and in CHANGELOG `[Unreleased]`; migrations 014, 015 and 016.
-What is left of it is the browser pass under Blockers. What is left of the
+What is left of it is the browser pass in **Awaiting your review**. What is left of the
 UI-overhaul plan lives in
 `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`:
 
@@ -53,108 +87,95 @@ UI-overhaul plan lives in
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
 
+## Awaiting your review
+
+Everything here is code-complete and cannot move without you — it needs your
+eyes or your call. This is the queue that used to read "awaiting a browser
+pass"; the point is that each item now names the one thing to check, so a
+basic sanity look *is* the review.
+
+**To run it:** `npm run dev` (or type `! npm run dev`), then open the URL the
+editor forwards — the port is not fixed. A stale dev stack is the usual reason
+something "looks wrong": if in doubt, `ss -tlnp | grep 3000`, note its start
+time, and restart (a Vite up for a day serves fresh source over HMR but stale
+config/env/deps — that was the old "why does it look old" mystery). Where an
+item says *phone* or *both themes*, narrow the window or toggle the theme —
+that is where these break.
+
+**To report back:** one line per item — the id and a verdict. `R3 ok` /
+`R6 bad: chips overrun the title` / `D1 yes`. Skip any you didn't reach. Each
+*ok* I record as seen and clear; each *bad* becomes a fix.
+
+### Look at these (browser)
+
+Freshest first — the top three are this session's and take a minute each.
+
+1. **R1 · Star & ring on the grid.** Tap a session block's corner star: it
+   should toggle without opening the sheet or dragging the block. Open a
+   session: its block gains a ring. *Pass:* both work; the ring shows in both
+   themes.
+2. **R2 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
+   shows its name+time bottom-right as well as top-left. *Pass:* both corners
+   labelled, and a short break doesn't stack them on top of each other.
+3. **R3 · Placement row (phone).** Add session, narrow window. *Pass:* the
+   "Non-official: allow parallel sessions" chip + "?" wrap to a second line
+   instead of clipping off the edge.
+4. **R4 · People table.** *Pass:* headings line up with the rows; the active
+   sort column shows an arrow; the Columns button toggles UID / Last seen; on a
+   phone the table scrolls sideways rather than crushing the name; name and
+   username share the width.
+5. **R5 · Role tag & archiving.** Role is a coloured badge with a pencil,
+   opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
+   role column at the longest role word an event can set; both menus open over
+   the row (and the ⋯ menu flips *up* on the last row of a long list, not
+   off-screen); an archived profile shows its amber notice; re-entering the
+   event un-archives.
+6. **R6 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
+   empty username is refused with a message; a name matching an expected
+   profile asks "is that you?" and can claim it; an ordinary name enters.
+7. **R7 · Claim & queue.** The "This is me" button on an unclaimed profile, and
+   the approval queue above the People list. *Pass:* asking to be a profile
+   shows in the queue; approving hands it over. Also: the next-day button at the
+   end of a day's list, and several stream links on one session.
+8. **R8 · Top of the session form.** Format chips, then Placement, then the
+   title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
+   picking a format visibly moves the Duration select below it.
+9. **R9 · Speaker edits their own session** (the reported flow). As an attendee
+   credited on an official session. *Pass:* Edit appears; Room / Day / Start /
+   Duration are disabled under the grey notice; Delete is absent; saving a
+   changed description goes through.
+10. **R10 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
+    "· 1 h 30 min" echo appears past an hour; editing an off-list session opens
+    straight into the field, not a preset it doesn't have.
+11. **R11 · Official badge & Formats.** With the badge off (default) the grid
+    and list say nothing about placement; turn it on in Manage Event → Settings
+    and check a grid block + a list card in both themes. In Manage Event →
+    Programme, the Formats suggestion chips (dashed row) and the "no formats
+    yet" empty state render.
+12. **R12 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
+    primitives. *Pass:* they still validate inline, and on a phone focusing one
+    does **not** zoom the page (the 16px fix).
+
+### Decisions I need from you
+
+- **D1 · Purge the local dangling git objects?** The accidental Valley-export
+  commit never left this machine (verified across every ref, both worktrees,
+  stashes and the object store); it lingers only in this clone's reflog for
+  ~90 days. On your word I run
+  `git reflog expire --expire-unreachable=now --all && git gc --prune=now` —
+  irreversible, drops *all* unreachable objects, none of value today. Separately:
+  `_planning/valley-2026-09-02.json` and its `.import.json` twin are gone from
+  disk (`export-to-import.py` remains); if that wasn't deliberate, an editor
+  buffer may be the last copy.
+- **D2 · Push `dev`?** Local `dev` is one commit ahead of origin (`02fe2ed`,
+  the Placement fix). Push, or hold.
+- **D3 · Start Phase 2** of the forms overhaul (convert the `inputClass` call
+  sites + add the ESLint guardrails), or pause here?
+
 ## Blockers
 
-- **Most of 2026-09-02 has not been seen in a browser.** The People list,
-  the profile page and the merge dialog were looked at once and fixed from
-  what that showed (`c00fef5`, `4d8dbc0` — the role select was discarding
-  the role it had just set). Everything since is unseen: **asking for a
-  profile** (the "This is me" button on an unclaimed profile, and the
-  approval queue above the People list), **the next-day button** at the
-  end of a day's list, **several stream links** on a session, which
-  changed the session form, and everything from 2026-09-02's People work:
-
-  - **The role tag.** The People list's role select is a coloured badge
-    with a pencil in it, opening a menu, and the same control is on the
-    profile page under the name. Look at whether the badge still fits the
-    `w-24` role column at the longest role word an event can set, and
-    whether the menu opens over the row rather than pushing it.
-  - **Sortable columns.** Every heading in the People table is now the
-    control that orders by it. Look at the arrow on the active column and
-    whether the headings still line up with the rows under them.
-  - **Archiving.** The row's three action buttons became `Open` plus a ⋯
-    menu (Merge, Archive, Delete). Look at the menu's placement on the last
-    row of a long list — it is `bottom-end` and flips, but that is
-    untested against a real viewport — and at the amber notice on an
-    archived profile, which is the one screen the holder is meant to find
-    on their own.
-
-  And from later the same day, **formats** (migration 014), none of it seen:
-  the chip row at the top of the session form — whether a dozen formats wrap
-  into three lines above the title, which is the case the design is weakest
-  at, and whether picking one visibly moves the Duration select below it; the
-  **Formats** section in Manage Event → Programme, where the suggestion chips
-  are a dashed row that has never been rendered; and the format badge at the
-  head of the session sheet, which now sits before the official/open badge and
-  may crowd the title on a narrow phone. The official/open control's label
-  changed to **Placement** in the same pass — worth checking it does not now
-  read as a duplicate of the Room and Day fields it sits near.
-
-  And from the evening of 2026-09-02, none of it seen — now the largest
-  unseen block, and the first three are the ones most likely to be visibly
-  wrong:
-
-  - **The top of the session form.** Format chips, then Placement, then the
-    title: two chip rows stacked above the first text field is a shape this
-    form has never had. Watch a dozen formats wrapping to three lines above
-    the title — the case the design is weakest at — and whether the Placement
-    chip's `: allow parallel sessions` suffix pushes the pair onto two lines
-    on a phone.
-  - **A speaker editing their own session.** The flow that was actually
-    reported. As an attendee credited on an official session: the Edit button
-    should appear at all, Room/Day/Start/Duration should be disabled under the
-    grey notice, Delete should be absent, and saving a changed description
-    should go through. The API is covered by tests; nothing covers the button.
-  - **The duration picker.** `Other…` reveals a number field — check it takes
-    a typed 40, that the `· 1 h 30 min` echo appears past an hour, and that
-    editing a session whose length is off the list opens straight into the
-    field instead of showing a preset it does not have.
-  - **The Official badge.** Off by default, so first confirm the grid and the
-    list say nothing about placement at all; then turn it on in Manage Event →
-    Settings and look at a grid block and a list card, in both themes.
-  - **The Formats section** in Manage Event → Programme: the dashed suggestion
-    chips have never been rendered, and neither has the session form's empty
-    state for an event that defines no formats.
-
-  The **gate** is still the one nobody has opened, and it is the screen
-  every attendee must get through: it now refuses an empty username and
-  asks "is that you?" when the name matches an unclaimed profile. A
-  mistake there locks the room out rather than merely looking wrong.
-  Restart the dev stack before looking — see the port note below.
-
-- **Waiting on a decision: whether to purge the local dangling objects from
-  the accidental commit.** Verified across every ref, both worktrees,
-  stashes and the whole object store on 2026-09-02: the Valley event export
-  is **in no commit on any branch or tag and was never pushed**. `origin/dev`
-  was pushed at 11:22 UTC; the accidental commit `d096fec` was made at 11:58
-  UTC and amended away a minute later, so nothing between those two moments
-  left the machine. No reachable blob anywhere in history contains
-  export-shaped JSON.
-
-  What remains is local only: Git keeps `d096fec` in this clone's reflog, so
-  the file contents sit in `.git` as unreachable objects until the reflog
-  expires in ninety days. This removes them now:
-
-  ```
-  git reflog expire --expire-unreachable=now --all && git gc --prune=now
-  ```
-
-  It is irreversible and indiscriminate — it drops every unreachable object,
-  not only these. Nothing of value is in that set today, since both earlier
-  versions of the commit were superseded by `2c913e3`.
-
-  Also noticed while checking: `_planning/valley-2026-09-02.json` and its
-  `.import.json` twin are **no longer on disk**, though
-  `export-to-import.py` still is. If nobody deleted them deliberately, an
-  editor buffer may be the last copy.
-
-**Kept from the breaks investigation, because it will happen again: when the
-UI looks stale, check `ss -tlnp | grep 3000` and the start time of whatever
-owns the port.** A vite that has been up for a day serves current source
-through HMR — which is why this hid for so long — but its config, its env
-stamp and its dependency graph are from whenever it started. That was the
-whole of the "older app" mystery: a dev stack from the previous day still
-holding 3000 with its API half no longer listening on 3001.
+_None — what's outstanding is your review and decisions above. Nothing is
+waiting on anything external._
 
 ---
 
@@ -308,7 +329,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   (`Valley-of-the-Commons/LibreSesh`).
 
   **Nothing leaked** — verified 2026-09-02 across every ref, both worktrees,
-  stashes and the object store; details under Blockers. The hole is still
+  stashes and the object store; details in **Awaiting your review**. The hole is still
   open, though, and that is what this item is: the next `git add -A` in that
   directory does the same thing again.
 
@@ -629,6 +650,16 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   cost something, which is why this is a real backlog item and not a fire.
 
 ## Medium Priority
+
+- **Linked sessions: auto-detect matches instead of an always-on link.** Today
+  the session editor shows "Link matching sessions…" on every saved session,
+  even when the actor has no other same-titled session — a click that dead-ends
+  on "no matches". Detect matches up front (the `link-candidates` query already
+  finds them) and only surface the affordance when there is something to link,
+  ideally as a nudge ("You run 'Morning Yoga' on 3 other days — link them?").
+  Deferred out of the first cut on 2026-09-03; the controls now live in the
+  When-and-where group's **Series** field. Follow-ups from the same review:
+  tz-aware time-of-day propagation, and `series_id` on export/import.
 
 ### Forms
 

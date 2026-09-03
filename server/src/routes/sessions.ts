@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
+import { z } from 'zod';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
@@ -28,12 +30,31 @@ import { MAX_REPEAT_DAYS, repeatDays, repeatSchema } from '../repeat.js';
 import { addDays, dateToUtcMs, DAY_MS } from '../shared/repeat.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from '../shared/time.js';
 import { resolveSpeakers, setSessionSpeakers, speaksFor, type Actor } from '../speakers.js';
+import {
+  canMutate,
+  linkCandidates,
+  linkSessions,
+  seriesMembers,
+  seriesTitleKey,
+  unlinkSession,
+} from '../series.js';
 
 
-import { parse, sessionPatchSchema, sessionSchema } from '../validation.js';
+import {
+  parse,
+  sessionLinkSchema,
+  sessionPatchSchema,
+  sessionSchema,
+  sessionUnlinkSchema,
+} from '../validation.js';
 
 /** The session form's fields, plus the run of days to put them on. */
-const sessionRepeatSchema = sessionSchema.extend({ repeat: repeatSchema });
+const sessionRepeatSchema = sessionSchema.extend({
+  repeat: repeatSchema,
+  /** Keep the occurrences linked as a series so a later edit can offer to
+   *  apply to the rest. Off by default: a repeat still expands to loose rows. */
+  link: z.boolean().optional(),
+});
 
 function setTags(ctx: Ctx, sessionId: number, tagIds: number[]): void {
   ctx.db.prepare('DELETE FROM session_tags WHERE session_id = ?').run(sessionId);
@@ -153,10 +174,13 @@ export function sessionRoutes(ctx: Ctx): Router {
    * Create the same session on every day of a run — "every weekday until the
    * 20th" — in one request.
    *
-   * What lands is **ordinary sessions**. There is no series, no series id and
+   * What lands is **ordinary sessions**. By default there is no series id and
    * no link between them: each one can be dragged, retimed, retitled or
    * deleted on its own, which is what a programme whose sessions drift from
    * their planned times actually needs. The rule is spent here and forgotten.
+   * `link: true` is the one exception — it stamps the run with a shared
+   * `series_id` so a later edit can *offer* to apply to the rest; the rows stay
+   * just as loose, since a linked edit is opt-in and never carries time.
    * `repeat.ts` holds it, so a run the JSON importer refuses is refused here
    * too.
    *
@@ -222,6 +246,9 @@ export function sessionRoutes(ctx: Ctx): Router {
         return window;
       });
 
+      // A series of one is just a session, so a link is only minted when the run
+      // actually lands on more than one day.
+      const seriesId = body.link && windows.length > 1 ? randomUUID() : null;
       const now = new Date().toISOString();
       const ids = ctx.db.transaction((): number[] => {
         const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? [], actor(req));
@@ -229,8 +256,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, series_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
         );
         return windows.map((window) => {
           const newId = Number(
@@ -249,6 +276,7 @@ export function sessionRoutes(ctx: Ctx): Router {
               req.identity.id,
               now,
               now,
+              seriesId,
             ).lastInsertRowid,
           );
           setTags(ctx, newId, tagIds);
@@ -278,8 +306,9 @@ export function sessionRoutes(ctx: Ctx): Router {
 
   router.patch('/sessions/:id', ...userEdit, (req, res) => {
     const existing = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const matrix = getPermissions(ctx.db, req.event.id);
     const speaksHere = speaksFor(ctx.db, req.identity.id, existing);
-    assertMayMutate(getPermissions(ctx.db, req.event.id), req.role, req.identity.id, existing, speaksHere);
+    assertMayMutate(matrix, req.role, req.identity.id, existing, speaksHere);
 
     const body = parse(sessionPatchSchema, req.body);
     assertNotStale(existing, body.expectedUpdatedAt);
@@ -366,7 +395,59 @@ export function sessionRoutes(ctx: Ctx): Router {
     assertFormatBelongs(ctx.db, req.event.id, nextFormatId);
 
     const now = new Date().toISOString();
-    ctx.db.transaction(() => {
+    const nextTitle = body.title ?? existing.title;
+    const nextDescription = body.description ?? existing.description;
+    const nextLivestreams =
+      body.livestreams === undefined ? existing.livestreams : JSON.stringify(body.livestreams);
+    const scope = body.applyTo ?? 'one';
+
+    /**
+     * Apply the edit to a linked sibling — **content only, never its slot**.
+     * Each occurrence keeps its own `starts_at`/`ends_at`; moving Tuesday does
+     * not move the rest even when the actor asked to apply to all. A sibling the
+     * actor may not edit, or one where the new room clashes at *its* time, is
+     * skipped and reported rather than failing the whole save. Returns whether
+     * it was written.
+     */
+    const applyToSibling = (t: SessionRow): boolean => {
+      if (!canMutate(ctx.db, matrix, req.role, req.identity.id, t)) return false;
+      const roomMoves = room.id !== t.room_id;
+      const typeMoves = type !== t.type;
+      const tWindow = { startsAt: new Date(t.starts_at), endsAt: new Date(t.ends_at) };
+      try {
+        // A non-organiser may rewrite an official session's words but not its
+        // slot, and a propagated room or type is the slot — the same line the
+        // anchor is held to.
+        if (req.role !== 'admin' && t.type === 'official' && (roomMoves || typeMoves)) return false;
+        if (roomMoves || typeMoves) assertMayPlace(matrix, req.role, room, type);
+        if (req.role !== 'admin') {
+          if (roomMoves) assertNoOverlap(ctx.db, req.event.id, room.id, tWindow, t.id);
+          if (nextTrackId !== t.track_id) {
+            assertWithinTrackHours(ctx.db, req.event, req.role, nextTrackId, tWindow);
+          }
+        }
+      } catch {
+        return false;
+      }
+      ctx.db
+        .prepare(
+          `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
+                  blocks_open_booking = ?, title = ?, description = ?,
+                  livestreams = ?, updated_at = ?
+            WHERE id = ?`,
+        )
+        .run(room.id, nextTrackId, nextFormatId, type, blocks ? 1 : 0, nextTitle, nextDescription, nextLivestreams, now, t.id);
+      if (body.tagIds) setTags(ctx, t.id, body.tagIds);
+      return true;
+    };
+
+    const outcome = ctx.db.transaction((): { touched: number[]; considered: number } => {
+      // Resolve the billing once — it can mint people — and reuse it for every
+      // session the edit touches, so a name typed once lands the same everywhere.
+      const speakerIds =
+        body.speakers !== undefined
+          ? resolveSpeakers(ctx.db, req.event.id, body.speakers, actor(req, existing))
+          : null;
       ctx.db
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
@@ -380,9 +461,9 @@ export function sessionRoutes(ctx: Ctx): Router {
           nextFormatId,
           type,
           blocks ? 1 : 0,
-          body.title ?? existing.title,
-          body.description ?? existing.description,
-          body.livestreams === undefined ? existing.livestreams : JSON.stringify(body.livestreams),
+          nextTitle,
+          nextDescription,
+          nextLivestreams,
           window.startsAt.toISOString(),
           window.endsAt.toISOString(),
           now,
@@ -391,25 +472,56 @@ export function sessionRoutes(ctx: Ctx): Router {
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
       // Absent means "leave the billing alone"; an empty array means "nobody",
       // which is a thing an organiser is allowed to say.
-      if (body.speakers !== undefined) {
-        setSessionSpeakers(
-          ctx.db,
-          existing.id,
-          resolveSpeakers(ctx.db, req.event.id, body.speakers, actor(req, existing)),
+      if (speakerIds !== null) setSessionSpeakers(ctx.db, existing.id, speakerIds);
+
+      const touched = [existing.id];
+      let considered = 1;
+      if (scope !== 'one' && existing.series_id) {
+        const siblings = seriesMembers(ctx.db, existing.series_id).filter(
+          (m) => m.id !== existing.id,
         );
+        // "This and later" is from the anchor's own day onward; "all" is the
+        // whole series. Instants sort lexically, so a string compare is enough.
+        const targets =
+          scope === 'all'
+            ? siblings
+            : siblings.filter((m) => m.starts_at >= existing.starts_at);
+        considered += targets.length;
+        for (const t of targets) {
+          if (applyToSibling(t)) {
+            if (speakerIds !== null) setSessionSpeakers(ctx.db, t.id, speakerIds);
+            touched.push(t.id);
+          }
+        }
       }
+      return { touched, considered };
     })();
 
-    const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, existing.id));
-    audit(ctx.db, {
-      identityId: req.identity.id,
-      eventId: req.event.id,
-      action: 'update',
-      entity: 'session',
-      entityId: existing.id,
+    // One audit row and one broadcast per session the edit actually changed.
+    const dtos = outcome.touched.map((id) => {
+      const d = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action: 'update',
+        entity: 'session',
+        entityId: id,
+      });
+      ctx.broker.publish(req.event.slug, 'session.updated', d);
+      return d;
     });
-    ctx.broker.publish(req.event.slug, 'session.updated', dto);
-    res.json(dto);
+
+    const dto = dtos[0];
+    // A series edit reports how far it reached, so the form can say "applied to
+    // four of five — one wasn't yours to change" rather than claim all of them.
+    if (scope !== 'one' && existing.series_id) {
+      res.json({
+        ...dto,
+        seriesApply: { applied: outcome.touched.length, considered: outcome.considered },
+      });
+    } else {
+      res.json(dto);
+    }
   });
 
   router.delete('/sessions/:id', ...userEdit, (req, res) => {
@@ -427,6 +539,92 @@ export function sessionRoutes(ctx: Ctx): Router {
     });
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
     res.status(204).end();
+  });
+
+  /** Broadcast and audit an edit to each of `ids`, and answer with their DTOs. */
+  const announceUpdates = (
+    req: { event: { id: number; slug: string }; identity: { id: number } },
+    ids: number[],
+    action: string,
+  ): ReturnType<typeof loadSessionDto>[] =>
+    ids.map((id) => {
+      const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action,
+        entity: 'session',
+        entityId: id,
+      });
+      ctx.broker.publish(req.event.slug, 'session.updated', dto);
+      return dto;
+    });
+
+  /**
+   * The sessions the actor could link to this one: same title, theirs to edit,
+   * excluding this one. Exactly the set `/sessions/link` will accept, so the
+   * form's checklist never offers a link the server then refuses.
+   */
+  router.get('/sessions/:id/link-candidates', ...userEdit, (req, res) => {
+    const anchor = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const matrix = getPermissions(ctx.db, req.event.id);
+    assertMayMutate(
+      matrix,
+      req.role,
+      req.identity.id,
+      anchor,
+      speaksFor(ctx.db, req.identity.id, anchor),
+    );
+    const rows = linkCandidates(ctx.db, req.event.id, req.identity.id, req.role, matrix, anchor);
+    res.json({ candidates: rows.map((r) => loadSessionDto(ctx.db, r)) });
+  });
+
+  /**
+   * Link a chosen set of sessions into one series. Every one must be the actor's
+   * to edit — the security invariant is that linking grants no edit right they
+   * did not already have — and they must share a title, the same rule the
+   * candidate list is built on.
+   */
+  router.post('/sessions/link', ...userEdit, (req, res) => {
+    const body = parse(sessionLinkSchema, req.body);
+    const matrix = getPermissions(ctx.db, req.event.id);
+    const sessions = [...new Set(body.sessionIds)].map((id) =>
+      getSession(ctx.db, req.event.id, id),
+    );
+    for (const s of sessions) {
+      assertMayMutate(matrix, req.role, req.identity.id, s, speaksFor(ctx.db, req.identity.id, s));
+    }
+    if (new Set(sessions.map((s) => seriesTitleKey(s.title))).size > 1) {
+      throw badRequest('Linked sessions must share a title');
+    }
+    const now = new Date().toISOString();
+    const seriesId = ctx.db.transaction(() => linkSessions(ctx.db, sessions, now))();
+    // Announce every current member, not only the ones just added: merging into
+    // an existing series leaves its other members' membership unchanged but the
+    // form still wants their fresh DTOs.
+    const dtos = announceUpdates(
+      req,
+      seriesMembers(ctx.db, seriesId).map((s) => s.id),
+      'series_link',
+    );
+    res.json({ seriesId, sessions: dtos });
+  });
+
+  /** Drop one session out of its series (collapsing a leftover single). */
+  router.post('/sessions/unlink', ...userEdit, (req, res) => {
+    const body = parse(sessionUnlinkSchema, req.body);
+    const existing = getSession(ctx.db, req.event.id, body.sessionId);
+    assertMayMutate(
+      getPermissions(ctx.db, req.event.id),
+      req.role,
+      req.identity.id,
+      existing,
+      speaksFor(ctx.db, req.identity.id, existing),
+    );
+    const now = new Date().toISOString();
+    const affected = ctx.db.transaction(() => unlinkSession(ctx.db, existing, now))();
+    const dtos = announceUpdates(req, affected, 'series_unlink');
+    res.json({ sessions: dtos });
   });
 
   return router;

@@ -713,20 +713,21 @@ Three consequences worth knowing:
   top of the grid, which reads as a failed import, so it comes back as a
   warning naming the row and pointing at Settings. Double bookings warn too:
   admins are allowed them, and the grid badges them.
-- **A repeat expands, it does not persist.** A repeat says "every day until
-  the 20th", or "mon, wed, fri, except the 7th", and it becomes one ordinary
-  session per day *before* anything is written. There is no series table, no
-  series id, nothing downstream that knows a repeat existed. That is the whole
-  design decision: this schedule is last-write-wins rows that anyone with the
-  role can drag, retitle or delete, and a series entity would have to answer
-  "does moving Tuesday move all of them?" on the first edit of the first day —
-  for an event whose sessions routinely drift from their planned times, the
-  answer is "no" nearly every time. Repetition is authoring convenience, and it
-  stops at the door. The cost is real and said out loud in both front doors —
-  changing a repeated session afterwards means changing each day. A repeat is
-  also a claim about the *printed clock*, so each day is resolved through the
-  event timezone separately: that is what keeps 14:00 at 14:00 across a clock
-  change, and why the import form of it refuses `startsAt`/`endsAt`.
+- **A repeat expands; the link is opt-in on top.** A repeat says "every day
+  until the 20th", or "mon, wed, fri, except the 7th", and it becomes one
+  ordinary session per day *before* anything is written. By default there is no
+  series id and nothing downstream that knows a repeat existed: this schedule is
+  last-write-wins rows that anyone with the role can drag, retitle or delete.
+  The old worry was that a series entity would have to answer "does moving
+  Tuesday move all of them?" on the first edit — and for an event whose sessions
+  drift, the answer is "no" nearly every time. **Linked sessions answer it the
+  other way round rather than reversing it:** an edit's default reach stays
+  *this row only*, propagation is opt-in per edit and carries content but *never*
+  time, so moving Tuesday still never moves the rest. See §Linked sessions
+  below. A repeat is also a claim about the *printed clock*, so each day is
+  resolved through the event timezone separately: that is what keeps 14:00 at
+  14:00 across a clock change, and why the import form of it refuses
+  `startsAt`/`endsAt`.
 
   There are two front doors and one rule. `server/src/shared/repeat.ts` holds
   the calendar — which days a run lands on, and what makes a run
@@ -742,6 +743,37 @@ Three consequences worth knowing:
 Nothing reads an export back. Doing so would need decisions this route does not
 have to make — a new slug, fresh ids, and what to do with authorship that names
 identities the target instance has never met.
+
+### Linked sessions
+
+`sessions.series_id` (migration 017) is an opaque id shared by the members of a
+series and **nothing else** — no series table, no foreign key. It is a *soft*
+grouping: every member stays an independent, draggable, last-write-wins row, and
+the id only powers an offer. `server/src/series.ts` holds the rules; the spec is
+`_planning/specs/linked-sessions.md`.
+
+- **Two ways to link.** `POST /sessions/repeat` with `link: true` stamps a run as
+  it is created (organisers, off by default). `POST /sessions/link` links a chosen
+  set that already exists — the attendee case: someone running morning yoga picks
+  their same-titled sessions from `GET /sessions/:id/link-candidates`. Candidates
+  share a *title key* (`seriesTitleKey`: trimmed, whitespace-collapsed, folded)
+  and are the actor's to edit. `POST /sessions/unlink` drops one out, collapsing a
+  series left with a single member.
+- **The security invariant.** Linking and propagation grant **no edit right the
+  actor did not already have.** `canMutate` is the boolean twin of
+  `assertMayMutate`, kept in step with it; the candidate list is exactly the
+  linkable set, link re-checks every id, and a propagated edit re-checks each
+  target and *skips-and-reports* the ones it may not touch. So attendee vs
+  organiser reach falls out of the existing per-session permission model — no new
+  capability.
+- **Propagation is content, never time.** `PATCH /sessions/:id` takes
+  `applyTo: one | later | all` (default `one`). On a linked session the chosen
+  scope re-applies the edit's content — title, description, speakers, room,
+  track, format, type, tags, livestreams — to the siblings, each keeping its own
+  `starts_at`/`ends_at`. Placement is re-validated at each sibling's *own* time,
+  so a propagated room that clashes there is one of the skips. The response
+  reports `applied`/`considered` for the "four of five" toast. Time-of-day
+  propagation is a deliberate non-goal for now.
 
 The document format itself is documented for the people writing one, in
 `docs/schedule-import.md`; `docs/examples/schedule-import.example.json` is the

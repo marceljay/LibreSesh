@@ -125,6 +125,9 @@ export interface SessionRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** Opaque id shared by linked sessions, or null when this one stands alone.
+   *  Not a foreign key: there is no series table — see migration 017. */
+  series_id: string | null;
 }
 
 /** Who is giving a session. Ordered, because the order is the billing. */

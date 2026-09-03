@@ -8,7 +8,6 @@ import type {
   TrackDto,
 } from "@shared/types";
 import { can } from '@shared/capabilities';
-import type { Repeat } from "@shared/repeat";
 import { dateRange, zonedTimeToUtc } from "@shared/time";
 import { windowLabel, windowOn } from "@shared/trackHours";
 import { ApiError, api, type SessionWrite } from "../lib/api";
@@ -45,7 +44,14 @@ import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
-import { SessionModal } from "../components/SessionModal";
+import { SessionModal, type SaveOpts } from "../components/SessionModal";
+import { LinkSessionsModal } from "../components/LinkSessionsModal";
+import {
+  canDeleteSession,
+  canEditSession,
+  canMoveSession,
+  type Viewer,
+} from "../lib/sessionPerms";
 import { Tour, type TourStep } from "../components/Tour";
 import {
   EmptyState,
@@ -153,6 +159,8 @@ export function SchedulePage() {
   );
   const [clashDismissed, setClashDismissed] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
+  // The session whose "Link matching sessions…" picker is open, over the editor.
+  const [linkingExisting, setLinkingExisting] = useState<SessionDto | null>(null);
   const [saving, setSaving] = useState(false);
   // The wall clock is state, not a counter, so everything derived from "now"
   // has a real dependency to recompute against.
@@ -483,50 +491,28 @@ export function SchedulePage() {
     () => new Set((bundle?.people ?? []).filter((p) => p.isMine).map((p) => p.id)),
     [bundle?.people],
   );
-  const speaksOn = useCallback(
-    (session: SessionDto) => session.speakers.some((p) => myPersonIds.has(p.id)),
-    [myPersonIds],
+
+  /** Who this device is, for the permission predicates in `sessionPerms` —
+   *  the same rules the server's `assertMayMutate` applies, extracted so they
+   *  are unit-tested rather than trusted by eye. */
+  const viewer = useMemo(
+    (): Viewer => ({
+      role: bundle?.role ?? "viewer",
+      identityId: me?.id ?? null,
+      myPersonIds,
+      permissions: bundle?.permissions ?? {},
+    }),
+    [bundle?.role, bundle?.permissions, me?.id, myPersonIds],
   );
 
-  /**
-   * Mirrors `assertMayMutate` on the server. Being credited on a session is
-   * enough on its own — one of five co-hosts as much as the only one, and an
-   * official session as much as an open one, because the official one is
-   * precisely the one an organiser typed your name onto. Whether you may
-   * *move* it is a separate question; see `canMove`.
-   */
-  const canEdit = useCallback(
-    (session: SessionDto) =>
-      bundle?.role === "admin" ||
-      speaksOn(session) ||
-      (bundle !== null &&
-        can(bundle.permissions, bundle.role, "session.edit_own") &&
-        session.type === "open" &&
-        session.createdBy === me?.id),
-    [bundle, me?.id, speaksOn],
-  );
-
-  /** Deleting is the creator's and the organiser's, never a co-speaker's:
-   *  being billed on a session is not a mandate to remove it from the
-   *  programme. The server draws the same line — it never passes `speaksHere`
-   *  to `assertMayMutate` on a delete. */
+  const canEdit = useCallback((session: SessionDto) => canEditSession(session, viewer), [viewer]);
   const canDelete = useCallback(
-    (session: SessionDto) =>
-      bundle?.role === "admin" ||
-      (bundle !== null &&
-        can(bundle.permissions, bundle.role, "session.edit_own") &&
-        session.type === "open" &&
-        session.createdBy === me?.id),
-    [bundle, me?.id],
+    (session: SessionDto) => canDeleteSession(session, viewer),
+    [viewer],
   );
-
-  /** An official session's slot belongs to the organisers, so a speaker
-   *  editing one gets the words and not the placement — the fields are
-   *  disabled rather than left to fail on save. */
   const canMove = useCallback(
-    (session: SessionDto | undefined) =>
-      bundle?.role === "admin" || session === undefined || session.type !== "official",
-    [bundle?.role],
+    (session: SessionDto | undefined) => canMoveSession(session, viewer.role),
+    [viewer.role],
   );
 
   const reportError = useCallback(
@@ -821,25 +807,45 @@ export function SchedulePage() {
   );
 
   const saveSession = useCallback(
-    async (body: SessionWrite, repeat?: Repeat) => {
+    async (body: SessionWrite, opts?: SaveOpts) => {
       setSaving(true);
       try {
         if (editing?.session) {
           const updated = await api.updateSession(slug, editing.session.id, {
             ...body,
             expectedUpdatedAt: editing.session.updatedAt,
+            ...(opts?.applyTo ? { applyTo: opts.applyTo } : {}),
           });
           data.apply({ type: "session.updated", entity: updated });
-          toast.show("Session updated");
-        } else if (repeat) {
+          // Siblings the edit reached arrive over the live channel; a series
+          // edit says how far it got, since some may not have been the user's.
+          const reach = updated.seriesApply;
+          if (reach && reach.applied < reach.considered) {
+            toast.show(
+              `Applied to ${reach.applied} of ${reach.considered} — the rest weren't yours to change`,
+            );
+          } else if (reach) {
+            toast.show(`Applied to ${reach.applied} linked sessions`);
+          } else {
+            toast.show("Session updated");
+          }
+        } else if (opts?.repeat) {
           // One request, then every session it made applied here: the server
           // broadcasts them too, and `apply` is idempotent, but a grid that
           // waited for the echo would sit empty on a slow connection.
-          const { sessions } = await api.createSessionRepeat(slug, { ...body, repeat });
+          const { sessions } = await api.createSessionRepeat(slug, {
+            ...body,
+            repeat: opts.repeat,
+            ...(opts.link ? { link: true } : {}),
+          });
           for (const created of sessions) {
             data.apply({ type: "session.created", entity: created });
           }
-          toast.show(`${sessions.length} sessions added`);
+          toast.show(
+            opts.link
+              ? `${sessions.length} linked sessions added`
+              : `${sessions.length} sessions added`,
+          );
         } else {
           const created = await api.createSession(slug, body);
           data.apply({ type: "session.created", entity: created });
@@ -853,6 +859,25 @@ export function SchedulePage() {
       }
     },
     [data, editing, reportError, slug, toast],
+  );
+
+  const unlinkSession = useCallback(
+    async (session: SessionDto) => {
+      try {
+        const { sessions } = await api.unlinkSession(slug, session.id);
+        for (const updated of sessions) {
+          data.apply({ type: "session.updated", entity: updated });
+        }
+        // Keep the form open on the now-unlinked session, so its own DTO is
+        // fresh and the linked controls fall away.
+        const mine = sessions.find((s) => s.id === session.id);
+        if (mine) setEditing({ session: mine });
+        toast.show("Unlinked from its series");
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [data, reportError, slug, toast],
   );
 
   const deleteSession = useCallback(
@@ -1688,13 +1713,41 @@ export function SchedulePage() {
           dayEndMin={event.dayEndMin}
           saving={saving}
           onCancel={() => setEditing(null)}
-          onSave={(body, repeat) => void saveSession(body, repeat)}
+          onSave={(body, opts) => void saveSession(body, opts)}
           canMove={canMove(editing.session)}
           onDelete={
             editing.session && canDelete(editing.session)
               ? () => void deleteSession(editing.session as SessionDto)
               : undefined
           }
+          onUnlink={
+            editing.session?.seriesId
+              ? () => void unlinkSession(editing.session as SessionDto)
+              : undefined
+          }
+          onLinkExisting={
+            editing.session ? () => setLinkingExisting(editing.session as SessionDto) : undefined
+          }
+        />
+      )}
+
+      {linkingExisting && (
+        <LinkSessionsModal
+          session={linkingExisting}
+          slug={slug}
+          timezone={timezone}
+          onClose={() => setLinkingExisting(null)}
+          reportError={reportError}
+          onLinked={(sessions) => {
+            for (const updated of sessions) {
+              data.apply({ type: "session.updated", entity: updated });
+            }
+            // Reopen the editor on the fresh anchor so its linked controls appear.
+            const anchor = sessions.find((s) => s.id === linkingExisting.id);
+            if (anchor) setEditing({ session: anchor });
+            setLinkingExisting(null);
+            toast.show(`Linked ${sessions.length} sessions`);
+          }}
         />
       )}
 

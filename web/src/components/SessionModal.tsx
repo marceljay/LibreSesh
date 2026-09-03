@@ -94,10 +94,22 @@ export interface SessionModalProps {
    *  left to be refused on save. */
   canMove?: boolean;
   onCancel: () => void;
-  /** `repeat` asks for the same session on every day of a run. What comes back
-   *  is that many independent sessions — see `shared/repeat.ts`. */
-  onSave: (body: SessionWrite, repeat?: Repeat) => void;
+  /** `repeat` asks for the same session on every day of a run; `link` keeps
+   *  that run as a series. `applyTo` reaches the rest of an existing series on
+   *  an edit — see `shared/repeat.ts` and the linked-sessions spec. */
+  onSave: (body: SessionWrite, opts?: SaveOpts) => void;
   onDelete?: () => void;
+  /** Drop this session out of its series. Present only when it is linked. */
+  onUnlink?: () => void;
+  /** Open the picker to link this session with others of the same name. Present
+   *  only on a saved session the user may link. */
+  onLinkExisting?: () => void;
+}
+
+export interface SaveOpts {
+  repeat?: Repeat;
+  link?: boolean;
+  applyTo?: 'later' | 'all';
 }
 
 export function SessionModal({
@@ -120,6 +132,8 @@ export function SessionModal({
   onCancel,
   onSave,
   onDelete,
+  onUnlink,
+  onLinkExisting,
 }: SessionModalProps) {
   const isAdmin = role === 'admin';
   // Users may only place sessions in rooms that allow booking (SPEC §5.1).
@@ -185,8 +199,16 @@ export function SessionModal({
   const lastDay = days[days.length - 1] ?? day;
   const canRepeat = isAdmin && !session && day < lastDay;
   const [repeating, setRepeating] = useState(false);
+  // Off by default: a repeat still expands to loose rows unless the organiser
+  // asks to keep the run in step.
+  const [repeatLink, setRepeatLink] = useState(false);
   const [untilChoice, setUntilChoice] = useState(lastDay);
   const [weekdays, setWeekdays] = useState<Weekday[]>(WEEKDAYS_MONDAY_FIRST);
+
+  // How far an edit to a linked session reaches. Only shown when the session is
+  // already part of a series; the default keeps the old per-row behaviour.
+  const isLinked = !!session?.seriesId;
+  const [applyScope, setApplyScope] = useState<'one' | 'later' | 'all'>('one');
 
   // Both are clamped on read rather than corrected in an effect: changing the
   // day above can invalidate either, and a run that silently repaired itself
@@ -264,7 +286,11 @@ export function SessionModal({
       tagIds,
       trackId,
       formatId,
-    }, repeat);
+    }, {
+      repeat,
+      ...(repeat && repeatLink ? { link: true } : {}),
+      ...(isLinked && applyScope !== 'one' ? { applyTo: applyScope } : {}),
+    });
   };
 
   const heading = session ? 'Edit session' : isAdmin ? 'Add session' : 'Propose a session';
@@ -357,7 +383,12 @@ export function SessionModal({
               says what kind of session it is. */}
           {isAdmin && (
             <Field label="Placement">
-              <div className="flex items-center gap-1.5">
+              {/* Wraps, like the Attendance row below it. Without it the two
+                  chips and the "?" were one non-wrapping line, and on a phone
+                  the tail of "Non-official: allow parallel sessions" ran off
+                  the edge and clipped — 22 characters gone with room to spare
+                  a line down. */}
+              <div className="flex flex-wrap items-center gap-1.5">
                 {PLACEMENTS.map((p) => (
                   <Chip key={p.value} active={type === p.value} onClick={() => setType(p.value)}>
                     {p.label}
@@ -632,12 +663,15 @@ export function SessionModal({
               />
               {repeating && (
                 <div className="mt-3 space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-                  <FormGrid cols={2}>
+                  {/* One line on desktop, wrapping on a narrow screen: "Until"
+                      sizes to its content and the seven day chips take the
+                      rest, so neither is stretched and both fit across. */}
+                  <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
                     <Field label="Until">
                       <select
                         value={until}
                         onChange={(e) => setUntilChoice(e.target.value)}
-                        className={inputClass}
+                        className={`${inputClass} w-auto`}
                       >
                         {days
                           .filter((d) => d > day)
@@ -666,15 +700,71 @@ export function SessionModal({
                         ))}
                       </div>
                     </Field>
-                  </FormGrid>
+                  </div>
+                  <Toggle
+                    checked={repeatLink}
+                    onChange={setRepeatLink}
+                    label="Keep these linked, so an edit can apply to the whole run"
+                  />
                   <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
                     {repeatProblem ??
-                      `Creates ${runCount} separate ${runCount === 1 ? 'session' : 'sessions'}, ` +
+                      `Creates ${runCount} ${runCount === 1 ? 'session' : 'sessions'}, ` +
                         `the first on ${dayLabels[day] ?? day}.`}{' '}
-                    They are not linked: moving or deleting one afterwards leaves the rest where
-                    they are, so a day that runs late is a day you fix on its own.
+                    {repeatLink
+                      ? 'Editing one later offers to apply to the rest — but each keeps its own time, so moving one never moves the others.'
+                      : 'They are not linked: moving or deleting one afterwards leaves the rest where they are, so a day that runs late is a day you fix on its own.'}
                   </p>
                 </div>
+              )}
+            </Field>
+          )}
+
+          {(isLinked || (session && onLinkExisting)) && (
+            <Field label="Series">
+              {isLinked ? (
+                <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                      Linked session
+                    </span>
+                    {onUnlink && (
+                      <button
+                        type="button"
+                        onClick={onUnlink}
+                        className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                      >
+                        Unlink this one
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    Apply your changes to
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Chip active={applyScope === 'one'} onClick={() => setApplyScope('one')}>
+                      This session only
+                    </Chip>
+                    <Chip active={applyScope === 'later'} onClick={() => setApplyScope('later')}>
+                      This and later
+                    </Chip>
+                    <Chip active={applyScope === 'all'} onClick={() => setApplyScope('all')}>
+                      All in the series
+                    </Chip>
+                  </div>
+                  {applyScope !== 'one' && (
+                    <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+                      The others keep their own time — only the words, room and details change.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onLinkExisting}
+                  className="text-xs text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                >
+                  Link matching sessions…
+                </button>
               )}
             </Field>
           )}

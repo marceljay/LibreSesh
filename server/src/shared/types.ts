@@ -291,6 +291,10 @@ export interface SessionDto {
   createdByName: string;
   createdAt: string;
   updatedAt: string;
+  /** Opaque id shared by sessions linked into one series, or null when this
+   *  one stands alone. The form shows the link controls only when it is set
+   *  and there is more than one member — see the linked-sessions spec. */
+  seriesId: string | null;
 }
 
 export interface ContributionDto {

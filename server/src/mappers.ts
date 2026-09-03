@@ -275,6 +275,7 @@ export function toSessionDto(
     createdByName: authorName,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    seriesId: row.series_id,
   };
 }
 
