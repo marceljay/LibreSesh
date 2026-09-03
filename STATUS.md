@@ -9,17 +9,21 @@ Last updated: 2026-09-03
 
 Working on `dev`; `main` is the released line and only takes merges.
 `dev` is ahead of `origin/dev` (unpushed as of 2026-09-03). Suite at
-**874**, lint clean, build clean.
+**883**, lint clean, build clean.
 
-- **Linked sessions** landed on `dev` as seven atomic commits
-  (`198a109`→docs). A soft `series_id` (migration 017) that lets an edit
-  offer to apply to the rest without forcing it; content propagates,
-  never time; attendees can link their own same-named sessions. Spec at
-  `_planning/specs/linked-sessions.md`, written up in ARCHITECTURE
-  §Linked sessions and CHANGELOG `[Unreleased]`. **What is left is the
-  browser pass** — the whole feature is code-complete and tested but has
-  not been driven in the app yet. Deferred: tz-aware time-of-day
-  propagation, and `series_id` on export/import.
+- **Linked sessions** landed on `dev`. A soft `series_id` (migration 017)
+  that lets an edit offer to apply to the rest without forcing it; content
+  propagates, never time; attendees can link their own same-named
+  sessions. Spec at `_planning/specs/linked-sessions.md`, written up in
+  ARCHITECTURE §Linked sessions and CHANGELOG `[Unreleased]`. Follow-up
+  from first testing (2026-09-03): the "Until"/weekday repeat row is back
+  on one line; the series controls moved from the top of the form into the
+  When-and-where **Series** field; and the client edit-permission rules
+  were extracted to `web/src/lib/sessionPerms.ts` and unit-tested (the
+  "attendee can edit anyone's session" report was a dev artifact — one
+  device keeps one identity across role switches). **What is left is the
+  browser pass.** Auto-detecting matches is now a Medium-Priority backlog
+  item, with tz-aware propagation and export/import.
 
 - **Form-layer overhaul** (`_planning/forms_overhaul_strategy.md`, an
   external strategy brief; audit confirmed in
@@ -646,6 +650,16 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   cost something, which is why this is a real backlog item and not a fire.
 
 ## Medium Priority
+
+- **Linked sessions: auto-detect matches instead of an always-on link.** Today
+  the session editor shows "Link matching sessions…" on every saved session,
+  even when the actor has no other same-titled session — a click that dead-ends
+  on "no matches". Detect matches up front (the `link-candidates` query already
+  finds them) and only surface the affordance when there is something to link,
+  ideally as a nudge ("You run 'Morning Yoga' on 3 other days — link them?").
+  Deferred out of the first cut on 2026-09-03; the controls now live in the
+  When-and-where group's **Series** field. Follow-ups from the same review:
+  tz-aware time-of-day propagation, and `series_id` on export/import.
 
 ### Forms
 

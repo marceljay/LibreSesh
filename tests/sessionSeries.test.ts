@@ -160,6 +160,21 @@ describe('linked sessions', () => {
     await agentFor(harness).post('/api/e/testconf/sessions/link').send({ sessionIds: [a.id, b.id] }).expect(401);
   });
 
+  it("refuses to unlink another attendee's session", async () => {
+    const a = await make(user, 'Morning Yoga', DAY_ONE);
+    const b = await make(user, 'Morning Yoga', DAY_TWO);
+    await link(user, [a.id, b.id]).expect(200);
+
+    const other = await actorWithRole(harness, 'testconf', 'user-pw');
+    const res = await unlink(other, a.id).expect(403);
+    expect(res.body.error.message).toMatch(/not your session|cannot change/i);
+
+    // Still linked — the refusal changed nothing.
+    const bundle = await user.get('/api/e/testconf/bundle').expect(200);
+    const stillLinked = bundle.body.sessions.find((s: { id: number }) => s.id === a.id);
+    expect(stillLinked.seriesId).toBeTruthy();
+  });
+
   const patch = (agent: Agent, id: number, body: Record<string, unknown>) =>
     agent.patch(`/api/e/testconf/sessions/${id}`).send(body);
 
