@@ -56,11 +56,29 @@ All notable changes to this project are documented here.
 
   Both surfaces now draw **one star and one number**, in the bottom-right
   corner. On the grid it is out of the flow entirely, so nothing above it moves
-  when it appears — and it stays display-only, because a block's pointer
-  handling is drag-sensitive and the resize handle is directly beneath it;
-  starring from the grid is still done in the session sheet. On a list card the
-  tally *is* the control, so the star you press and the count you read are one
-  object.
+  when it appears, and it is a button that swallows the press that would
+  otherwise drag the block — so a session goes on your agenda from the grid
+  itself, which used to mean opening the sheet. On a list card the tally *is*
+  the control, so the star you press and the count you read are one object.
+
+- **The grid did not say which block the open sheet belonged to.** Opening a
+  session left every block looking the same, so on a full day you lost track of
+  which row the panel beside it was about. The open session now carries a ring,
+  and the highlight overrides the filter-dim, so opening a session a filter had
+  greyed out brings it back to full contrast instead of pointing at a ghost.
+
+- **A break was labelled once, top-left, on a grid wide enough to hide it.** A
+  band for lunch or dinner spans every column but named itself only at the
+  left edge, so past two or three rooms the far side of the break had no marker
+  and a session there looked to run through an unnamed gap. The label is
+  repeated bottom-right when the grid is more than two columns wide and the
+  band is tall enough (about half an hour) that the two cannot meet.
+
+- **The session form's Placement row clipped on a phone.** Its two chips and
+  the help "?" sat on a line that could not wrap, while the Attendance row
+  right below it already did, so the tail of "Non-official: allow parallel
+  sessions" ran off the edge and was cut — with an empty line beneath it. The
+  row wraps now, like its sibling.
 
 - **A speaker could not edit their own session.** An organiser schedules a talk
   and types the speaker's name onto it; that person arrives at the gate as an

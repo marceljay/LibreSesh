@@ -8,13 +8,34 @@ Last updated: 2026-09-03
 ## In Progress
 
 Working on `dev`; `main` is the released line and only takes merges.
-**`dev` is well ahead of `origin/dev`, which is still at `5142d10`** —
-everything from `79e5044` onwards is unpushed, including the 0.2.3
-release commit. That whole spec
+`dev` is now pushed to `origin/dev` (`e633e4c`); local is one commit
+ahead (`02fe2ed`, the Placement-row wrap fix, unpushed as of
+2026-09-03). Suite at **858**, lint clean, build clean.
+
+- **Form-layer overhaul** (`_planning/forms_overhaul_strategy.md`, an
+  external strategy brief; audit confirmed in
+  `_planning/forms-phase0-findings.md`, context in
+  `_planning/forms-overview.md`). Six phases, one PR each. **Phase 0**
+  (audit) and **Phase 1** are done: Phase 1 added the field primitives
+  — `Field` owning id/label-association/error, `ControlShell` owning
+  the border/height-floor/focus-ring/invalid, `TextInput` bare and
+  16px-on-mobile — proven by rebuilding `NumberField`, no call sites
+  converted. Landed on `dev` via PR #28 (`671c668`). **Next up: Phase 2**
+  — convert the `inputClass` call sites (`git grep inputClass` is the
+  worklist) and add the ESLint guardrails, *narrowed* per Phase 0 to
+  banning raw `<input>`/`<textarea>` outside `ui.tsx` and allowlisting
+  `<select>` (the plan's `<button>` ban is dropped — 82 legitimate raw
+  buttons across 24 files). Phase 3 tokens use **paired** contrast
+  values, not single (light needs ≥stone-500, dark needs ≤stone-400).
+  The **Forms backlog group** below is now governed by this brief;
+  "Expect someone" is its Phase 5 inline-create.
+
+The pre-existing spec work still awaiting a browser pass:
+That whole spec
 (`_planning/specs/self-as-speaker-and-merge-ux.md`, six steps, plan at
 `_planning/plans/2026-09-02-everyone-is-a-person.md`) is code-complete as
 of 2026-09-02 and written up in CHANGELOG `[Unreleased]`; the suite stood at
-730 then and is at **844** now, lint clean, build clean. What is left of it is the browser pass under Blockers.
+730 then and is at **858** now, lint clean, build clean. What is left of it is the browser pass under Blockers.
 The breaks rework has landed — `feat/event-level-breaks` (`5e53811`) is an
 ancestor of `dev` — so its code half is done and written up in CHANGELOG
 `[Unreleased]` and ARCHITECTURE §Breaks; what is left of it is the browser
