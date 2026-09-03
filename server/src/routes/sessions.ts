@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
+import { z } from 'zod';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
@@ -47,7 +49,12 @@ import {
 } from '../validation.js';
 
 /** The session form's fields, plus the run of days to put them on. */
-const sessionRepeatSchema = sessionSchema.extend({ repeat: repeatSchema });
+const sessionRepeatSchema = sessionSchema.extend({
+  repeat: repeatSchema,
+  /** Keep the occurrences linked as a series so a later edit can offer to
+   *  apply to the rest. Off by default: a repeat still expands to loose rows. */
+  link: z.boolean().optional(),
+});
 
 function setTags(ctx: Ctx, sessionId: number, tagIds: number[]): void {
   ctx.db.prepare('DELETE FROM session_tags WHERE session_id = ?').run(sessionId);
@@ -167,10 +174,13 @@ export function sessionRoutes(ctx: Ctx): Router {
    * Create the same session on every day of a run — "every weekday until the
    * 20th" — in one request.
    *
-   * What lands is **ordinary sessions**. There is no series, no series id and
+   * What lands is **ordinary sessions**. By default there is no series id and
    * no link between them: each one can be dragged, retimed, retitled or
    * deleted on its own, which is what a programme whose sessions drift from
    * their planned times actually needs. The rule is spent here and forgotten.
+   * `link: true` is the one exception — it stamps the run with a shared
+   * `series_id` so a later edit can *offer* to apply to the rest; the rows stay
+   * just as loose, since a linked edit is opt-in and never carries time.
    * `repeat.ts` holds it, so a run the JSON importer refuses is refused here
    * too.
    *
@@ -236,6 +246,9 @@ export function sessionRoutes(ctx: Ctx): Router {
         return window;
       });
 
+      // A series of one is just a session, so a link is only minted when the run
+      // actually lands on more than one day.
+      const seriesId = body.link && windows.length > 1 ? randomUUID() : null;
       const now = new Date().toISOString();
       const ids = ctx.db.transaction((): number[] => {
         const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? [], actor(req));
@@ -243,8 +256,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, series_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
         );
         return windows.map((window) => {
           const newId = Number(
@@ -263,6 +276,7 @@ export function sessionRoutes(ctx: Ctx): Router {
               req.identity.id,
               now,
               now,
+              seriesId,
             ).lastInsertRowid,
           );
           setTags(ctx, newId, tagIds);

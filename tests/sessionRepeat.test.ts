@@ -187,4 +187,27 @@ describe('repeating a session from the form', () => {
   it('refuses a key it does not know inside the run', async () => {
     await repeat(admin, { repeat: { until: SUNDAY, every: 'day' } }).expect(400);
   });
+
+  it('leaves the run loose by default — no series', async () => {
+    const res = await repeat(admin).expect(201);
+    for (const s of res.body.sessions as SessionDto[]) expect(s.seriesId).toBeNull();
+  });
+
+  it('links the run into one series when asked', async () => {
+    const res = await repeat(admin, { link: true }).expect(201);
+    const sessions = res.body.sessions as SessionDto[];
+    const ids = new Set(sessions.map((s) => s.seriesId));
+    expect(ids.size).toBe(1); // one shared id
+    expect([...ids][0]).toBeTruthy(); // and it is not null
+  });
+
+  it('does not mint a series for a run that lands on a single day', async () => {
+    const res = await repeat(admin, {
+      repeat: { until: MONDAY }, // only the first day
+      link: true,
+    }).expect(201);
+    const sessions = res.body.sessions as SessionDto[];
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].seriesId).toBeNull();
+  });
 });
