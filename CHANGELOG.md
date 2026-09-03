@@ -6,6 +6,26 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Linked sessions — keep a recurring session in step without locking it
+  down.** A talk that runs every morning was placed one row per day, and those
+  rows knew nothing about each other: renaming or re-rooming the run meant
+  editing each day by hand. Attendees felt it most — someone offering morning
+  yoga had no way to keep their copies together at all.
+
+  You can now **link** same-named sessions into a series. On a saved session,
+  *Link matching sessions…* lists the other times you run it under that title
+  (with select-all) and links the ones you tick; organisers building a
+  programme can instead tick *Keep these linked* when repeating a session.
+  Editing a linked session then offers a reach — *this only*, *this and later*,
+  or *all in the series* — and applies your change to the rest. The default
+  stays this-session-only, and **time is never propagated**: each occurrence
+  keeps its own slot, so moving one never moves the others. *Unlink this one*
+  drops a session back out.
+
+  Linking never grants edit rights you did not already have: the list only ever
+  offers sessions that are yours, and a series edit skips — and tells you about
+  — any occurrence that isn't ("applied to four of five"). Migration 017.
+
 - **A session can say what kind of thing it is.** The app had one word for a
   session — `type`, meaning `official` or `open` — and that says who put it
   up, not what it is. So nothing anywhere distinguished a five-minute
