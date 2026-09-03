@@ -110,6 +110,16 @@ export const personRoleSchema = z.object({
 /** Merge duplicate people: `from` is folded into the profile in the URL. */
 export const mergePersonSchema = z.object({ from: z.number().int().positive() });
 
+/** Link two or more sessions into one series. Bounded like a repeat run. */
+export const sessionLinkSchema = z.object({
+  sessionIds: z.array(z.number().int().positive()).min(2).max(200),
+});
+
+/** Drop one session out of its series. */
+export const sessionUnlinkSchema = z.object({
+  sessionId: z.number().int().positive(),
+});
+
 export const createEventSchema = z
   .object({
     name: trimmed(120),

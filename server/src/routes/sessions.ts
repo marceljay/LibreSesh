@@ -28,9 +28,22 @@ import { MAX_REPEAT_DAYS, repeatDays, repeatSchema } from '../repeat.js';
 import { addDays, dateToUtcMs, DAY_MS } from '../shared/repeat.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from '../shared/time.js';
 import { resolveSpeakers, setSessionSpeakers, speaksFor, type Actor } from '../speakers.js';
+import {
+  linkCandidates,
+  linkSessions,
+  seriesMembers,
+  seriesTitleKey,
+  unlinkSession,
+} from '../series.js';
 
 
-import { parse, sessionPatchSchema, sessionSchema } from '../validation.js';
+import {
+  parse,
+  sessionLinkSchema,
+  sessionPatchSchema,
+  sessionSchema,
+  sessionUnlinkSchema,
+} from '../validation.js';
 
 /** The session form's fields, plus the run of days to put them on. */
 const sessionRepeatSchema = sessionSchema.extend({ repeat: repeatSchema });
@@ -427,6 +440,92 @@ export function sessionRoutes(ctx: Ctx): Router {
     });
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
     res.status(204).end();
+  });
+
+  /** Broadcast and audit an edit to each of `ids`, and answer with their DTOs. */
+  const announceUpdates = (
+    req: { event: { id: number; slug: string }; identity: { id: number } },
+    ids: number[],
+    action: string,
+  ): ReturnType<typeof loadSessionDto>[] =>
+    ids.map((id) => {
+      const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action,
+        entity: 'session',
+        entityId: id,
+      });
+      ctx.broker.publish(req.event.slug, 'session.updated', dto);
+      return dto;
+    });
+
+  /**
+   * The sessions the actor could link to this one: same title, theirs to edit,
+   * excluding this one. Exactly the set `/sessions/link` will accept, so the
+   * form's checklist never offers a link the server then refuses.
+   */
+  router.get('/sessions/:id/link-candidates', ...userEdit, (req, res) => {
+    const anchor = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const matrix = getPermissions(ctx.db, req.event.id);
+    assertMayMutate(
+      matrix,
+      req.role,
+      req.identity.id,
+      anchor,
+      speaksFor(ctx.db, req.identity.id, anchor),
+    );
+    const rows = linkCandidates(ctx.db, req.event.id, req.identity.id, req.role, matrix, anchor);
+    res.json({ candidates: rows.map((r) => loadSessionDto(ctx.db, r)) });
+  });
+
+  /**
+   * Link a chosen set of sessions into one series. Every one must be the actor's
+   * to edit — the security invariant is that linking grants no edit right they
+   * did not already have — and they must share a title, the same rule the
+   * candidate list is built on.
+   */
+  router.post('/sessions/link', ...userEdit, (req, res) => {
+    const body = parse(sessionLinkSchema, req.body);
+    const matrix = getPermissions(ctx.db, req.event.id);
+    const sessions = [...new Set(body.sessionIds)].map((id) =>
+      getSession(ctx.db, req.event.id, id),
+    );
+    for (const s of sessions) {
+      assertMayMutate(matrix, req.role, req.identity.id, s, speaksFor(ctx.db, req.identity.id, s));
+    }
+    if (new Set(sessions.map((s) => seriesTitleKey(s.title))).size > 1) {
+      throw badRequest('Linked sessions must share a title');
+    }
+    const now = new Date().toISOString();
+    const seriesId = ctx.db.transaction(() => linkSessions(ctx.db, sessions, now))();
+    // Announce every current member, not only the ones just added: merging into
+    // an existing series leaves its other members' membership unchanged but the
+    // form still wants their fresh DTOs.
+    const dtos = announceUpdates(
+      req,
+      seriesMembers(ctx.db, seriesId).map((s) => s.id),
+      'series_link',
+    );
+    res.json({ seriesId, sessions: dtos });
+  });
+
+  /** Drop one session out of its series (collapsing a leftover single). */
+  router.post('/sessions/unlink', ...userEdit, (req, res) => {
+    const body = parse(sessionUnlinkSchema, req.body);
+    const existing = getSession(ctx.db, req.event.id, body.sessionId);
+    assertMayMutate(
+      getPermissions(ctx.db, req.event.id),
+      req.role,
+      req.identity.id,
+      existing,
+      speaksFor(ctx.db, req.identity.id, existing),
+    );
+    const now = new Date().toISOString();
+    const affected = ctx.db.transaction(() => unlinkSession(ctx.db, existing, now))();
+    const dtos = announceUpdates(req, affected, 'series_unlink');
+    res.json({ sessions: dtos });
   });
 
   return router;
