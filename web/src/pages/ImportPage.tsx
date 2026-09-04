@@ -172,8 +172,9 @@ export function ImportPage() {
       <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
         Builds a whole event — rooms, tracks, breaks and a full grid of sessions — from
         one JSON document. The document is written the way a schedule is <em>printed</em>:
-        room names and wall-clock times, no ids. Nothing is written until you have checked
-        it and said so.
+        room names and wall-clock times, no ids. An export from another event's Manage
+        Event → Backup works here too — the programme comes across; profiles, pitches and
+        contributions stay behind. Nothing is written until you have checked it and said so.
       </p>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
@@ -298,6 +299,13 @@ function Summary({ summary }: { summary: DocSummary }) {
       {summary.timezone && <span> · {summary.timezone}</span>}
       <br />
       {parts.join(' · ')}
+      {summary.exportedAt && (
+        <>
+          <br />
+          An export made {summary.exportedAt.slice(0, 10)} — it will be read as the programme
+          it describes.
+        </>
+      )}
     </div>
   );
 }

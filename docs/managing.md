@@ -106,6 +106,8 @@ the error and warning catalogue, and the photo-to-document workflow.
 [`examples/schedule-import.example.json`](examples/schedule-import.example.json)
 is a template to copy; the test suite dry-runs it, so it cannot go stale.
 
-An event's own `export.json` is *not* an import document: it is a record of
-ids, and this is a description of a schedule. There is still no route that
-reads an export back.
+An event's own `export.json` is not written in this form — it is a record of
+ids — but the importer reads one anyway: it is translated at the door and
+imported as the programme it describes. Change `event.slug` first; profiles,
+pitches, contributions and star counts stay behind, and the first warning says
+so. See [schedule-import.md §Importing an export](schedule-import.md#importing-an-export).

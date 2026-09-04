@@ -43,6 +43,13 @@ describe('parsing a pasted schedule', () => {
     });
   });
 
+  it('notices an export the app made, and does not mistake a typed document for one', () => {
+    expect(summarise({ exportedAt: '2026-09-02T10:00:00.000Z', event: {} }).exportedAt).toBe(
+      '2026-09-02T10:00:00.000Z',
+    );
+    expect(summarise({ event: { name: 'Photo Conf' } }).exportedAt).toBeNull();
+  });
+
   it('gives a date range only when both ends are readable', () => {
     expect(summarise({ event: { startDate: '2026-08-24', endDate: '2026-09-20' } }).dates).toEqual([
       '2026-08-24',
