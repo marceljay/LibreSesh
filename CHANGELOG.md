@@ -80,6 +80,12 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A short session on the grid no longer clips its own time.** Grid blocks
+  carried enough vertical padding, plus a top margin on the tag dots, that a
+  15–20 minute block spent its whole height on chrome and cut off the time row
+  under it. The padding is tighter now and the tags sit near the top edge, so
+  even the shortest block shows its time.
+
 - **Starring a session moved its title, and a list card showed two stars.** On
   the grid, the star and the interest count sat in the row above the title, so
   starring a session pushed its title down a line — two identical blocks side
@@ -142,6 +148,18 @@ All notable changes to this project are documented here.
   who is billed on a session but did not create it.
 
 ### Changed
+
+- **Every form field now reads and focuses the same, and meets contrast.**
+  The form layer was rebuilt on a small set of primitives so a text field, its
+  label, its hint and its error, its border, height and focus ring all come
+  from one place instead of a class string copied across ~90 call sites. What
+  you can see: field borders are dark enough to meet the 3:1 contrast floor in
+  both themes (they were below it), hint and label text meets 4.5:1, and
+  focusing a field shows a single clean ring rather than a doubled "inner
+  border". On a phone a field no longer zooms the page when you tap it. Buttons
+  gained a keyboard focus ring. Native dropdowns (day, duration) match the text
+  fields. No field changed what it does — this is a legibility and consistency
+  pass.
 
 - **The People table no longer badges an outstanding speaker code.** A small
   amber `code` sat beside the name of anyone whose speaker phrase had been

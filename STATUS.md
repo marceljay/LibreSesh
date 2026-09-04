@@ -9,32 +9,39 @@ Last updated: 2026-09-04
 
 Working on `dev`; `main` is the released line and only takes merges.
 `dev` is ahead of `origin/dev` (unpushed as of 2026-09-04). Suite at
-**883**, lint clean, build clean.
+**908**, lint clean, build clean.
 
 Linked sessions is done and off this list — it landed on `dev` (through
 `4f9afdb`), is written up in ARCHITECTURE §Linked sessions, CHANGELOG
 `[Unreleased]` and `_planning/specs/linked-sessions.md`, and all that is
 left of it is the browser pass now queued in **Awaiting your review**
-(R1–R3). Auto-detecting matches instead of an always-on link stayed a
+(R4–R6). Auto-detecting matches instead of an always-on link stayed a
 Medium-Priority backlog item.
 
 - **Form-layer overhaul** (`_planning/forms_overhaul_strategy.md`, an
-  external strategy brief; audit confirmed in
-  `_planning/forms-phase0-findings.md`, context in
-  `_planning/forms-overview.md`). Six phases, one PR each. **Phase 0**
-  (audit) and **Phase 1** are done: Phase 1 added the field primitives
-  — `Field` owning id/label-association/error, `ControlShell` owning
-  the border/height-floor/focus-ring/invalid, `TextInput` bare and
-  16px-on-mobile — proven by rebuilding `NumberField`, no call sites
-  converted. Landed on `dev` via PR #28 (`671c668`). **Next up: Phase 2**
-  — convert the `inputClass` call sites (`git grep inputClass` is the
-  worklist) and add the ESLint guardrails, *narrowed* per Phase 0 to
-  banning raw `<input>`/`<textarea>` outside `ui.tsx` and allowlisting
-  `<select>` (the plan's `<button>` ban is dropped — 82 legitimate raw
-  buttons across 24 files). Phase 3 tokens use **paired** contrast
-  values, not single (light needs ≥stone-500, dark needs ≤stone-400).
-  The **Forms backlog group** below is now governed by this brief;
-  "Expect someone" is its Phase 5 inline-create.
+  external strategy brief; audit in `_planning/forms-phase0-findings.md`,
+  context in `_planning/forms-overview.md`). Six phases, one commit each.
+  **Phases 0–3 are done.** Phase 1 added the field primitives (`Field`,
+  `ControlShell`, `TextInput`, proven on `NumberField`). **Phase 2**
+  (2026-09-04, `b13ca1a`+`f863275`+`eee9b3c`) converted every `inputClass`
+  call site — ~90 across 17 files — to `Field`+`ControlShell`+`TextInput`,
+  added `TextArea` and `selectClass`, made the text primitives `forwardRef`,
+  deleted `inputClass`, and added the ESLint guardrails (ban raw
+  `<input>`/`<textarea>` outside `ui.tsx`, allowlist `<select>`, block
+  re-declaring `inputClass`; the `<button>` ban dropped — 82 legit raw
+  buttons). Ten genuinely-raw inputs (color/checkbox/radio/file/search)
+  carry documented `eslint-disable`s. **Phase 3** (`a7c6ed7`) raised field
+  borders to `stone-500`, the error border to `red-500`, and hint/label text
+  to the paired `text-stone-500 dark:text-stone-400`, and put a real focus
+  ring on every field and button. A follow-up (`1c064ec`) fixed the "ugly
+  inner border": a field now **hides its own border on focus and shows one
+  flush ring** (an offset ring read as two concentric lines — worst on the
+  focused speaker/host field). *Deliberately skipped:* the blanket
+  `border-stone-300`/`text-stone-400` ESLint ban — it would flag dozens of
+  legitimately decorative uses; the must-read tokens are fixed.
+  **Next: Phase 4** (form semantics), then **Phase 5** (`SpeakerCombobox`
+  chips-in-shell + the "Expect someone" inline-create) and **Phase 6**. The
+  **Forms backlog group** below is governed by this brief.
 
 The pre-existing spec work still awaiting a browser pass:
 That whole spec
@@ -101,77 +108,88 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — the top four (R1–R4) are the recent mentions, linked-sessions
-and clash work and take a minute each.
+Freshest first — the top two (R1–R2) are the forms overhaul and grid-block
+fix; R3–R5 the mentions, linked-sessions and clash work. Each takes a minute.
 
-1. **R1 · Clickable authors & `@username` mentions in a comment.** Open a
+1. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
+   (Add session, Manage Event → Settings). *Pass:* field borders read a touch
+   darker and even; **clicking into a field shows one clean focus ring, not a
+   doubled/inner border** — check the **speaker/host** field especially, in
+   **both themes**; a text field does **not** zoom the page on a phone; tabbing
+   to a button shows a focus ring; hint text under a field is legible; native
+   selects (day, duration) match the text fields.
+2. **R2 · Grid block padding.** On the calendar grid, a session block's tags sit
+   near the top edge and a short (15–20 min) block still shows its time row.
+   *Pass:* nothing is clipped at the bottom of a short block; tags aren't
+   floating with a gap above them.
+3. **R3 · Clickable authors & `@username` mentions in a comment.** Open a
    session, post a comment that names someone with `@theirusername` (a real
    username from the People tab). *Pass:* the `@name` renders as a blue link and
    opens that person's profile; the comment's own author name (under the body)
    also links to a profile; a plain `@notauser` and an email like `a@b.com` stay
    as text, not links. Try a multi-word username if the event has one.
-2. **R2 · Link a recurring run as an attendee.** As a non-organiser, add a
+4. **R4 · Link a recurring run as an attendee.** As a non-organiser, add a
    session and set **Repeat** across several days with "keep linked" on. *Pass:*
    the whole run lands on the grid without a reload; every occurrence is open;
    a day that would clash or fall outside the window is refused with the day
    named, not placed wrong. An organiser's run is unchanged (may be official,
    may hold the floor).
-3. **R3 · Link after the fact, and the edit reach.** On a saved session,
+5. **R5 · Link after the fact, and the edit reach.** On a saved session,
    *Link matching sessions…* lists your other same-titled runs (with select-all)
    and links the ones you tick. Editing a linked session then offers *this only*
    / *this and later* / *all in the series*. *Pass:* the default is this-only;
    changing a description with *all* updates the rest but **never the time**; an
    occurrence that isn't yours is skipped and reported ("applied to four of
    five"); *Unlink this one* drops a session back out.
-4. **R4 · A clash narrows only the clashing sessions.** Put two sessions
+6. **R6 · A clash narrows only the clashing sessions.** Put two sessions
    overlapping in one room, with a third alone elsewhere in that room's column.
    *Pass:* only the overlapping pair split into lanes; the lone 09:00 talk keeps
    full width even though an unrelated 15:00 pair clashes (the `4f9afdb` fix).
-   While here, R4b: open a session from **search** and confirm the detail panel
+   While here, R6b: open a session from **search** and confirm the detail panel
    now leads with the weekday and date, not just the time (`2c4a542`).
-5. **R5 · Star & ring on the grid.** Tap a session block's corner star: it
+7. **R7 · Star & ring on the grid.** Tap a session block's corner star: it
    should toggle without opening the sheet or dragging the block. Open a
    session: its block gains a ring. *Pass:* both work; the ring shows in both
    themes.
-6. **R6 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
+8. **R8 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
    shows its name+time bottom-right as well as top-left. *Pass:* both corners
    labelled, and a short break doesn't stack them on top of each other.
-7. **R7 · Placement row (phone).** Add session, narrow window. *Pass:* the
+9. **R9 · Placement row (phone).** Add session, narrow window. *Pass:* the
    "Non-official: allow parallel sessions" chip + "?" wrap to a second line
    instead of clipping off the edge.
-8. **R8 · People table.** *Pass:* headings line up with the rows; the active
-   sort column shows an arrow; the Columns button toggles UID / Last seen; on a
-   phone the table scrolls sideways rather than crushing the name; name and
-   username share the width.
-9. **R9 · Role tag & archiving.** Role is a coloured badge with a pencil,
-   opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
-   role column at the longest role word an event can set; both menus open over
-   the row (and the ⋯ menu flips *up* on the last row of a long list, not
-   off-screen); an archived profile shows its amber notice; re-entering the
-   event un-archives.
-10. **R10 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
+10. **R10 · People table.** *Pass:* headings line up with the rows; the active
+    sort column shows an arrow; the Columns button toggles UID / Last seen; on a
+    phone the table scrolls sideways rather than crushing the name; name and
+    username share the width.
+11. **R11 · Role tag & archiving.** Role is a coloured badge with a pencil,
+    opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
+    role column at the longest role word an event can set; both menus open over
+    the row (and the ⋯ menu flips *up* on the last row of a long list, not
+    off-screen); an archived profile shows its amber notice; re-entering the
+    event un-archives.
+12. **R12 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
-11. **R11 · Claim & queue.** The "This is me" button on an unclaimed profile, and
+13. **R13 · Claim & queue.** The "This is me" button on an unclaimed profile, and
     the approval queue above the People list. *Pass:* asking to be a profile
     shows in the queue; approving hands it over. Also: the next-day button at the
     end of a day's list, and several stream links on one session.
-12. **R12 · Top of the session form.** Format chips, then Placement, then the
+14. **R14 · Top of the session form.** Format chips, then Placement, then the
     title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
     picking a format visibly moves the Duration select below it.
-13. **R13 · Speaker edits their own session** (the reported flow). As an attendee
+15. **R15 · Speaker edits their own session** (the reported flow). As an attendee
     credited on an official session. *Pass:* Edit appears; Room / Day / Start /
     Duration are disabled under the grey notice; Delete is absent; saving a
     changed description goes through.
-14. **R14 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
+16. **R16 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
     "· 1 h 30 min" echo appears past an hour; editing an off-list session opens
     straight into the field, not a preset it doesn't have.
-15. **R15 · Official badge & Formats.** With the badge off (default) the grid
+17. **R17 · Official badge & Formats.** With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
     Programme, the Formats suggestion chips (dashed row) and the "no formats
     yet" empty state render.
-16. **R16 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
+18. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
 
