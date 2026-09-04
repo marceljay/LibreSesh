@@ -28,12 +28,17 @@ Commits on `feat/shadcn-baseui`, all green (build/lint/909 tests):
   (224 kB gz) → shell ~62 kB gz + per-route; **Base UI (~50 kB gz) rides the
   SessionModal chunk, off first paint.** This is the answer to load speed.
 - **Date/time glyph** (`175e8de`) — native picker indicator visible in dark mode.
+- **All remaining selects** (`b66aaa6`) — PlaceProposalModal, breaks, admin. No
+  native `<select>` element left anywhere.
+- **Speaker chips inside the field** (`d88e822`) — layout fix on the working
+  combobox rather than a Base UI rebuild; see the Combobox note below.
 
 **Decision gate passed:** user accepts the +44 kB gz Base UI entry fee (measured);
 deploy is unaffected (build-time only); load speed protected by code-splitting.
 
-**Next:** Combobox (multi-speaker, retires `SpeakerCombobox`) → remaining admin
-selects (PlaceProposalModal / AdminBreaks / AdminPage) → Dialog → Input/Textarea.
+**Next:** Dialog (replaces `Modal`, gains the focus trap it lacks) → Input/Textarea
+across the ~17 files → P5 cleanup (retire `ControlShell`/`selectClass`, drop
+floating-ui, sync STATUS/CHANGELOG/ARCHITECTURE, merge back to `dev`).
 
 **Deferred by the user:** the **datepicker** — likely event-length-dependent (time
 picker for a day, calendar for weeks); needs `react-day-picker` if a real calendar.
@@ -59,10 +64,18 @@ sandbox** (`tree-sitter-typescript` native binary fails to load). So:
 
 ## Adopt (shadcn components, added selectively via `npx shadcn add`)
 
-- [x] **Select** — `ui/select.tsx` on Base UI; Add/Edit Session dropdowns done.
-      Remaining: PlaceProposalModal, AdminBreaks day, AdminPage settings/track-hours.
-- [ ] **Combobox** — the speaker/host multi-select (Base UI `multiple` + Chips);
-      retires `SpeakerCombobox`. **Next up.**
+- [x] **Select** — `ui/select.tsx` on Base UI. **All of them:** session modal
+      (room/track/day/duration/until), PlaceProposalModal, breaks day picker,
+      admin "Opens in" + track-hours day. No native `<select>` left in the app.
+- [x] **Combobox — decided against a Base UI rebuild (2026-09-04).** The speaker
+      field's value is *either* a person id *or* a newly typed name, with
+      `onlySelf`/`isAdmin`/archived rules and a deliberate create-a-person row —
+      a bespoke model that maps badly onto Base UI's item/value model, on a core
+      interaction, with the Base UI docs unreachable from this sandbox. Instead the
+      chips moved *inside* the field box (`d88e822`) — pure layout on the working
+      component, which is what Phase 0 planned for this control all along. It is
+      the one legitimate app-owned exception to "shadcn everywhere". Revisit only
+      if the library genuinely buys something later.
 - [ ] **Dialog** — replaces `Modal` (focus trap, `inert`, scroll-lock); re-apply
       the app's dvh cap + mobile bottom-sheet styling.
 - [ ] **Input, Textarea, Label, Switch** — the plain fields (lower value; last).
