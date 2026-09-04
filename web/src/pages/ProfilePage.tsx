@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { PersonDetailDto, PersonDto, LabelledLink, Role } from '@shared/types';
@@ -79,7 +80,7 @@ export function ProfilePage() {
         } else if (err instanceof ApiError && err.status === 404) {
           setStatus('notfound');
         } else {
-          setError((err as Error).message);
+          setError(errorText(err));
           setStatus('error');
         }
       });
@@ -126,7 +127,7 @@ export function ProfilePage() {
       await run();
       await data.reload();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
     }
   };
   const canEdit = !!person && (person.isMine || isAdmin);
@@ -202,7 +203,7 @@ export function ProfilePage() {
       setDetail((d) => (d ? { ...d, person: updated } : d));
       data.apply({ type: 'person.updated', entity: updated });
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   };
 
@@ -217,7 +218,7 @@ export function ProfilePage() {
       setDetail((d) => (d ? { ...d, person: updated } : d));
       data.apply({ type: 'person.updated', entity: updated });
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   };
 
@@ -748,7 +749,7 @@ function FieldForm({
       await onSave();
       onClose();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
       setBusy(false);
     }
   };
@@ -809,7 +810,7 @@ function SpeakerAccess({
       setPhrase(res.phrase);
       onChanged();
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }
@@ -826,7 +827,7 @@ function SpeakerAccess({
       onChanged();
       toast.show('Speaker phrase revoked');
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }

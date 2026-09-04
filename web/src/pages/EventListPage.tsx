@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '@shared/types';
@@ -25,7 +26,7 @@ export function EventListPage() {
     api
       .listEvents()
       .then(setEvents)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: unknown) => setError(errorText(err)));
   }, []);
 
   return (

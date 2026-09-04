@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useState } from 'react';
 import type { AuditEntryDto } from '@shared/types';
 import { api } from '../lib/api';
@@ -121,7 +122,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       setEntries(page.entries);
       setCursor(page.nextCursor);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
       setEntries([]);
     }
   }, [slug, toast]);
@@ -138,7 +139,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       setEntries((prev) => [...(prev ?? []), ...page.entries]);
       setCursor(page.nextCursor);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }

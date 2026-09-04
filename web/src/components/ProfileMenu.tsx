@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PersonDto, Role } from '@shared/types';
@@ -114,7 +115,7 @@ export function ProfileMenu({
       setOpen(false);
       navigate(`/e/${slug}/p/${created.id}`);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }

@@ -1,5 +1,6 @@
+import { errorText } from '../lib/errorText';
 import { useState } from 'react';
-import { ApiError, api } from '../lib/api';
+import { api } from '../lib/api';
 import {
   ControlShell,
   Field,
@@ -47,7 +48,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
       toast.show(`Saved ${filename} — keep the passphrase with it`);
     } catch (err) {
       toast.show(
-        err instanceof ApiError ? err.message : 'The backup could not be made',
+        errorText(err, 'The backup could not be made'),
       );
     } finally {
       setBusy(false);

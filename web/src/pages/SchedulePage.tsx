@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { Modal } from '../components/Modal';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
@@ -521,11 +522,7 @@ export function SchedulePage() {
 
   const reportError = useCallback(
     (err: unknown) => {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : ((err as Error)?.message ?? "Something went wrong");
-      toast.show(message);
+      toast.show(errorText(err));
     },
     [toast],
   );
@@ -1849,9 +1846,7 @@ function CalendarExportModal({
         );
       } catch (err) {
         toast.show(
-          err instanceof ApiError
-            ? err.message
-            : "Could not create a subscription link",
+          errorText(err, "Could not create a subscription link"),
         );
       } finally {
         setLoading(false);

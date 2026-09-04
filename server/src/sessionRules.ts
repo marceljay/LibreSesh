@@ -283,6 +283,7 @@ export function assertNotBlocked(
   throw conflict(
     `“${blocker.title}” is on then, and everyone should be at it — nothing else can be booked while it runs`,
     'blocked',
+    { title: blocker.title },
   );
 }
 

@@ -42,7 +42,9 @@ export function claimEventName(
   const holder = holderOf(db, eventId, desired);
   if (holder === identityId) return;
   if (holder !== undefined) {
-    throw conflict(`Someone at this event is already called “${desired}”`, 'name_taken');
+    throw conflict(`Someone at this event is already called “${desired}”`, 'name_taken', {
+      name: desired,
+    });
   }
   db.prepare(
     `INSERT INTO event_identities (event_id, identity_id, display_name, claimed_at)

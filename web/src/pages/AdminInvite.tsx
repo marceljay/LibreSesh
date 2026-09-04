@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useMemo, useRef, useState } from 'react';
 import type { Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
@@ -134,7 +135,7 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
       setVerified(null);
       setError(
         err instanceof ApiError && (err.status === 403 || err.status === 429)
-          ? err.message
+          ? errorText(err)
           : 'Could not check that password.',
       );
     } finally {

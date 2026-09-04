@@ -1,8 +1,9 @@
+import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { SessionDto } from '@shared/types';
 
-import { ApiError, api } from '../lib/api';
+import { api } from '../lib/api';
 import {
   dayLabel,
   fmtMin,
@@ -104,7 +105,7 @@ export function AgendaPage() {
         await api.unstarSession(slug, session.id);
       } catch (err) {
         setStarred(session.id, true);
-        toast.show(err instanceof ApiError ? err.message : 'Could not update your agenda');
+        toast.show(errorText(err, 'Could not update your agenda'));
       }
     },
     [setStarred, slug, toast],

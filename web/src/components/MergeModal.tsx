@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
 import type { PersonDto } from '@shared/types';
@@ -70,7 +71,7 @@ export function MergeModal({
     try {
       onMerged(await api.mergePerson(slug, survivor.id, chosen.id), chosen.id);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
       setBusy(false);
     }
   };

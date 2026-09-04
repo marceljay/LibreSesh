@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { Modal } from './Modal';
 import { useEffect, useState } from 'react';
 import type { LinkCodeDto } from '@shared/types';
@@ -19,7 +20,7 @@ export function DeviceLinkModal({ onClose }: { onClose: () => void }) {
     api
       .mintLinkCode()
       .then(setCode)
-      .catch((err: unknown) => setError((err as Error).message));
+      .catch((err: unknown) => setError(errorText(err)));
   };
 
   useEffect(mint, []);

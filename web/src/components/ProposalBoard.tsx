@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { can } from '@shared/capabilities';
@@ -40,7 +41,7 @@ export function ProposalBoard() {
       if (err instanceof ApiError && err.status === 401) {
         setStatus('gate');
       } else {
-        setError((err as Error).message);
+        setError(errorText(err));
         setStatus('error');
       }
     }
@@ -106,7 +107,7 @@ export function ProposalBoard() {
         else await api.removeProposalInterest(slug, proposal.id);
       } catch (err) {
         patchProposal(proposal);
-        toast.show((err as Error).message);
+        toast.show(errorText(err));
       } finally {
         setBusyInterest(null);
       }
@@ -130,7 +131,7 @@ export function ProposalBoard() {
         }
         setEditing(null);
       } catch (err) {
-        toast.show((err as Error).message);
+        toast.show(errorText(err));
       } finally {
         setSaving(false);
       }
@@ -156,7 +157,7 @@ export function ProposalBoard() {
         setEditing(null);
         toast.show('Pitch withdrawn');
       } catch (err) {
-        toast.show((err as Error).message);
+        toast.show(errorText(err));
       }
     },
     [confirm, slug, toast],
@@ -174,7 +175,7 @@ export function ProposalBoard() {
         toast.show(
           err instanceof ApiError && err.code === 'overlap'
             ? 'That slot is already taken'
-            : (err as Error).message,
+            : errorText(err),
         );
       } finally {
         setSaving(false);

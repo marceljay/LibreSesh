@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
@@ -108,11 +109,12 @@ export function ImportPage() {
       navigate(`/e/${result.slug}`);
     } catch (err) {
       // A slug collision is the one failure with an obvious fix, and the
-      // message alone ("That slug is already taken") does not say where.
+      // general sentence does not say where to apply it. One whole message,
+      // not the general one with a clause bolted on — see i18n readiness.
       const message =
         err instanceof ApiError && err.code === 'slug_taken'
-          ? `${err.message}. Change "slug" in the document to something free.`
-          : (err as Error).message;
+          ? 'That address is already taken. Change "slug" in the document to something free.'
+          : errorText(err);
       setError(message);
       setBusy(null);
     }

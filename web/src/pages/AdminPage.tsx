@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { Modal } from '../components/Modal';
 import { useCallback, useEffect, useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
@@ -509,7 +510,7 @@ export function AdminPage() {
     try {
       setTrash(await api.trash(slug));
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   }, [slug, toast]);
 
@@ -544,7 +545,7 @@ export function AdminPage() {
     setCloneOpen(false);
   }
 
-  const fail = (err: unknown) => toast.show((err as Error).message);
+  const fail = (err: unknown) => toast.show(errorText(err));
 
   if (data.status === 'loading') return <Spinner label="Loading…" />;
   if (!bundle || !event) {
@@ -931,7 +932,7 @@ export function AdminPage() {
       return true;
     } catch (err) {
       toast.show(
-        err instanceof ApiError ? err.message : 'Could not check that password',
+        errorText(err, 'Could not check that password'),
       );
       return false;
     }

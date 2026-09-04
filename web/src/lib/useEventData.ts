@@ -1,3 +1,4 @@
+import { errorText } from './errorText';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type {
@@ -413,7 +414,7 @@ export function useEventData(slug: string): EventData {
       dispatch({ kind: 'loaded', bundle: await api.bundle(slug) });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) dispatch({ kind: 'gate' });
-      else dispatch({ kind: 'error', message: (err as Error).message });
+      else dispatch({ kind: 'error', message: errorText(err) });
     }
   }, [slug]);
 
@@ -463,7 +464,7 @@ export function useEventData(slug: string): EventData {
         dispatch({ kind: 'contributions', sessionId, items: detail.contributions });
         dispatch({ kind: 'change', change: { type: 'session.updated', entity: detail.session } });
       } catch (err) {
-        dispatch({ kind: 'error', message: (err as Error).message });
+        dispatch({ kind: 'error', message: errorText(err) });
       }
     },
     [slug],

@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
@@ -57,7 +58,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   const nameProblem = (err: unknown): boolean => {
     if (!(err instanceof ApiError)) return false;
     if (err.code === 'name_taken') {
-      setError(err.message);
+      setError(errorText(err));
       setSuggestion(name.trim());
       return true;
     }
@@ -99,7 +100,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
     } catch (err) {
       setError(
         err instanceof ApiError && err.status !== 403
-          ? err.message
+          ? errorText(err)
           : 'That phrase didn’t match — it may have expired or been revoked.',
       );
       setBusy(false);
@@ -136,7 +137,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       if (!nameProblem(err)) {
         setError(
           err instanceof ApiError && (err.status === 429 || err.status === 404)
-            ? err.message
+            ? errorText(err)
             : 'That password doesn’t match this event.',
         );
       }
@@ -164,7 +165,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       setSuggestion(null);
       onEntered();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
       setBusy(false);
     }
   };
@@ -182,7 +183,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       await api.authenticateAsRole(slug, role, name.trim(), claimProfile);
       onEntered();
     } catch (err) {
-      if (!nameProblem(err)) setError((err as Error).message);
+      if (!nameProblem(err)) setError(errorText(err));
       setBusy(false);
     }
   };

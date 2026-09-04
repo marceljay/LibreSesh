@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -74,7 +75,7 @@ export function NewEventPage() {
       toast.show('Event created — you are its admin');
       navigate(`/e/${created.slug}`);
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
       setBusy(false);
     }
   };
