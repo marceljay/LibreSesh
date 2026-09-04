@@ -120,8 +120,12 @@ export function SpeakerCombobox({
     } else if (creatable) {
       onChange([...value, creatable]);
     }
-    // Cleared, not closed: adding a second name is the next thing you do.
-    setQuery('');
+    // Closed, not just cleared. This used to stay open on the theory that
+    // adding a second name was the next thing you would do — but almost every
+    // session has one host, so for almost everybody the list was hanging open
+    // over the rest of the form with nothing left to pick. Adding another is a
+    // keystroke away: the input keeps focus, and typing reopens the list.
+    setQuery(null);
   };
 
   return (
