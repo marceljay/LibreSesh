@@ -12,7 +12,7 @@ route**, not on `dev` — the primitive layer stays shippable until this proves 
 - App `Modal` has no focus trap / `inert` (Phase 0) → shadcn Dialog gives it.
 - Hand-rolled combobox + focus-ring edge cases keep biting → library owns them.
 
-## Progress (updated 2026-09-04, evening)
+## Progress (updated 2026-09-04, late)
 
 Commits on `feat/shadcn-baseui`, all green (build/lint/909 tests):
 
@@ -36,18 +36,38 @@ Commits on `feat/shadcn-baseui`, all green (build/lint/909 tests):
 **Decision gate passed:** user accepts the +44 kB gz Base UI entry fee (measured);
 deploy is unaffected (build-time only); load speed protected by code-splitting.
 
-**Next:** Dialog (replaces `Modal`, gains the focus trap it lacks) → Input/Textarea
-across the ~17 files → P5 cleanup (retire `ControlShell`/`selectClass`, drop
-floating-ui, sync STATUS/CHANGELOG/ARCHITECTURE, merge back to `dev`).
+- **Dialog** (`8852058`) — `Modal` rebuilt on Base UI Dialog, gaining the focus
+  trap and `inert` it never had. Kept in its own file and lazy-loaded from
+  `ConfirmProvider`, or Base UI would ride the first-paint chunk (62 → 83 kB gz
+  when it briefly did).
+- **Logical properties** (`fc4bd27`) — `ps-`/`pe-`/`start-`/`end-` everywhere, with
+  an ESLint rule holding the line. RTL (right-to-left languages such as Arabic or
+  Hebrew) costs a `dir` attribute now rather than a sweep.
+- **Combobox close-on-pick** (`6b967be`) — the list stayed open after adding a
+  speaker; most sessions have exactly one.
+- **Field tokens** (`fac9349`) — shadcn's `--input`/`--ring` aligned to the app's
+  stone, so a Select and a text field draw the same border and ring.
+- **Error codes → sentences** (`f629630`, i18n readiness rule 2) — the client was
+  rendering `err.message`, i.e. whatever English the server wrote. Now the server
+  sends a code + details and `lib/errorText.ts` is the one place a failure becomes
+  a sentence.
+- **Plural forms** (`0cb5cdf`, rule 3) — `${n} session${n === 1 ? '' : 's'}` gone
+  from a dozen sites, along with three divergent local `plural()` helpers.
+- **P5 dead code** (`763d7e2`) — `selectClass` and `controlHeightClass` retired;
+  ESLint now bans raw `<select>` and both old skins.
 
-**Deferred by the user:** the **datepicker** — likely event-length-dependent (time
-picker for a day, calendar for weeks); needs `react-day-picker` if a real calendar.
+**Next:** sync STATUS/CHANGELOG/ARCHITECTURE, then merge to `dev`.
+
+**Backlogged (not part of this migration):** the **datepicker** — likely
+event-length-dependent (time picker for a day, calendar for weeks); needs
+`react-day-picker` if a real calendar. Moved to STATUS.md's backlog on 2026-09-04
+so this plan can close.
 
 ## Branch strategy
 
 - [x] Cut `feat/shadcn-baseui` off `dev`. All work here; `dev` keeps the working
       primitive route.
-- [ ] Merge back only after the decision gate (P4) passes; else abandon the branch.
+- [~] Merge back once P5 lands. The decision gate (P3) passed on 2026-09-04.
 
 ## Prerequisites / version bumps
 
@@ -76,48 +96,59 @@ sandbox** (`tree-sitter-typescript` native binary fails to load). So:
       component, which is what Phase 0 planned for this control all along. It is
       the one legitimate app-owned exception to "shadcn everywhere". Revisit only
       if the library genuinely buys something later.
-- [ ] **Dialog** — replaces `Modal` (focus trap, `inert`, scroll-lock); re-apply
-      the app's dvh cap + mobile bottom-sheet styling.
-- [ ] **Input, Textarea, Label, Switch** — the plain fields (lower value; last).
+- [x] **Dialog** — `Modal` rebuilt on Base UI Dialog (`8852058`), public API
+      unchanged, dvh cap + bottom-sheet styling re-applied. Lives in its own
+      `Modal.tsx` rather than `ui.tsx` so Base UI stays off the first-paint chunk.
+- [x] **Input, Textarea, Label, Switch — decided against (2026-09-04).** shadcn's
+      `Input` is a bare styled `<input>` with none of the `FieldContext` wiring
+      ours carries (id, `aria-describedby`, `aria-invalid` from the `Field`), so
+      adopting it would trade working label association for visual sameness the
+      app already has. The second app-owned exception, on the same grounds as the
+      combobox.
 
 ## Persist as app-owned `ui.tsx` exceptions
 
-- [ ] **`Field` wrapper** — label association + hint + `role="alert"` error +
-      `FieldContext`. Do **not** adopt shadcn `Form`/`FormField` — those are
-      react-hook-form; this app is controlled `useState`. Keep the Phase-1 a11y fix.
-- [ ] **`NumberField`** — digits-only, range, "empty isn't yet wrong"; rebuild its
-      shell on shadcn Input.
-- [ ] Any bespoke chips/toggle-group (tags, weekday chips, format/placement).
+- [x] **`Field` wrapper** — kept. Label association + hint + `role="alert"` error
+      + `FieldContext`. shadcn `Form`/`FormField` deliberately not adopted: those
+      are react-hook-form, this app is controlled `useState`.
+- [x] **`NumberField`** — kept on `ControlShell` + `TextInput` (see the Input
+      decision above). Its refusal is now a code + params rendered at the
+      boundary (`0cb5cdf`), not a pre-built English sentence.
+- [x] **`SpeakerCombobox`** — kept; see the Combobox note above.
+- [x] Bespoke chips/toggle-group (tags, weekday chips, format/placement) — kept.
 
 ## Load-bearing rules
 
-- [~] **Global `:focus-visible` ring** (`index.css`) — *not* deleted yet, and so
-      far it doesn't need to be: shadcn components are single focusable elements, so
+- [x] **Global `:focus-visible` ring** (`index.css`) — kept, deliberately: shadcn components are single focusable elements, so
       the global ring merges with their own on the same element (one ring), unlike
       `ControlShell` (wrapper + inner input) which doubled. Revisit if a wrapped
       shadcn control reintroduces the double.
 - [x] **Theme shadcn to the app** — stone-mapped tokens, Tailwind radii, 16px-on-
       mobile carried on the trigger (`text-base sm:text-sm`).
-- [ ] **ESLint** — allowlist `components/ui/*` when the raw-element ban bites (Base
-      UI wrappers don't trip it yet); keep the `inputClass` ban.
+- [x] **ESLint** (`763d7e2`) — `components/ui/*` allowlisted alongside `ui.tsx`;
+      the old-skin ban now covers `selectClass` as well as `inputClass`, and raw
+      `<select>` is banned outright now that no native one is left.
 - [x] **Bundle — measured:** +44 kB gz for Base UI's runtime (not lucide). Accepted;
-      isolated off first paint by code-splitting. Still to reclaim: drop
-      `@floating-ui/react` (~18 kB) once popovers move to Base UI.
+      isolated off first paint by code-splitting. Entry is **60.6 kB gz**; Base UI
+      rides the Modal (21.7) and select (28.5) chunks.
+- [x] **`@floating-ui/react` stays** — checked at P5: still used by `Popover`,
+      `FilterMenu`, `RoleControl`, `HelpMenu` and `AdminPage`. Moving those to Base
+      UI Popover is a separate job with its own bundle question, not cleanup.
 
 ## Steps
 
 - [x] **P0 — foundation:** branch; shadcn set up **manually** (CLI hangs on the
       custom Vite layout); themed to stone.
 - [x] **P1 — Tailwind v4** landed and green.
-- [~] **P2 — Add Session modal:** Select ✓ (room verified good by the user). Combobox
-      + Dialog still to do here.
+- [x] **P2 — Add Session modal:** Select ✓ (room verified good by the user);
+      Dialog ✓; combobox resolved as an app-owned exception.
 - [x] **P3 — decision gate:** passed (bundle accepted, load protected).
-- [~] **P4 — rollout (in progress):** selects → combobox → dialog → Input/Textarea
-      across the ~17 files; then update ESLint; port the `controlShell`/`starTally`
-      source-text tests as primitives are retired.
-- [ ] **P5 — cleanup:** remove dead primitives (`ControlShell`, `selectClass`,
-      `SpeakerCombobox`, old `Modal`); drop floating-ui if unused; update
-      ARCHITECTURE + STATUS + CHANGELOG.
+- [x] **P4 — rollout:** every select, the dialog, and the ESLint update. Combobox
+      and Input/Textarea resolved as app-owned exceptions rather than swaps, so
+      the `controlShell`/`starTally` source-text tests stay and were extended.
+- [~] **P5 — cleanup:** `selectClass`/`controlHeightClass` removed (`763d7e2`);
+      floating-ui checked and kept; `ControlShell`/`SpeakerCombobox` kept by
+      decision, not dead. Remaining: ARCHITECTURE + STATUS + CHANGELOG, merge.
 
 ## Scope (resolved 2026-09-04)
 

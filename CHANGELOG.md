@@ -161,6 +161,29 @@ All notable changes to this project are documented here.
   fields. No field changed what it does — this is a legibility and consistency
   pass.
 
+- **Every dropdown is now the app's own, and the app loads in a quarter of the
+  bytes.** The last controls that still looked like the browser rather than the
+  app were the dropdowns: a native `<select>` cannot have its open menu styled
+  at all, so "Room", "Track" and "Duration" dropped a grey system list over a
+  carefully themed form. All of them — the session modal, the pitch board, the
+  breaks editor, the admin pages — are now the same control, wearing the same
+  border, height and focus ring as the field beside them. Dialogs went the same
+  way: opening one now traps focus and hides the page behind it from screen
+  readers, which the hand-rolled version never did.
+
+  The library that makes this possible costs about 44 kB, and the app was
+  already a single 224 kB download before anything appeared on screen. So the
+  build was split: the first paint is now **61 kB**, and the heavier parts —
+  the session editor, the dialogs, the admin pages — arrive when you open them.
+  On a slow connection the schedule shows up markedly sooner than it did, and
+  the parts of the app you never touch are never sent.
+
+  Underneath: text stays selectable and laid out correctly if the interface is
+  ever translated into a right-to-left language such as Arabic or Hebrew; a
+  failed request now says what actually went wrong rather than echoing the
+  server's own words; and counted things ("1 session", "3 sessions") are said
+  by picking the right form instead of appending an "s".
+
 - **The People table no longer badges an outstanding speaker code.** A small
   amber `code` sat beside the name of anyone whose speaker phrase had been
   minted and never used. It is a fact about one person, read down a column of
