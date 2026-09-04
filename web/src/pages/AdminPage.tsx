@@ -332,6 +332,7 @@ function PeopleColumnsMenu({ columns }: { columns: PeopleColumnsControl }) {
                 key={id}
                 className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-stone-100 dark:hover:bg-stone-800"
               >
+                {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
                 <input
                   type="checkbox"
                   checked={columns.showing(id)}
@@ -1490,6 +1491,7 @@ export function AdminPage() {
                   </button>
                 ))}
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
               <input
                 type="search"
                 value={peopleQuery}

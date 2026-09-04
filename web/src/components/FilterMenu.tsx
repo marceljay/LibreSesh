@@ -98,6 +98,7 @@ export function FilterMenu({
           >
             <div className="relative">
               <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+              {/* eslint-disable-next-line no-restricted-syntax -- compact filter box with a leading icon; folds into a ControlShell adornment in a later phase */}
               <input
                 value={filters.q}
                 onChange={(e) => filters.set({ q: e.target.value })}

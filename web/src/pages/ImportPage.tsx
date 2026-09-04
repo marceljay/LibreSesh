@@ -191,6 +191,7 @@ export function ImportPage() {
             >
               Choose a file…
             </button>
+            {/* eslint-disable-next-line no-restricted-syntax -- hidden file input, not a text field */}
             <input
               ref={fileInput}
               type="file"

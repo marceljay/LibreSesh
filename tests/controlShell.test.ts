@@ -121,10 +121,12 @@ describe('NumberField is the proof, rebuilt on the primitives', () => {
   });
 });
 
-describe('the old skin is deprecated, not yet gone', () => {
-  it('marks inputClass deprecated and points at the replacement', () => {
-    expect(ui).toContain('@deprecated Use `ControlShell` + `TextInput`');
-    // Still exported — Phase 2 converts the call sites before it is removed.
-    expect(ui).toContain('export const inputClass =');
+describe('the old skin is gone', () => {
+  it('has deleted inputClass now that Phase 2 converted every call site', () => {
+    expect(ui).not.toContain('inputClass');
+  });
+
+  it('keeps selectClass for the native selects Phase 0 left native', () => {
+    expect(ui).toContain('export const selectClass =');
   });
 });

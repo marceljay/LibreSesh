@@ -31,17 +31,6 @@ import { CloseIcon } from './icons';
 export const controlHeightClass = 'h-[2.375rem]';
 
 /**
- * @deprecated Use `ControlShell` + `TextInput`. This is the old skin — the
- * input *is* the field, so anything belonging in the field renders outside its
- * border, and at 14px it triggers the iOS focus-zoom. Kept only while Phase 2
- * converts the call sites; `git grep inputClass` is that worklist, and an
- * ESLint rule bans the string once the last one is gone.
- */
-export const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none ' +
-  'focus:border-stone-500 dark:border-stone-600 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-400';
-
-/**
  * What a `Field` tells the control inside it: the id its label points at, the
  * ids its hint and error carry (so the control can name them in
  * `aria-describedby`), and whether it is in an invalid state.
@@ -258,8 +247,8 @@ export const TextArea = forwardRef<
  * allowlists the element rather than wrapping it, because a native select is
  * the accessible default and holds nothing a `ControlShell` would carry. This
  * gives them the field's border, height and focus ring so they read as siblings
- * of the text fields, and replaces their old `inputClass` when it is deleted.
- * Tokens track `ControlShell`; Phase 3 changes them together.
+ * of the text fields, and is what a native select wears now that the old field
+ * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
  */
 export const selectClass =
   `${controlHeightClass} w-full rounded-lg border border-stone-300 bg-white px-3 text-base outline-none transition-colors ` +

@@ -81,6 +81,7 @@ export function MergeModal({
           chosenId === person.id ? 'bg-stone-100 dark:bg-stone-800' : ''
         }`}
       >
+        {/* eslint-disable-next-line no-restricted-syntax -- radio, not a text field */}
         <input
           type="radio"
           name="merge-duplicate"
@@ -194,6 +195,7 @@ export function MergeModal({
         </>
       )}
 
+      {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
       <input
         type="search"
         value={query}
