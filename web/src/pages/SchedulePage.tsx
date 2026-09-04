@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
 import type {
   ContributionDto,
@@ -44,7 +44,10 @@ import { Logo } from "../components/Logo";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
-import { SessionModal, type SaveOpts } from "../components/SessionModal";
+import type { SaveOpts } from "../components/SessionModal";
+const SessionModal = lazy(() =>
+  import("../components/SessionModal").then((m) => ({ default: m.SessionModal })),
+);
 import { LinkSessionsModal } from "../components/LinkSessionsModal";
 import {
   canDeleteSession,
@@ -1699,6 +1702,7 @@ export function SchedulePage() {
       )}
 
       {editing && (
+        <Suspense fallback={null}>
         <SessionModal
           session={editing.session}
           rooms={bundle.rooms}
@@ -1732,6 +1736,7 @@ export function SchedulePage() {
             editing.session ? () => setLinkingExisting(editing.session as SessionDto) : undefined
           }
         />
+        </Suspense>
       )}
 
       {linkingExisting && (
