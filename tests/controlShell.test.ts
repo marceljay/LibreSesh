@@ -55,9 +55,10 @@ describe('ControlShell is the only field border', () => {
     // state is red-500 (red-400 failed light at 2.77:1).
     expect(shell).toContain('border-stone-500');
     expect(shell).toContain("'border-red-500 dark:border-red-500'");
-    // The ring itself is a 2px offset halo, not a flush inner line.
+    // On focus the field hides its own border and shows one flush ring in its
+    // place, so border + ring never read as two concentric lines.
     expect(ui).toContain('focus-within:ring-2');
-    expect(ui).toContain('focus-within:ring-offset-2');
+    expect(ui).toContain('focus-within:border-transparent');
   });
 
   it('focuses its input when its own padding is clicked', () => {

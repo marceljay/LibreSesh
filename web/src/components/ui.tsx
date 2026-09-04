@@ -31,18 +31,21 @@ import { CloseIcon } from './icons';
 export const controlHeightClass = 'h-[2.375rem]';
 
 /**
- * The focus ring, shared by every field and button. A 2px ring set *off* the
- * control by a matching-surface gap, so focus reads as a distinct halo rather
- * than a second line drawn flush against the border — which was the "ugly inner
- * border" a flush same-colour ring produced. The offset colour is the surface
- * behind the control (white / stone-900), so the gap is invisible until the
- * ring floats past it. `fieldFocusRing` triggers on the inner input via
- * `focus-within`; `buttonFocusRing` on the control itself via `focus-visible`,
- * so a mouse click on a button does not ring but a keyboard tab does.
+ * The focus rings. A **field** and a **button** want opposite things here.
+ *
+ * A field already has a 1px border for contrast, so its focus ring must not add
+ * a *second* concentric line — a ring drawn a gap away from the border reads as
+ * two borders ("the ugly inner border"). So the field hides its own border on
+ * focus and shows one flush 2px ring in its place: a single line, thicker, no
+ * gap. It rides `focus-within` so the ring wraps the whole control when the
+ * inner input takes focus.
+ *
+ * A button has no competing border to double against, so it takes the more
+ * legible offset halo, on `focus-visible` — a keyboard tab rings, a mouse click
+ * does not.
  */
 const fieldFocusRing =
-  'focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-stone-500 focus-within:ring-offset-white ' +
-  'dark:focus-within:ring-stone-400 dark:focus-within:ring-offset-stone-900';
+  'focus-within:border-transparent focus-within:ring-2 focus-within:ring-stone-500 dark:focus-within:ring-stone-400';
 export const buttonFocusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-stone-500 focus-visible:ring-offset-white ' +
   'dark:focus-visible:ring-stone-400 dark:focus-visible:ring-offset-stone-900';
@@ -267,8 +270,8 @@ export const TextArea = forwardRef<
  */
 export const selectClass =
   `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-none transition-colors ` +
-  'focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 focus:ring-offset-white sm:text-sm ' +
-  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400 dark:focus:ring-offset-stone-900';
+  'focus:border-transparent focus:ring-2 focus:ring-stone-500 sm:text-sm ' +
+  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole
