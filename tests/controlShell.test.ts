@@ -84,6 +84,16 @@ describe('TextInput is bare and wired from context', () => {
     expect(input).toContain('bg-transparent');
   });
 
+  it('opts out of the global :focus-visible ring, so it draws no ring inside the shell', () => {
+    // index.css rings every :focus-visible element; on the wrapped input that
+    // ring lands *inside* the shell — the "ugly inner border". The input must
+    // suppress it and let the shell (focus-within) carry the ring instead. This
+    // is the guard that keeps the inner border from coming back.
+    const css = readFileSync(join(import.meta.dirname, '..', 'web', 'src', 'index.css'), 'utf8');
+    expect(css).toMatch(/:focus-visible\s*\{[^}]*ring-2/); // the global ring still exists
+    expect(input).toContain('focus-visible:ring-0');
+  });
+
   it('forwards a ref, so a call site can select or focus the node', () => {
     expect(input).toContain('forwardRef');
     expect(input).toContain('ref={ref}');
