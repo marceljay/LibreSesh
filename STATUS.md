@@ -252,6 +252,33 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
+- **Search cannot find a person.** Phases 2–4 of
+  `_planning/specs/search.md`, which is written and settled — phase 1
+  (event-wide filters and the "Search everywhere" hand-off) shipped
+  2026-09-04. `@ada` resolves in a comment and a speaker's name opens a
+  profile, so the app knows who people are, but typing a name into the
+  search box searches the *billing* on sessions: it finds their sessions
+  and not them. What is left, in order:
+
+  - **`scorePerson` and the merge rule.** Username 60 exact / 45
+    word-start, name 40, bio 6 — and two ranked lists rather than one
+    score across both types, because a single scale would have to promise
+    that 45 points of username mean the same as 45 of session title. The
+    merge: an exact hit first whatever it is (an attendee whose username
+    is `design` must not outrank the session called "Design"), then people
+    who were named, then sessions, then bio-only people. Person rows in
+    both the popdown (max 3) and the page (a People section).
+  - **`@handle`** — a query starting with `@` is a people query: strip it,
+    match usernames only. Same grammar as a mention, which is where people
+    learn it.
+  - **Bio-only matches**, page only. Never in the popdown: a row there
+    that cannot say why it is present reads as a bug.
+
+  Decided and not to be relitigated: tags are **not** offered as rows in
+  the search box (a tag is a lens, not a destination — it has no page to
+  open), and there is no separate "Advanced search" mode, because the
+  search page is it.
+
 - **The format exists; three places still do not use it.** Landed 2026-09-02
   (migrations 014 and 015, `session_formats`): defined per event in Manage
   Event, picked at the top of the session form, shown on the session sheet,

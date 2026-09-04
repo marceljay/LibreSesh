@@ -6,6 +6,21 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Search everywhere — the filters stop being about one day.** A tag, a room, a
+  track, ★ my agenda and the filter box all narrowed *the day on screen*, so
+  "show me everything tagged design" meant setting the tag and then walking the
+  day strip, re-reading the same panel on each day. The filter panel now ends in
+  **Search everywhere**, which takes the filters you have already chosen to the
+  results page and applies them to the whole event, grouped by day. The page
+  carries the same panel, so you can keep narrowing once you are there, and the
+  whole question — query and chips — is in the URL, so it is a link you can send
+  someone.
+
+  One filter means something better off the day scope: **Now / next** on the
+  grid can only mean a minute of the day being drawn, and on the results page it
+  means *has not ended yet*, across dates. And the results page no longer drops
+  your filters when you re-run the query.
+
 - **Mentioning a person, first cut — names you can click, and `@username` that
   links.** A name in a comment used to be plain text, so the way to point at a
   co-host was to describe them. Now a comment's author links to their profile,
