@@ -81,9 +81,12 @@ the top of the session form, and the word "open" left the UI in favour of an
 opt-in **Official** badge. The same evening fixed a speaker being unable to
 edit their own session — reported from use, three rules deep. All of it is
 code-complete and in CHANGELOG `[Unreleased]`; migrations 014, 015 and 016.
-What is left of it is the browser pass in **Awaiting your review**. What is left of the
-UI-overhaul plan lives in
-`_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`:
+What is left of it is the browser pass in **Awaiting your review**. The
+2026-08-29 UI-overhaul/permissions/pitches plan was **retired on 2026-09-04**:
+of its 28 open boxes, 25 had shipped without being ticked (every `ui.tsx`
+primitive, room capacity/description, the explicit edit affordance, the whole
+capability system, livestream URLs, the pitch creator) and one was withdrawn
+(up/down votes — see §Voting below). What genuinely survived it is here:
 
 - **Whole-app UI sweep.** The primitives landed, the admin page is done, and
   as of 2026-08-31 every modal is on the `Modal` primitive (`fb5c759`).
@@ -103,6 +106,16 @@ UI-overhaul plan lives in
 - **ARCHITECTURE.md concurrency paragraph.** §Realtime documents broadcast and
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
+
+- **The two files that keep growing.** `SchedulePage.tsx` is **1,957 lines**
+  and `AdminPage.tsx` **2,577**. The retired plan flagged SchedulePage at 989
+  on 2026-08-29; it has almost exactly doubled since, which is the argument for
+  the entry rather than the line count itself. Nothing is broken by it — it is
+  a reading cost, paid every time either file is opened, and it compounds. The
+  natural seams are already visible: SchedulePage holds every handler the
+  detail sheet needs (deliberately — see ARCHITECTURE §Frontend), so the split
+  is by *section* rather than by concern. Not urgent, but it will not get
+  cheaper.
 
 ## Awaiting your review
 
@@ -404,8 +417,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **Pitch board.** Showing the creator is done — a card reads "pitched by
   {name}" (`ProposalBoard.tsx:332`). What is left is defaulting the creator as
   host (a new pitch starts with an empty speaker field,
-  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan is
-  `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`, whose
+  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan that
+  carried these was retired on 2026-09-04; its
   up/down-vote assumption is **withdrawn** (decided 2026-08-31): interest stays
   one-way, so no `proposal_votes` table, no migration, and `interestCount`
   keeps its name and its meaning in `EventExport`. The button already wears an
