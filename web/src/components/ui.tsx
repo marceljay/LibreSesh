@@ -31,6 +31,23 @@ import { CloseIcon } from './icons';
 export const controlHeightClass = 'h-[2.375rem]';
 
 /**
+ * The focus ring, shared by every field and button. A 2px ring set *off* the
+ * control by a matching-surface gap, so focus reads as a distinct halo rather
+ * than a second line drawn flush against the border — which was the "ugly inner
+ * border" a flush same-colour ring produced. The offset colour is the surface
+ * behind the control (white / stone-900), so the gap is invisible until the
+ * ring floats past it. `fieldFocusRing` triggers on the inner input via
+ * `focus-within`; `buttonFocusRing` on the control itself via `focus-visible`,
+ * so a mouse click on a button does not ring but a keyboard tab does.
+ */
+const fieldFocusRing =
+  'focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-stone-500 focus-within:ring-offset-white ' +
+  'dark:focus-within:ring-stone-400 dark:focus-within:ring-offset-stone-900';
+export const buttonFocusRing =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-stone-500 focus-visible:ring-offset-white ' +
+  'dark:focus-visible:ring-stone-400 dark:focus-visible:ring-offset-stone-900';
+
+/**
  * What a `Field` tells the control inside it: the id its label points at, the
  * ids its hint and error carry (so the control can name them in
  * `aria-describedby`), and whether it is in an invalid state.
@@ -97,7 +114,7 @@ export function Field({
         </label>
         {children}
         {hint && (
-          <p id={hintId} className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+          <p id={hintId} className="mt-1 text-xs text-stone-500 dark:text-stone-400">
             {hint}
           </p>
         )}
@@ -168,10 +185,10 @@ export function ControlShell({
           field.focus();
         }
       }}
-      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 transition-colors focus-within:ring-2 focus-within:ring-stone-500 dark:bg-stone-900 dark:focus-within:ring-stone-400 ${
+      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 transition-colors ${fieldFocusRing} dark:bg-stone-900 ${
         isInvalid
-          ? 'border-red-400 dark:border-red-700'
-          : 'border-stone-300 focus-within:border-stone-500 dark:border-stone-600 dark:focus-within:border-stone-400'
+          ? 'border-red-500 dark:border-red-500'
+          : 'border-stone-500 dark:border-stone-500'
       } ${disabled ? 'opacity-60' : ''} ${className}`}
     >
       {children}
@@ -233,10 +250,8 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:ring-2 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 ${
-        invalid
-          ? 'border-red-400 focus:ring-red-400 dark:border-red-700'
-          : 'border-stone-300 focus:border-stone-500 focus:ring-stone-500 dark:border-stone-600 dark:focus:border-stone-400 dark:focus:ring-stone-400'
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 ${fieldFocusRing} disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 ${
+        invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />
   );
@@ -251,9 +266,9 @@ export const TextArea = forwardRef<
  * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
  */
 export const selectClass =
-  `${controlHeightClass} w-full rounded-lg border border-stone-300 bg-white px-3 text-base outline-none transition-colors ` +
-  'focus:border-stone-500 focus:ring-2 focus:ring-stone-500 sm:text-sm ' +
-  'dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-400 dark:focus:ring-stone-400';
+  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-none transition-colors ` +
+  'focus:ring-2 focus:ring-offset-2 focus:ring-stone-500 focus:ring-offset-white sm:text-sm ' +
+  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400 dark:focus:ring-offset-stone-900';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole
@@ -445,7 +460,7 @@ export function Chip({
  *  `inline-flex items-center` itself, the way `SessionDetail` already adds
  *  `justify-center` to the one wide SecondaryButton. */
 export const primaryButtonClass =
-  'rounded-lg border border-transparent bg-stone-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-stone-700 disabled:opacity-40 ' +
+  `rounded-lg border border-transparent bg-stone-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-stone-700 disabled:opacity-40 ${buttonFocusRing} ` +
   'dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-300';
 
 export function PrimaryButton({
@@ -462,7 +477,7 @@ export function PrimaryButton({
 
 /** Exported so a download `<a>` can look like the button it stands in for. */
 export const secondaryButtonClass =
-  'inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-700 hover:border-stone-500 disabled:opacity-40 ' +
+  `inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-700 hover:border-stone-500 disabled:opacity-40 ${buttonFocusRing} ` +
   'dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200 dark:hover:border-stone-400';
 
 export function SecondaryButton({
@@ -490,7 +505,7 @@ export function DangerButton({
     <button
       type="button"
       {...rest}
-      className={`rounded-lg border border-red-300 bg-white px-4 py-2.5 text-xs font-semibold text-red-600 hover:border-red-500 hover:bg-red-50 disabled:opacity-40 dark:border-red-900 dark:bg-stone-900 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/40 ${className}`}
+      className={`rounded-lg border border-red-300 bg-white px-4 py-2.5 text-xs font-semibold text-red-600 hover:border-red-500 hover:bg-red-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500 focus-visible:ring-offset-white dark:border-red-900 dark:bg-stone-900 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/40 dark:focus-visible:ring-red-400 dark:focus-visible:ring-offset-stone-900 ${className}`}
     >
       {children}
     </button>
@@ -564,7 +579,7 @@ export function IconButton({
     <button
       type="button"
       {...rest}
-      className={`flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-sm text-stone-500 hover:border-stone-300 hover:bg-stone-100 disabled:opacity-30 disabled:hover:border-transparent disabled:hover:bg-transparent dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800 ${className}`}
+      className={`flex h-7 w-7 items-center justify-center rounded-lg border border-transparent text-sm text-stone-500 hover:border-stone-300 hover:bg-stone-100 disabled:opacity-30 disabled:hover:border-transparent disabled:hover:bg-transparent ${buttonFocusRing} dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800 ${className}`}
     >
       {children}
     </button>
@@ -835,7 +850,7 @@ export function FieldGroup({
   return (
     <section className={className}>
       {title && (
-        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
           {title}
         </h3>
       )}
@@ -966,7 +981,7 @@ export function EmptyState({ children }: { children: ReactNode }) {
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="py-20 text-center text-sm text-stone-400 dark:text-stone-500" role="status">
+    <div className="py-20 text-center text-sm text-stone-500 dark:text-stone-400" role="status">
       {label}
     </div>
   );

@@ -48,10 +48,16 @@ describe('ControlShell is the only field border', () => {
     const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
     expect(shell).toContain('min-h-[2.375rem]');
     expect(shell).toContain('flex-wrap'); // chips and adornments sit inside the border
-    expect(shell).toContain('focus-within:ring-2');
+    expect(shell).toContain('fieldFocusRing'); // the shared ring token, applied here
     // Invalid comes from the Field unless the caller overrides it.
     expect(shell).toContain('invalid ?? ctx?.invalid ?? false');
-    expect(shell).toContain("'border-red-400 dark:border-red-700'");
+    // Phase 3 contrast: the border clears 3:1 in both themes and the error
+    // state is red-500 (red-400 failed light at 2.77:1).
+    expect(shell).toContain('border-stone-500');
+    expect(shell).toContain("'border-red-500 dark:border-red-500'");
+    // The ring itself is a 2px offset halo, not a flush inner line.
+    expect(ui).toContain('focus-within:ring-2');
+    expect(ui).toContain('focus-within:ring-offset-2');
   });
 
   it('focuses its input when its own padding is clicked', () => {
