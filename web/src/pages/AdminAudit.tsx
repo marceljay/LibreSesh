@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AuditEntryDto } from '@shared/types';
 import { api } from '../lib/api';
 import { relativeTime, rowId, uid } from '../lib/format';
-import { EmptyState, SecondaryButton, Section, Spinner, inputClass, useToast } from '../components/ui';
+import { ControlShell, EmptyState, SecondaryButton, Section, Spinner, TextInput, useToast } from '../components/ui';
 
 /**
  * The write log, which the server has kept since the first migration and
@@ -178,13 +178,14 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
         <EmptyState>Nothing has been written to this event yet.</EmptyState>
       ) : (
         <>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter by name, id, action or title"
-            aria-label="Filter the loaded entries"
-            className={`${inputClass} mb-3`}
-          />
+          <ControlShell className="mb-3">
+            <TextInput
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter by name, id, action or title"
+              aria-label="Filter the loaded entries"
+            />
+          </ControlShell>
           <ul>
             {shown.map((entry) => (
               <Entry key={entry.id} entry={entry} />

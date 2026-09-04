@@ -4,11 +4,13 @@ import type { GeneratedPasswords, ImportResult } from '@shared/types';
 import { api, ApiError } from '../lib/api';
 import { parseDoc, type DocSummary } from '../lib/importDoc';
 import {
+  ControlShell,
   Field,
   FormError,
   PrimaryButton,
   SecondaryButton,
-  inputClass,
+  TextArea,
+  TextInput,
   linkClass,
   useToast,
 } from '../components/ui';
@@ -168,12 +170,13 @@ export function ImportPage() {
           label="Instance password"
           hint="Set by whoever runs this server. Importing makes an event rather than editing one, so it asks for the same password creating one by hand does — not an event password."
         >
-          <input
-            type="password"
-            value={instanceKey}
-            onChange={(e) => setInstanceKey(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              type="password"
+              value={instanceKey}
+              onChange={(e) => setInstanceKey(e.target.value)}
+            />
+          </ControlShell>
         </Field>
 
         <div className="mt-4">
@@ -200,7 +203,7 @@ export function ImportPage() {
               }}
             />
           </div>
-          <textarea
+          <TextArea
             value={text}
             onChange={(e) => {
               setText(e.target.value);
@@ -209,7 +212,7 @@ export function ImportPage() {
             spellCheck={false}
             rows={14}
             placeholder={'{\n  "event": { "name": "…", "slug": "…" },\n  "rooms": [ … ]\n}'}
-            className={`${inputClass} resize-y font-mono text-xs leading-relaxed`}
+            className="resize-y font-mono text-xs leading-relaxed"
           />
           {text.trim() !== '' && !parsed.ok && (
             <p className="mt-2 text-xs text-red-600 dark:text-red-400">{parsed.error}</p>

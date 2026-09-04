@@ -5,6 +5,7 @@ import { ROOM_COLORS } from "@shared/roomColors";
 import { ColorPicker } from "../components/ColorPicker";
 import { capacityField, parseNumberField } from "../lib/numberField";
 import {
+  ControlShell,
   DangerButton,
   Field,
   FormGrid,
@@ -15,8 +16,9 @@ import {
   PrimaryButton,
   SecondaryButton,
   Section,
+  TextArea,
+  TextInput,
   Toggle,
-  inputClass,
 } from "../components/ui";
 
 export interface AdminRoomsProps {
@@ -174,12 +176,13 @@ function RoomRow({
           <FormStack>
             <FormGrid>
               <Field label="Room name">
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={80}
-                  className={inputClass}
-                />
+                <ControlShell>
+                  <TextInput
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={80}
+                  />
+                </ControlShell>
               </Field>
               <NumberField
                 label="Capacity"
@@ -195,12 +198,12 @@ function RoomRow({
               label="Description"
               hint="Shown to attendees. Where it is, how to find it."
             >
-              <textarea
+              <TextArea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
                 maxLength={500}
-                className={`${inputClass} resize-none`}
+                className="resize-none"
               />
             </Field>
 
@@ -318,13 +321,14 @@ export function AdminRooms({
         <FormRow>
           <div className="min-w-40 flex-1">
             <Field label="New room">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void add()}
-                maxLength={80}
-                className={inputClass}
-              />
+              <ControlShell>
+                <TextInput
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && void add()}
+                  maxLength={80}
+                />
+              </ControlShell>
             </Field>
           </div>
 

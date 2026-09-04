@@ -10,13 +10,15 @@ import { MergeModal } from '../components/MergeModal';
 import { PersonStatusBadge } from '../components/PersonLine';
 import { RoleControl } from '../components/RoleControl';
 import {
+  ControlShell,
   EmptyState,
   FormError,
   IconButton,
   PrimaryButton,
   SecondaryButton,
   Spinner,
-  inputClass,
+  TextArea,
+  TextInput,
   useToast,
 } from '../components/ui';
 
@@ -262,14 +264,16 @@ export function ProfilePage() {
                       : 'Their full name — what sessions they give are credited to.'
                   }
                 >
-                  <input
-                    value={draftName}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    aria-label="Full name"
-                    maxLength={120}
-                    className={`${inputClass} text-lg font-semibold`}
-                    autoFocus
-                  />
+                  <ControlShell>
+                    <TextInput
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      aria-label="Full name"
+                      maxLength={120}
+                      className="text-lg font-semibold"
+                      autoFocus
+                    />
+                  </ControlShell>
                 </FieldForm>
               ) : (
                 <div className="flex items-center gap-1.5">
@@ -436,14 +440,15 @@ export function ProfilePage() {
                   await data.reload();
                 }}
                 editor={
-                  <input
-                    value={draftDisplayName}
-                    onChange={(e) => setDraftDisplayName(e.target.value)}
-                    aria-label="Username"
-                    maxLength={40}
-                    className={inputClass}
-                    autoFocus
-                  />
+                  <ControlShell>
+                    <TextInput
+                      value={draftDisplayName}
+                      onChange={(e) => setDraftDisplayName(e.target.value)}
+                      aria-label="Username"
+                      maxLength={40}
+                      autoFocus
+                    />
+                  </ControlShell>
                 }
               >
                 <p className="text-sm">{displayName}</p>
@@ -462,13 +467,13 @@ export function ProfilePage() {
               onSave={() => savePerson({ bio: draftBio.trim() })}
               editHint="Markdown is supported."
               editor={
-                <textarea
+                <TextArea
                   value={draftBio}
                   onChange={(e) => setDraftBio(e.target.value)}
                   aria-label="Bio"
                   rows={5}
                   maxLength={2000}
-                  className={`${inputClass} resize-none`}
+                  className="resize-none"
                   autoFocus
                 />
               }
@@ -507,23 +512,25 @@ export function ProfilePage() {
                 <div className="space-y-2">
                   {draftLinks.map((link, i) => (
                     <div key={i} className="flex gap-2">
-                      <input
-                        value={link.label}
-                        onChange={(e) => setLink(i, { label: e.target.value })}
-                        placeholder="Label"
-                        aria-label={`Link ${i + 1} label`}
-                        maxLength={60}
-                        className={`${inputClass} w-1/3`}
-                        autoFocus={i === 0}
-                      />
-                      <input
-                        value={link.url}
-                        onChange={(e) => setLink(i, { url: e.target.value })}
-                        placeholder="https://…"
-                        aria-label={`Link ${i + 1} address`}
-                        inputMode="url"
-                        className={inputClass}
-                      />
+                      <ControlShell className="w-1/3">
+                        <TextInput
+                          value={link.label}
+                          onChange={(e) => setLink(i, { label: e.target.value })}
+                          placeholder="Label"
+                          aria-label={`Link ${i + 1} label`}
+                          maxLength={60}
+                          autoFocus={i === 0}
+                        />
+                      </ControlShell>
+                      <ControlShell className="flex-1">
+                        <TextInput
+                          value={link.url}
+                          onChange={(e) => setLink(i, { url: e.target.value })}
+                          placeholder="https://…"
+                          aria-label={`Link ${i + 1} address`}
+                          inputMode="url"
+                        />
+                      </ControlShell>
                       <button
                         type="button"
                         onClick={() => setDraftLinks((ls) => ls.filter((_, idx) => idx !== i))}

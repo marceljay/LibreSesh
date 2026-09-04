@@ -3,6 +3,7 @@ import type { BreakDto } from '@shared/types';
 import type { BreakWrite } from '../lib/api';
 import { fmtMin, minutesOf, snapMinute } from '../lib/format';
 import {
+  ControlShell,
   DangerButton,
   Field,
   FormRow,
@@ -11,7 +12,8 @@ import {
   PrimaryButton,
   SecondaryButton,
   Section,
-  inputClass,
+  TextInput,
+  selectClass,
 } from '../components/ui';
 
 const EVERY_DAY = '';
@@ -63,7 +65,7 @@ function DayPicker({
   onChange: (next: string) => void;
 }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
       <option value={EVERY_DAY}>Every day</option>
       {days.map((date) => (
         <option key={date} value={date}>
@@ -151,33 +153,36 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
         <FormRow>
           <div className="min-w-40 flex-1">
             <Field label="New break">
-              <input
-                value={draft.label}
-                onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-                onKeyDown={(e) => e.key === 'Enter' && void add()}
-                placeholder="Lunch"
-                maxLength={60}
-                className={inputClass}
-              />
+              <ControlShell>
+                <TextInput
+                  value={draft.label}
+                  onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && void add()}
+                  placeholder="Lunch"
+                  maxLength={60}
+                />
+              </ControlShell>
             </Field>
           </div>
           <Field label="From">
-            <input
-              type="time"
-              step={300}
-              value={draft.start}
-              onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={draft.start}
+                onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+              />
+            </ControlShell>
           </Field>
           <Field label="To">
-            <input
-              type="time"
-              step={300}
-              value={draft.end}
-              onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={draft.end}
+                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+              />
+            </ControlShell>
           </Field>
           <Field label="Day">
             <DayPicker
@@ -267,32 +272,35 @@ function BreakEditor({
     >
       <FormStack>
         <Field label="Name">
-          <input
-            value={draft.label}
-            onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-            maxLength={60}
-            className={inputClass}
-            autoFocus
-          />
+          <ControlShell>
+            <TextInput
+              value={draft.label}
+              onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+              maxLength={60}
+              autoFocus
+            />
+          </ControlShell>
         </Field>
         <FormRow>
           <Field label="From">
-            <input
-              type="time"
-              step={300}
-              value={draft.start}
-              onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={draft.start}
+                onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+              />
+            </ControlShell>
           </Field>
           <Field label="To">
-            <input
-              type="time"
-              step={300}
-              value={draft.end}
-              onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={draft.end}
+                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+              />
+            </ControlShell>
           </Field>
           <div className="min-w-40 flex-1">
             <Field label="Day">

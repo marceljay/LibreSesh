@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import type { Role } from '@shared/types';
 import { CAPABILITIES, type Capability, type PermissionMatrix } from '@shared/capabilities';
 import {
+  ControlShell,
   Field,
   PrimaryButton,
   SecondaryButton,
   Section,
+  TextInput,
   Toggle,
-  inputClass,
 } from '../components/ui';
 
 const ROLES: Role[] = ['viewer', 'user', 'speaker', 'admin'];
@@ -150,14 +151,15 @@ export function AdminPermissions({
                 label="Unlock with the organiser password"
                 hint="Every switch here saves the moment you click it, and there is no undo."
               >
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void unlock()}
-                  autoComplete="off"
-                  className={inputClass}
-                />
+                <ControlShell>
+                  <TextInput
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void unlock()}
+                    autoComplete="off"
+                  />
+                </ControlShell>
               </Field>
             </div>
             <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
