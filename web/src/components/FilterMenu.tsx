@@ -3,7 +3,7 @@ import { FloatingFocusManager } from '@floating-ui/react';
 import type { RoomDto, TagDto, TrackDto } from '@shared/types';
 import { UNTRACKED } from '../lib/tracks';
 import type { FilterApi } from '../lib/useFilters';
-import { FilterIcon, SearchIcon } from './icons';
+import { ArrowRightIcon, FilterIcon, SearchIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
 import { Chip, bareFieldFocusRing } from './ui';
 
@@ -19,6 +19,11 @@ import { Chip, bareFieldFocusRing } from './ui';
  * narrows what the grid draws. The header's box is a different question — find
  * a session anywhere in the programme — and deliberately touches nothing.
  *
+ * The panel is the same on the schedule and on the search page; what differs is
+ * the set it narrows — one day there, the whole event here — and only the
+ * schedule offers the way across (`onSearchEverywhere`). See
+ * `_planning/specs/search.md` §Filters, event-wide.
+ *
  * Positioning is `usePopover`'s problem, not this file's: the panel is wider
  * than a phone and the button it hangs off is nowhere near the left edge, which
  * is exactly the combination the old `absolute start-0` got wrong.
@@ -30,6 +35,7 @@ export function FilterMenu({
   tracks,
   hasUntracked,
   starredCount,
+  onSearchEverywhere,
 }: {
   filters: FilterApi;
   rooms: RoomDto[];
@@ -39,6 +45,9 @@ export function FilterMenu({
    *  "Unassigned" chip worth offering. */
   hasUntracked: boolean;
   starredCount: number;
+  /** Take these same filters to the whole event. Absent on the search page,
+   *  which is already the whole event — there is nowhere further to go. */
+  onSearchEverywhere?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const { refs, floatingStyles, context, getReferenceProps, getFloatingProps } = usePopover({
@@ -192,6 +201,34 @@ export function FilterMenu({
                   ))}
                 </div>
               </>
+            )}
+
+            {/* The way out of the day. A filter narrows the day on screen,
+                which is the wrong scope for "everything tagged design" — and
+                the only way to ask that used to be to set the tag and then walk
+                the day strip. Full width and at the foot of the panel because
+                it is an action, not another chip: you press it after choosing,
+                and it takes what you chose with it. */}
+            {onSearchEverywhere && (
+              <div className="mt-3 border-t border-stone-100 pt-2 dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onSearchEverywhere();
+                  }}
+                  className="flex w-full items-center justify-between gap-2 rounded-lg border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700 hover:border-stone-500 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-200 dark:hover:border-stone-400 dark:hover:bg-stone-800/60"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <SearchIcon className="h-3.5 w-3.5" />
+                    Search everywhere
+                  </span>
+                  <ArrowRightIcon className="h-3.5 w-3.5 text-stone-400 dark:text-stone-500" />
+                </button>
+                <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">
+                  These filters over every day of the event, on one page.
+                </p>
+              </div>
             )}
 
             <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-2 dark:border-stone-800">

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import type { ViewMode } from '@shared/types';
 
+import { lensActive } from './sessionLens';
 import { UNTRACKED } from './tracks';
 
 /** Re-exported so the components that read a view off the URL do not each have
@@ -46,6 +47,27 @@ const parseIds = (raw: string | null, extra?: number): number[] =>
 
 const toggle = (list: number[], id: number): number[] =>
   list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
+
+/**
+ * The lens half of the URL: what narrows a set of sessions, with `day`, `view`
+ * and `axis` left out — those are facts about the grid, and the page this is
+ * built for has no grid.
+ *
+ * This is what makes "the same question, over the whole event" a link rather
+ * than a state transfer. It lives here because this file is the one place that
+ * knows a room filter is spelled `room` and a starred one `mine`.
+ */
+export const lensParams = (filters: Filters): URLSearchParams => {
+  const params = new URLSearchParams();
+  const q = filters.q.trim();
+  if (q !== '') params.set('q', q);
+  if (filters.rooms.length > 0) params.set('room', filters.rooms.join(','));
+  if (filters.tags.length > 0) params.set('tag', filters.tags.join(','));
+  if (filters.tracks.length > 0) params.set('track', filters.tracks.join(','));
+  if (filters.soon) params.set('soon', '1');
+  if (filters.mine) params.set('mine', '1');
+  return params;
+};
 
 /** Filter state lives in the query string so a filtered view is shareable
  *  (SPEC §7.3). */
@@ -99,13 +121,7 @@ export function useFilters(): FilterApi {
   return useMemo(
     () => ({
       ...filters,
-      active:
-        filters.rooms.length > 0 ||
-        filters.tags.length > 0 ||
-        filters.tracks.length > 0 ||
-        filters.q !== '' ||
-        filters.soon ||
-        filters.mine,
+      active: lensActive(filters),
       set,
       toggleRoom: (id: number) => set({ rooms: toggle(filters.rooms, id) }),
       toggleTag: (id: number) => set({ tags: toggle(filters.tags, id) }),

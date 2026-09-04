@@ -24,10 +24,10 @@ import {
   todayInZone,
 } from "../lib/format";
 import { useEventData } from "../lib/useEventData";
-import { matchesQuery } from "../lib/search";
-import { useFilters } from "../lib/useFilters";
+import { matchesLens } from "../lib/sessionLens";
+import { lensParams, useFilters } from "../lib/useFilters";
 import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
-import { UNTRACKED, matchesTracks, trackNote } from "../lib/tracks";
+import { UNTRACKED, trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
 import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
 import { DetailSheet } from "../components/DetailSheet";
@@ -371,47 +371,29 @@ export function SchedulePage() {
     [bundle?.starredSessionIds],
   );
 
-  /** Sessions on the current day that pass the filter chips (SPEC §7.3). */
+  /**
+   * Sessions that pass the filter chips (SPEC §7.3) — the whole event, not just
+   * the day: the lens has never had anything to do with the day, and `day` is
+   * applied separately below. The predicate is shared with the search page,
+   * which applies the same lens without narrowing to a day at all.
+   */
   const matchedIds = useMemo(() => {
     if (!bundle) return new Set<number>();
-    const q = filters.q.trim();
     const soonNow = nowMin;
     return new Set(
       bundle.sessions
-        .filter((s) => {
-          if (filters.rooms.length && !filters.rooms.includes(s.roomId))
-            return false;
-          if (
-            filters.tags.length &&
-            !s.tagIds.some((t) => filters.tags.includes(t))
-          )
-            return false;
-          if (!matchesTracks(filters.tracks, s)) return false;
-          if (filters.mine && !starredIds.has(s.id)) return false;
-          // Same matcher the search box uses: every word has to appear
-          // somewhere in the session, in any order.
-          if (q && !matchesQuery(s, q)) return false;
-          if (filters.soon) {
-            if (soonNow === null) return false;
-            const { endMin } = place(s, timezone);
-            if (endMin <= soonNow) return false;
-          }
-          return true;
-        })
+        .filter((s) =>
+          matchesLens(s, filters, {
+            starred: (x) => starredIds.has(x.id),
+            // The grid draws one day, so "now" is a minute of that day and
+            // `nowMin` is null unless the day on screen is today.
+            upcoming: (x) =>
+              soonNow !== null && place(x, timezone).endMin > soonNow,
+          }),
+        )
         .map((s) => s.id),
     );
-  }, [
-    bundle,
-    filters.rooms,
-    filters.tags,
-    filters.tracks,
-    filters.q,
-    filters.soon,
-    filters.mine,
-    starredIds,
-    nowMin,
-    timezone,
-  ]);
+  }, [bundle, filters, starredIds, nowMin, timezone]);
 
   const daySessions = useMemo(
     () =>
@@ -454,6 +436,21 @@ export function SchedulePage() {
   // brings the warning back.
   const clashKey = clashPairs.map(([a, b]) => `${a.id}-${b.id}`).join(",");
   const showClashBanner = clashKey !== "" && clashDismissed !== clashKey;
+
+  /**
+   * The same question, asked of the whole event.
+   *
+   * A filter narrows the day on screen, which is the wrong scope for "everything
+   * tagged design" — the only way to ask that was to set the tag and then walk
+   * the day strip. Every filter already lives in the query string, so the
+   * hand-off is a link: `lensParams` keeps what narrows sessions and drops
+   * `day`, `view` and `axis`, which are facts about a grid the search page does
+   * not have.
+   */
+  const searchEverywhere = useCallback(() => {
+    const params = lensParams(filters).toString();
+    navigate(`/e/${slug}/search${params ? `?${params}` : ""}`);
+  }, [filters, navigate, slug]);
 
   /** Jump to a search result on another day: switch day and open it in one nav. */
   const openResult = useCallback(
@@ -1434,6 +1431,7 @@ export function SchedulePage() {
                 tracks={bundle.tracks}
                 hasUntracked={hasUntracked}
                 starredCount={starredIds.size}
+                onSearchEverywhere={searchEverywhere}
               />
               {/* Now lives with the filters rather than up in the action row:
                   this row is what survives folding, and jumping to the current
