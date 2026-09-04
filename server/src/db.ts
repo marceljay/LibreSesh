@@ -30,6 +30,9 @@ export interface EventRow {
   show_official_badge: number;
   /** Which view the schedule opens in when the reader has not picked one. */
   default_view: string;
+  /** 1 = this event runs a pitch board. On by default; turning it off hides the
+   *  board rather than deleting it — see migration 018. */
+  pitches_enabled: number;
   created_at: string;
 }
 

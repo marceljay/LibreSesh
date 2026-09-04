@@ -118,6 +118,17 @@ export function ArrowRightIcon({ className }: { className?: string }) {
 }
 
 /** A circled "i" — there is more about this than the card has room for. */
+/** A lightbulb — pitch a session. The board is where an idea goes before it is
+ *  a session, so the glyph is the idea rather than the calendar. */
+export function PitchIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <path d="M8 1.8a4 4 0 0 0-2.4 7.2c.4.3.6.8.6 1.3v.2h3.6v-.2c0-.5.2-1 .6-1.3A4 4 0 0 0 8 1.8Z" />
+      <path d="M6.6 12.8h2.8M7.2 14.4h1.6" />
+    </Icon>
+  );
+}
+
 export function InfoIcon({ className }: { className?: string }) {
   return (
     <Icon className={className}>

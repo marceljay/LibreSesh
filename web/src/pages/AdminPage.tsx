@@ -477,6 +477,7 @@ export function AdminPage() {
   const [auditKeep, setAuditKeep] = useState('1000');
   const [defaultView, setDefaultView] = useState<ViewMode>('list');
   const [showOfficialBadge, setShowOfficialBadge] = useState(false);
+  const [pitchesEnabled, setPitchesEnabled] = useState(true);
   const [userRoleLabel, setUserRoleLabel] = useState('');
   const [viewerPassword, setViewerPassword] = useState('');
   const [userPassword, setUserPassword] = useState('');
@@ -546,6 +547,7 @@ export function AdminPage() {
     setAuditKeep(String(event.auditKeep));
     setDefaultView(event.defaultView);
     setShowOfficialBadge(event.showOfficialBadge);
+    setPitchesEnabled(event.pitchesEnabled);
     setUserRoleLabel(event.userRoleLabel);
     // Clear the duplicate form too, so it isn't pre-filled after a clone.
     setCloneName('');
@@ -586,6 +588,8 @@ export function AdminPage() {
   // Derived rather than stored: SSE edits land in the bundle, and a list that
   // remembered its own copy would show a role change one refresh late.
   const openClaims = bundle.claims.filter((c) => c.declinedAt === null);
+  /** Pitches nobody has placed yet — what turning the board off would hide. */
+  const openPitches = bundle.proposals.filter((p) => p.placedSessionId === null).length;
   /** Approving runs a merge, so the whole bundle moves; reload rather than
    *  guess which parts. */
   const decideClaim = async (run: () => Promise<unknown>) => {
@@ -998,6 +1002,7 @@ export function AdminPage() {
         auditKeep: parsedAuditKeep.value,
         defaultView,
         showOfficialBadge,
+        pitchesEnabled,
         ...(userRoleLabel.trim() ? { userRoleLabel: userRoleLabel.trim() } : {}),
         ...(viewerPassword ? { viewerPassword } : {}),
         ...(userPassword ? { userPassword } : {}),
@@ -1814,6 +1819,22 @@ export function AdminPage() {
                 onChange={setShowOfficialBadge}
                 label="Show an “Official” tag on grid blocks and list cards"
               />
+            </Field>
+            <Field
+              label="Pitch board"
+              hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
+            >
+              <Toggle
+                checked={pitchesEnabled}
+                onChange={setPitchesEnabled}
+                label="Let people pitch sessions"
+              />
+              {!pitchesEnabled && openPitches > 0 && (
+                <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+                  {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the
+                  board and will be hidden, not deleted.
+                </p>
+              )}
             </Field>
             <NumberField
               label="Audit entries to keep"

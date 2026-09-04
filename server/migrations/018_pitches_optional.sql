@@ -1,0 +1,15 @@
+-- Whether this event runs a pitch board at all.
+--
+-- The board is the unconference half of the app: propose a session with no room
+-- and no time, register interest in someone else's, and an organiser places the
+-- popular ones. On an event with a fixed programme it is a link in the header
+-- to a page that will stay empty all week, and a control every attendee has to
+-- decide to ignore.
+--
+-- On by default, because that is what every existing event already has and
+-- turning a feature off under people is worse than leaving it on. Off is a
+-- **hide**, never a delete: the pitches, their interest counts and the sessions
+-- already placed from them all stay exactly where they are, so an organiser who
+-- turns it off mid-event and changes their mind loses nothing. What goes is the
+-- link, the route and the ability to add a new one.
+ALTER TABLE events ADD COLUMN pitches_enabled INTEGER NOT NULL DEFAULT 1;

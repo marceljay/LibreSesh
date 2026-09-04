@@ -108,6 +108,13 @@ export interface EventDto extends EventSummary {
   /** The view a reader who has not picked one gets. The switch still works;
    *  this is only where the schedule opens. */
   defaultView: ViewMode;
+  /**
+   * Whether this event runs a pitch board. On by default; an event with a fixed
+   * programme turns it off and the link, the route and the pitch form all go.
+   * Off is a hide, not a delete — whatever is already on the board stays, and
+   * turning it back on brings it back untouched.
+   */
+  pitchesEnabled: boolean;
 }
 
 /** A person as they appear on somebody else's record: id and name, nothing

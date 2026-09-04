@@ -208,6 +208,23 @@ export function ProposalBoard() {
     );
   }
 
+  /* The board is off for this event. Said rather than redirected: somebody
+     following an old link deserves to know the board is shut and not that they
+     mistyped, and whatever is on it is still there — organisers turn it back on
+     and find it untouched. */
+  if (!event.pitchesEnabled) {
+    return (
+      <EmptyState>
+        This event is not running a pitch board.
+        <div className="mt-3">
+          <Link to={`/e/${slug}`} className="underline">
+            Back to the schedule
+          </Link>
+        </div>
+      </EmptyState>
+    );
+  }
+
   const role = bundle.role;
   const canPitch = role !== 'viewer' && !event.archived;
   const mayManage = (proposal: ProposalDto): boolean =>

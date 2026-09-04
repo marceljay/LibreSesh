@@ -39,6 +39,7 @@ import {
   CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PitchIcon,
   SettingsIcon,
 } from "../components/icons";
 import { ListView } from "../components/ListView";
@@ -219,6 +220,10 @@ export function SchedulePage() {
   /** Whether the programme still holds sessions with no track — what makes the
    *  "Unassigned" filter chip, and the column of the same name, worth showing. */
   const hasUntracked = (bundle?.sessions ?? []).some((s) => s.trackId === null);
+  /** Pitches nobody has placed yet — the number beside the board's button. */
+  const openPitchCount = (bundle?.proposals ?? []).filter(
+    (p) => p.placedSessionId === null,
+  ).length;
   const axis: "room" | "track" =
     hasTracks && filters.axis === "track" ? "track" : "room";
 
@@ -1347,21 +1352,35 @@ export function SchedulePage() {
 
                 {/* Everyone needs the board: attendees pitch there, viewers can
                     register interest. It sits with the other ways of looking at the
-                    programme, not up with the account chrome. */}
-                <Link
-                  data-tour="pitches"
-                  to={`/e/${slug}/proposals`}
-                  className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                >
-                  Pitches
-                  {bundle.proposals.filter((p) => p.placedSessionId === null).length >
-                    0 && (
-                    <span className="ms-1 text-stone-400 dark:text-stone-500">
-                      {bundle.proposals.filter((p) => p.placedSessionId === null)
-                        .length}
-                    </span>
-                  )}
-                </Link>
+                    programme, not up with the account chrome.
+
+                    "Pitches" named the place; "Pitch a session" says what you
+                    can do there, which is what somebody who has never seen an
+                    unconference needs to read. It costs two words, so below
+                    `sm` — where this row already competes with Manage, Arrange
+                    and Add — the bulb carries it alone, with the words still on
+                    the button as its accessible name.
+
+                    Gone entirely on an event that has turned the board off: the
+                    pitches themselves are untouched, but there is nothing here
+                    to walk into. */}
+                {event.pitchesEnabled && (
+                  <Link
+                    data-tour="pitches"
+                    to={`/e/${slug}/proposals`}
+                    aria-label="Pitch a session"
+                    title="Pitch a session"
+                    className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                  >
+                    <PitchIcon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Pitch a session</span>
+                    {openPitchCount > 0 && (
+                      <span className="text-stone-400 dark:text-stone-500">
+                        {openPitchCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
               </div>
             </div>
           </div>

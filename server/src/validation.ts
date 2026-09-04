@@ -441,6 +441,7 @@ export const settingsSchema = z
     userRoleLabel: roleLabelSchema.optional(),
     auditKeep: auditKeepSchema.optional(),
     showOfficialBadge: z.boolean().optional(),
+    pitchesEnabled: z.boolean().optional(),
     archived: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' })
