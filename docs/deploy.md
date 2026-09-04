@@ -95,7 +95,14 @@ afternoon):
 - **Export this event** — the programme as JSON: rooms, tracks, tags,
   people, sessions, pitches and contributions, with star and interest
   counts. No passwords, no identity tokens, no speaker codes, so it is safe
-  to email to a co-organiser. Any admin of that event can take one.
+  to email to a co-organiser. Any admin of that event can take one. Four
+  checkboxes choose what goes in — sessions, people, pitches, contributions
+  — and the event's settings, rooms, tracks, tags, formats and breaks are
+  always in it; from the command line that is `?include=sessions,people` on
+  `GET /api/e/<slug>/export.json` (absent means everything). A part left out
+  is absent from the file, not empty. The file imports back as a new event
+  through **Import a schedule** — see
+  [schedule-import.md §Importing an export](schedule-import.md#importing-an-export).
 - **Back up the whole instance** — the entire database, AES-256-GCM under a
   passphrase typed at download time, gated by the instance password. Open
   one with `npm run decrypt-backup -- backup.lsbk restored.db` on the

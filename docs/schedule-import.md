@@ -375,6 +375,10 @@ Two things to know:
   and every **star count**. If those matter, the encrypted whole-database backup
   is the restore path — this one moves a programme.
 
+If the export is being taken *for* an import, tick only **Sessions** in
+Manage Event → Backup (or `?include=sessions`): the file then carries exactly
+what will land, and the dry run has nothing to warn about.
+
 An export that has been edited by hand and left a session pointing at a room
 it no longer lists is refused naming the row, the way an undeclared room name
 is.
