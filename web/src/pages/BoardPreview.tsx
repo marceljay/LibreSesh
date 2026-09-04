@@ -20,7 +20,9 @@ import { readableInk } from '@shared/tagColors';
  * `aria-hidden`, and the caption does the describing: these are not real
  * sessions and a screen reader announcing them as if they were — times, rooms,
  * speakers, a star you cannot press — would be a worse lie than the picture it
- * replaces.
+ * replaces. `WindowFrame` below is the sighted half of the same problem: a
+ * screen reader is told this is not a board, and the frame is what tells
+ * everyone else.
  */
 
 /** Okabe-Ito, the same palette the tag picker draws from (`shared/tagColors`). */
@@ -126,39 +128,84 @@ function Card({ slot }: { slot: Slot }) {
   );
 }
 
+/**
+ * The window the picture sits in.
+ *
+ * The problem it solves: the preview is built from the app's own classes, so
+ * its cards, its star and its "anyone can claim this" pill look exactly like
+ * the real ones — because they are the real ones. On the landing page that is
+ * the point and also the trap: people were reading it as the running app and
+ * clicking at it. Nothing happened, and nothing said why.
+ *
+ * A browser frame is the cheapest possible answer. It is a convention people
+ * already read fluently — chrome around a thing means "here is that thing,
+ * pictured" — and it does the work at a glance, before any caption is read.
+ * The address in the bar is `example` on purpose: a real-looking host would be
+ * a new thing to click.
+ *
+ * `pointer-events-none` on the contents backs the frame up: no hover state
+ * lights up under the cursor, so the picture does not answer as if it were
+ * live. `select-none` for the same reason — dragging a selection across it is
+ * the other way a picture betrays that it is made of text.
+ */
+function WindowFrame({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-stone-300 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900">
+      <div className="flex items-center gap-3 border-b border-stone-200 bg-stone-100 px-3 py-2.5 dark:border-stone-700 dark:bg-stone-800">
+        <span className="flex shrink-0 gap-1.5" aria-hidden="true">
+          <span className="h-2.5 w-2.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+          <span className="h-2.5 w-2.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+          <span className="h-2.5 w-2.5 rounded-full bg-stone-300 dark:bg-stone-600" />
+        </span>
+        <span className="min-w-0 flex-1 truncate rounded-md bg-white px-2.5 py-1 text-center text-xs text-stone-500 dark:bg-stone-900 dark:text-stone-400">
+          example.libresesh.org/e/longconf-2026
+        </span>
+        <span className="shrink-0 rounded-full border border-stone-300 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-stone-500 dark:border-stone-600 dark:text-stone-400">
+          Example
+        </span>
+      </div>
+      {/* The board's own surface, a step below the cards, the way `ListView`
+          sits on the app background — without it the white cards vanish into
+          the white window. */}
+      <div className="select-none bg-stone-50 p-4 dark:bg-stone-950 [&_*]:pointer-events-none">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function BoardPreview() {
   return (
     <figure className="m-0 flex flex-col gap-3">
-      <div
-        aria-hidden="true"
-        className="rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-xs dark:border-stone-700 dark:bg-stone-950"
-      >
-        {/* The chrome of a real day: the event, and how far through it you are. */}
-        <div className="mb-4 flex items-center gap-2 border-b border-stone-200 pb-3 text-xs dark:border-stone-700">
-          <span className="font-semibold">LongConf 2026</span>
-          <span className="text-stone-500 dark:text-stone-400">· schedule is live</span>
-          <span className="ms-auto rounded-sm bg-highlight px-1.5 py-0.5 font-bold text-stone-900">
-            Now 14:12
-          </span>
-        </div>
-
-        {GROUPS.map((group) => (
-          <div key={group.time} className="mb-4 last:mb-0">
-            <div className="mb-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
-              {group.time}
-            </div>
-            <div className="space-y-2">
-              {group.slots.map((slot) => (
-                <Card key={slot.title} slot={slot} />
-              ))}
-            </div>
+      <WindowFrame>
+        <div aria-hidden="true">
+          {/* The chrome of a real day: the event, and how far through it you are. */}
+          <div className="mb-4 flex items-center gap-2 border-b border-stone-200 pb-3 text-xs dark:border-stone-700">
+            <span className="font-semibold">LongConf 2026</span>
+            <span className="text-stone-500 dark:text-stone-400">· schedule is live</span>
+            <span className="ms-auto rounded-sm bg-highlight px-1.5 py-0.5 font-bold text-stone-900">
+              Now 14:12
+            </span>
           </div>
-        ))}
-      </div>
+
+          {GROUPS.map((group) => (
+            <div key={group.time} className="mb-4 last:mb-0">
+              <div className="mb-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+                {group.time}
+              </div>
+              <div className="space-y-2">
+                {group.slots.map((slot) => (
+                  <Card key={slot.title} slot={slot} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </WindowFrame>
 
       <figcaption className="text-xs leading-5 text-stone-500 dark:text-stone-400">
-        The live board: today&rsquo;s sessions, rooms and times — open slots marked for
-        anyone to claim.
+        A live board, pictured: today&rsquo;s sessions, rooms and times — open slots
+        marked for anyone to claim.
       </figcaption>
     </figure>
   );

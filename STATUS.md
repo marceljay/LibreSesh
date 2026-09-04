@@ -9,7 +9,7 @@ Last updated: 2026-09-04
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **980**, lint clean, build clean.
+nothing local is unsaved. Suite at **997**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -18,8 +18,11 @@ nothing local is unsaved. Suite at **980**, lint clean, build clean.
   all landing on that day's first session; the filters escaping the day
   (**Search everywhere**); the *Opens in* field cut back to **Default view**;
   the pitch board made an event setting with its button renamed **Pitch a
-  session**; and a **Find a setting** box over Manage Event's seven tabs.
-  All code-complete and queued for your eyes as R19–R24.
+  session**; a **Find a setting** box over Manage Event's seven tabs; and the
+  landing page's front door (its own button sizing, *New event*/*Import* moved
+  out of the footer into a block that names the instance password, the board
+  preview framed as a browser window, GitHub's mark on the source link).
+  All code-complete and queued for your eyes as R19–R25.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -93,7 +96,7 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — **R19–R24 are today's checklist pass** and are the ones I have
+Freshest first — **R19–R25 are today's checklist pass** and are the ones I have
 never seen rendered; R1–R2 are the forms overhaul and the grid-block fix, R3–R5
 the mentions, linked-sessions and clash work. Each takes a minute.
 
@@ -133,85 +136,95 @@ the mentions, linked-sessions and clash work. Each takes a minute.
    the tab it is on; picking one switches tab, scrolls to the field and rings it
    for a moment; ↑/↓ and Enter work; Escape closes. In **both themes** — the
    ring is the app's yellow.
-7. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
+7. **R25 · The landing page** (`/`, logged out, in **both themes**). *Pass:*
+   **Browse events** and **Self-host it** read as the page's two offers — full
+   buttons, not the toolbar-sized controls they were — and the hover lift is
+   there (and gone if your system asks for less motion). Below them, a
+   **Running this server?** block says the instance password is the condition
+   *before* you click **New event** or **Import a schedule**; neither is in the
+   footer any more. The board preview sits in a browser frame with a fake host
+   in its address bar: check it no longer invites a click — nothing hovers,
+   nothing selects. The footer's source link wears GitHub's mark. **Narrow the
+   window** too: the two columns stack and no button row wraps badly.
+8. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
    (Add session, Manage Event → Settings). *Pass:* field borders read a touch
    darker and even; **clicking into a field shows one clean focus ring, not a
    doubled/inner border** — check the **speaker/host** field especially, in
    **both themes**; a text field does **not** zoom the page on a phone; tabbing
    to a button shows a focus ring; hint text under a field is legible; native
    selects (day, duration) match the text fields.
-8. **R2 · Grid block padding.** On the calendar grid, a session block's tags sit
+9. **R2 · Grid block padding.** On the calendar grid, a session block's tags sit
    near the top edge and a short (15–20 min) block still shows its time row.
    *Pass:* nothing is clipped at the bottom of a short block; tags aren't
    floating with a gap above them.
-9. **R3 · Clickable authors & `@username` mentions in a comment.** Open a
+10. **R3 · Clickable authors & `@username` mentions in a comment.** Open a
    session, post a comment that names someone with `@theirusername` (a real
    username from the People tab). *Pass:* the `@name` renders as a blue link and
    opens that person's profile; the comment's own author name (under the body)
    also links to a profile; a plain `@notauser` and an email like `a@b.com` stay
    as text, not links. Try a multi-word username if the event has one.
-10. **R4 · Link a recurring run as an attendee.** As a non-organiser, add a
+11. **R4 · Link a recurring run as an attendee.** As a non-organiser, add a
    session and set **Repeat** across several days with "keep linked" on. *Pass:*
    the whole run lands on the grid without a reload; every occurrence is open;
    a day that would clash or fall outside the window is refused with the day
    named, not placed wrong. An organiser's run is unchanged (may be official,
    may hold the floor).
-11. **R5 · Link after the fact, and the edit reach.** On a saved session,
+12. **R5 · Link after the fact, and the edit reach.** On a saved session,
    *Link matching sessions…* lists your other same-titled runs (with select-all)
    and links the ones you tick. Editing a linked session then offers *this only*
    / *this and later* / *all in the series*. *Pass:* the default is this-only;
    changing a description with *all* updates the rest but **never the time**; an
    occurrence that isn't yours is skipped and reported ("applied to four of
    five"); *Unlink this one* drops a session back out.
-12. **R6 · A clash narrows only the clashing sessions.** Put two sessions
+13. **R6 · A clash narrows only the clashing sessions.** Put two sessions
    overlapping in one room, with a third alone elsewhere in that room's column.
    *Pass:* only the overlapping pair split into lanes; the lone 09:00 talk keeps
    full width even though an unrelated 15:00 pair clashes (the `4f9afdb` fix).
    While here, R6b: open a session from **search** and confirm the detail panel
    now leads with the weekday and date, not just the time (`2c4a542`).
-13. **R7 · Star & ring on the grid.** Tap a session block's corner star: it
+14. **R7 · Star & ring on the grid.** Tap a session block's corner star: it
    should toggle without opening the sheet or dragging the block. Open a
    session: its block gains a ring. *Pass:* both work; the ring shows in both
    themes.
-14. **R8 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
+15. **R8 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
    shows its name+time bottom-right as well as top-left. *Pass:* both corners
    labelled, and a short break doesn't stack them on top of each other.
-15. **R9 · Placement row (phone).** Add session, narrow window. *Pass:* the
+16. **R9 · Placement row (phone).** Add session, narrow window. *Pass:* the
    "Non-official: allow parallel sessions" chip + "?" wrap to a second line
    instead of clipping off the edge.
-16. **R10 · People table.** *Pass:* headings line up with the rows; the active
+17. **R10 · People table.** *Pass:* headings line up with the rows; the active
     sort column shows an arrow; the Columns button toggles UID / Last seen; on a
     phone the table scrolls sideways rather than crushing the name; name and
     username share the width.
-17. **R11 · Role tag & archiving.** Role is a coloured badge with a pencil,
+18. **R11 · Role tag & archiving.** Role is a coloured badge with a pencil,
     opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
     role column at the longest role word an event can set; both menus open over
     the row (and the ⋯ menu flips *up* on the last row of a long list, not
     off-screen); an archived profile shows its amber notice; re-entering the
     event un-archives.
-18. **R12 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
+19. **R12 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
-19. **R13 · Claim & queue.** The "This is me" button on an unclaimed profile, and
+20. **R13 · Claim & queue.** The "This is me" button on an unclaimed profile, and
     the approval queue above the People list. *Pass:* asking to be a profile
     shows in the queue; approving hands it over. Also: the next-day button at the
     end of a day's list, and several stream links on one session.
-20. **R14 · Top of the session form.** Format chips, then Placement, then the
+21. **R14 · Top of the session form.** Format chips, then Placement, then the
     title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
     picking a format visibly moves the Duration select below it.
-21. **R15 · Speaker edits their own session** (the reported flow). As an attendee
+22. **R15 · Speaker edits their own session** (the reported flow). As an attendee
     credited on an official session. *Pass:* Edit appears; Room / Day / Start /
     Duration are disabled under the grey notice; Delete is absent; saving a
     changed description goes through.
-22. **R16 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
+23. **R16 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
     "· 1 h 30 min" echo appears past an hour; editing an off-list session opens
     straight into the field, not a preset it doesn't have.
-23. **R17 · Official badge & Formats.** With the badge off (default) the grid
+24. **R17 · Official badge & Formats.** With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
     Programme, the Formats suggestion chips (dashed row) and the "no formats
     yet" empty state render.
-24. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
+25. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
 
