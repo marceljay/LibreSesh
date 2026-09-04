@@ -13,8 +13,8 @@ import {
   SecondaryButton,
   Section,
   TextInput,
-  selectClass,
 } from '../components/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const EVERY_DAY = '';
 
@@ -65,14 +65,21 @@ function DayPicker({
   onChange: (next: string) => void;
 }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value={EVERY_DAY}>Every day</option>
-      {days.map((date) => (
-        <option key={date} value={date}>
-          {dayName(date)}
-        </option>
-      ))}
-    </select>
+    <Select value={value} onValueChange={(v) => v != null && onChange(v)}>
+      <SelectTrigger aria-label="Day">
+        <SelectValue>
+          {(v: string | null) => (v == null || v === EVERY_DAY ? 'Every day' : dayName(v))}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={EVERY_DAY}>Every day</SelectItem>
+        {days.map((date) => (
+          <SelectItem key={date} value={date}>
+            {dayName(date)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

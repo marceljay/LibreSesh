@@ -373,6 +373,7 @@ import { AdminPermissions } from './AdminPermissions';
 import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ControlShell,
   DangerButton,
@@ -393,7 +394,6 @@ import {
   TextInput,
   Toggle,
   linkClass,
-  selectClass,
   useConfirm,
   useToast,
 } from '../components/ui';
@@ -1808,14 +1808,22 @@ export function AdminPage() {
               label="Opens in"
               hint="Which view someone gets who has not chosen one. The switch above the grid still works for everybody, and a view somebody picks travels in the link they share. The list reads well at any size; the grid earns its place once there are several rooms to compare."
             >
-              <select
+              <Select
                 value={defaultView}
-                onChange={(e) => setDefaultView(e.target.value === 'cal' ? 'cal' : 'list')}
-                className={`${selectClass} w-48`}
+                onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
               >
-                <option value="list">List — one column, in time order</option>
-                <option value="cal">Calendar — a grid of rooms</option>
-              </select>
+                <SelectTrigger aria-label="Opens in" className="w-48">
+                  <SelectValue>
+                    {(v: string | null) =>
+                      v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="list">List — one column, in time order</SelectItem>
+                  <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
             <Field
               label="Mark the official programme"
@@ -2359,18 +2367,18 @@ function TrackHoursFields({
       {free.length > 0 && (
         <FormRow>
           <Field label="A day that differs">
-            <select
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className={selectClass}
-              aria-label="Day"
-            >
-              {free.map((d) => (
-                <option key={d} value={d}>
-                  {dayName(d)}
-                </option>
-              ))}
-            </select>
+            <Select value={day} onValueChange={(v) => v != null && setDay(v)}>
+              <SelectTrigger aria-label="Day">
+                <SelectValue>{(v: string | null) => (v == null ? '' : dayName(v))}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {free.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {dayName(d)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="From">
             <ControlShell>
