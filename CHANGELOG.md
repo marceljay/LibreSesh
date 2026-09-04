@@ -6,6 +6,26 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **The pitch board is now optional, and its button says what it does.** On an
+  event with a fixed programme the board was a link in the header to a page that
+  stayed empty all week. Manage Event → Settings has a **Pitch board** switch;
+  turn it off and the button, the page and the pitch form all go. It is a hide,
+  never a delete — the pitches, their interest and anything already placed from
+  them stay exactly where they are, and come back untouched if you turn it back
+  on. On by default, and a duplicate of an event keeps whichever way it was set.
+
+  The button itself is **Pitch a session** rather than "Pitches": it says what
+  you can do there, which is what somebody who has never been to an unconference
+  needs to read. On a phone, where that row is already full, a lightbulb carries
+  it.
+
+- **Find a setting without knowing which tab it is on.** Manage Event is seven
+  tabs of unrelated jobs, so knowing what you want to change told you nothing
+  about where it was. There is a **Find a setting** box above the tabs now:
+  type what you are after — including the words you would actually use, so
+  "retention" finds the audit cap and "qr" finds the invite links — and picking a
+  result switches to the right tab, scrolls to the field and rings it.
+
 - **Search everywhere — the filters stop being about one day.** A tag, a room, a
   track, ★ my agenda and the filter box all narrowed *the day on screen*, so
   "show me everything tagged design" meant setting the tag and then walking the
@@ -94,6 +114,13 @@ All notable changes to this project are documented here.
   ever being asked.
 
 ### Fixed
+
+- **The “everyone should be here” band sits straight.** The amber band a
+  floor-holding session draws across the grid had its label pinned to the
+  top-right corner, where it read as a caption for whichever block it landed on,
+  and it was drawn 3px taller than the block inside it — so it showed a sliver of
+  itself below the block and nothing above. The label is centred in the band now,
+  and the band ends where its own session does.
 
 - **Changing the day lands on that day's first session.** The grid runs from
   the event's earliest hour to its latest — the edges of the whole event, not
