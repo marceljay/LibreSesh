@@ -256,3 +256,36 @@ describe('a control and the button beside it are one line, the same height', () 
     expect(offenders).toEqual([]);
   });
 });
+
+describe('InlineCreate is a button that becomes its field', () => {
+  const ic = ui.slice(ui.indexOf('export function InlineCreate'), ui.indexOf('export function DangerButton'));
+
+  it('collapses to one button and opens into a row of the same height', () => {
+    // The collapsed and open states must be the same height or the button
+    // moves out from under the pointer that pressed it: SecondaryButton and
+    // ControlShell are both 38px (pinned above), and the open row carries no
+    // visible label, which would add one.
+    expect(ic).toContain('if (!open) {');
+    expect(ic).toContain('<SecondaryButton ref={opener}');
+    expect(ic).toContain('<ControlShell className="min-w-40 flex-1">');
+    expect(ic).toContain('aria-label={fieldLabel}'); // named without a visible label
+    expect(ic).not.toContain('<Field'); // a Field would stack a label on top
+  });
+
+  it('puts the caret in the box on open and back on the button on cancel', () => {
+    expect(ic).toContain('autoFocus');
+    expect(ic).toContain('opener.current?.focus();');
+    // Not on first render — only when this component closed the form.
+    expect(ic).toContain('if (open || !restoreFocus.current) return;');
+  });
+
+  it('cancels on Escape without letting a surrounding dialog also close', () => {
+    expect(ic).toMatch(/e\.key === 'Escape'[\s\S]{0,200}e\.stopPropagation\(\);[\s\S]{0,40}close\(\);/);
+  });
+
+  it('stays open after a save, and keeps the text after a failure', () => {
+    // Adding one track is usually adding three, so Enter clears and stays.
+    expect(ic).toContain('if (!saved) return;');
+    expect(ic).toMatch(/setValue\(''\);\s*box\.current\?\.focus\(\);/);
+  });
+});

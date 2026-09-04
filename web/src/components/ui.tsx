@@ -518,15 +518,148 @@ export const secondaryButtonClass =
   'inline-flex items-center rounded-lg border border-stone-300 bg-white px-4 py-2.5 text-xs font-semibold text-stone-700 hover:border-stone-500 disabled:opacity-40 ' +
   'dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200 dark:hover:border-stone-400';
 
-export function SecondaryButton({
-  children,
-  className = '',
-  ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export const SecondaryButton = forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function SecondaryButton({ children, className = '', ...rest }, ref) {
   return (
-    <button type="button" {...rest} className={`${secondaryButtonClass} ${className}`}>
+    <button ref={ref} type="button" {...rest} className={`${secondaryButtonClass} ${className}`}>
       {children}
     </button>
+  );
+});
+
+/**
+ * A button that becomes the field it stands for.
+ *
+ * Adding a track, a tag, a format or an expected person is something an
+ * organiser does a handful of times and then never again, but each one used to
+ * cost a labelled box, a hint and a button sitting open in the page forever,
+ * asking to be filled in. Four of those in a column is most of what the admin
+ * page looked like. Collapsed to a button, the page reads as the list of things
+ * that exist, with one affordance for adding to it.
+ *
+ * The details are the whole difference between this and an annoying version of
+ * it: opening puts the caret in the box, Escape cancels without saving and puts
+ * focus back on the button that opened it, Enter saves and **stays open** with
+ * the box cleared — because the moment you add one track you usually add three
+ * — and a save that fails keeps what was typed rather than eating it.
+ *
+ * The open row is exactly the height of the collapsed button (both 38px, see
+ * `FormRow`), so opening does not jog the rest of the section sideways or make
+ * the button move out from under the pointer.
+ *
+ * `onSubmit` answers whether it saved. It never throws: these handlers report
+ * failure as a toast, and the box needs to know only whether to clear.
+ */
+export function InlineCreate({
+  action,
+  fieldLabel,
+  submitLabel,
+  onSubmit,
+  hint,
+  placeholder,
+  maxLength,
+  className = '',
+  children,
+}: {
+  /** The collapsed button's label — "Add a track". */
+  action: string;
+  /** The box's accessible name once open. There is no visible label: the
+   *  collapsed button already said what this is, and a label would make the
+   *  open row taller than the button it replaced. */
+  fieldLabel: string;
+  /** The submit button's label — "Add track". */
+  submitLabel: string;
+  /** Saves, and answers whether it saved. */
+  onSubmit: (value: string) => Promise<boolean>;
+  /** Shown under the row while open. The reason a hint can afford to be long
+   *  here: nobody reads it until they have asked for the form. */
+  hint?: string;
+  placeholder?: string;
+  maxLength?: number;
+  className?: string;
+  /** Anything else the form needs while open — the tag colour picker. Kept
+   *  inside so it collapses with the field it belongs to. */
+  children?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLInputElement>(null);
+  /** Set only when *this* closed the form, so focus goes back to the button
+   *  the person pressed — and not on the first render, which never opened. */
+  const restoreFocus = useRef(false);
+
+  useEffect(() => {
+    if (open || !restoreFocus.current) return;
+    restoreFocus.current = false;
+    opener.current?.focus();
+  }, [open]);
+
+  const close = () => {
+    restoreFocus.current = true;
+    setValue('');
+    setOpen(false);
+  };
+
+  const submit = async () => {
+    const name = value.trim();
+    if (!name || busy) return;
+    setBusy(true);
+    const saved = await onSubmit(name);
+    setBusy(false);
+    // Failure is already a toast; keeping the text means the fix is a word,
+    // not typing the whole thing again.
+    if (!saved) return;
+    setValue('');
+    box.current?.focus();
+  };
+
+  if (!open) {
+    return (
+      <SecondaryButton ref={opener} className={className} onClick={() => setOpen(true)}>
+        + {action}
+      </SecondaryButton>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <FormRow>
+        <ControlShell className="min-w-40 flex-1">
+          <TextInput
+            ref={box}
+            autoFocus
+            aria-label={fieldLabel}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void submit();
+              } else if (e.key === 'Escape') {
+                // Stopped here so a surrounding dialog does not also close:
+                // Escape in this box means "not this after all", not "leave".
+                e.stopPropagation();
+                close();
+              }
+            }}
+          />
+        </ControlShell>
+        <PrimaryButton onClick={() => void submit()} disabled={!value.trim() || busy}>
+          {submitLabel}
+        </PrimaryButton>
+        <SecondaryButton onClick={close} disabled={busy}>
+          Cancel
+        </SecondaryButton>
+      </FormRow>
+      {hint && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{hint}</p>}
+      {children}
+    </div>
   );
 }
 

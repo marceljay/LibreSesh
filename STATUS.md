@@ -658,25 +658,13 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
-- **Inline create: a button that becomes the field.** Adding a tag, a track, a
-  format or an expected person each costs a permanently-open text box sitting
-  in the page doing nothing, because the form is always there whether or not
-  you want to add anything. "Expect someone" is the clearest case — a labelled
-  field, a three-line hint and a button, all resident, for something an
-  organiser does a handful of times per event.
-
-  Wanted instead: a single **+ Add …** button that *becomes* the field when
-  pressed, takes the name, and collapses back on Enter or Escape. The rules it
-  has to get right are the ones that make this kind of control annoying when
-  half-built: focus moves into the box on open and back to the button on
-  close, Escape cancels without saving, Enter saves and (for repeated adds)
-  keeps the box open, and the collapsed button must not shift the layout when
-  it expands. The same affordance then serves every one of those four places.
-
-  Also the second half of the retired forms Phase 5: the version of this that
-  lives *inside* `SpeakerCombobox`, where typing an unknown name offers to
-  create that person there rather than sending the organiser to the People tab
-  first. Same control, harder host.
+- **Inline create inside `SpeakerCombobox`.** The other half of the affordance
+  that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
+  format and expected-person rows): typing a name the event does not know into
+  the speaker field should offer to create that person there, rather than
+  sending the organiser to the People tab and back. Same control, harder host —
+  the combobox already has a listbox, a create-a-person row and the
+  `onlySelf`/`isAdmin`/archived rules to respect.
 
 - **A real date/time picker for the session modal.** The native
   `<input type="date">`/`<input type="time">` are the last controls not wearing

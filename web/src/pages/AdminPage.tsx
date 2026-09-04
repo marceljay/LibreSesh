@@ -399,6 +399,7 @@ import {
   FormRow,
   FormStack,
   IconButton,
+  InlineCreate,
   NumberField,
   PrimaryButton,
   SecondaryButton,
@@ -449,18 +450,14 @@ export function AdminPage() {
   const data = useEventData(slug);
 
   const [reordering, setReordering] = useState(false);
-  const [tagName, setTagName] = useState('');
   const [editingTag, setEditingTag] = useState<TagDto | null>(null);
-  const [formatName, setFormatName] = useState('');
   const [editingFormat, setEditingFormat] = useState<FormatDto | null>(null);
-  const [trackName, setTrackName] = useState('');
   const [editingTrack, setEditingTrack] = useState<TrackDto | null>(null);
   const [movingTracks, setMovingTracks] = useState(false);
   /** `null` means "whatever the palette offers next" — the field follows the
    *  tags that exist until someone picks a colour on purpose, and goes back to
    *  following them once the tag is added. */
   const [tagColor, setTagColor] = useState<string | null>(null);
-  const [personName, setPersonName] = useState('');
   const [peopleFilter, setPeopleFilter] = useState<PeopleFilter>('all');
   const [peopleQuery, setPeopleQuery] = useState('');
   const [peopleSort, setPeopleSort] = useState<PeopleSort>(BY_NAME);
@@ -697,15 +694,15 @@ export function AdminPage() {
   );
   const newTagColor = tagColor ?? suggestedTagColor;
 
-  const addTag = async () => {
-    if (!tagName.trim()) return;
+  const addTag = async (name: string): Promise<boolean> => {
     try {
-      const created = await api.createTag(slug, { name: tagName.trim(), color: newTagColor });
+      const created = await api.createTag(slug, { name, color: newTagColor });
       data.apply({ type: 'tag.created', entity: created });
-      setTagName('');
       setTagColor(null);
+      return true;
     } catch (err) {
       fail(err);
+      return false;
     }
   };
 
@@ -719,14 +716,14 @@ export function AdminPage() {
     }
   };
 
-  const addTrack = async () => {
-    if (!trackName.trim()) return;
+  const addTrack = async (name: string): Promise<boolean> => {
     try {
-      const created = await api.createTrack(slug, { name: trackName.trim() });
+      const created = await api.createTrack(slug, { name });
       data.apply({ type: 'track.created', entity: created });
-      setTrackName('');
+      return true;
     } catch (err) {
       fail(err);
+      return false;
     }
   };
 
@@ -823,17 +820,18 @@ export function AdminPage() {
     }
   };
 
-  const addFormat = async (name: string) => {
-    if (!name.trim()) return;
+  const addFormat = async (name: string): Promise<boolean> => {
+    if (!name.trim()) return false;
     try {
       // No colour sent: the server picks the first the event is not using,
       // the same rule tags follow, so a list of formats is legible without
       // anyone choosing colours by hand.
       const created = await api.createFormat(slug, { name: name.trim() });
       data.apply({ type: 'format.created', entity: created });
-      setFormatName('');
+      return true;
     } catch (err) {
       fail(err);
+      return false;
     }
   };
 
@@ -863,14 +861,14 @@ export function AdminPage() {
     }
   };
 
-  const addPerson = async () => {
-    if (!personName.trim()) return;
+  const addPerson = async (name: string): Promise<boolean> => {
     try {
-      const created = await api.createPerson(slug, { name: personName.trim() });
+      const created = await api.createPerson(slug, { name });
       data.apply({ type: 'person.created', entity: created });
-      setPersonName('');
+      return true;
     } catch (err) {
       fail(err);
+      return false;
     }
   };
 
@@ -1241,23 +1239,13 @@ export function AdminPage() {
                 </p>
               )}
 
-              <FormRow>
-                <div className="min-w-40 flex-1">
-                  <Field label="New track">
-                    <ControlShell>
-                      <TextInput
-                        value={trackName}
-                        onChange={(e) => setTrackName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && void addTrack()}
-                        maxLength={60}
-                      />
-                    </ControlShell>
-                  </Field>
-                </div>
-                <PrimaryButton onClick={() => void addTrack()} disabled={!trackName.trim()}>
-                  Add track
-                </PrimaryButton>
-              </FormRow>
+              <InlineCreate
+                action="Add a track"
+                fieldLabel="New track"
+                submitLabel="Add track"
+                maxLength={60}
+                onSubmit={addTrack}
+              />
             </FormStack>
           </Section>
 
@@ -1307,31 +1295,25 @@ export function AdminPage() {
               ))}
               {bundle.tags.length === 0 && <li className="text-sm text-stone-400 dark:text-stone-500">No tags yet.</li>}
             </ul>
-            <FormRow>
-              <div className="min-w-40 flex-1">
-                <Field label="New tag">
-                  <ControlShell>
-                    <TextInput
-                      value={tagName}
-                      onChange={(e) => setTagName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void addTag()}
-                    />
-                  </ControlShell>
-                </Field>
+            <InlineCreate
+              action="Add a tag"
+              fieldLabel="New tag"
+              submitLabel="Add tag"
+              onSubmit={addTag}
+            >
+              {/* Inside, so the colour picker collapses with the tag it is for.
+                  Left outside it would sit under a closed button, offering a
+                  colour for nothing. */}
+              <div className="mt-3">
+                <ColorPicker
+                  value={newTagColor}
+                  onChange={setTagColor}
+                  palette={TAG_COLORS}
+                  label="New tag colour"
+                  hint="Picked for you from the colours no tag is using yet. Change it here if you would rather choose."
+                />
               </div>
-              <PrimaryButton onClick={() => void addTag()} disabled={!tagName.trim()}>
-                Add tag
-              </PrimaryButton>
-            </FormRow>
-            <div className="mt-3">
-              <ColorPicker
-                value={newTagColor}
-                onChange={setTagColor}
-                palette={TAG_COLORS}
-                label="New tag colour"
-                hint="Picked for you from the colours no tag is using yet. Change it here if you would rather choose."
-              />
-            </div>
+            </InlineCreate>
           </Section>
 
           <Section
@@ -1387,26 +1369,13 @@ export function AdminPage() {
               </div>
             )}
 
-            <FormRow>
-              <div className="min-w-40 flex-1">
-                <Field label="New format">
-                  <ControlShell>
-                    <TextInput
-                      value={formatName}
-                      onChange={(e) => setFormatName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void addFormat(formatName)}
-                      maxLength={40}
-                    />
-                  </ControlShell>
-                </Field>
-              </div>
-              <PrimaryButton
-                onClick={() => void addFormat(formatName)}
-                disabled={!formatName.trim()}
-              >
-                Add format
-              </PrimaryButton>
-            </FormRow>
+            <InlineCreate
+              action="Add a format"
+              fieldLabel="New format"
+              submitLabel="Add format"
+              maxLength={40}
+              onSubmit={addFormat}
+            />
           </Section>
 
           {editingFormat && (
@@ -1721,28 +1690,14 @@ export function AdminPage() {
               />
             )}
 
-            {/* The button lives *inside* the Field: the label then sits above
-                the whole row and the hint below it, and the box and the button
-                are siblings of equal height. Outside it, `items-end` aligned
-                the button to the bottom of a three-line hint. */}
-            <Field
-              label="Expect someone"
+            <InlineCreate
+              action="Expect someone"
+              fieldLabel="Name of the person to expect"
+              submitLabel="Add person"
               hint="Creates a profile nobody holds yet — for a speaker you are billing before they arrive. They claim it at the gate, or with a speaker code."
-            >
-              <FormRow>
-                <ControlShell className="min-w-40 flex-1">
-                  <TextInput
-                    value={personName}
-                    onChange={(e) => setPersonName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void addPerson()}
-                    maxLength={120}
-                  />
-                </ControlShell>
-                <PrimaryButton onClick={() => void addPerson()} disabled={!personName.trim()}>
-                  Add person
-                </PrimaryButton>
-              </FormRow>
-            </Field>
+              maxLength={120}
+              onSubmit={addPerson}
+            />
           </Section>
         </div>
       )}
