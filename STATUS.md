@@ -880,6 +880,13 @@ w-48`, the other `w-full` — so they are exempted by name in
 
 ## Low Priority / Ideas
 
+- **React 18 → 19, and react-router 6 → 7.** Deferred through the whole Base UI
+  migration and never needed: Base UI supports React 18, so nothing was blocked
+  on it. It stays worth doing eventually — 19 is where the ecosystem is heading
+  and the router bump comes with it — but there is no pull for it now, and a
+  major React bump on a working app is risk bought for nothing. Revisit when a
+  dependency actually asks for it.
+
 - **Show an organiser the old addresses an event still answers to.** Renaming
   an event landed 2026-09-01 and every former slug goes on resolving, but
   nothing in the UI lists them — the only trail is the _renamed_ rows in the

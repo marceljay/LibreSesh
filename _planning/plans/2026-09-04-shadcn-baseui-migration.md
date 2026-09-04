@@ -12,7 +12,11 @@ route**, not on `dev` — the primitive layer stays shippable until this proves 
 - App `Modal` has no focus trap / `inert` (Phase 0) → shadcn Dialog gives it.
 - Hand-rolled combobox + focus-ring edge cases keep biting → library owns them.
 
-## Progress (updated 2026-09-04, late)
+**Status: complete.** Merged to `dev` 2026-09-04. This file is kept as the
+decision record — what was chosen, what was rejected and why, what was measured.
+It holds no outstanding work; anything still to do is in STATUS.md.
+
+## Progress (updated 2026-09-04, on merge)
 
 Commits on `feat/shadcn-baseui`, all green (build/lint/909 tests):
 
@@ -67,7 +71,8 @@ so this plan can close.
 
 - [x] Cut `feat/shadcn-baseui` off `dev`. All work here; `dev` keeps the working
       primitive route.
-- [~] Merge back once P5 lands. The decision gate (P3) passed on 2026-09-04.
+- [x] Merged to `dev` (`bfcbca1`, `--no-ff`) on 2026-09-04, after the decision
+      gate (P3) passed and P5 landed.
 
 ## Prerequisites / version bumps
 
@@ -79,8 +84,9 @@ sandbox** (`tree-sitter-typescript` native binary fails to load). So:
 - [x] **Tailwind v3 → v4 — DONE** (`00743ee`), by hand since the codemod can't run
       here. The user asked for it first rather than deferred: it's the target anyway,
       and doing shadcn on v3 then v4 would re-theme twice.
-- [ ] **React 18 → 19 + router 6 → 7 — still deferred.** Base UI supports React 18,
-      so not blocking.
+- [x] **React 18 → 19 + router 6 → 7 — deferred, and stayed deferred.** Base UI
+      supports React 18, so the migration never needed it. Carried to STATUS.md's
+      backlog rather than kept here as an open box.
 
 ## Adopt (shadcn components, added selectively via `npx shadcn add`)
 
@@ -146,9 +152,10 @@ sandbox** (`tree-sitter-typescript` native binary fails to load). So:
 - [x] **P4 — rollout:** every select, the dialog, and the ESLint update. Combobox
       and Input/Textarea resolved as app-owned exceptions rather than swaps, so
       the `controlShell`/`starTally` source-text tests stay and were extended.
-- [~] **P5 — cleanup:** `selectClass`/`controlHeightClass` removed (`763d7e2`);
+- [x] **P5 — cleanup:** `selectClass`/`controlHeightClass` removed (`763d7e2`);
       floating-ui checked and kept; `ControlShell`/`SpeakerCombobox` kept by
-      decision, not dead. Remaining: ARCHITECTURE + STATUS + CHANGELOG, merge.
+      decision, not dead. ARCHITECTURE §The component layer, STATUS and CHANGELOG
+      written up in `b319a56`; merged in `bfcbca1`.
 
 ## Scope (resolved 2026-09-04)
 
