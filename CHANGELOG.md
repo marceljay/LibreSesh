@@ -6,6 +6,16 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **A repeat is one line in the audit log, not fourteen.** Placing a session
+  across a fortnight wrote fourteen entries, and an edit applied to a series
+  wrote one per occurrence — enough to bury the rest of the morning's history,
+  and enough for a single long run to push earlier actions past the retention
+  cap on its own. A bulk action now reads as one line — *created 7 sessions
+  "Morning yoga"* — that opens to show every session, each with its own id and
+  time. Nothing is hidden: the rows are all still there, and the filter box
+  finds a folded one by its id. Applies to placing a repeat, editing a series,
+  and linking or unlinking a run.
+
 - **The pitch board is now optional, and its button says what it does.** On an
   event with a fixed programme the board was a link in the header to a page that
   stayed empty all week. Manage Event → Settings has a **Pitch board** switch;
@@ -121,6 +131,12 @@ All notable changes to this project are documented here.
   and it was drawn 3px taller than the block inside it — so it showed a sliver of
   itself below the block and nothing above. The label is centred in the band now,
   and the band ends where its own session does.
+
+- **The grid offers the next day, like the list does.** Reaching the bottom of
+  a day in the calendar left you scrolling back up to the day strip to move on
+  — which costs you your place in the day you were reading. The **Next day**
+  button now sits under the last hour in the grid as well, and stays on the
+  left of the screen on a grid too wide to see at once.
 
 - **Changing the day lands on that day's first session.** The grid runs from
   the event's earliest hour to its latest — the edges of the whole event, not
