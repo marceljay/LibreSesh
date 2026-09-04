@@ -1204,7 +1204,7 @@ export function SchedulePage() {
                             {dayRangeLabel(first, last)}
                           </span>
                           {holdsToday && !week.includes(day) && (
-                            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-accent align-middle" />
+                            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" />
                           )}
                         </button>
                       );
@@ -1395,7 +1395,7 @@ export function SchedulePage() {
                 type="button"
                 data-tour="now"
                 onClick={jumpToNow}
-                className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
+                className="shrink-0 rounded-lg bg-highlight px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
               >
                 ● Now {fmtMin(nowMinuteOfDay(timezone))}
               </button>

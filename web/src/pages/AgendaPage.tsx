@@ -244,7 +244,7 @@ export function AgendaPage() {
                                 {fmtMin(startMin)}–{fmtMin(endMin)}
                               </span>
                               {live && (
-                                <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold text-stone-900">
+                                <span className="rounded-sm bg-highlight px-1.5 py-0.5 text-[10px] font-bold text-stone-900">
                                   on now
                                 </span>
                               )}

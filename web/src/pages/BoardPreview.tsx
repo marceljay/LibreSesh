@@ -91,7 +91,7 @@ function Card({ slot }: { slot: Slot }) {
           </div>
         </div>
         {slot.live && (
-          <span className="shrink-0 rounded-sm bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
+          <span className="shrink-0 rounded-sm bg-highlight px-1.5 py-0.5 text-xs font-bold text-stone-900">
             now
           </span>
         )}
@@ -137,7 +137,7 @@ export function BoardPreview() {
         <div className="mb-4 flex items-center gap-2 border-b border-stone-200 pb-3 text-xs dark:border-stone-700">
           <span className="font-semibold">LongConf 2026</span>
           <span className="text-stone-500 dark:text-stone-400">· schedule is live</span>
-          <span className="ml-auto rounded-sm bg-accent px-1.5 py-0.5 font-bold text-stone-900">
+          <span className="ml-auto rounded-sm bg-highlight px-1.5 py-0.5 font-bold text-stone-900">
             Now 14:12
           </span>
         </div>

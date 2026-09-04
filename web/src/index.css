@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* Class-based dark mode (was `darkMode: 'class'`). Without this, `dark:`
    variants follow the OS instead of the `.dark` class the app toggles on
@@ -8,8 +9,9 @@
 /* App theme — was tailwind.config.js `theme.extend`. */
 @theme {
   /* Highlighter yellow, reserved for the now-line, the Now button and "now"
-     badges (SPEC §7.7). Never used for ordinary chrome. */
-  --color-accent: #ffd84d;
+     badges (SPEC §7.7). Named `highlight` so `accent` is free for shadcn's
+     convention (a muted hover background) below. Never used for ordinary chrome. */
+  --color-highlight: #ffd84d;
   --font-sans:
     'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
@@ -18,6 +20,77 @@
 /* Custom Vite layout: the app lives one level up from this CSS file. Explicit
    so index.html's classes are scanned alongside src/. */
 @source '..';
+
+/* shadcn/ui design tokens, mapped to the app's own stone palette so shadcn
+   components read as part of the existing UI rather than a bolted-on system.
+   The values flip for dark via `.dark`; `@theme inline` exposes each as a
+   `bg-*`/`text-*`/`border-*` utility. Radius is deliberately left to Tailwind's
+   default scale so shadcn's `rounded-*` match the app's. */
+:root {
+  --background: var(--color-white);
+  --foreground: var(--color-stone-900);
+  --card: var(--color-white);
+  --card-foreground: var(--color-stone-900);
+  --popover: var(--color-white);
+  --popover-foreground: var(--color-stone-900);
+  --primary: var(--color-stone-900);
+  --primary-foreground: var(--color-stone-50);
+  --secondary: var(--color-stone-100);
+  --secondary-foreground: var(--color-stone-900);
+  --muted: var(--color-stone-100);
+  --muted-foreground: var(--color-stone-500);
+  --accent: var(--color-stone-100);
+  --accent-foreground: var(--color-stone-900);
+  --destructive: var(--color-red-600);
+  --destructive-foreground: var(--color-stone-50);
+  --border: var(--color-stone-200);
+  --input: var(--color-stone-300);
+  --ring: var(--color-stone-400);
+}
+
+.dark {
+  --background: var(--color-stone-950);
+  --foreground: var(--color-stone-100);
+  --card: var(--color-stone-900);
+  --card-foreground: var(--color-stone-100);
+  --popover: var(--color-stone-900);
+  --popover-foreground: var(--color-stone-100);
+  --primary: var(--color-stone-100);
+  --primary-foreground: var(--color-stone-900);
+  --secondary: var(--color-stone-800);
+  --secondary-foreground: var(--color-stone-100);
+  --muted: var(--color-stone-800);
+  --muted-foreground: var(--color-stone-400);
+  --accent: var(--color-stone-800);
+  --accent-foreground: var(--color-stone-100);
+  --destructive: var(--color-red-500);
+  --destructive-foreground: var(--color-stone-50);
+  --border: var(--color-stone-700);
+  --input: var(--color-stone-600);
+  --ring: var(--color-stone-500);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
 
 @layer base {
   /* v4 defaults every border and divide to `currentColor`; v3 defaulted to

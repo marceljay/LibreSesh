@@ -675,7 +675,7 @@ export function Calendar({
               className="pointer-events-none absolute left-0 right-0 z-10"
               style={{ top: (nowMin - dayStartMin) * PX_PER_MIN }}
             >
-              <div className="h-0.5 w-full bg-accent" />
+              <div className="h-0.5 w-full bg-highlight" />
               <span
                 className="absolute -top-2.5 rounded-r bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-1.5 py-0.5 text-xs font-semibold text-white"
                 style={{ left: GUTTER_W }}
@@ -783,7 +783,7 @@ export function Calendar({
                   )}
                   {live && (
                     <span
-                      className={`${clash || competes ? '' : 'ml-auto '}rounded-sm bg-accent px-1 text-xs font-bold text-stone-900`}
+                      className={`${clash || competes ? '' : 'ml-auto '}rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900`}
                     >
                       now
                     </span>
