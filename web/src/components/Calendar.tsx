@@ -8,6 +8,7 @@ import {
 } from 'react';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
 import { fmtMin, place, speakerLine } from '../lib/format';
+import { laneLayout } from '../lib/laneLayout';
 import { InfoIcon } from './icons';
 import { StarTally } from './StarTally';
 import { popoverPanelClass, usePopover } from './Popover';
@@ -23,49 +24,6 @@ const RESIZE_HANDLE_PX = 12;
 const snap = (m: number): number => Math.round(m / SNAP) * SNAP;
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-interface Lane {
-  lane: number;
-  lanes: number;
-}
-
-/**
- * Greedy lane assignment so overlapping sessions in one *column* sit side by
- * side. Keyed to the column, not the room: lanes are about what visually
- * collides, and when the columns are tracks two sessions in different rooms
- * do collide on screen.
- */
-function laneLayout(
-  items: { session: SessionDto; startMin: number; endMin: number }[],
-  columnOf: (session: SessionDto) => number,
-): Map<number, Lane> {
-  const byColumn = new Map<number, typeof items>();
-  for (const item of items) {
-    const key = columnOf(item.session);
-    const list = byColumn.get(key);
-    if (list) list.push(item);
-    else byColumn.set(key, [item]);
-  }
-  const out = new Map<number, Lane>();
-  for (const list of byColumn.values()) {
-    const sorted = list.slice().sort((a, b) => a.startMin - b.startMin);
-    const laneEnds: number[] = [];
-    for (const item of sorted) {
-      let index = laneEnds.findIndex((end) => end <= item.startMin);
-      if (index === -1) {
-        laneEnds.push(item.endMin);
-        index = laneEnds.length - 1;
-      } else {
-        laneEnds[index] = item.endMin;
-      }
-      out.set(item.session.id, { lane: index, lanes: 1 });
-    }
-    for (const item of sorted) {
-      const entry = out.get(item.session.id);
-      if (entry) entry.lanes = laneEnds.length;
-    }
-  }
-  return out;
-}
 
 /**
  * Ids of sessions that share a room and a time span with another session.
