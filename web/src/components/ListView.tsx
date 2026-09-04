@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { useMemo } from 'react';
 import type { BreakDto, RoomDto, SessionDto, TagDto } from '@shared/types';
 import { readableInk } from '@shared/tagColors';
@@ -99,7 +100,7 @@ export function ListView({
             className="mb-4 rounded-xl border border-dashed border-stone-200 bg-stone-100/70 px-3 py-2 text-xs font-semibold text-stone-500 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400"
           >
             {row.item.label}
-            <span className="ml-1.5 font-normal">
+            <span className="ms-1.5 font-normal">
               {fmtMin(row.item.startMin)}–{fmtMin(row.item.endMin)}
             </span>
           </div>
@@ -108,7 +109,7 @@ export function ListView({
           <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
             {fmtMin(row.group.start)}
             {index === nowGroupIndex && (
-              <span className="rounded bg-accent px-1.5 py-0.5 font-bold text-stone-900">
+              <span className="rounded-sm bg-highlight px-1.5 py-0.5 font-bold text-stone-900">
                 next / now
               </span>
             )}
@@ -136,7 +137,7 @@ export function ListView({
                       onOpen(session.id);
                     }
                   }}
-                  className={`block w-full cursor-pointer rounded-xl border bg-white dark:bg-stone-900 p-3 text-left shadow-sm hover:shadow ${
+                  className={`block w-full cursor-pointer rounded-xl border bg-white dark:bg-stone-900 p-3 text-start shadow-xs hover:shadow-sm ${
                     session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'
                   } ${live ? 'ring-2 ring-stone-900/10 dark:ring-stone-100/10' : ''}`}
                 >
@@ -149,7 +150,7 @@ export function ListView({
                       </div>
                     </div>
                     {live && (
-                      <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
+                      <span className="shrink-0 rounded-sm bg-highlight px-1.5 py-0.5 text-xs font-bold text-stone-900">
                         now
                       </span>
                     )}
@@ -183,10 +184,10 @@ export function ListView({
                     {/* The card's one star, in the corner furthest from the
                         title. It was a toggle up beside the title and a count
                         down here, two stars saying two halves of one fact. */}
-                    <span className="ml-auto flex items-center gap-2 text-xs">
+                    <span className="ms-auto flex items-center gap-2 text-xs">
                       {count > 0 && (
                         <span className="text-stone-400 dark:text-stone-500">
-                          {count} contribution{count > 1 ? 's' : ''}
+                          {plural(count, { one: 'contribution', other: 'contributions' })}
                         </span>
                       )}
                       <StarTally

@@ -102,7 +102,7 @@ export function RoleControl({
                 role="menuitemradio"
                 aria-checked={option === role}
                 onClick={() => pick(option)}
-                className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-stone-100 dark:hover:bg-stone-800 ${
+                className={`flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start hover:bg-stone-100 dark:hover:bg-stone-800 ${
                   option === role ? 'bg-stone-50 dark:bg-stone-800/60' : ''
                 }`}
               >

@@ -4,6 +4,7 @@ import { CAPABILITIES, type Capability, type PermissionMatrix } from '@shared/ca
 import {
   ControlShell,
   Field,
+  FormRow,
   PrimaryButton,
   SecondaryButton,
   Section,
@@ -144,28 +145,30 @@ export function AdminPermissions({
       }
     >
       {!unlocked && (
-        <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-800">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-40 flex-1">
-              <Field
-                label="Unlock with the organiser password"
-                hint="Every switch here saves the moment you click it, and there is no undo."
-              >
-                <ControlShell>
-                  <TextInput
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void unlock()}
-                    autoComplete="off"
-                  />
-                </ControlShell>
-              </Field>
-            </div>
-            <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
-              {checking ? 'Checking…' : 'Unlock'}
-            </PrimaryButton>
-          </div>
+        <div className="mb-4 rounded-lg border border-stone-200 bg-stone-100 p-3 dark:border-stone-700 dark:bg-stone-800">
+          {/* The button lives *inside* the Field, so the label sits above the
+              whole row and the hint below it. Put it outside and `items-end`
+              aligns it to the bottom of the hint — two lines lower than the
+              box it belongs to. See `FormRow` in ui.tsx. */}
+          <Field
+            label="Unlock with the organiser password"
+            hint="Every switch here saves the moment you click it, and there is no undo."
+          >
+            <FormRow>
+              <ControlShell className="min-w-40 flex-1">
+                <TextInput
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void unlock()}
+                  autoComplete="off"
+                />
+              </ControlShell>
+              <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
+                {checking ? 'Checking…' : 'Unlock'}
+              </PrimaryButton>
+            </FormRow>
+          </Field>
         </div>
       )}
 
@@ -176,7 +179,7 @@ export function AdminPermissions({
         <table className="w-full min-w-[28rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-stone-200 dark:border-stone-700">
-              <th className="py-2 pr-3 text-left text-xs font-semibold text-stone-500 dark:text-stone-400">
+              <th className="py-2 pe-3 text-start text-xs font-semibold text-stone-500 dark:text-stone-400">
                 Capability
               </th>
               {ROLES.map((role) => (
@@ -197,7 +200,7 @@ export function AdminPermissions({
                   key={cap.id}
                   className="border-b border-stone-100 last:border-0 dark:border-stone-800"
                 >
-                  <td className="py-2 pr-3 text-stone-700 dark:text-stone-300">{cap.label}</td>
+                  <td className="py-2 pe-3 text-stone-700 dark:text-stone-300">{cap.label}</td>
                   {ROLES.map((role) => (
                     <td key={role} className="py-2 text-center">
                       <span className="inline-flex justify-center">

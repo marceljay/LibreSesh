@@ -1,8 +1,9 @@
+import { Modal } from './Modal';
 import { useEffect, useMemo, useState } from 'react';
 import type { SessionDto } from '@shared/types';
 import { api } from '../lib/api';
 import { fmtMin, place } from '../lib/format';
-import { Modal, PrimaryButton, SecondaryButton } from './ui';
+import { PrimaryButton, SecondaryButton } from './ui';
 
 /**
  * Pick which of your same-titled sessions to link into one series. The list is

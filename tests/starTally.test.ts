@@ -57,13 +57,13 @@ describe('the list card', () => {
   });
 
   it('keeps it in the corner furthest from the title', () => {
-    expect(list).toMatch(/ml-auto flex items-center gap-2 text-xs[\s\S]{0,500}<StarTally/);
+    expect(list).toMatch(/ms-auto flex items-center gap-2 text-xs[\s\S]{0,500}<StarTally/);
   });
 });
 
 describe('the grid block', () => {
   it('carries the star out of the flow, so the title never moves for it', () => {
-    expect(calendar).toMatch(/<StarTally[\s\S]{0,400}absolute bottom-0\.5 right-1/);
+    expect(calendar).toMatch(/<StarTally[\s\S]{0,400}absolute bottom-0\.5 end-1/);
   });
 
   it('no longer puts it in the row above the title', () => {

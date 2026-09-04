@@ -7,9 +7,9 @@ Last updated: 2026-09-04
 
 ## In Progress
 
-Working on `dev`; `main` is the released line and only takes merges.
-`dev` is ahead of `origin/dev` (unpushed as of 2026-09-04). Suite at
-**908**, lint clean, build clean.
+Working on `feat/shadcn-baseui`, cut off `dev`; `main` is the released line
+and only takes merges. `dev` is ahead of `origin/dev` (unpushed as of
+2026-09-04). Suite at **921**, lint clean, build clean.
 
 Linked sessions is done and off this list — it landed on `dev` (through
 `4f9afdb`), is written up in ARCHITECTURE §Linked sessions, CHANGELOG
@@ -25,7 +25,8 @@ Medium-Priority backlog item.
   `ControlShell`, `TextInput`, proven on `NumberField`). **Phase 2**
   (2026-09-04, `b13ca1a`+`f863275`+`eee9b3c`) converted every `inputClass`
   call site — ~90 across 17 files — to `Field`+`ControlShell`+`TextInput`,
-  added `TextArea` and `selectClass`, made the text primitives `forwardRef`,
+  added `TextArea` and `selectClass` (the latter since retired with the last
+  native select), made the text primitives `forwardRef`,
   deleted `inputClass`, and added the ESLint guardrails (ban raw
   `<input>`/`<textarea>` outside `ui.tsx`, allowlist `<select>`, block
   re-declaring `inputClass`; the `<button>` ban dropped — 82 legit raw
@@ -39,9 +40,25 @@ Medium-Priority backlog item.
   focused speaker/host field). *Deliberately skipped:* the blanket
   `border-stone-300`/`text-stone-400` ESLint ban — it would flag dozens of
   legitimately decorative uses; the must-read tokens are fixed.
-  **Next: Phase 4** (form semantics), then **Phase 5** (`SpeakerCombobox`
-  chips-in-shell + the "Expect someone" inline-create) and **Phase 6**. The
-  **Forms backlog group** below is governed by this brief.
+  **Phases 4–6 were overtaken** — see the next item. The **Forms backlog
+  group** below is still governed by this brief.
+
+- **shadcn/ui on Base UI** (`_planning/plans/2026-09-04-shadcn-baseui-migration.md`),
+  on branch `feat/shadcn-baseui`. Started because the overhaul kept
+  re-hitting problems a library already owns: a native `<select>` whose open
+  menu cannot be styled, a `Modal` with no focus trap, and the focus-ring
+  edge cases that took three attempts to kill. **Landed:** Tailwind v3 → v4
+  by hand (the codemod is dead on arm64); shadcn foundation themed to the
+  app's stone; **every** dropdown converted to Base UI Select, so no native
+  `<select>` is left; `Modal` rebuilt on Base UI Dialog; route-level code
+  splitting; logical properties everywhere with an ESLint rule; and the two
+  i18n-readiness refactors (error codes → client sentences, plural forms).
+  **Decided against, with reasons in the plan:** rebuilding `SpeakerCombobox`
+  and swapping `TextInput`/`TextArea` for shadcn's — both would trade working
+  behaviour for visual sameness the app already has.
+  **Cost:** +44 kB gz of Base UI runtime, kept off first paint by
+  code-splitting; entry chunk is 60.6 kB gz.
+  **Left:** ARCHITECTURE write-up, then merge to `dev`.
 
 The pre-existing spec work still awaiting a browser pass:
 That whole spec
@@ -64,9 +81,12 @@ the top of the session form, and the word "open" left the UI in favour of an
 opt-in **Official** badge. The same evening fixed a speaker being unable to
 edit their own session — reported from use, three rules deep. All of it is
 code-complete and in CHANGELOG `[Unreleased]`; migrations 014, 015 and 016.
-What is left of it is the browser pass in **Awaiting your review**. What is left of the
-UI-overhaul plan lives in
-`_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`:
+What is left of it is the browser pass in **Awaiting your review**. The
+2026-08-29 UI-overhaul/permissions/pitches plan was **retired on 2026-09-04**:
+of its 28 open boxes, 25 had shipped without being ticked (every `ui.tsx`
+primitive, room capacity/description, the explicit edit affordance, the whole
+capability system, livestream URLs, the pitch creator) and one was withdrawn
+(up/down votes — see §Voting below). What genuinely survived it is here:
 
 - **Whole-app UI sweep.** The primitives landed, the admin page is done, and
   as of 2026-08-31 every modal is on the `Modal` primitive (`fb5c759`).
@@ -86,6 +106,16 @@ UI-overhaul plan lives in
 - **ARCHITECTURE.md concurrency paragraph.** §Realtime documents broadcast and
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
+
+- **The two files that keep growing.** `SchedulePage.tsx` is **1,957 lines**
+  and `AdminPage.tsx` **2,577**. The retired plan flagged SchedulePage at 989
+  on 2026-08-29; it has almost exactly doubled since, which is the argument for
+  the entry rather than the line count itself. Nothing is broken by it — it is
+  a reading cost, paid every time either file is opened, and it compounds. The
+  natural seams are already visible: SchedulePage holds every handler the
+  detail sheet needs (deliberately — see ARCHITECTURE §Frontend), so the split
+  is by *section* rather than by concern. Not urgent, but it will not get
+  cheaper.
 
 ## Awaiting your review
 
@@ -387,8 +417,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **Pitch board.** Showing the creator is done — a card reads "pitched by
   {name}" (`ProposalBoard.tsx:332`). What is left is defaulting the creator as
   host (a new pitch starts with an empty speaker field,
-  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan is
-  `_planning/plans/2026-08-29-ui-overhaul-permissions-pitches.md`, whose
+  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan that
+  carried these was retired on 2026-09-04; its
   up/down-vote assumption is **withdrawn** (decided 2026-08-31): interest stays
   one-way, so no `proposal_votes` table, no migration, and `interestCount`
   keeps its name and its meaning in `EventExport`. The button already wears an
@@ -628,6 +658,24 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
+- **Inline create inside `SpeakerCombobox`.** The other half of the affordance
+  that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
+  format and expected-person rows): typing a name the event does not know into
+  the speaker field should offer to create that person there, rather than
+  sending the organiser to the People tab and back. Same control, harder host —
+  the combobox already has a listbox, a create-a-person row and the
+  `onlySelf`/`isAdmin`/archived rules to respect.
+
+- **A real date/time picker for the session modal.** The native
+  `<input type="date">`/`<input type="time">` are the last controls not wearing
+  the app's own field styling, and the browser's popup cannot be themed — the
+  same complaint that moved every `<select>` to Base UI. Deferred out of the
+  shadcn/Base UI migration on 2026-09-04 because the right control depends on
+  a decision nobody has made: a one-day unconference wants a time picker and
+  no calendar at all, while a fortnight-long event wants a month grid. A real
+  calendar means `react-day-picker` (~12 kB gz) on top of Base UI, which is a
+  bundle question as much as a design one. Decide the shape first, then build.
+
 - **Publishing a session: a link that works without the gate.** A published
   session would be the app's first genuinely unauthenticated read — sharing one
   talk without sharing the event or handing over a role. No commit yet. Design
@@ -839,6 +887,13 @@ w-48`, the other `w-full` — so they are exempted by name in
   organiser actually asks.
 
 ## Low Priority / Ideas
+
+- **React 18 → 19, and react-router 6 → 7.** Deferred through the whole Base UI
+  migration and never needed: Base UI supports React 18, so nothing was blocked
+  on it. It stays worth doing eventually — 19 is where the ecosystem is heading
+  and the router bump comes with it — but there is no pull for it now, and a
+  major React bump on a working app is risk bought for nothing. Revisit when a
+  dependency actually asks for it.
 
 - **Show an organiser the old addresses an event still answers to.** Renaming
   an event landed 2026-09-01 and every former slug goes on resolving, but

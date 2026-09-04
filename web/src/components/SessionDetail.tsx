@@ -1,3 +1,4 @@
+import { pluralForm, type PluralForms } from '../lib/plural';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type {
@@ -22,6 +23,13 @@ const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
   note: 'Notes',
   link: 'Links',
+};
+/** The same three words counted, for "Show 4 earlier notes". A heading is not a
+ *  plural form — English lets one string serve both, most languages do not. */
+const KIND_PLURAL: Record<ContributionKind, PluralForms> = {
+  question: { one: 'question', other: 'questions' },
+  note: { one: 'note', other: 'notes' },
+  link: { one: 'link', other: 'links' },
 };
 const KINDS: ContributionKind[] = ['question', 'note', 'link'];
 
@@ -267,7 +275,7 @@ export function SessionDetail({
 
   const descriptionBlock = description ? (
     <div
-      className={`prose-sm mb-4 leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2 ${
+      className={`prose-sm mb-4 leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ms-4 [&_li]:list-disc [&_p]:mb-2 ${
         page ? 'text-base' : 'text-sm'
       }`}
       // Markdown is escaped before parsing, so no author markup survives.
@@ -346,7 +354,7 @@ export function SessionDetail({
             <div key={k} className="mb-3">
               <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
                 {KIND_LABEL[k]}
-                <span className="ml-1.5 font-normal tabular-nums">{items.length}</span>
+                <span className="ms-1.5 font-normal tabular-nums">{items.length}</span>
               </h3>
               {collapseAt !== null && items.length > collapseAt && (
                 <button
@@ -361,7 +369,7 @@ export function SessionDetail({
                 >
                   {expanded
                     ? 'Show fewer'
-                    : `Show ${hiddenCount} earlier ${k}${hiddenCount === 1 ? '' : 's'}`}
+                    : `Show ${hiddenCount} earlier ${pluralForm(hiddenCount, KIND_PLURAL[k])}`}
                 </button>
               )}
               <ul className="space-y-1.5">
@@ -398,7 +406,7 @@ export function SessionDetail({
                           were: two text links in a row this dense read as prose
                           and wrapped on a phone. `title` carries the wording
                           for a pointer, `aria-label` for everyone else. */}
-                      <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                      <div className="ms-auto flex shrink-0 items-center gap-0.5">
                         {role === 'admin' && !archived && (
                           <IconButton
                             onClick={() => onToggleHidden(c)}

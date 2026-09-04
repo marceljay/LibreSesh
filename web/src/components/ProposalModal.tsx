@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import type { PersonDto, ProposalDto, Role, TagDto } from '@shared/types';
 import type { ProposalWrite } from '../lib/api';
@@ -9,7 +10,6 @@ import {
   Field,
   FormError,
   FormStack,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextArea,
@@ -84,7 +84,7 @@ export function ProposalModal({
         <>
           {error && <FormError className="basis-full">{error}</FormError>}
           {onDelete && (
-            <DangerButton className="mr-auto" onClick={onDelete}>
+            <DangerButton className="me-auto" onClick={onDelete}>
               Withdraw
             </DangerButton>
           )}

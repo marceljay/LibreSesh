@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -38,7 +39,7 @@ process.env.VITE_BUILD_TIME = buildTime;
 
 export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@shared': fileURLToPath(new URL('../server/src/shared', import.meta.url)),

@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EventSummary } from '@shared/types';
@@ -25,7 +26,7 @@ export function EventListPage() {
     api
       .listEvents()
       .then(setEvents)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: unknown) => setError(errorText(err)));
   }, []);
 
   return (
@@ -39,7 +40,7 @@ export function EventListPage() {
         <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
           <Logo className="h-11 w-auto sm:h-14" />
         </Link>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <ThemeToggle />
           <Link
             to="/import"
@@ -77,7 +78,7 @@ export function EventListPage() {
           <li key={event.slug}>
             <Link
               to={`/e/${event.slug}`}
-              className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-sm hover:shadow"
+              className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-xs hover:shadow-sm"
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{event.name}</div>

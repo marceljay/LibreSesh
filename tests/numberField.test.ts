@@ -3,8 +3,9 @@ import {
   auditKeepField,
   capacityField,
   maxDigits,
+  numberFieldMessage,
   parseNumberField,
-  rangeMessage,
+  rangeError,
   sanitizeNumberInput,
   weekRailFromField,
   type NumberFieldSpec,
@@ -66,11 +67,15 @@ describe('parseNumberField', () => {
   });
 
   it('refuses a number past either end, and says what it wants', () => {
+    // The refusal is data — a code and its parameters — and the sentence is
+    // rendered from it, so a translation can reorder the whole thing.
     expect(parseNumberField('0', plain)).toEqual({
       value: null,
-      error: 'Must be between 1 and 90 days',
+      error: { code: 'range', min: 1, max: 90, unit: 'days', alsoAllow: [] },
     });
-    expect(parseNumberField('91', plain).error).toBe('Must be between 1 and 90 days');
+    const refused = parseNumberField('91', plain).error;
+    expect(refused).not.toBeNull();
+    expect(numberFieldMessage(refused!)).toBe('Must be between 1 and 90 days');
   });
 
   it('gives no value for a number it refuses', () => {
@@ -80,8 +85,8 @@ describe('parseNumberField', () => {
   });
 
   it('asks for a number when blank is not an answer', () => {
-    expect(parseNumberField('', plain)).toEqual({ value: null, error: 'Enter a number' });
-    expect(parseNumberField('   ', plain).error).toBe('Enter a number');
+    expect(parseNumberField('', plain)).toEqual({ value: null, error: { code: 'required' } });
+    expect(numberFieldMessage({ code: 'required' })).toBe('Enter a number');
   });
 
   it('accepts blank where blank means "not set"', () => {
@@ -89,18 +94,19 @@ describe('parseNumberField', () => {
   });
 
   it('rejects text that never went through the input', () => {
-    expect(parseNumberField('1e5', plain).error).toBe('Digits only');
+    expect(parseNumberField('1e5', plain).error).toEqual({ code: 'digits_only' });
+    expect(numberFieldMessage({ code: 'digits_only' })).toBe('Digits only');
   });
 
   it('allows a value outside the range that the spec names', () => {
     expect(parseNumberField('0', auditKeepField)).toEqual({ value: 0, error: null });
-    expect(parseNumberField('99', auditKeepField).error).toBe(
-      'Must be 0, or between 100 and 1,000,000 entries',
-    );
+    const refused = parseNumberField('99', auditKeepField).error;
+    expect(refused).not.toBeNull();
+    expect(numberFieldMessage(refused!)).toBe('Must be 0, or between 100 and 1,000,000 entries');
   });
 
   it('groups thousands in the message it shows', () => {
-    expect(rangeMessage(auditKeepField)).toContain('1,000,000');
+    expect(numberFieldMessage(rangeError(auditKeepField))).toContain('1,000,000');
   });
 });
 

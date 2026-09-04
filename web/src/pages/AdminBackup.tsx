@@ -1,5 +1,6 @@
+import { errorText } from '../lib/errorText';
 import { useState } from 'react';
-import { ApiError, api } from '../lib/api';
+import { api } from '../lib/api';
 import {
   ControlShell,
   Field,
@@ -47,7 +48,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
       toast.show(`Saved ${filename} — keep the passphrase with it`);
     } catch (err) {
       toast.show(
-        err instanceof ApiError ? err.message : 'The backup could not be made',
+        errorText(err, 'The backup could not be made'),
       );
     } finally {
       setBusy(false);
@@ -135,7 +136,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
         <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
           Lose the passphrase and the file is gone — there is no recovery, by
           design. To open one, run{' '}
-          <code className="rounded bg-stone-100 px-1 dark:bg-stone-800">
+          <code className="rounded-sm bg-stone-100 px-1 dark:bg-stone-800">
             npm run decrypt-backup -- backup.lsbk restored.db
           </code>{' '}
           on the server. Do it once now, while nothing is on fire: a backup you

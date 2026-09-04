@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -101,7 +101,7 @@ describe('TextInput is bare and wired from context', () => {
 });
 
 describe('TextArea owns its own border', () => {
-  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export const selectClass'));
+  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export function ControlAdornment'));
 
   it('is a multi-line field wired from context, unlike TextInput it is not shell-bound', () => {
     expect(area).toContain('<textarea');
@@ -129,7 +129,8 @@ describe('NumberField is the proof, rebuilt on the primitives', () => {
 
   it('keeps "empty is not yet wrong" and hands the error to Field', () => {
     expect(nf).toContain("const shown = value.trim() === '' ? null : error;");
-    expect(nf).toContain('error={shown ?? undefined}');
+    // The verdict is data; the sentence is rendered from it at the boundary.
+    expect(nf).toContain('error={shown ? numberFieldMessage(shown) : undefined}');
   });
 
   it("keeps the running-text suffix beside the box, not inside a w-32 shell", () => {
@@ -143,7 +144,191 @@ describe('the old skin is gone', () => {
     expect(ui).not.toContain('inputClass');
   });
 
-  it('keeps selectClass for the native selects Phase 0 left native', () => {
-    expect(ui).toContain('export const selectClass =');
+  it('has deleted selectClass along with the last native select', () => {
+    // Every `<select>` is a Base UI Select now (`ui/select.tsx`), so the class
+    // that skinned the native ones has nothing left to skin.
+    expect(ui).not.toContain('selectClass');
+  });
+
+  it('keeps the field and the Select trigger the same height', () => {
+    // Tailwind scans source text, so an arbitrary value cannot come from a
+    // shared constant — `h-[${x}]` generates nothing. The height is therefore
+    // written out in both files, and this is what stops the two drifting: a
+    // field and a select on one row must align.
+    const select = readFileSync(
+      join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui', 'select.tsx'),
+      'utf8',
+    );
+    const height = (src: string, prefix: string): string | undefined =>
+      new RegExp(`(?:^|[\\s'"\`])${prefix}-\\[([\\d.]+rem)\\]`).exec(src)?.[1];
+    expect(height(ui, 'min-h')).toBe('2.375rem');
+    expect(height(select, 'h')).toBe('2.375rem');
+  });
+});
+
+describe('no hand-drawn field re-adds the global ring to its own border', () => {
+  /** Every `.tsx` under `web/src`. */
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  it('gives every bordered raw input the shared bare-field ring', () => {
+    // `index.css` rings every `:focus-visible` element with an *offset* ring.
+    // On an element that draws its own border that ring sits outside it, a gap
+    // away — border, gap, ring, three lines for one field. That was the "ugly
+    // focus border" on the three search boxes. `bareFieldFocusRing` replaces
+    // the border with one flush ring instead of stacking on it.
+    //
+    // Controls that are not fields (checkbox, radio, colour, file) keep the
+    // global ring: they have nothing to replace it with.
+    const NOT_A_FIELD = /type="(?:checkbox|radio|color|file)"/;
+    const offenders: string[] = [];
+
+    for (const path of sources(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      for (const el of src.match(/<(?:input|textarea)\b[\s\S]*?\/>/g) ?? []) {
+        if (NOT_A_FIELD.test(el)) continue;
+        // Draws its own border, so the global offset ring would double it.
+        if (!/\bborder\b|\bborder-/.test(el)) continue;
+        if (el.includes('bareFieldFocusRing')) continue;
+        offenders.push(path.slice(WEB_SRC.length + 1));
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('a control and the button beside it are one line, the same height', () => {
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  it('gives buttons the same 38px the fields have', () => {
+    // 38px = 2.375rem, three ways of arriving at the same number:
+    //   button  text-xs (16px line) + py-2.5 (20px) + border (2px) = 38
+    //   field   ControlShell min-h-[2.375rem]
+    //   select  trigger h-[2.375rem]
+    // A button that changes its padding without changing the others breaks the
+    // row, so the padding is pinned here rather than left to be noticed.
+    for (const cls of ['primaryButtonClass', 'secondaryButtonClass']) {
+      const decl = ui.slice(ui.indexOf(`export const ${cls}`));
+      const body = decl.slice(0, decl.indexOf(';'));
+      expect(body, cls).toContain('py-2.5');
+      expect(body, cls).toContain('text-xs');
+    }
+  });
+
+  it('never puts a hinted Field next to a button in the same row', () => {
+    // A Field is label + control + hint stacked, so its bottom edge is the last
+    // line of the hint. `items-end` then aligns a sibling button to *that* —
+    // dropping it a hint's height below the box it belongs to. The button goes
+    // inside the Field instead; see the FormRow doc comment.
+    const offenders: string[] = [];
+    for (const path of sources(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      const lines = src.split('\n');
+      lines.forEach((line, i) => {
+        // Both spellings of a row: the primitive, and a hand-rolled flex that
+        // bottom-aligns (which is what FormRow expands to).
+        const isRow = line.includes('<FormRow') || /className="[^"]*items-end/.test(line);
+        if (!isRow) return;
+        const block = lines.slice(i, i + 24).join('\n');
+        const field = block.indexOf('<Field');
+        if (field === -1) return;
+        // The hint must belong to the Field, not to something later in the row.
+        const fieldBlock = block.slice(field, field + 400);
+        if (!/hint=/.test(fieldBlock.slice(0, fieldBlock.indexOf('>')))) return;
+        if (!/<(Primary|Secondary|Danger)Button/.test(block)) return;
+        offenders.push(`${path.slice(WEB_SRC.length + 1)}:${i + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe('InlineCreate is a button that becomes its field', () => {
+  const ic = ui.slice(ui.indexOf('export function InlineCreate'), ui.indexOf('export function DangerButton'));
+
+  it('collapses to one button and opens into a row of the same height', () => {
+    // The collapsed and open states must be the same height or the button
+    // moves out from under the pointer that pressed it: SecondaryButton and
+    // ControlShell are both 38px (pinned above), and the open row carries no
+    // visible label, which would add one.
+    expect(ic).toContain('if (!open) {');
+    expect(ic).toContain('<SecondaryButton ref={opener}');
+    expect(ic).toContain('<ControlShell className="min-w-40 flex-1">');
+    expect(ic).toContain('aria-label={fieldLabel}'); // named without a visible label
+    expect(ic).not.toContain('<Field'); // a Field would stack a label on top
+  });
+
+  it('puts the caret in the box on open and back on the button on cancel', () => {
+    expect(ic).toContain('autoFocus');
+    expect(ic).toContain('opener.current?.focus();');
+    // Not on first render — only when this component closed the form.
+    expect(ic).toContain('if (open || !restoreFocus.current) return;');
+  });
+
+  it('cancels on Escape without letting a surrounding dialog also close', () => {
+    expect(ic).toMatch(/e\.key === 'Escape'[\s\S]{0,200}e\.stopPropagation\(\);[\s\S]{0,40}close\(\);/);
+  });
+
+  it('stays open after a save, and keeps the text after a failure', () => {
+    // Adding one track is usually adding three, so Enter clears and stays.
+    expect(ic).toContain('if (!saved) return;');
+    expect(ic).toMatch(/setValue\(''\);\s*box\.current\?\.focus\(\);/);
+  });
+});
+
+describe('every search box looks like a search box', () => {
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  /** The four: the header combobox, the filter panel, People, and the merge
+   *  dialog. Two of them had no icon at all, and the two that did drew it in a
+   *  different grey from each other. */
+  const searchFiles = () =>
+    sources(WEB_SRC).filter((path) => {
+      const src = readFileSync(path, 'utf8');
+      return /type="search"|aria-label="Search /.test(src);
+    });
+
+  it('gives each one the leading icon, and room for it', () => {
+    const offenders = searchFiles()
+      .filter((path) => {
+        const src = readFileSync(path, 'utf8');
+        // The icon is absolutely placed, so the box has to reserve the space.
+        return !src.includes('<SearchIcon') || !/\bps-8\b/.test(src);
+      })
+      .map((path) => path.slice(WEB_SRC.length + 1));
+    expect(offenders).toEqual([]);
+  });
+
+  it('draws the icon in one grey, readable on white', () => {
+    // stone-400 on white is 2.59 — see tests/formContrast.test.ts. The icon is
+    // decorative (each box carries an aria-label), but it is the affordance
+    // people look for, and four boxes should not be four different greys.
+    const offenders = searchFiles()
+      .filter((path) =>
+        /<SearchIcon[^/]*text-stone-(?!500 dark:text-stone-400)/.test(readFileSync(path, 'utf8')),
+      )
+      .map((path) => path.slice(WEB_SRC.length + 1));
+    expect(offenders).toEqual([]);
   });
 });

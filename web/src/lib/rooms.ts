@@ -1,3 +1,4 @@
+import { plural } from './plural';
 import type { RoomDto } from '@shared/types';
 
 /** Only what a room's header reads, so tests and callers need no full DTO. */
@@ -8,7 +9,7 @@ export type RoomFactsInput = Pick<RoomDto, 'capacity' | 'description' | 'openBoo
  *  say to a reader. "no capacity set" told them about an empty database column,
  *  not about the room. */
 export const seatsLabel = (capacity: number | null): string | null =>
-  capacity === null ? null : `${capacity} seat${capacity === 1 ? '' : 's'}`;
+  capacity === null ? null : plural(capacity, { one: 'seat', other: 'seats' });
 
 /**
  * The organiser's directions — which floor, which door, what to bring — or ''

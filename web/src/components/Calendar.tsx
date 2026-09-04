@@ -566,7 +566,7 @@ export function Calendar({
           <div className="shrink-0 px-1" style={{ width: GUTTER_W }}>
             {/* Same padding and border box as a card, so the label sits on the
                 same line as the room names rather than floating. */}
-            <div className="border border-transparent py-2 text-right text-xs leading-4">
+            <div className="border border-transparent py-2 text-end text-xs leading-4">
               <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
                 {axis}
               </span>
@@ -578,11 +578,11 @@ export function Calendar({
         </div>
 
         <div className="relative flex" style={{ height }}>
-          <div className="sticky left-0 z-10 shrink-0 bg-white dark:bg-stone-900" style={{ width: GUTTER_W }}>
+          <div className="sticky start-0 z-10 shrink-0 bg-white dark:bg-stone-900" style={{ width: GUTTER_W }}>
             {Array.from({ length: hourCount }, (_, i) => (
               <div
                 key={i}
-                className="absolute -translate-y-1/2 pr-1 text-right text-xs text-stone-400 dark:text-stone-500"
+                className="absolute -translate-y-1/2 pe-1 text-end text-xs text-stone-400 dark:text-stone-500"
                 style={{ top: i * 60 * PX_PER_MIN, width: GUTTER_W - 4 }}
               >
                 {fmtMin(dayStartMin + i * 60)}
@@ -593,7 +593,7 @@ export function Calendar({
           {Array.from({ length: halfHourCount }, (_, i) => (
             <div
               key={i}
-              className={`pointer-events-none absolute right-0 border-t ${
+              className={`pointer-events-none absolute end-0 border-t ${
                 i % 2 ? 'border-stone-100 dark:border-stone-800' : 'border-stone-200 dark:border-stone-700'
               }`}
               style={{ top: i * 30 * PX_PER_MIN, left: GUTTER_W }}
@@ -621,16 +621,16 @@ export function Calendar({
               // clicks, and a screen reader gets it from the day's heading
               // rather than as a thing in the grid it could act on.
               aria-hidden
-              className="pointer-events-none absolute right-0 border-y border-stone-200/80 bg-stone-100/70 dark:border-stone-700/70 dark:bg-stone-800/50"
+              className="pointer-events-none absolute end-0 border-y border-stone-200/80 bg-stone-100/70 dark:border-stone-700/70 dark:bg-stone-800/50"
               style={{
                 top: (item.startMin - dayStartMin) * PX_PER_MIN,
                 height: (item.endMin - item.startMin) * PX_PER_MIN,
                 left: GUTTER_W,
               }}
             >
-              <span className="absolute left-2 top-0.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+              <span className="absolute start-2 top-0.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
                 {item.label}
-                <span className="ml-1.5 font-normal">
+                <span className="ms-1.5 font-normal">
                   {fmtMin(item.startMin)}–{fmtMin(item.endMin)}
                 </span>
               </span>
@@ -640,9 +640,9 @@ export function Calendar({
                   is repeated in the opposite corner. Only when the band is
                   tall enough that the two labels do not meet. */}
               {columns.length > 2 && (item.endMin - item.startMin) * PX_PER_MIN >= 44 && (
-                <span className="absolute bottom-0.5 right-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
+                <span className="absolute bottom-0.5 end-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
                   {item.label}
-                  <span className="ml-1.5 font-normal">
+                  <span className="ms-1.5 font-normal">
                     {fmtMin(item.startMin)}–{fmtMin(item.endMin)}
                   </span>
                 </span>
@@ -657,14 +657,14 @@ export function Calendar({
             <div
               key={`band-${session.id}`}
               aria-hidden
-              className="pointer-events-none absolute right-0 border-y border-amber-300/70 bg-amber-100/50 dark:border-amber-500/40 dark:bg-amber-500/10"
+              className="pointer-events-none absolute end-0 border-y border-amber-300/70 bg-amber-100/50 dark:border-amber-500/40 dark:bg-amber-500/10"
               style={{
                 top: (startMin - dayStartMin) * PX_PER_MIN,
                 height: durMin * PX_PER_MIN,
                 left: GUTTER_W,
               }}
             >
-              <span className="absolute right-1 top-0.5 text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
+              <span className="absolute end-1 top-0.5 text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
                 {session.title} — everyone should be here
               </span>
             </div>
@@ -672,10 +672,10 @@ export function Calendar({
 
           {showNow && (
             <div
-              className="pointer-events-none absolute left-0 right-0 z-10"
+              className="pointer-events-none absolute start-0 end-0 z-10"
               style={{ top: (nowMin - dayStartMin) * PX_PER_MIN }}
             >
-              <div className="h-0.5 w-full bg-accent" />
+              <div className="h-0.5 w-full bg-highlight" />
               <span
                 className="absolute -top-2.5 rounded-r bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-1.5 py-0.5 text-xs font-semibold text-white"
                 style={{ left: GUTTER_W }}
@@ -737,14 +737,14 @@ export function Calendar({
                     onOpen(session.id);
                   }
                 }}
-                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-left shadow-sm transition-shadow
+                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-start shadow-xs transition-shadow
                   ${session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'}
                   ${
                     highlighted
                       ? 'z-20 shadow-lg ring-2 ring-stone-900 dark:ring-stone-100'
                       : editable
                         ? 'cursor-grab ring-1 ring-stone-300 dark:ring-stone-600'
-                        : 'cursor-pointer hover:shadow'
+                        : 'cursor-pointer hover:shadow-sm'
                   }
                   ${active ? 'z-30 opacity-90 shadow-lg' : ''}
                   ${active?.pending ? 'cursor-progress' : ''}
@@ -768,7 +768,7 @@ export function Calendar({
                   {clash && (
                     <span
                       title="Overlaps another session in this room"
-                      className="ml-auto rounded bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
+                      className="ms-auto rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
                     >
                       clash
                     </span>
@@ -776,14 +776,14 @@ export function Calendar({
                   {competes && (
                     <span
                       title="Runs against a session everyone should be at"
-                      className={`${clash ? '' : 'ml-auto '}rounded bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300`}
+                      className={`${clash ? '' : 'ms-auto '}rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300`}
                     >
                       competing
                     </span>
                   )}
                   {live && (
                     <span
-                      className={`${clash || competes ? '' : 'ml-auto '}rounded bg-accent px-1 text-xs font-bold text-stone-900`}
+                      className={`${clash || competes ? '' : 'ms-auto '}rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900`}
                     >
                       now
                     </span>
@@ -828,7 +828,7 @@ export function Calendar({
                     count={starCount}
                     onToggle={onToggleStar ? () => onToggleStar(session) : undefined}
                     sessionTitle={session.title}
-                    className={`absolute bottom-0.5 right-1 rounded bg-white/90 pl-1 text-xs leading-none dark:bg-stone-900/90 ${
+                    className={`absolute bottom-0.5 end-1 rounded-sm bg-white/90 ps-1 text-xs leading-none dark:bg-stone-900/90 ${
                       onToggleStar ? '' : 'pointer-events-none'
                     }`}
                   />

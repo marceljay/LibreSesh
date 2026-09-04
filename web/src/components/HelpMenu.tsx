@@ -1,16 +1,17 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
 
 import { popoverPanelClass, usePopover } from './Popover';
-import { Modal, linkClass } from './ui';
+import { linkClass } from './ui';
 
 /** Where the code lives — the answer to "can I run this myself?", which is
  *  most of the point of it being open source. */
 const REPO_URL = 'https://github.com/marceljay/LibreSesh';
 
 const itemClass =
-  'block w-full px-3 py-2 text-left text-xs font-medium text-stone-700 ' +
-  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-none ' +
+  'block w-full px-3 py-2 text-start text-xs font-medium text-stone-700 ' +
+  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-hidden ' +
   'dark:text-stone-200 dark:hover:bg-stone-800 dark:focus-visible:bg-stone-800';
 
 /**

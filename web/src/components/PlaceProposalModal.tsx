@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import type { ProposalDto, RoomDto } from '@shared/types';
 import type { PlaceWrite } from '../lib/api';
@@ -10,16 +11,15 @@ import {
   SNAP_MINUTES,
   durationLabel,
 } from '@shared/sessionLimits';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   ControlShell,
   Field,
   FormError,
   FormGrid,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextInput,
-  selectClass,
 } from './ui';
 
 
@@ -89,27 +89,35 @@ export function PlaceProposalModal({
     >
       <FormGrid>
         <Field label="Room">
-          <select
-            value={roomId}
-            onChange={(e) => setRoomId(Number(e.target.value))}
-            className={selectClass}
-          >
-            {rooms.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-                {r.openBooking ? ' (open)' : ''}
-              </option>
-            ))}
-          </select>
+          <Select value={roomId} onValueChange={(v) => v != null && setRoomId(v)}>
+            <SelectTrigger aria-label="Room">
+              <SelectValue>
+                {(v: number | null) => rooms.find((r) => r.id === v)?.name ?? ''}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {rooms.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                  {r.openBooking ? ' (open)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="Day">
-          <select value={day} onChange={(e) => setDay(e.target.value)} className={selectClass}>
-            {days.map((d) => (
-              <option key={d} value={d}>
-                {dayLabels[d] ?? d}
-              </option>
-            ))}
-          </select>
+          <Select value={day} onValueChange={(v) => v != null && setDay(v)}>
+            <SelectTrigger aria-label="Day">
+              <SelectValue>{(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {days.map((d) => (
+                <SelectItem key={d} value={d}>
+                  {dayLabels[d] ?? d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </Field>
         <Field label="Start" hint="In 5-minute steps.">
           <ControlShell>
@@ -125,25 +133,35 @@ export function PlaceProposalModal({
             placed is a session, and two dialogs that disagree about how long
             one may run would be a bug found at the worst moment. */}
         <Field label="Duration">
-          <select
-            value={customDur ? 'other' : durMin}
-            onChange={(e) => {
-              if (e.target.value === 'other') {
+          <Select
+            value={customDur ? 'other' : String(durMin)}
+            onValueChange={(v) => {
+              if (v === 'other') {
                 setCustomDur(true);
                 return;
               }
-              setCustomDur(false);
-              setDurMin(Number(e.target.value));
+              if (v != null) {
+                setCustomDur(false);
+                setDurMin(Number(v));
+              }
             }}
-            className={selectClass}
           >
-            {DURATION_CHOICES.map((d) => (
-              <option key={d} value={d}>
-                {durationLabel(d)}
-              </option>
-            ))}
-            <option value="other">Other…</option>
-          </select>
+            <SelectTrigger aria-label="Duration">
+              <SelectValue>
+                {(v: string | null) =>
+                  v === 'other' ? 'Other…' : v == null ? '' : durationLabel(Number(v))
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {DURATION_CHOICES.map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {durationLabel(d)}
+                </SelectItem>
+              ))}
+              <SelectItem value="other">Other…</SelectItem>
+            </SelectContent>
+          </Select>
           {customDur && (
             <ControlShell className="mt-1.5">
               <TextInput
