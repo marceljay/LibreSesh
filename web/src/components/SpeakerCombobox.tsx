@@ -142,7 +142,7 @@ export function SpeakerCombobox({
         {value.map((choice, i) => (
           <span
             key={typeof choice === 'number' ? `p${choice}` : `n${choice}`}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-stone-100 py-1 pl-2.5 pr-1 text-xs font-medium dark:bg-stone-800"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-stone-100 py-1 ps-2.5 pe-1 text-xs font-medium dark:bg-stone-800"
           >
             {nameOf(choice)}
             {typeof choice === 'string' && (
@@ -213,7 +213,7 @@ export function SpeakerCombobox({
                 aria-selected={i === active}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(i)}
-                className={`flex w-full items-baseline gap-1.5 px-3 py-2 text-left text-xs font-medium text-stone-700 dark:text-stone-200 ${
+                className={`flex w-full items-baseline gap-1.5 px-3 py-2 text-start text-xs font-medium text-stone-700 dark:text-stone-200 ${
                   i === active ? 'bg-stone-100 dark:bg-stone-800' : ''
                 }`}
               >
@@ -239,7 +239,7 @@ export function SpeakerCombobox({
                 aria-selected={active === matches.length}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(matches.length)}
-                className={`block w-full px-3 py-2 text-left text-xs font-medium text-blue-700 dark:text-blue-400 ${
+                className={`block w-full px-3 py-2 text-start text-xs font-medium text-blue-700 dark:text-blue-400 ${
                   active === matches.length ? 'bg-stone-100 dark:bg-stone-800' : ''
                 }`}
               >

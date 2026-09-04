@@ -31,7 +31,7 @@ type FieldKey = 'displayName' | 'name' | 'bio' | 'links';
 
 // Same wrappers DetailSheet uses for session descriptions.
 const PROSE =
-  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2';
+  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ms-4 [&_li]:list-disc [&_p]:mb-2';
 
 /** A speaker or host profile with their sessions (follow-up to SPEC §4). */
 export function ProfilePage() {
@@ -360,7 +360,7 @@ export function ProfilePage() {
                     : `Archived ${new Date(person.archivedAt).toLocaleDateString()}. It is out of the People list and the speaker picker, and keeps its sessions, its role and its holder.`}
                 </span>
                 <PrimaryButton
-                  className="ml-auto py-1 text-xs"
+                  className="ms-auto py-1 text-xs"
                   onClick={() => void toggleArchive()}
                 >
                   {person.isMine ? 'I’m still here' : 'Take out of the archive'}
@@ -377,7 +377,7 @@ export function ProfilePage() {
                     You have asked to hold this profile. An organiser decides.
                   </span>
                   <SecondaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.withdrawClaim(slug, myClaim.id))}
                   >
                     Withdraw
@@ -389,7 +389,7 @@ export function ProfilePage() {
                     An organiser turned that request down.
                   </span>
                   <SecondaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.withdrawClaim(slug, myClaim.id))}
                   >
                     Dismiss
@@ -407,7 +407,7 @@ export function ProfilePage() {
                     Nobody holds this profile. If it is you, an organiser can hand it over.
                   </span>
                   <PrimaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.claimPerson(slug, person.id))}
                   >
                     This is me

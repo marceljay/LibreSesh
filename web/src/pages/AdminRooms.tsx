@@ -236,7 +236,7 @@ function RoomRow({
                 Cancel
               </SecondaryButton>
               <DangerButton
-                className="ml-auto"
+                className="ms-auto"
                 onClick={() => void onDelete(room)}
               >
                 Delete

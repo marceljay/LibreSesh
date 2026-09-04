@@ -100,7 +100,7 @@ function Entry({ entry }: { entry: AuditEntryDto }) {
       <time
         dateTime={entry.at}
         title={new Date(entry.at).toLocaleString()}
-        className="ml-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
+        className="ms-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
       >
         {relativeTime(entry.at)}
       </time>

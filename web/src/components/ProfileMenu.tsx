@@ -8,7 +8,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { RoleBadge, useToast } from './ui';
 
 const itemClass =
-  'block w-full px-3 py-2 text-left text-xs font-medium text-stone-700 ' +
+  'block w-full px-3 py-2 text-start text-xs font-medium text-stone-700 ' +
   'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-hidden disabled:opacity-40 ' +
   'dark:text-stone-200 dark:hover:bg-stone-800 dark:focus-visible:bg-stone-800';
 
@@ -141,7 +141,7 @@ export function ProfileMenu({
           role="menu"
           aria-label="Your account"
           onKeyDown={arrowKeys}
-          className="absolute right-0 z-40 mt-1 w-48 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="absolute end-0 z-40 mt-1 w-48 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           <div className="border-b border-stone-100 px-3 pb-2 pt-1 dark:border-stone-800">
             <p className="truncate text-xs font-semibold">{displayName}</p>

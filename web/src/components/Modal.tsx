@@ -42,7 +42,7 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
   /** The action bar. It does not scroll, so Save stays reachable from anywhere
-   *  in a long form. Right-aligned; give an item `mr-auto` to send it left, or
+   *  in a long form. Right-aligned; give an item `me-auto` to send it left, or
    *  `basis-full` to put it on its own line above the buttons. */
   footer?: ReactNode;
   /** Given, the dialog is a real `<form>`: Enter in a field submits it, and the
@@ -117,7 +117,7 @@ export function Modal({
                   type="button"
                   aria-label="Close"
                   title="Close"
-                  className="-mr-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+                  className="-me-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
                 >
                   <CloseIcon />
                 </Dialog.Close>

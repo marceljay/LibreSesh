@@ -1143,7 +1143,7 @@ export function SchedulePage() {
                   action row, where it belongs beside Add session. On a phone this
                   header had five controls competing for the width left over after
                   the event name. */}
-              <div className="ml-auto flex items-center justify-end gap-2">
+              <div className="ms-auto flex items-center justify-end gap-2">
                 <HelpMenu
                   onTour={() => setTourOpen(true)}
                   demo={me?.demoMode === true}
@@ -1203,11 +1203,11 @@ export function SchedulePage() {
                           }`}
                         >
                           Week {i + 1}
-                          <span className="ml-1.5 text-stone-400 dark:text-stone-500">
+                          <span className="ms-1.5 text-stone-400 dark:text-stone-500">
                             {dayRangeLabel(first, last)}
                           </span>
                           {holdsToday && !week.includes(day) && (
-                            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" />
+                            <span className="ms-1.5 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" />
                           )}
                         </button>
                       );
@@ -1315,7 +1315,7 @@ export function SchedulePage() {
                   Pitches
                   {bundle.proposals.filter((p) => p.placedSessionId === null).length >
                     0 && (
-                    <span className="ml-1 text-stone-400 dark:text-stone-500">
+                    <span className="ms-1 text-stone-400 dark:text-stone-500">
                       {bundle.proposals.filter((p) => p.placedSessionId === null)
                         .length}
                     </span>
@@ -1415,7 +1415,7 @@ export function SchedulePage() {
                   line of their own, because on a phone they do not fit beside the
                   search box. Living here also means they survive the fold — Arrange
                   is a thing you reach for mid-scroll, and it used to fold away. */}
-              <div className="flex basis-full items-center justify-end gap-2 sm:ml-auto sm:basis-auto">
+              <div className="flex basis-full items-center justify-end gap-2 sm:ms-auto sm:basis-auto">
                 {role === "admin" && (
                   <Link
                     data-tour="manage"
@@ -1652,7 +1652,7 @@ export function SchedulePage() {
                     <button
                       type="button"
                       onClick={() => openResult(session)}
-                      className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-left shadow-xs hover:shadow-sm"
+                      className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-start shadow-xs hover:shadow-sm"
                     >
                       <div className="truncate text-sm font-semibold">
                         {session.title}
@@ -1760,7 +1760,7 @@ export function SchedulePage() {
       )}
 
       {debugFold && (
-        <div className="pointer-events-none fixed bottom-2 left-2 right-2 z-50 rounded-lg bg-stone-900/90 px-2 py-1 font-mono text-[10px] leading-tight text-stone-100">
+        <div className="pointer-events-none fixed bottom-2 start-2 end-2 z-50 rounded-lg bg-stone-900/90 px-2 py-1 font-mono text-[10px] leading-tight text-stone-100">
           {view} · {foldStats || "no scroller yet"} · folded={String(folded)}{" "}
           auto={String(autoFolded)} mode={chromeMode}
         </div>
@@ -1778,7 +1778,7 @@ export function SchedulePage() {
           tabIndex={pastTop ? 0 : -1}
           aria-label="Back to the top of the day"
           title="Back to the top of the day"
-          className={`fixed right-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-lg transition-all duration-300 hover:border-stone-400 hover:text-stone-900 motion-reduce:transition-none dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100 ${
+          className={`fixed end-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-lg transition-all duration-300 hover:border-stone-400 hover:text-stone-900 motion-reduce:transition-none dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100 ${
             arrange ? "bottom-16" : "bottom-4"
           } ${
             pastTop
@@ -1791,7 +1791,7 @@ export function SchedulePage() {
       )}
 
       {arrange && (
-        <div className="fixed bottom-4 right-4 z-40 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs text-stone-600 dark:text-stone-300 shadow-sm">
+        <div className="fixed bottom-4 end-4 z-40 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs text-stone-600 dark:text-stone-300 shadow-sm">
           Drag sessions you may edit · snaps to 5 min
         </div>
       )}

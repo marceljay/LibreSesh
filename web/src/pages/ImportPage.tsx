@@ -323,7 +323,7 @@ function Rehearsal({ result }: { result: ImportResult }) {
             {plural(warnings.length, 'thing')} worth a second look — none of them stop the
             import:
           </p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-stone-600 dark:text-stone-300">
+          <ul className="mt-1.5 list-disc space-y-1 ps-4 text-xs text-stone-600 dark:text-stone-300">
             {warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}

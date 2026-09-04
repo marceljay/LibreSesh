@@ -267,7 +267,7 @@ function BreakEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>

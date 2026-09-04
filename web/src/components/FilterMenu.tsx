@@ -21,7 +21,7 @@ import { Chip } from './ui';
  *
  * Positioning is `usePopover`'s problem, not this file's: the panel is wider
  * than a phone and the button it hangs off is nowhere near the left edge, which
- * is exactly the combination the old `absolute left-0` got wrong.
+ * is exactly the combination the old `absolute start-0` got wrong.
  */
 export function FilterMenu({
   filters,
@@ -97,14 +97,14 @@ export function FilterMenu({
             className={`${popoverPanelClass} w-[22rem] p-3`}
           >
             <div className="relative">
-              <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+              <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
               {/* eslint-disable-next-line no-restricted-syntax -- compact filter box with a leading icon; folds into a ControlShell adornment in a later phase */}
               <input
                 value={filters.q}
                 onChange={(e) => filters.set({ q: e.target.value })}
                 placeholder="Filter by title, speaker…"
                 aria-label="Filter sessions by text"
-                className="w-full rounded-lg border border-stone-300 bg-white py-1.5 pl-8 pr-3 text-xs outline-hidden focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400"
+                className="w-full rounded-lg border border-stone-300 bg-white py-1.5 ps-8 pe-3 text-xs outline-hidden focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400"
               />
             </div>
             <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">

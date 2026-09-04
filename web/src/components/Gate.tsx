@@ -279,7 +279,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               {roles.map((r) => (
                 <SecondaryButton
                   key={r.role}
-                  className="flex w-full flex-col items-start gap-0.5 py-2.5 text-left"
+                  className="flex w-full flex-col items-start gap-0.5 py-2.5 text-start"
                   onClick={() => void enterAs(r.role)}
                   disabled={busy || nameMissing}
                 >

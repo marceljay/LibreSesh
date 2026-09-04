@@ -84,7 +84,7 @@ export function ProposalModal({
         <>
           {error && <FormError className="basis-full">{error}</FormError>}
           {onDelete && (
-            <DangerButton className="mr-auto" onClick={onDelete}>
+            <DangerButton className="me-auto" onClick={onDelete}>
               Withdraw
             </DangerButton>
           )}

@@ -74,14 +74,14 @@ export function SelectItem({
   return (
     <BaseSelect.Item
       className={cn(
-        'relative flex cursor-pointer select-none items-center rounded-md py-1.5 pl-2 pr-8 text-sm outline-hidden',
+        'relative flex cursor-pointer select-none items-center rounded-md py-1.5 ps-2 pe-8 text-sm outline-hidden',
         'data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         className,
       )}
       {...props}
     >
       <BaseSelect.ItemText>{children}</BaseSelect.ItemText>
-      <BaseSelect.ItemIndicator className="absolute right-2 flex items-center">
+      <BaseSelect.ItemIndicator className="absolute end-2 flex items-center">
         <Check className="h-4 w-4" />
       </BaseSelect.ItemIndicator>
     </BaseSelect.Item>

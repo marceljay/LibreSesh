@@ -39,7 +39,7 @@ export function EventListPage() {
         <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
           <Logo className="h-11 w-auto sm:h-14" />
         </Link>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <ThemeToggle />
           <Link
             to="/import"

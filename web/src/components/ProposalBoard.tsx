@@ -223,7 +223,7 @@ export function ProposalBoard() {
           </Link>
           <h1 className="text-lg font-semibold tracking-tight">Proposal pool</h1>
           {canPitch && (
-            <PrimaryButton className="ml-auto" onClick={() => setEditing({})}>
+            <PrimaryButton className="ms-auto" onClick={() => setEditing({})}>
               Pitch a session
             </PrimaryButton>
           )}
@@ -366,7 +366,7 @@ function ProposalCard({
 
       {description && (
         <div
-          className="prose-sm mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2"
+          className="prose-sm mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ms-4 [&_li]:list-disc [&_p]:mb-2"
           // Markdown is escaped before parsing, so no author markup survives.
           dangerouslySetInnerHTML={{ __html: description }}
         />

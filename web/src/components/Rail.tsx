@@ -78,8 +78,8 @@ export function Rail({
         onClick={() => nudge(side === 'back' ? -1 : 1)}
         className={`absolute inset-y-0 z-10 flex w-11 items-center transition-opacity duration-150 motion-reduce:transition-none ${
           side === 'back'
-            ? 'left-0 justify-start bg-linear-to-r pl-0.5'
-            : 'right-0 justify-end bg-linear-to-l pr-0.5'
+            ? 'start-0 justify-start bg-linear-to-r ps-0.5'
+            : 'end-0 justify-end bg-linear-to-l pe-0.5'
         } from-stone-50 via-stone-50/90 to-transparent text-stone-500 hover:text-stone-900 dark:from-stone-900 dark:via-stone-900/90 dark:text-stone-400 dark:hover:text-stone-100 ${
           more[side] ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}

@@ -140,7 +140,7 @@ export function SearchPage() {
                 <section key={date}>
                   <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                     {label.top} {label.sub}
-                    <span className="ml-1.5 font-normal normal-case tracking-normal">
+                    <span className="ms-1.5 font-normal normal-case tracking-normal">
                       · {sessions.length} result{sessions.length === 1 ? '' : 's'}
                     </span>
                   </h2>

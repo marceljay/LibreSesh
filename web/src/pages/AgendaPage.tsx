@@ -171,7 +171,7 @@ export function AgendaPage() {
             <a
               href={`/api/e/${encodeURIComponent(slug)}/calendar.ics?mine=1`}
               download
-              className="ml-auto rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+              className="ms-auto rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
             >
               Download as calendar
             </a>
@@ -237,7 +237,7 @@ export function AgendaPage() {
                           <button
                             type="button"
                             onClick={() => navigate(`/e/${slug}/s/${session.id}?day=${date}`)}
-                            className="min-w-0 flex-1 rounded-l-xl px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-stone-800/60"
+                            className="min-w-0 flex-1 rounded-s-xl px-3 py-2 text-start hover:bg-stone-50 dark:hover:bg-stone-800/60"
                           >
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
@@ -284,7 +284,7 @@ export function AgendaPage() {
                             onClick={() => void unstar(session)}
                             aria-label={`Remove ${session.title} from my agenda`}
                             title="Remove from my agenda"
-                            className="shrink-0 rounded-r-xl px-3 py-3 text-base leading-none text-amber-500 hover:bg-stone-50 hover:text-amber-600 dark:hover:bg-stone-800/60"
+                            className="shrink-0 rounded-e-xl px-3 py-3 text-base leading-none text-amber-500 hover:bg-stone-50 hover:text-amber-600 dark:hover:bg-stone-800/60"
                           >
                             ★
                           </button>

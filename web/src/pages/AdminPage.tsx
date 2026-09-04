@@ -214,7 +214,7 @@ function PersonActions({
     act();
   };
   const itemClass =
-    'flex w-full flex-col items-start rounded-lg px-2 py-1.5 text-left hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-stone-800';
+    'flex w-full flex-col items-start rounded-lg px-2 py-1.5 text-start hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-stone-800';
 
   return (
     <>
@@ -1436,7 +1436,7 @@ export function AdminPage() {
                       <span className="min-w-0 flex-1">
                         <span className="font-medium">@{claim.username}</span>
                         {claim.requesterUid != null && (
-                          <span className="ml-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
+                          <span className="ms-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
                             {claim.requesterUid.toUpperCase()}
                           </span>
                         )}
@@ -1498,7 +1498,7 @@ export function AdminPage() {
                 onChange={(e) => setPeopleQuery(e.target.value)}
                 aria-label="Search people"
                 placeholder="Name, @username or UID"
-                className="ml-auto w-32 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 sm:w-48 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+                className="ms-auto w-32 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 sm:w-48 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
               />
               <PeopleColumnsMenu columns={peopleColumns} />
             </div>
@@ -1550,7 +1550,7 @@ export function AdminPage() {
                     rather than a fact. "Edit" rather than "Actions" — it is
                     two characters cheaper in a column nine wide, and it is
                     what the menu is opened to do. */}
-                <span className={`${PEOPLE_COL.actions.className} text-right`}>Edit</span>
+                <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
               </div>
 
               <ul className="mb-4">
@@ -2145,7 +2145,7 @@ function FormatEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
@@ -2232,7 +2232,7 @@ function TagEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
@@ -2485,7 +2485,7 @@ function TrackEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>

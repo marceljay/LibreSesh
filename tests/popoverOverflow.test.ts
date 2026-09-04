@@ -47,7 +47,7 @@ const files = tsxFiles(WEB_SRC).map((path) => ({
 const HAND_POSITIONED = new Map([
   // Anchored to its own right edge and narrower than any phone, in a wrapper
   // that is already flush right in the header.
-  ['components/ProfileMenu.tsx', 'right-0 w-48'],
+  ['components/ProfileMenu.tsx', 'end-0 w-48'],
   // `w-full`: it is exactly as wide as the input it drops from, so it cannot
   // stick out any further than the field already does.
   ['components/SpeakerCombobox.tsx', 'w-full'],

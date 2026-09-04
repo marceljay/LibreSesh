@@ -319,7 +319,7 @@ export function SessionModal({
           {/* Delete sits at the far end from Save, so the two are never
               neighbours under the same thumb. */}
           {onDelete && (
-            <DangerButton className="mr-auto inline-flex items-center gap-1.5" onClick={onDelete}>
+            <DangerButton className="me-auto inline-flex items-center gap-1.5" onClick={onDelete}>
               <RemoveIcon className="h-3.5 w-3.5" />
               Delete
             </DangerButton>
@@ -396,7 +396,7 @@ export function SessionModal({
                 {PLACEMENTS.map((p) => (
                   <Chip key={p.value} active={type === p.value} onClick={() => setType(p.value)}>
                     {p.label}
-                    {p.note && <span className="ml-1 font-normal opacity-70">: {p.note}</span>}
+                    {p.note && <span className="ms-1 font-normal opacity-70">: {p.note}</span>}
                   </Chip>
                 ))}
                 <HelpButton
