@@ -3,45 +3,45 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## In Progress
 
 Working on `dev`; `main` is the released line and only takes merges.
-`dev` is ahead of `origin/dev` (unpushed as of 2026-09-03). Suite at
-**883**, lint clean, build clean.
+`dev` is ahead of `origin/dev` (unpushed as of 2026-09-04). Suite at
+**908**, lint clean, build clean.
 
-- **Linked sessions** landed on `dev`. A soft `series_id` (migration 017)
-  that lets an edit offer to apply to the rest without forcing it; content
-  propagates, never time; attendees can link their own same-named
-  sessions. Spec at `_planning/specs/linked-sessions.md`, written up in
-  ARCHITECTURE §Linked sessions and CHANGELOG `[Unreleased]`. Follow-up
-  from first testing (2026-09-03): the "Until"/weekday repeat row is back
-  on one line; the series controls moved from the top of the form into the
-  When-and-where **Series** field; and the client edit-permission rules
-  were extracted to `web/src/lib/sessionPerms.ts` and unit-tested (the
-  "attendee can edit anyone's session" report was a dev artifact — one
-  device keeps one identity across role switches). **What is left is the
-  browser pass.** Auto-detecting matches is now a Medium-Priority backlog
-  item, with tz-aware propagation and export/import.
+Linked sessions is done and off this list — it landed on `dev` (through
+`4f9afdb`), is written up in ARCHITECTURE §Linked sessions, CHANGELOG
+`[Unreleased]` and `_planning/specs/linked-sessions.md`, and all that is
+left of it is the browser pass now queued in **Awaiting your review**
+(R4–R6). Auto-detecting matches instead of an always-on link stayed a
+Medium-Priority backlog item.
 
 - **Form-layer overhaul** (`_planning/forms_overhaul_strategy.md`, an
-  external strategy brief; audit confirmed in
-  `_planning/forms-phase0-findings.md`, context in
-  `_planning/forms-overview.md`). Six phases, one PR each. **Phase 0**
-  (audit) and **Phase 1** are done: Phase 1 added the field primitives
-  — `Field` owning id/label-association/error, `ControlShell` owning
-  the border/height-floor/focus-ring/invalid, `TextInput` bare and
-  16px-on-mobile — proven by rebuilding `NumberField`, no call sites
-  converted. Landed on `dev` via PR #28 (`671c668`). **Next up: Phase 2**
-  — convert the `inputClass` call sites (`git grep inputClass` is the
-  worklist) and add the ESLint guardrails, *narrowed* per Phase 0 to
-  banning raw `<input>`/`<textarea>` outside `ui.tsx` and allowlisting
-  `<select>` (the plan's `<button>` ban is dropped — 82 legitimate raw
-  buttons across 24 files). Phase 3 tokens use **paired** contrast
-  values, not single (light needs ≥stone-500, dark needs ≤stone-400).
-  The **Forms backlog group** below is now governed by this brief;
-  "Expect someone" is its Phase 5 inline-create.
+  external strategy brief; audit in `_planning/forms-phase0-findings.md`,
+  context in `_planning/forms-overview.md`). Six phases, one commit each.
+  **Phases 0–3 are done.** Phase 1 added the field primitives (`Field`,
+  `ControlShell`, `TextInput`, proven on `NumberField`). **Phase 2**
+  (2026-09-04, `b13ca1a`+`f863275`+`eee9b3c`) converted every `inputClass`
+  call site — ~90 across 17 files — to `Field`+`ControlShell`+`TextInput`,
+  added `TextArea` and `selectClass`, made the text primitives `forwardRef`,
+  deleted `inputClass`, and added the ESLint guardrails (ban raw
+  `<input>`/`<textarea>` outside `ui.tsx`, allowlist `<select>`, block
+  re-declaring `inputClass`; the `<button>` ban dropped — 82 legit raw
+  buttons). Ten genuinely-raw inputs (color/checkbox/radio/file/search)
+  carry documented `eslint-disable`s. **Phase 3** (`a7c6ed7`) raised field
+  borders to `stone-500`, the error border to `red-500`, and hint/label text
+  to the paired `text-stone-500 dark:text-stone-400`, and put a real focus
+  ring on every field and button. A follow-up (`1c064ec`) fixed the "ugly
+  inner border": a field now **hides its own border on focus and shows one
+  flush ring** (an offset ring read as two concentric lines — worst on the
+  focused speaker/host field). *Deliberately skipped:* the blanket
+  `border-stone-300`/`text-stone-400` ESLint ban — it would flag dozens of
+  legitimately decorative uses; the must-read tokens are fixed.
+  **Next: Phase 4** (form semantics), then **Phase 5** (`SpeakerCombobox`
+  chips-in-shell + the "Expect someone" inline-create) and **Phase 6**. The
+  **Forms backlog group** below is governed by this brief.
 
 The pre-existing spec work still awaiting a browser pass:
 That whole spec
@@ -108,51 +108,88 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — the top three are this session's and take a minute each.
+Freshest first — the top two (R1–R2) are the forms overhaul and grid-block
+fix; R3–R5 the mentions, linked-sessions and clash work. Each takes a minute.
 
-1. **R1 · Star & ring on the grid.** Tap a session block's corner star: it
+1. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
+   (Add session, Manage Event → Settings). *Pass:* field borders read a touch
+   darker and even; **clicking into a field shows one clean focus ring, not a
+   doubled/inner border** — check the **speaker/host** field especially, in
+   **both themes**; a text field does **not** zoom the page on a phone; tabbing
+   to a button shows a focus ring; hint text under a field is legible; native
+   selects (day, duration) match the text fields.
+2. **R2 · Grid block padding.** On the calendar grid, a session block's tags sit
+   near the top edge and a short (15–20 min) block still shows its time row.
+   *Pass:* nothing is clipped at the bottom of a short block; tags aren't
+   floating with a gap above them.
+3. **R3 · Clickable authors & `@username` mentions in a comment.** Open a
+   session, post a comment that names someone with `@theirusername` (a real
+   username from the People tab). *Pass:* the `@name` renders as a blue link and
+   opens that person's profile; the comment's own author name (under the body)
+   also links to a profile; a plain `@notauser` and an email like `a@b.com` stay
+   as text, not links. Try a multi-word username if the event has one.
+4. **R4 · Link a recurring run as an attendee.** As a non-organiser, add a
+   session and set **Repeat** across several days with "keep linked" on. *Pass:*
+   the whole run lands on the grid without a reload; every occurrence is open;
+   a day that would clash or fall outside the window is refused with the day
+   named, not placed wrong. An organiser's run is unchanged (may be official,
+   may hold the floor).
+5. **R5 · Link after the fact, and the edit reach.** On a saved session,
+   *Link matching sessions…* lists your other same-titled runs (with select-all)
+   and links the ones you tick. Editing a linked session then offers *this only*
+   / *this and later* / *all in the series*. *Pass:* the default is this-only;
+   changing a description with *all* updates the rest but **never the time**; an
+   occurrence that isn't yours is skipped and reported ("applied to four of
+   five"); *Unlink this one* drops a session back out.
+6. **R6 · A clash narrows only the clashing sessions.** Put two sessions
+   overlapping in one room, with a third alone elsewhere in that room's column.
+   *Pass:* only the overlapping pair split into lanes; the lone 09:00 talk keeps
+   full width even though an unrelated 15:00 pair clashes (the `4f9afdb` fix).
+   While here, R6b: open a session from **search** and confirm the detail panel
+   now leads with the weekday and date, not just the time (`2c4a542`).
+7. **R7 · Star & ring on the grid.** Tap a session block's corner star: it
    should toggle without opening the sheet or dragging the block. Open a
    session: its block gains a ring. *Pass:* both work; the ring shows in both
    themes.
-2. **R2 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
+8. **R8 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
    shows its name+time bottom-right as well as top-left. *Pass:* both corners
    labelled, and a short break doesn't stack them on top of each other.
-3. **R3 · Placement row (phone).** Add session, narrow window. *Pass:* the
+9. **R9 · Placement row (phone).** Add session, narrow window. *Pass:* the
    "Non-official: allow parallel sessions" chip + "?" wrap to a second line
    instead of clipping off the edge.
-4. **R4 · People table.** *Pass:* headings line up with the rows; the active
-   sort column shows an arrow; the Columns button toggles UID / Last seen; on a
-   phone the table scrolls sideways rather than crushing the name; name and
-   username share the width.
-5. **R5 · Role tag & archiving.** Role is a coloured badge with a pencil,
-   opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
-   role column at the longest role word an event can set; both menus open over
-   the row (and the ⋯ menu flips *up* on the last row of a long list, not
-   off-screen); an archived profile shows its amber notice; re-entering the
-   event un-archives.
-6. **R6 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
-   empty username is refused with a message; a name matching an expected
-   profile asks "is that you?" and can claim it; an ordinary name enters.
-7. **R7 · Claim & queue.** The "This is me" button on an unclaimed profile, and
-   the approval queue above the People list. *Pass:* asking to be a profile
-   shows in the queue; approving hands it over. Also: the next-day button at the
-   end of a day's list, and several stream links on one session.
-8. **R8 · Top of the session form.** Format chips, then Placement, then the
-   title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
-   picking a format visibly moves the Duration select below it.
-9. **R9 · Speaker edits their own session** (the reported flow). As an attendee
-   credited on an official session. *Pass:* Edit appears; Room / Day / Start /
-   Duration are disabled under the grey notice; Delete is absent; saving a
-   changed description goes through.
-10. **R10 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
+10. **R10 · People table.** *Pass:* headings line up with the rows; the active
+    sort column shows an arrow; the Columns button toggles UID / Last seen; on a
+    phone the table scrolls sideways rather than crushing the name; name and
+    username share the width.
+11. **R11 · Role tag & archiving.** Role is a coloured badge with a pencil,
+    opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
+    role column at the longest role word an event can set; both menus open over
+    the row (and the ⋯ menu flips *up* on the last row of a long list, not
+    off-screen); an archived profile shows its amber notice; re-entering the
+    event un-archives.
+12. **R12 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
+    empty username is refused with a message; a name matching an expected
+    profile asks "is that you?" and can claim it; an ordinary name enters.
+13. **R13 · Claim & queue.** The "This is me" button on an unclaimed profile, and
+    the approval queue above the People list. *Pass:* asking to be a profile
+    shows in the queue; approving hands it over. Also: the next-day button at the
+    end of a day's list, and several stream links on one session.
+14. **R14 · Top of the session form.** Format chips, then Placement, then the
+    title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
+    picking a format visibly moves the Duration select below it.
+15. **R15 · Speaker edits their own session** (the reported flow). As an attendee
+    credited on an official session. *Pass:* Edit appears; Room / Day / Start /
+    Duration are disabled under the grey notice; Delete is absent; saving a
+    changed description goes through.
+16. **R16 · Duration `Other…`.** *Pass:* a typed 40 is accepted; the
     "· 1 h 30 min" echo appears past an hour; editing an off-list session opens
     straight into the field, not a preset it doesn't have.
-11. **R11 · Official badge & Formats.** With the badge off (default) the grid
+17. **R17 · Official badge & Formats.** With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
     Programme, the Formats suggestion chips (dashed row) and the "no formats
     yet" empty state render.
-12. **R12 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
+18. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
 
@@ -184,58 +221,6 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
-
-- **Publishing a session: a link that works without the gate.** Every read
-  under `/api/e/:slug` sits behind `event.use(requireRole(db, 'viewer'))`
-  (`server/src/app.ts:69`), so today there is no way to show one session to
-  someone who has not been given a password. Sharing a session means sharing
-  the event, and the only link that exists — the invite QR — hands over a
-  role, which is the opposite of what "here is the talk I am giving" wants.
-
-  There is one precedent for reading before the gate and it is worth copying
-  the shape of, not the substance: `calendarRoutes` is mounted _above_ the
-  role check (`app.ts:66`, route at `routes/agenda.ts:71`) and authenticates
-  by `identities.ics_token` in `?token=` instead of a cookie. It still
-  refuses unless that token's owner holds a role, so it is not public — a
-  published session would be the first genuinely unauthenticated read in the
-  app, and the first place a wrong decision leaks a real event.
-
-  **Decided 2026-09-02: the snapshot.** Publishing copies the session into a
-  table nothing else joins to, and the public route reads only that table.
-  Nothing private can leak by omission, because nothing private is in there —
-  which is the property worth paying for on the app's first unauthenticated
-  read. The costs are known and accepted: a re-publish after every edit (an
-  "update the public copy" button, or a republish on save), and a second place
-  a session's text lives. The rejected alternative is kept here because it is
-  the one to revisit if the re-publish step turns out to annoy people more
-  than the safety is worth.
-
-  Two shapes were on the table. **Live, flagged**: a `published_at` on `sessions`, plus a route above
-  the gate that reads the row now and strips what must not travel. Edits show
-  up immediately; the stripping is a filter that has to stay correct as
-  `SessionDto` grows. **Snapshot, copied**: publishing writes a frozen row
-  into a table nothing else joins to — the "unprotected DB area" — and the
-  public route reads only that table. Nothing private can leak by omission
-  because nothing private is in there, at the cost of a re-publish after
-  every edit and a second place a session's text lives.
-
-  What must not travel, either way: contributions are this app's comments —
-  `ContributionDto` (`shared/types.ts:273`) carries `kind` (`note` / `link` /
-  `question`), a `body`, `createdBy`, `createdByName` and a `hidden` flag —
-  and none of them go on a public page. Nor do stars, agendas, `createdBy` /
-  `createdByName` on the session itself, or anything about who is in the
-  room. Speakers are the exception a programme exists to show, but a
-  `PersonRef` leads to a profile carrying a bio, links and a claim state, so
-  decide what a public page renders for a speaker rather than linking to the
-  profile page and finding out. Anonymised contributions are a later
-  question, not this one.
-
-  Also to settle: who may publish (organiser only, or a speaker for their own
-  session), whether unpublishing is real revocation or only a hidden link,
-  whether the URL is guessable (`/s/:id`) or a capability (a random token
-  like the ics one), and what an unpublished-but-linked page says. And the
-  event's own visibility bounds it — a session inside an archived event
-  should not stay readable because a link was minted once.
 
 - **The format exists; three places still do not use it.** Landed 2026-09-02
   (migrations 014 and 015, `session_formats`): defined per event in Manage
@@ -276,46 +261,38 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentioning a person, and somewhere for a mention to land.** Nothing in the
-  app addresses anyone. A `@name` typed into a description, a contribution, a
-  pitch or a bio is plain text that renders as plain text, so the way to tell
-  a co-host their room moved is to find them in the hallway. Two halves, and
-  the second is the larger one: resolving `@name`, and having a place a
-  resolved mention shows up.
+- **Mentioning a person: the delivery half.** The **first cut landed
+  2026-09-04** (CHANGELOG `[Unreleased]`) — a comment's author links to their
+  profile, and `@username` in a comment body links too, via a shared tokenizer
+  (`shared/mentions.ts`, `web/src/components/MentionText.tsx`). It resolves but
+  does not yet *deliver*: a mention links, it does not land anywhere that
+  survives a closed tab. Full design in
+  `_planning/specs/mentions-and-notifications.md`.
 
-  Resolution is the cheap half and the app is already shaped for it. Display
-  names are unique per event (migration 009) and `people` rows are per event
-  (010), so `@ada` means exactly one person inside one event and means
-  nothing outside it — no global user table to consult, no ambiguity to
-  disambiguate. `NameResolver` (`server/src/eventIdentity.ts`) already turns
-  an identity into the name to show. Mentions belong in the same shared
-  renderer the links went into (`shared/links.ts`), so a mention written in a
-  bio and one written in a session description cannot disagree about what
-  parses — and so the parse happens once, on the server, rather than in each
-  of the four places markdown is rendered.
+  What is left is everything that makes a mention arrive. There is no
+  notification concept at all: `sse.ts` is an in-process broker per event slug
+  that carries schedule changes to open tabs — the right transport, not the
+  storage. That wants a `notifications` table (recipient, event, source,
+  read-at), a header panel with an unread count, and answers to the questions
+  such a table raises: what else creates one besides a mention (being added as
+  a speaker, a starred session moving, a pitch of yours scheduled), whether
+  anything leaves by mail (nothing does today, and adding it changes what this
+  project stores about people), and pruning (`pruneAudit` is the precedent).
+  When delivery lands the parse moves server-side (the tokenizer is written to
+  run there too), so the stored mention and the rendered link cannot disagree.
 
-  Delivery is the half with nothing built. There is no notification concept
-  at all: `sse.ts` is an in-process broker per event slug that carries
-  schedule changes to open tabs, which is the right transport and not the
-  storage — a mention has to survive a closed tab. That wants a
-  `notifications` table (recipient, event, source, read-at), a panel in the
-  header with an unread count, and answers to the questions such a table
-  always raises: what else creates one besides a mention (being added as a
-  speaker, a session you starred moving, a pitch of yours scheduled), whether
-  anything leaves the app by mail (nothing does today, and adding it changes
-  what this project stores about people), and pruning, since `pruneAudit`
-  already exists as the precedent for a table that would otherwise grow
-  forever.
-
-  Two edges that are specific to this app, and both are the reason to design
-  before building. **Merging**: identities merge (`mergePeople.ts`) and
-  profiles archive (migration 013), so notifications must follow a person
-  through a merge the way authorship does, or an organiser tidying up
-  duplicates silently deletes someone's inbox. **Unclaimed profiles**: an
-  organiser can type a speaker's name onto a session before that person ever
-  arrives, so a mention can be addressed to a profile with no identity behind
-  it. It should wait and be delivered on adoption (`adoptProfile` in
-  `people.ts`), not be dropped for having nowhere to go.
+  Two edges specific to this app, both the reason to design before building.
+  **Merging**: identities merge (`mergePeople.ts`) and profiles archive
+  (migration 013), so notifications must follow a person through a merge the
+  way authorship does, or an organiser tidying duplicates silently deletes
+  someone's inbox. **Unclaimed profiles**: an organiser can type a speaker's
+  name onto a session before that person arrives, so a mention can be addressed
+  to a profile with no identity behind it — it should wait and be delivered on
+  adoption (`adoptProfile` in `people.ts`), not be dropped. (The first cut
+  resolves by username only, so an unclaimed profile is not yet a mention
+  target; that arrives with delivery.) Extending mentions from comments to
+  descriptions, bios and pitches — which render through `renderMarkdown` — is a
+  separate step queued behind this.
 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** Noticed 2026-09-02 when a `git add -A` swept
@@ -650,6 +627,18 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   cost something, which is why this is a real backlog item and not a fire.
 
 ## Medium Priority
+
+- **Publishing a session: a link that works without the gate.** A published
+  session would be the app's first genuinely unauthenticated read — sharing one
+  talk without sharing the event or handing over a role. No commit yet. Design
+  is done and lives in `_planning/specs/publishing-a-session.md`: the **snapshot**
+  approach (decided 2026-09-02 — copy the session into a table nothing else joins
+  to, and read only that, so nothing private can leak by omission), what must not
+  travel (contributions, stars, agendas, authorship, and a speaker's full
+  profile), and the open questions (who may publish, real revocation vs. hidden
+  link, guessable URL vs. capability token, archived-event bounds). Moved down
+  from High on 2026-09-04: worth doing, but nothing is blocked on it and it wants
+  its questions answered before code.
 
 - **Linked sessions: auto-detect matches instead of an always-on link.** Today
   the session editor shows "Link matching sessions…" on every saved session,

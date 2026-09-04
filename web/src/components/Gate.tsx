@@ -3,7 +3,7 @@ import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
 import { takeInvite } from '../lib/inviteLink';
 import { useMe } from '../lib/useMe';
-import { Field, PrimaryButton, RoleBadge, SecondaryButton, inputClass, linkClass } from './ui';
+import { ControlShell, Field, PrimaryButton, RoleBadge, SecondaryButton, TextInput, linkClass } from './ui';
 
 export interface GateProps {
   slug: string;
@@ -213,15 +213,16 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       label="Username"
       hint="What you'll be called in this event — unique here, remembered on this device. No account, no password."
     >
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={40}
-        required
-        aria-required="true"
-        placeholder="e.g. ada"
-        className={inputClass}
-      />
+      <ControlShell>
+        <TextInput
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={40}
+          required
+          aria-required="true"
+          placeholder="e.g. ada"
+        />
+      </ControlShell>
     </Field>
   );
 
@@ -352,15 +353,16 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
         <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">This schedule needs the event password.</p>
 
         <Field label="Event password">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void submit()}
-            placeholder="••••••••"
-            autoFocus
-            className={`${inputClass} ${error ? 'border-red-400' : ''}`}
-          />
+          <ControlShell invalid={Boolean(error)}>
+            <TextInput
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void submit()}
+              placeholder="••••••••"
+              autoFocus
+            />
+          </ControlShell>
         </Field>
         {error && !linkMode && (
           <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
@@ -398,16 +400,17 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
                 label="Link phrase"
                 hint="From “Link another device” in the menu behind your name on your other device — or the speaker phrase an organiser gave you."
               >
-                <input
-                  value={phrase}
-                  onChange={(e) => setPhrase(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void link()}
-                  placeholder="house-dog-erratic"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  className={inputClass}
-                />
+                <ControlShell>
+                  <TextInput
+                    value={phrase}
+                    onChange={(e) => setPhrase(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void link()}
+                    placeholder="house-dog-erratic"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                </ControlShell>
               </Field>
               {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
               <PrimaryButton

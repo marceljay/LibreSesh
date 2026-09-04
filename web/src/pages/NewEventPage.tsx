@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { GeneratedPasswords } from '../../../server/src/shared/types';
-import { Field, FormGrid, FormStack, PrimaryButton, inputClass } from '../components/ui';
+import { ControlShell, Field, FormGrid, FormStack, PrimaryButton, TextInput } from '../components/ui';
 import { useToast } from '../components/ui';
 
 const browserTimezone = (): string => {
@@ -134,61 +134,67 @@ export function NewEventPage() {
           label="Instance password"
           hint="Set by whoever runs this server, shared by everyone allowed to create events here. It is not one of your event’s passwords and grants nothing inside an event — if you don’t have it, ask the person hosting this instance."
         >
-          <input
-            type="password"
-            value={instanceKey}
-            onChange={(e) => setInstanceKey(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              type="password"
+              value={instanceKey}
+              onChange={(e) => setInstanceKey(e.target.value)}
+            />
+          </ControlShell>
         </Field>
 
         <Field label="Event name">
-          <input
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (!slug) setSlug('');
-            }}
-            maxLength={120}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!slug) setSlug('');
+              }}
+              maxLength={120}
+            />
+          </ControlShell>
         </Field>
         <Field label="Slug" hint={`Used in the URL: /e/${slug || slugify(name) || 'your-event'}`}>
-          <input
-            value={slug}
-            onChange={(e) => setSlug(slugify(e.target.value))}
-            placeholder={slugify(name) || 'your-event'}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={slug}
+              onChange={(e) => setSlug(slugify(e.target.value))}
+              placeholder={slugify(name) || 'your-event'}
+            />
+          </ControlShell>
         </Field>
         <Field label="Timezone" hint="IANA name, e.g. Europe/Berlin.">
-          <input
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+            />
+          </ControlShell>
         </Field>
 
         <FormGrid>
           <Field label="Start date">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                if (endDate < e.target.value) setEndDate(e.target.value);
-              }}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (endDate < e.target.value) setEndDate(e.target.value);
+                }}
+              />
+            </ControlShell>
           </Field>
           <Field label="End date">
-            <input
-              type="date"
-              value={endDate}
-              min={startDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </ControlShell>
           </Field>
         </FormGrid>
 
@@ -196,12 +202,13 @@ export function NewEventPage() {
           label="What you call your participants"
           hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
         >
-          <input
-            value={userRoleLabel}
-            onChange={(e) => setUserRoleLabel(e.target.value)}
-            maxLength={24}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={userRoleLabel}
+              onChange={(e) => setUserRoleLabel(e.target.value)}
+              maxLength={24}
+            />
+          </ControlShell>
         </Field>
 
         <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
@@ -212,28 +219,31 @@ export function NewEventPage() {
           screen. All three must differ — they are what tell the roles apart.
         </p>
         <Field label="Viewer — read the schedule" hint="Optional — blank generates one.">
-          <input
-            value={viewerPassword}
-            onChange={(e) => setViewerPassword(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={viewerPassword}
+              onChange={(e) => setViewerPassword(e.target.value)}
+            />
+          </ControlShell>
         </Field>
         <Field
           label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and propose sessions`}
           hint="Optional — blank generates one."
         >
-          <input
-            value={userPassword}
-            onChange={(e) => setUserPassword(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={userPassword}
+              onChange={(e) => setUserPassword(e.target.value)}
+            />
+          </ControlShell>
         </Field>
         <Field label="Admin — full control" hint="Optional — blank generates one.">
-          <input
-            value={adminPassword}
-            onChange={(e) => setAdminPassword(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={adminPassword}
+              onChange={(e) => setAdminPassword(e.target.value)}
+            />
+          </ControlShell>
         </Field>
         </FormStack>
 

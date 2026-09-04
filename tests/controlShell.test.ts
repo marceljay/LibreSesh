@@ -45,24 +45,31 @@ describe('Field owns the id and the label points at it', () => {
 
 describe('ControlShell is the only field border', () => {
   it('owns border, a height floor, focus-within ring and invalid state', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export function TextInput'));
+    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
     expect(shell).toContain('min-h-[2.375rem]');
     expect(shell).toContain('flex-wrap'); // chips and adornments sit inside the border
-    expect(shell).toContain('focus-within:ring-2');
+    expect(shell).toContain('fieldFocusRing'); // the shared ring token, applied here
     // Invalid comes from the Field unless the caller overrides it.
     expect(shell).toContain('invalid ?? ctx?.invalid ?? false');
-    expect(shell).toContain("'border-red-400 dark:border-red-700'");
+    // Phase 3 contrast: the border clears 3:1 in both themes and the error
+    // state is red-500 (red-400 failed light at 2.77:1).
+    expect(shell).toContain('border-stone-500');
+    expect(shell).toContain("'border-red-500 dark:border-red-500'");
+    // On focus the field hides its own border and shows one flush ring in its
+    // place, so border + ring never read as two concentric lines.
+    expect(ui).toContain('focus-within:ring-2');
+    expect(ui).toContain('focus-within:border-transparent');
   });
 
   it('focuses its input when its own padding is clicked', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export function TextInput'));
+    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
     expect(shell).toContain('if (e.target !== ref.current) return;');
     expect(shell).toMatch(/querySelector<HTMLElement>\(\s*'input, textarea, select/);
   });
 });
 
 describe('TextInput is bare and wired from context', () => {
-  const input = ui.slice(ui.indexOf('export function TextInput'), ui.indexOf('export function ControlAdornment'));
+  const input = ui.slice(ui.indexOf('export const TextInput'), ui.indexOf('export const TextArea'));
 
   it('takes its id and aria wiring from the Field, not the call site', () => {
     expect(input).toContain('id={props.id ?? ctx?.id}');
@@ -75,6 +82,36 @@ describe('TextInput is bare and wired from context', () => {
     expect(input).toContain('sm:text-sm');
     // The bare input draws no border or background of its own — the shell does.
     expect(input).toContain('bg-transparent');
+  });
+
+  it('opts out of the global :focus-visible ring, so it draws no ring inside the shell', () => {
+    // index.css rings every :focus-visible element; on the wrapped input that
+    // ring lands *inside* the shell — the "ugly inner border". The input must
+    // suppress it and let the shell (focus-within) carry the ring instead. This
+    // is the guard that keeps the inner border from coming back.
+    const css = readFileSync(join(import.meta.dirname, '..', 'web', 'src', 'index.css'), 'utf8');
+    expect(css).toMatch(/:focus-visible\s*\{[^}]*ring-2/); // the global ring still exists
+    expect(input).toContain('focus-visible:ring-0');
+  });
+
+  it('forwards a ref, so a call site can select or focus the node', () => {
+    expect(input).toContain('forwardRef');
+    expect(input).toContain('ref={ref}');
+  });
+});
+
+describe('TextArea owns its own border', () => {
+  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export const selectClass'));
+
+  it('is a multi-line field wired from context, unlike TextInput it is not shell-bound', () => {
+    expect(area).toContain('<textarea');
+    expect(area).toContain('id={props.id ?? ctx?.id}');
+    expect(area).toContain('rounded-lg border'); // draws its own border, no ControlShell
+  });
+
+  it('carries the same 16px-on-mobile fix', () => {
+    expect(area).toContain('text-base');
+    expect(area).toContain('sm:text-sm');
   });
 });
 
@@ -101,10 +138,12 @@ describe('NumberField is the proof, rebuilt on the primitives', () => {
   });
 });
 
-describe('the old skin is deprecated, not yet gone', () => {
-  it('marks inputClass deprecated and points at the replacement', () => {
-    expect(ui).toContain('@deprecated Use `ControlShell` + `TextInput`');
-    // Still exported — Phase 2 converts the call sites before it is removed.
-    expect(ui).toContain('export const inputClass =');
+describe('the old skin is gone', () => {
+  it('has deleted inputClass now that Phase 2 converted every call site', () => {
+    expect(ui).not.toContain('inputClass');
+  });
+
+  it('keeps selectClass for the native selects Phase 0 left native', () => {
+    expect(ui).toContain('export const selectClass =');
   });
 });

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { ApiError, api } from '../lib/api';
 import {
+  ControlShell,
   Field,
   FormStack,
   PrimaryButton,
   Section,
-  inputClass,
+  TextInput,
   secondaryButtonClass,
   useToast,
 } from '../components/ui';
@@ -87,34 +88,37 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
 
         <FormStack>
           <Field label="Instance password">
-            <input
-              type="password"
-              autoComplete="off"
-              value={instanceKey}
-              onChange={(e) => setInstanceKey(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="password"
+                autoComplete="off"
+                value={instanceKey}
+                onChange={(e) => setInstanceKey(e.target.value)}
+              />
+            </ControlShell>
           </Field>
           <Field
             label="Backup passphrase"
             hint="At least 12 characters. Nothing on earth rate-limits guesses against a file, so make it long."
           >
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={passphrase}
-              onChange={(e) => setPassphrase(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="password"
+                autoComplete="new-password"
+                value={passphrase}
+                onChange={(e) => setPassphrase(e.target.value)}
+              />
+            </ControlShell>
           </Field>
           <Field label="Repeat the passphrase">
-            <input
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="password"
+                autoComplete="new-password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
+            </ControlShell>
           </Field>
           {confirm.length > 0 && passphrase !== confirm && (
             <p className="text-xs text-red-600 dark:text-red-400">

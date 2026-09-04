@@ -4,6 +4,7 @@ import type {
   ContributionDto,
   ContributionKind,
   Me,
+  PersonDto,
   RoomDto,
   Role,
   SessionDto,
@@ -13,8 +14,9 @@ import type {
 import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
+import { MentionText, PersonLink, personByUsername } from './MentionText';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
-import { IconButton, PrimaryButton, SecondaryButton, inputClass } from './ui';
+import { ControlShell, IconButton, PrimaryButton, SecondaryButton, TextArea, TextInput } from './ui';
 
 const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
@@ -42,6 +44,9 @@ export interface SessionDetailProps {
   tags: TagDto[];
   /** Every format the event defines, to name the one this session wears. */
   formats: FormatDto[];
+  /** Everyone in the event, so a comment author and an `@username` mention can
+   *  each link to a profile. */
+  people: PersonDto[];
   contributions: ContributionDto[] | undefined;
   role: Role;
   me: Me | null;
@@ -78,6 +83,7 @@ export function SessionDetail({
   rooms,
   tags,
   formats,
+  people,
   contributions,
   role,
   me,
@@ -377,12 +383,15 @@ export function SessionDetail({
                       </a>
                     ) : (
                       <span className="whitespace-pre-wrap text-stone-800 dark:text-stone-200">
-                        {c.body}
+                        <MentionText slug={slug} people={people} text={c.body} />
                       </span>
                     )}
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
                       <span className="truncate">
-                        {c.createdByName} · {relativeTime(c.createdAt)}
+                        <PersonLink slug={slug} person={personByUsername(people, c.createdByName)}>
+                          {c.createdByName}
+                        </PersonLink>{' '}
+                        · {relativeTime(c.createdAt)}
                         {c.hidden && ' · hidden'}
                       </span>
                       {/* Icon buttons rather than the underlined words these
@@ -453,22 +462,23 @@ export function SessionDetail({
           </button>
         ))}
       </div>
-      <textarea
+      <TextArea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={page ? 4 : 2}
         maxLength={2000}
         placeholder={kind === 'link' ? 'Link label' : `Add a ${kind}…`}
-        className={`${inputClass} resize-none`}
+        className="resize-none"
       />
       {kind === 'link' && (
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
-          inputMode="url"
-          className={`${inputClass} mt-1.5`}
-        />
+        <ControlShell className="mt-1.5">
+          <TextInput
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://…"
+            inputMode="url"
+          />
+        </ControlShell>
       )}
       <PrimaryButton
         className="mt-2 w-full py-1.5"

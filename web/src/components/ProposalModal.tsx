@@ -4,6 +4,7 @@ import type { ProposalWrite } from '../lib/api';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
 import {
   Chip,
+  ControlShell,
   DangerButton,
   Field,
   FormError,
@@ -11,7 +12,8 @@ import {
   Modal,
   PrimaryButton,
   SecondaryButton,
-  inputClass,
+  TextArea,
+  TextInput,
 } from './ui';
 
 export interface ProposalModalProps {
@@ -95,13 +97,14 @@ export function ProposalModal({
     >
       <FormStack>
       <Field label="Title">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={120}
-          className={inputClass}
-          autoFocus
-        />
+        <ControlShell>
+          <TextInput
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={120}
+            autoFocus
+          />
+        </ControlShell>
       </Field>
       <Field label="Speaker or host">
         <SpeakerCombobox
@@ -114,12 +117,12 @@ export function ProposalModal({
         />
       </Field>
       <Field label="Description" hint="Markdown is supported.">
-        <textarea
+        <TextArea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           maxLength={5000}
-          className={`${inputClass} resize-none`}
+          className="resize-none"
         />
       </Field>
 

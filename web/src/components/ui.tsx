@@ -1,5 +1,6 @@
 import {
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -30,15 +31,26 @@ import { CloseIcon } from './icons';
 export const controlHeightClass = 'h-[2.375rem]';
 
 /**
- * @deprecated Use `ControlShell` + `TextInput`. This is the old skin — the
- * input *is* the field, so anything belonging in the field renders outside its
- * border, and at 14px it triggers the iOS focus-zoom. Kept only while Phase 2
- * converts the call sites; `git grep inputClass` is that worklist, and an
- * ESLint rule bans the string once the last one is gone.
+ * Field focus. There is already a global focus ring in `index.css`
+ * (`:focus-visible` → an offset ring on *everything* a keyboard reaches), and
+ * that is the ring buttons, links and bare controls use — nothing here re-adds
+ * one. A field needs its own handling for two reasons the global rule cannot
+ * cover on its own:
+ *
+ * 1. A `ControlShell` wraps its `<input>`. The global ring lands on the inner
+ *    input, drawing a ring *inside* the shell — the "ugly inner border". So the
+ *    input opts out of the global ring (see `TextInput`) and the **shell** takes
+ *    a ring instead, via `focus-within`, so it wraps the whole control.
+ * 2. A field already has a 1px border, and an *offset* ring a gap away from that
+ *    border reads as a second concentric line. So a focused field hides its own
+ *    border and shows one flush ring in its place — a single, thicker line.
+ *
+ * `TextArea` and `select` are not wrapped, so the global ring lands on them
+ * correctly; they only override it to flush (no offset) and hide their border,
+ * matching the shell. Keep all three in step.
  */
-export const inputClass =
-  'w-full rounded-lg border border-stone-300 bg-white dark:bg-stone-900 px-3 py-2 text-sm outline-none ' +
-  'focus:border-stone-500 dark:border-stone-600 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus:border-stone-400';
+const fieldFocusRing =
+  'focus-within:border-transparent focus-within:ring-2 focus-within:ring-stone-500 dark:focus-within:ring-stone-400';
 
 /**
  * What a `Field` tells the control inside it: the id its label points at, the
@@ -107,7 +119,7 @@ export function Field({
         </label>
         {children}
         {hint && (
-          <p id={hintId} className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+          <p id={hintId} className="mt-1 text-xs text-stone-500 dark:text-stone-400">
             {hint}
           </p>
         )}
@@ -178,10 +190,10 @@ export function ControlShell({
           field.focus();
         }
       }}
-      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 transition-colors focus-within:ring-2 focus-within:ring-stone-500 dark:bg-stone-900 dark:focus-within:ring-stone-400 ${
+      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 transition-colors ${fieldFocusRing} dark:bg-stone-900 ${
         isInvalid
-          ? 'border-red-400 dark:border-red-700'
-          : 'border-stone-300 focus-within:border-stone-500 dark:border-stone-600 dark:focus-within:border-stone-400'
+          ? 'border-red-500 dark:border-red-500'
+          : 'border-stone-500 dark:border-stone-500'
       } ${disabled ? 'opacity-60' : ''} ${className}`}
     >
       {children}
@@ -200,22 +212,73 @@ export function ControlShell({
  * viewport when a field below 16px takes focus and does not zoom back out —
  * every text field in the app has had that bug. 14px returns above `sm`, where
  * there is no such behaviour and the denser size reads better.
+ *
+ * `focus-visible:ring-0`: the input opts out of the global `:focus-visible` ring
+ * (`index.css`). Without this it draws that ring *inside* the shell — the "ugly
+ * inner border". Focus is shown on the shell instead (`ControlShell`'s
+ * `focus-within` ring), so the whole field rings, not the input within it.
  */
-export function TextInput({
-  className = '',
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
+export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function TextInput({ className = '', ...props }, ref) {
+    const ctx = useFieldContext();
+    return (
+      <input
+        ref={ref}
+        id={props.id ?? ctx?.id}
+        aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
+        aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
+        {...props}
+        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+      />
+    );
+  },
+);
+
+/**
+ * The multi-line sibling of `TextInput`. Unlike `TextInput` it owns its own
+ * border rather than living inside a `ControlShell`: a textarea never holds
+ * chips or adornments, which is the whole reason `ControlShell` exists, so
+ * wrapping one buys nothing and fights the flex layout. It still reads
+ * `FieldContext` for `id`/`aria-invalid`/`aria-describedby` and carries the
+ * same 16px-on-mobile fix, so a `Field` + `TextArea` is wired up with none of
+ * it at the call site.
+ *
+ * Border and focus tokens are kept in step with `ControlShell` by hand; the
+ * Phase 3 contrast pass changes both together (and the `border-stone-300` ban
+ * lands only after it).
+ */
+export const TextArea = forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function TextArea({ className = '', ...props }, ref) {
   const ctx = useFieldContext();
+  const invalid = props['aria-invalid'] ?? ctx?.invalid;
   return (
-    <input
+    <textarea
+      ref={ref}
       id={props.id ?? ctx?.id}
-      aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
+      aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
+        invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
+      } ${className}`}
     />
   );
-}
+});
+
+/**
+ * The class for a native `<select>`. Native selects stay native — the plan
+ * allowlists the element rather than wrapping it, because a native select is
+ * the accessible default and holds nothing a `ControlShell` would carry. This
+ * gives them the field's border, height and focus ring so they read as siblings
+ * of the text fields, and is what a native select wears now that the old field
+ * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
+ */
+export const selectClass =
+  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-none transition-colors ` +
+  'focus:border-transparent focus:ring-2 focus:ring-stone-500 focus:ring-offset-0 sm:text-sm ' +
+  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole
@@ -797,7 +860,7 @@ export function FieldGroup({
   return (
     <section className={className}>
       {title && (
-        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
           {title}
         </h3>
       )}
@@ -928,7 +991,7 @@ export function EmptyState({ children }: { children: ReactNode }) {
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="py-20 text-center text-sm text-stone-400 dark:text-stone-500" role="status">
+    <div className="py-20 text-center text-sm text-stone-500 dark:text-stone-400" role="status">
       {label}
     </div>
   );

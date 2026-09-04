@@ -6,6 +6,18 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Mentioning a person, first cut — names you can click, and `@username` that
+  links.** A name in a comment used to be plain text, so the way to point at a
+  co-host was to describe them. Now a comment's author links to their profile,
+  and writing `@ada` in a comment links to Ada — the same profile a speaker's
+  name on the session already opens. Matching is against the usernames the event
+  actually holds (unique per event), case-insensitive and longest-match, so a
+  multi-word username resolves and `a@b.com` stays an email. The parse is a
+  shared tokenizer so a mention means the same thing everywhere it is written.
+  **No notifications yet** — a mention links, it does not yet land anywhere that
+  survives a closed tab. Spec and the delivery half:
+  `_planning/specs/mentions-and-notifications.md`.
+
 - **Linked sessions — keep a recurring session in step without locking it
   down.** A talk that runs every morning was placed one row per day, and those
   rows knew nothing about each other: renaming or re-rooming the run meant
@@ -67,6 +79,12 @@ All notable changes to this project are documented here.
   ever being asked.
 
 ### Fixed
+
+- **A short session on the grid no longer clips its own time.** Grid blocks
+  carried enough vertical padding, plus a top margin on the tag dots, that a
+  15–20 minute block spent its whole height on chrome and cut off the time row
+  under it. The padding is tighter now and the tags sit near the top edge, so
+  even the shortest block shows its time.
 
 - **Starring a session moved its title, and a list card showed two stars.** On
   the grid, the star and the interest count sat in the row above the title, so
@@ -130,6 +148,18 @@ All notable changes to this project are documented here.
   who is billed on a session but did not create it.
 
 ### Changed
+
+- **Every form field now reads and focuses the same, and meets contrast.**
+  The form layer was rebuilt on a small set of primitives so a text field, its
+  label, its hint and its error, its border, height and focus ring all come
+  from one place instead of a class string copied across ~90 call sites. What
+  you can see: field borders are dark enough to meet the 3:1 contrast floor in
+  both themes (they were below it), hint and label text meets 4.5:1, and
+  focusing a field shows a single clean ring rather than a doubled "inner
+  border". On a phone a field no longer zooms the page when you tap it. Buttons
+  gained a keyboard focus ring. Native dropdowns (day, duration) match the text
+  fields. No field changed what it does — this is a legibility and consistency
+  pass.
 
 - **The People table no longer badges an outstanding speaker code.** A small
   amber `code` sat beside the name of anyone whose speaker phrase had been

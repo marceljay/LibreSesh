@@ -67,4 +67,31 @@ describe('laneLayout', () => {
     expect(lanes.get(1)?.lanes).toBe(2);
     expect(lanes.get(3)?.lanes).toBe(1); // alone in column 1
   });
+
+  it('scopes the clash per column when columns are tracks, not rooms', () => {
+    // The grid's track axis keys columns by trackId, so two sessions in
+    // different rooms but the same track do collide on screen and must lane;
+    // a session elsewhere in that track keeps full width, and a session in
+    // another track is untouched. This is the track-view version of the bug —
+    // laneLayout is axis-agnostic, so the same clustering has to hold here.
+    const trackItem = (id: number, trackId: number, startMin: number, endMin: number) => ({
+      session: { id, trackId } as unknown as SessionDto,
+      startMin,
+      endMin,
+    });
+    const byTrack = (s: SessionDto) => (s as unknown as { trackId: number }).trackId;
+    const lanes = laneLayout(
+      [
+        trackItem(1, 7, 600, 660), // track 7, 10:00–11:00 (room A)
+        trackItem(2, 7, 600, 660), // track 7, 10:00–11:00 (room B) — clashes with 1
+        trackItem(3, 7, 840, 900), // track 7, 14:00–15:00 — far from the clash
+        trackItem(4, 9, 600, 660), // track 9, 10:00–11:00 — different track
+      ],
+      byTrack,
+    );
+    expect(lanes.get(1)?.lanes).toBe(2); // clashing pair splits
+    expect(lanes.get(2)?.lanes).toBe(2);
+    expect(lanes.get(3)?.lanes).toBe(1); // the distant one keeps full width
+    expect(lanes.get(4)?.lanes).toBe(1); // another track is unaffected
+  });
 });

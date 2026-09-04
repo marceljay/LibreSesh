@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Usernames &amp; mentions — a decision</title>
+    <style>
+      :root {
+        --ink: #1c1917;
+        --muted: #78716c;
+        --line: #e7e5e4;
+        --bg: #fafaf9;
+        --card: #ffffff;
+        --blue: #1d4ed8;
+        --green: #15803d;
+        --amber: #b45309;
+        --red: #b91c1c;
+        --pick: #7c3aed;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        padding: 2.2rem 1.2rem 4rem;
+      }
+      .wrap { max-width: 940px; margin: 0 auto; }
+      h1 { font-size: 1.7rem; margin: 0 0 0.3rem; }
+      h2 { font-size: 1.15rem; margin: 2.4rem 0 0.8rem; }
+      .sub { color: var(--muted); margin: 0 0 0.4rem; }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #f5f5f4;
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+      .callout {
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--amber);
+        background: #fffbeb;
+        border-radius: 8px;
+        padding: 0.9rem 1.1rem;
+        margin: 1rem 0;
+      }
+      .callout.blue { border-left-color: var(--blue); background: #eff6ff; }
+      .callout h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+      .callout p { margin: 0.4rem 0; }
+      table { border-collapse: collapse; width: 100%; margin: 0.6rem 0; font-size: 0.92rem; }
+      th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; }
+      .ex { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; }
+      .link { color: var(--blue); text-decoration: underline; }
+      .no { color: var(--muted); }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 1rem; margin-top: 0.6rem; }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--card);
+        padding: 1.1rem 1.15rem 1.3rem;
+        position: relative;
+      }
+      .card.rec { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
+      .card h3 { margin: 0 0 0.15rem; font-size: 1.05rem; }
+      .card .tag {
+        display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.03em;
+        text-transform: uppercase; padding: 0.12rem 0.5rem; border-radius: 999px; margin-bottom: 0.5rem;
+      }
+      .tag.rec { background: #dcfce7; color: var(--green); }
+      .tag.skip { background: #fee2e2; color: var(--red); }
+      .tag.later { background: #ede9fe; color: var(--pick); }
+      .card ul { margin: 0.5rem 0 0; padding-left: 1.1rem; }
+      .card li { margin: 0.28rem 0; }
+      .pro::marker { content: "✓ "; color: var(--green); }
+      .con::marker { content: "✕ "; color: var(--red); }
+      .pick {
+        margin-top: 0.9rem; display: flex; align-items: center; gap: 0.5rem;
+        font-size: 0.9rem; color: var(--muted);
+      }
+      .pick input { width: 1.05rem; height: 1.05rem; accent-color: var(--pick); }
+      .foot { color: var(--muted); font-size: 0.85rem; margin-top: 2.5rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+      .verdict { font-weight: 600; }
+      .verdict.rec { color: var(--green); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Usernames &amp; mentions — a decision</h1>
+      <p class="sub">
+        First-cut mentions have shipped (a comment author links to a profile;
+        <code>@username</code> in a comment links too). This page is only about
+        <strong>what a username is allowed to be</strong>, and how that shapes mentions.
+        Pick with your eyes; tell me the letter.
+      </p>
+
+      <h2>Where things stand today</h2>
+      <table>
+        <tr><th style="width:38%">Thing</th><th>Now</th></tr>
+        <tr>
+          <td>Username schema</td>
+          <td><code>trimmed(40)</code> — any non-empty text ≤ 40 chars. <strong>Spaces, emoji, punctuation all allowed.</strong> No separate "handle".</td>
+        </tr>
+        <tr>
+          <td>Uniqueness</td>
+          <td>One name per event (migration&nbsp;009), <strong>case-sensitive</strong> — so "Ada" and "ada" are two different people.</td>
+        </tr>
+        <tr>
+          <td>Mention target</td>
+          <td>The free-form name itself, resolved against the set of names the event actually holds.</td>
+        </tr>
+        <tr>
+          <td>Prod reality</td>
+          <td>Live events already contain usernames with emoji. Any rule must survive names that already exist.</td>
+        </tr>
+      </table>
+
+      <div class="callout blue">
+        <h3>Do emoji or spaces break mentions? No.</h3>
+        <p>
+          The tokenizer matches against <em>real names in the event</em>, not a character pattern.
+          So <code>@🎉party</code> links if <code>🎉party</code> is a real username, and
+          <code>@Ada&nbsp;Lovelace</code> links if that exact name exists (it takes the longest matching name).
+          The only character rule is for <em>boundaries</em> — “is this the start of a word” — never for
+          what a name may contain. <strong>“Allow emoji” and “resolve mentions” do not fight.</strong>
+        </p>
+      </div>
+
+      <div class="callout">
+        <h3>The case-sensitivity point — narrow, and separate from special characters</h3>
+        <p>
+          This is <strong>not</strong> “restrict letter-case but allow other symbols.” It is one question:
+          <strong>may two names that differ only in capitalisation both exist?</strong>
+        </p>
+        <p>
+          Today <em>yes</em> (uniqueness is case-sensitive), <em>but</em> the mention matcher is
+          case-insensitive — so <code>@ada</code> matches both “Ada” and “ada”. If both exist, the mention
+          is ambiguous. Emoji and every other character are irrelevant here; it is only letter-case.
+          Two ways to make the halves agree:
+        </p>
+        <table>
+          <tr><th style="width:34%">Fix</th><th>Effect</th><th>Cost</th></tr>
+          <tr>
+            <td>Match case-<em>sensitively</em></td>
+            <td><code>@ada</code> links only to “ada”, never “Ada”.</td>
+            <td>None, but you must type exact case (awkward on autocapitalising phones).</td>
+          </tr>
+          <tr>
+            <td>Fold case for uniqueness (<code>COLLATE&nbsp;NOCASE</code>)</td>
+            <td>“Ada” and “ada” can’t both be claimed; matching stays forgiving.</td>
+            <td>Small migration; check no live event already has a colliding pair.</td>
+          </tr>
+        </table>
+        <p class="verdict rec">Recommendation: fold case for uniqueness. It restricts nothing about emoji or symbols, and case-collision is a latent bug regardless of mentions.</p>
+      </div>
+
+      <h2>The bigger choice: free-form name, or a handle?</h2>
+      <p class="sub">How each option handles the same three names, and what a mention looks like.</p>
+      <table>
+        <tr>
+          <th style="width:22%">Username</th>
+          <th>A · Free-form <span class="no">(shipped)</span></th>
+          <th>B · Restricted handle</th>
+          <th>C · Autocomplete picker</th>
+        </tr>
+        <tr>
+          <td class="ex">Ada Lovelace</td>
+          <td><span class="ex link">@Ada Lovelace</span> <span class="no">(type exact, or pick)</span></td>
+          <td><span class="ex link">@ada_lovelace</span> <span class="no">(handle)</span></td>
+          <td>type <span class="ex">@ada…</span>, choose from list → inserts a resolved link</td>
+        </tr>
+        <tr>
+          <td class="ex">🎉party</td>
+          <td><span class="ex link">@🎉party</span> <span class="no">(works)</span></td>
+          <td class="no">needs a derived ASCII handle — emoji can’t be a handle</td>
+          <td>type <span class="ex">@par…</span>, choose → works, emoji never parsed</td>
+        </tr>
+        <tr>
+          <td class="ex">Ada / ada</td>
+          <td class="no">ambiguous unless case is folded (see above)</td>
+          <td>handles are unique + folded → no collision</td>
+          <td class="no">no ambiguity — you pick the actual person</td>
+        </tr>
+      </table>
+
+      <div class="cards">
+        <div class="card rec">
+          <span class="tag rec">Recommended now</span>
+          <h3>A · Leave free-form</h3>
+          <p class="sub">What already shipped. Names stay human; resolve against the directory.</p>
+          <ul>
+            <li class="pro">No migration, no new concept</li>
+            <li class="pro">Emoji prod names keep working</li>
+            <li class="pro">Fits the app’s account-free ethos</li>
+            <li class="con">A <em>freely typed</em> multi-word name is fragile (needs exact spelling)</li>
+          </ul>
+          <label class="pick"><input type="radio" name="choice" /> This is my pick</label>
+        </div>
+
+        <div class="card">
+          <span class="tag skip">Suggest skip</span>
+          <h3>B · Add a handle</h3>
+          <p class="sub">A restricted <code>@handle</code> beside the display name; mention by handle.</p>
+          <ul>
+            <li class="pro">Unambiguous to parse (industry norm)</li>
+            <li class="con">Reintroduces the account/handle concept the app avoids</li>
+            <li class="con">Migration; an emoji-only name has no handle without deriving one</li>
+            <li class="con">A second thing to explain to organisers</li>
+          </ul>
+          <label class="pick"><input type="radio" name="choice" /> This is my pick</label>
+        </div>
+
+        <div class="card">
+          <span class="tag later">Recommended later</span>
+          <h3>C · Autocomplete picker</h3>
+          <p class="sub">No grammar change: the composer inserts a <em>resolved</em> mention.</p>
+          <ul>
+            <li class="pro">Best UX; whitespace/emoji never enter the parse</li>
+            <li class="pro">Pairs with the server-side parse that notifications need</li>
+            <li class="con">Depends on composer work (after form-overhaul Phase&nbsp;2)</li>
+            <li class="con">Not a first-cut item — lands with delivery</li>
+          </ul>
+          <label class="pick"><input type="radio" name="choice" /> This is my pick</label>
+        </div>
+      </div>
+
+      <div class="callout blue">
+        <h3>My recommendation, in one line</h3>
+        <p>
+          <span class="verdict rec">A now, C later, skip B</span> — keep names free-form (respects the emoji
+          names already in prod and the app’s ethos), <strong>fold case for uniqueness</strong> to kill the one
+          real ambiguity, and add the autocomplete (C) when notifications land, not before.
+        </p>
+      </div>
+
+      <p class="foot">
+        Full write-up: <code>_planning/specs/mentions-and-notifications.md</code>.
+        The radio buttons here are just for looking — tell me the letter (and whether to fold case now) and I’ll wire it up.
+      </p>
+    </div>
+  </body>
+</html>

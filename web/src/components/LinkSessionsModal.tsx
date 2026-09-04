@@ -121,6 +121,7 @@ export function LinkSessionsModal({
       {candidates !== null && candidates.length > 0 && (
         <>
           <label className="mb-2 flex cursor-pointer items-center gap-2 border-b border-stone-200 pb-2 text-sm font-medium text-stone-700 dark:border-stone-700 dark:text-stone-200">
+            {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
             <input type="checkbox" checked={allChosen} onChange={toggleAll} className="h-4 w-4" />
             Select all
           </label>
@@ -128,6 +129,7 @@ export function LinkSessionsModal({
             {candidates.map((c) => (
               <li key={c.id}>
                 <label className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800">
+                  {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
                   <input
                     type="checkbox"
                     checked={chosen.has(c.id)}

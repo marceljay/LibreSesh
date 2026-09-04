@@ -737,7 +737,7 @@ export function Calendar({
                     onOpen(session.id);
                   }
                 }}
-                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 p-2 text-left shadow-sm transition-shadow
+                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-left shadow-sm transition-shadow
                   ${session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'}
                   ${
                     highlighted
@@ -757,11 +757,11 @@ export function Calendar({
                   touchAction: editable ? 'none' : 'auto',
                 }}
               >
-                <div className="flex gap-1">
+                <div className="flex items-center gap-1">
                   {session.tagIds.map((id) => (
                     <span
                       key={id}
-                      className="mt-0.5 h-1 w-4 rounded-full"
+                      className="h-1 w-4 rounded-full"
                       style={{ background: tagColor.get(id) ?? '#6B7280' }}
                     />
                   ))}

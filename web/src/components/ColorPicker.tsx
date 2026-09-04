@@ -71,6 +71,7 @@ export function ColorPicker({
           }}
         >
           <span className="sr-only">Any other colour</span>
+          {/* eslint-disable-next-line no-restricted-syntax -- native colour picker, not a text field */}
           <input
             type="color"
             value={value}

@@ -37,6 +37,7 @@ import {
   Chip,
   DangerButton,
   Field,
+  ControlShell,
   FieldGroup,
   FormError,
   FormGrid,
@@ -46,8 +47,10 @@ import {
   Modal,
   PrimaryButton,
   SecondaryButton,
+  TextArea,
+  TextInput,
   Toggle,
-  inputClass,
+  selectClass,
 } from './ui';
 
 
@@ -479,13 +482,14 @@ export function SessionModal({
           )}
 
           <Field label="Title">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              maxLength={120}
-              className={inputClass}
-              autoFocus
-            />
+            <ControlShell>
+              <TextInput
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={120}
+                autoFocus
+              />
+            </ControlShell>
           </Field>
           <Field label="Speaker or host">
             <SpeakerCombobox
@@ -497,12 +501,12 @@ export function SessionModal({
             />
           </Field>
           <Field label="Description" hint="Markdown is supported.">
-            <textarea
+            <TextArea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               maxLength={5000}
-              className={`${inputClass} resize-y`}
+              className="resize-y"
             />
           </Field>
           <Field label="Tags">
@@ -545,7 +549,7 @@ export function SessionModal({
                 value={roomId}
                 onChange={(e) => setRoomId(Number(e.target.value))}
                 disabled={!canMove}
-                className={inputClass}
+                className={selectClass}
               >
                 {allowedRooms.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -560,7 +564,7 @@ export function SessionModal({
                 <select
                   value={trackId ?? ''}
                   onChange={(e) => setTrackId(e.target.value ? Number(e.target.value) : null)}
-                  className={inputClass}
+                  className={selectClass}
                 >
                   <option value="">No track</option>
                   {/* A track that keeps hours says so here, for the day being
@@ -588,7 +592,7 @@ export function SessionModal({
                 value={day}
                 onChange={(e) => setDay(e.target.value)}
                 disabled={!canMove}
-                className={inputClass}
+                className={selectClass}
               >
                 {days.map((d) => (
                   <option key={d} value={d}>
@@ -598,14 +602,15 @@ export function SessionModal({
               </select>
             </Field>
             <Field label="Start" hint="In 5-minute steps.">
-              <input
-                type="time"
-                step={300}
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                disabled={!canMove}
-                className={inputClass}
-              />
+              <ControlShell disabled={!canMove}>
+                <TextInput
+                  type="time"
+                  step={300}
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  disabled={!canMove}
+                />
+              </ControlShell>
             </Field>
             {/* A list plus a way past it. The list used to stop at three
                 hours, which quietly said no session runs longer — and a
@@ -624,7 +629,7 @@ export function SessionModal({
                   setDurMin(Number(e.target.value));
                 }}
                 disabled={!canMove}
-                className={inputClass}
+                className={selectClass}
               >
                 {DURATION_CHOICES.map((d) => (
                   <option key={d} value={d}>
@@ -635,18 +640,19 @@ export function SessionModal({
               </select>
               {customDur && (
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    value={durMin}
-                    onChange={(e) => setDurMin(Number(e.target.value))}
-                    min={MIN_DURATION_MINUTES}
-                    max={MAX_DURATION_MINUTES}
-                    step={SNAP_MINUTES}
-                    aria-label="Duration in minutes"
-                    autoFocus
-                    disabled={!canMove}
-                    className={`${inputClass} w-24`}
-                  />
+                  <ControlShell disabled={!canMove} className="w-24">
+                    <TextInput
+                      type="number"
+                      value={durMin}
+                      onChange={(e) => setDurMin(Number(e.target.value))}
+                      min={MIN_DURATION_MINUTES}
+                      max={MAX_DURATION_MINUTES}
+                      step={SNAP_MINUTES}
+                      aria-label="Duration in minutes"
+                      autoFocus
+                      disabled={!canMove}
+                    />
+                  </ControlShell>
                   <span className="text-xs text-stone-500 dark:text-stone-400">
                     minutes{durMin >= 60 ? ` · ${durationLabel(durMin)}` : ''}
                   </span>
@@ -672,7 +678,7 @@ export function SessionModal({
                       <select
                         value={until}
                         onChange={(e) => setUntilChoice(e.target.value)}
-                        className={`${inputClass} w-auto`}
+                        className={`${selectClass} w-auto`}
                       >
                         {days
                           .filter((d) => d > day)
@@ -779,30 +785,32 @@ export function SessionModal({
             <div className="flex flex-col gap-1.5">
               {livestreams.map((stream, i) => (
                 <div key={i} className="flex gap-1.5">
-                  <input
-                    value={stream.label}
-                    onChange={(e) =>
-                      setLivestreams((ls) =>
-                        ls.map((l, j) => (j === i ? { ...l, label: e.target.value } : l)),
-                      )
-                    }
-                    aria-label={`Name of stream ${i + 1}`}
-                    placeholder="YouTube"
-                    maxLength={60}
-                    className={`${inputClass} w-32 shrink-0`}
-                  />
-                  <input
-                    value={stream.url}
-                    onChange={(e) =>
-                      setLivestreams((ls) =>
-                        ls.map((l, j) => (j === i ? { ...l, url: e.target.value } : l)),
-                      )
-                    }
-                    aria-label={`Link for stream ${i + 1}`}
-                    placeholder="https:// or ipfs://…"
-                    maxLength={2000}
-                    className={inputClass}
-                  />
+                  <ControlShell className="w-32 shrink-0">
+                    <TextInput
+                      value={stream.label}
+                      onChange={(e) =>
+                        setLivestreams((ls) =>
+                          ls.map((l, j) => (j === i ? { ...l, label: e.target.value } : l)),
+                        )
+                      }
+                      aria-label={`Name of stream ${i + 1}`}
+                      placeholder="YouTube"
+                      maxLength={60}
+                    />
+                  </ControlShell>
+                  <ControlShell className="flex-1">
+                    <TextInput
+                      value={stream.url}
+                      onChange={(e) =>
+                        setLivestreams((ls) =>
+                          ls.map((l, j) => (j === i ? { ...l, url: e.target.value } : l)),
+                        )
+                      }
+                      aria-label={`Link for stream ${i + 1}`}
+                      placeholder="https:// or ipfs://…"
+                      maxLength={2000}
+                    />
+                  </ControlShell>
                   <IconButton
                     aria-label={`Remove stream ${i + 1}`}
                     onClick={() => setLivestreams((ls) => ls.filter((_, j) => j !== i))}

@@ -54,12 +54,13 @@ import {
 } from "../lib/sessionPerms";
 import { Tour, type TourStep } from "../components/Tour";
 import {
+  ControlShell,
   EmptyState,
   Modal,
   PrimaryButton,
   SecondaryButton,
   Spinner,
-  inputClass,
+  TextInput,
   useConfirm,
   useToast,
 } from '../components/ui';
@@ -1482,6 +1483,7 @@ export function SchedulePage() {
             rooms={bundle.rooms}
             tags={bundle.tags}
             formats={bundle.formats}
+            people={bundle.people}
             contributions={data.contributions[selected.id]}
             role={role}
             me={me}
@@ -1675,6 +1677,7 @@ export function SchedulePage() {
           rooms={bundle.rooms}
           tags={bundle.tags}
           formats={bundle.formats}
+          people={bundle.people}
           contributions={data.contributions[selected.id]}
           role={role}
           me={me}
@@ -1918,14 +1921,15 @@ function CalendarExportModal({
           </p>
           {subUrl ? (
             <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                readOnly
-                value={subUrl}
-                aria-label="Personal calendar subscription link"
-                onFocus={(e) => e.currentTarget.select()}
-                className={inputClass}
-              />
+              <ControlShell className="flex-1">
+                <TextInput
+                  ref={inputRef}
+                  readOnly
+                  value={subUrl}
+                  aria-label="Personal calendar subscription link"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+              </ControlShell>
               <SecondaryButton className="shrink-0" onClick={() => void copy()}>
                 Copy
               </SecondaryButton>

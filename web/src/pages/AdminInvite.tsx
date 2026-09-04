@@ -4,13 +4,14 @@ import { ApiError, api } from '../lib/api';
 import { buildInviteUrl, normalizeBaseUrl } from '../lib/inviteLink';
 import { QrCode } from '../components/QrCode';
 import {
+  ControlShell,
   Field,
   FormStack,
   PrimaryButton,
   RoleBadge,
   SecondaryButton,
   Section,
-  inputClass,
+  TextInput,
   useToast,
 } from '../components/ui';
 
@@ -164,21 +165,22 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
           label="Password to encode"
           hint="Type the viewer, attendee or organiser password. The role is whichever one it turns out to be — this event stores only hashes, so it has to be checked rather than looked up."
         >
-          <input
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              // The old QR encodes the old password; keeping it on screen
-              // while the box says something else invites printing the wrong one.
-              setVerified(null);
-              setError(null);
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && void check()}
-            autoCapitalize="none"
-            autoCorrect="off"
-            spellCheck={false}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // The old QR encodes the old password; keeping it on screen
+                // while the box says something else invites printing the wrong one.
+                setVerified(null);
+                setError(null);
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && void check()}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </ControlShell>
         </Field>
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         {!verified && (
@@ -220,7 +222,9 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
               label="Link"
               hint="Select and copy if you'd rather send the link than print the code."
             >
-              <input ref={linkRef} readOnly value={url} className={`${inputClass} font-mono text-xs`} />
+              <ControlShell>
+                <TextInput ref={linkRef} readOnly value={url} className="font-mono text-xs" />
+              </ControlShell>
             </Field>
             <div className="flex flex-wrap gap-2">
               <SecondaryButton onClick={() => void copy()}>Copy link</SecondaryButton>
@@ -230,18 +234,19 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
               label="Address the code points at"
               hint="Remembered on this device. Change it when the address you're browsing from isn't the one attendees will use — a forwarded dev port, or a laptop on the local network."
             >
-              <input
-                value={base}
-                onChange={(e) => {
-                  setBase(e.target.value);
-                  writeBase(e.target.value);
-                }}
-                placeholder="https://schedule.example.org"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                className={inputClass}
-              />
+              <ControlShell>
+                <TextInput
+                  value={base}
+                  onChange={(e) => {
+                    setBase(e.target.value);
+                    writeBase(e.target.value);
+                  }}
+                  placeholder="https://schedule.example.org"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </ControlShell>
             </Field>
           </>
         )}

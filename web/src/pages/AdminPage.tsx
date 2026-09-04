@@ -332,6 +332,7 @@ function PeopleColumnsMenu({ columns }: { columns: PeopleColumnsControl }) {
                 key={id}
                 className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-stone-100 dark:hover:bg-stone-800"
               >
+                {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
                 <input
                   type="checkbox"
                   checked={columns.showing(id)}
@@ -373,6 +374,7 @@ import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
 import {
+  ControlShell,
   DangerButton,
   EmptyState,
   Field,
@@ -387,9 +389,11 @@ import {
   SecondaryButton,
   Section,
   Spinner,
+  TextArea,
+  TextInput,
   Toggle,
-  inputClass,
   linkClass,
+  selectClass,
   useConfirm,
   useToast,
 } from '../components/ui';
@@ -1222,13 +1226,14 @@ export function AdminPage() {
               <FormRow>
                 <div className="min-w-40 flex-1">
                   <Field label="New track">
-                    <input
-                      value={trackName}
-                      onChange={(e) => setTrackName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void addTrack()}
-                      maxLength={60}
-                      className={inputClass}
-                    />
+                    <ControlShell>
+                      <TextInput
+                        value={trackName}
+                        onChange={(e) => setTrackName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && void addTrack()}
+                        maxLength={60}
+                      />
+                    </ControlShell>
                   </Field>
                 </div>
                 <PrimaryButton onClick={() => void addTrack()} disabled={!trackName.trim()}>
@@ -1287,12 +1292,13 @@ export function AdminPage() {
             <FormRow>
               <div className="min-w-40 flex-1">
                 <Field label="New tag">
-                  <input
-                    value={tagName}
-                    onChange={(e) => setTagName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void addTag()}
-                    className={inputClass}
-                  />
+                  <ControlShell>
+                    <TextInput
+                      value={tagName}
+                      onChange={(e) => setTagName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && void addTag()}
+                    />
+                  </ControlShell>
                 </Field>
               </div>
               <PrimaryButton onClick={() => void addTag()} disabled={!tagName.trim()}>
@@ -1366,13 +1372,14 @@ export function AdminPage() {
             <FormRow>
               <div className="min-w-40 flex-1">
                 <Field label="New format">
-                  <input
-                    value={formatName}
-                    onChange={(e) => setFormatName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void addFormat(formatName)}
-                    maxLength={40}
-                    className={inputClass}
-                  />
+                  <ControlShell>
+                    <TextInput
+                      value={formatName}
+                      onChange={(e) => setFormatName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && void addFormat(formatName)}
+                      maxLength={40}
+                    />
+                  </ControlShell>
                 </Field>
               </div>
               <PrimaryButton
@@ -1484,6 +1491,7 @@ export function AdminPage() {
                   </button>
                 ))}
               </div>
+              {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
               <input
                 type="search"
                 value={peopleQuery}
@@ -1701,13 +1709,14 @@ export function AdminPage() {
                   label="Expect someone"
                   hint="Creates a profile nobody holds yet — for a speaker you are billing before they arrive. They claim it at the gate, or with a speaker code."
                 >
-                  <input
-                    value={personName}
-                    onChange={(e) => setPersonName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void addPerson()}
-                    maxLength={120}
-                    className={inputClass}
-                  />
+                  <ControlShell>
+                    <TextInput
+                      value={personName}
+                      onChange={(e) => setPersonName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && void addPerson()}
+                      maxLength={120}
+                    />
+                  </ControlShell>
                 </Field>
               </div>
               <PrimaryButton onClick={() => void addPerson()} disabled={!personName.trim()}>
@@ -1734,7 +1743,9 @@ export function AdminPage() {
           <Section title="Event settings" className="mb-6">
             <FormStack>
             <Field label="Name">
-              <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+              <ControlShell>
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+              </ControlShell>
             </Field>
             {/* Renaming an event is renaming its address, which sounds more
                 dangerous than it is: roles are held against the event itself,
@@ -1750,24 +1761,33 @@ export function AdminPage() {
                   : `Used in the URL: /e/${slugField || event?.slug}`
               }
             >
-              <input
-                value={slugField}
-                onChange={(e) => setSlugField(slugify(e.target.value))}
-                className={inputClass}
-              />
+              <ControlShell>
+                <TextInput
+                  value={slugField}
+                  onChange={(e) => setSlugField(slugify(e.target.value))}
+                />
+              </ControlShell>
             </Field>
             <FormGrid>
               <Field label="Start date">
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field label="End date">
-                <input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field label="Day starts">
-                <input type="time" step={300} value={dayStart} onChange={(e) => setDayStart(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput type="time" step={300} value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field label="Day ends">
-                <input type="time" step={300} value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput type="time" step={300} value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
+                </ControlShell>
               </Field>
             </FormGrid>
             <NumberField
@@ -1791,7 +1811,7 @@ export function AdminPage() {
               <select
                 value={defaultView}
                 onChange={(e) => setDefaultView(e.target.value === 'cal' ? 'cal' : 'list')}
-                className={`${inputClass} w-48`}
+                className={`${selectClass} w-48`}
               >
                 <option value="list">List — one column, in time order</option>
                 <option value="cal">Calendar — a grid of rooms</option>
@@ -1824,12 +1844,13 @@ export function AdminPage() {
               label="What you call your participants"
               hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
             >
-              <input
-                value={userRoleLabel}
-                onChange={(e) => setUserRoleLabel(e.target.value)}
-                maxLength={24}
-                className={inputClass}
-              />
+              <ControlShell>
+                <TextInput
+                  value={userRoleLabel}
+                  onChange={(e) => setUserRoleLabel(e.target.value)}
+                  maxLength={24}
+                />
+              </ControlShell>
             </Field>
 
             <div className="mt-1">
@@ -1842,13 +1863,19 @@ export function AdminPage() {
             </div>
             <FormGrid cols={3}>
               <Field label="Viewer">
-                <input value={viewerPassword} onChange={(e) => setViewerPassword(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput value={viewerPassword} onChange={(e) => setViewerPassword(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field label={userRoleLabel.trim() || 'User'}>
-                <input value={userPassword} onChange={(e) => setUserPassword(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field label="Admin">
-                <input value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+                </ControlShell>
               </Field>
             </FormGrid>
             <div>
@@ -1882,39 +1909,44 @@ export function AdminPage() {
             {cloneOpen && (
               <FormStack>
               <Field label="New name">
-                <input value={cloneName} onChange={(e) => setCloneName(e.target.value)} className={inputClass} />
+                <ControlShell>
+                  <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
+                </ControlShell>
               </Field>
               <Field
                 label="New slug"
                 hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
               >
-                <input
-                  value={cloneSlug}
-                  onChange={(e) => setCloneSlug(slugify(e.target.value))}
-                  placeholder={slugify(cloneName) || 'your-event'}
-                  className={inputClass}
-                />
+                <ControlShell>
+                  <TextInput
+                    value={cloneSlug}
+                    onChange={(e) => setCloneSlug(slugify(e.target.value))}
+                    placeholder={slugify(cloneName) || 'your-event'}
+                  />
+                </ControlShell>
               </Field>
               <FormGrid>
                 <Field label="Start date">
-                  <input
-                    type="date"
-                    value={cloneStart}
-                    onChange={(e) => {
-                      setCloneStart(e.target.value);
-                      if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
-                    }}
-                    className={inputClass}
-                  />
+                  <ControlShell>
+                    <TextInput
+                      type="date"
+                      value={cloneStart}
+                      onChange={(e) => {
+                        setCloneStart(e.target.value);
+                        if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
+                      }}
+                    />
+                  </ControlShell>
                 </Field>
                 <Field label="End date">
-                  <input
-                    type="date"
-                    value={cloneEnd}
-                    min={cloneStart}
-                    onChange={(e) => setCloneEnd(e.target.value)}
-                    className={inputClass}
-                  />
+                  <ControlShell>
+                    <TextInput
+                      type="date"
+                      value={cloneEnd}
+                      min={cloneStart}
+                      onChange={(e) => setCloneEnd(e.target.value)}
+                    />
+                  </ControlShell>
                 </Field>
               </FormGrid>
               <div className="mt-1">
@@ -1925,13 +1957,19 @@ export function AdminPage() {
               </div>
               <FormGrid cols={3}>
                 <Field label="Viewer">
-                  <input value={cloneViewer} onChange={(e) => setCloneViewer(e.target.value)} className={inputClass} />
+                  <ControlShell>
+                    <TextInput value={cloneViewer} onChange={(e) => setCloneViewer(e.target.value)} />
+                  </ControlShell>
                 </Field>
                 <Field label="User">
-                  <input value={cloneUser} onChange={(e) => setCloneUser(e.target.value)} className={inputClass} />
+                  <ControlShell>
+                    <TextInput value={cloneUser} onChange={(e) => setCloneUser(e.target.value)} />
+                  </ControlShell>
                 </Field>
                 <Field label="Admin">
-                  <input value={cloneAdmin} onChange={(e) => setCloneAdmin(e.target.value)} className={inputClass} />
+                  <ControlShell>
+                    <TextInput value={cloneAdmin} onChange={(e) => setCloneAdmin(e.target.value)} />
+                  </ControlShell>
                 </Field>
               </FormGrid>
               <div>
@@ -2111,13 +2149,14 @@ function FormatEditor({
     >
       <FormStack>
         <Field label="Name">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={40}
-            className={inputClass}
-            autoFocus
-          />
+          <ControlShell>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={40}
+              autoFocus
+            />
+          </ControlShell>
         </Field>
         <ColorPicker
           value={color}
@@ -2197,13 +2236,14 @@ function TagEditor({
     >
       <FormStack>
         <Field label="Name">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={40}
-            className={inputClass}
-            autoFocus
-          />
+          <ControlShell>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={40}
+              autoFocus
+            />
+          </ControlShell>
         </Field>
         <ColorPicker
           value={color}
@@ -2273,22 +2313,24 @@ function TrackHoursFields({
     <div className="space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
       <FormRow>
         <Field label="From">
-          <input
-            type="time"
-            step={300}
-            value={start}
-            onChange={(e) => onStart(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              type="time"
+              step={300}
+              value={start}
+              onChange={(e) => onStart(e.target.value)}
+            />
+          </ControlShell>
         </Field>
         <Field label="To" hint={minutesOf(end) > minutesOf(start) ? undefined : 'Must be later.'}>
-          <input
-            type="time"
-            step={300}
-            value={end}
-            onChange={(e) => onEnd(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              type="time"
+              step={300}
+              value={end}
+              onChange={(e) => onEnd(e.target.value)}
+            />
+          </ControlShell>
         </Field>
       </FormRow>
 
@@ -2320,7 +2362,7 @@ function TrackHoursFields({
             <select
               value={day}
               onChange={(e) => setDay(e.target.value)}
-              className={inputClass}
+              className={selectClass}
               aria-label="Day"
             >
               {free.map((d) => (
@@ -2331,22 +2373,24 @@ function TrackHoursFields({
             </select>
           </Field>
           <Field label="From">
-            <input
-              type="time"
-              step={300}
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
+            </ControlShell>
           </Field>
           <Field label="To">
-            <input
-              type="time"
-              step={300}
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className={inputClass}
-            />
+            <ControlShell>
+              <TextInput
+                type="time"
+                step={300}
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
+            </ControlShell>
           </Field>
           <SecondaryButton onClick={addDay} disabled={!day || minutesOf(to) <= minutesOf(from)}>
             Add day
@@ -2445,24 +2489,25 @@ function TrackEditor({
     >
       <FormStack>
         <Field label="Name">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={60}
-            className={inputClass}
-            autoFocus
-          />
+          <ControlShell>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={60}
+              autoFocus
+            />
+          </ControlShell>
         </Field>
         <Field
           label="Description"
           hint="Shown to attendees behind the column's info button. What the strand is for, who it is aimed at."
         >
-          <textarea
+          <TextArea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
             maxLength={500}
-            className={`${inputClass} resize-none`}
+            className="resize-none"
           />
         </Field>
         <ColorPicker
