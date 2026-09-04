@@ -7,7 +7,7 @@ import { api } from '../lib/api';
 import { relativeTime, uid } from '../lib/format';
 import { matchesSearch, mergeConsequence, sortPeople, suggestDuplicates } from '../lib/people';
 import { PersonLine, PersonStatusBadge } from './PersonLine';
-import { PrimaryButton, SecondaryButton, useToast } from './ui';
+import { PrimaryButton, SecondaryButton, bareFieldFocusRing, useToast } from './ui';
 
 /**
  * Fold a duplicate profile into this one (identity spec, B2).
@@ -205,7 +205,7 @@ export function MergeModal({
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search people"
         placeholder="Search by name, @username or UID"
-        className="mb-2 w-full rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-sm text-stone-700 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+        className={`mb-2 w-full rounded-lg border border-stone-500 bg-white px-2.5 py-1.5 text-sm text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
       />
 
       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">

@@ -5,7 +5,7 @@ import { UNTRACKED } from '../lib/tracks';
 import type { FilterApi } from '../lib/useFilters';
 import { FilterIcon, SearchIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
-import { Chip } from './ui';
+import { Chip, bareFieldFocusRing } from './ui';
 
 /**
  * Every way of narrowing the grid, behind one button.
@@ -104,7 +104,7 @@ export function FilterMenu({
                 onChange={(e) => filters.set({ q: e.target.value })}
                 placeholder="Filter by title, speaker…"
                 aria-label="Filter sessions by text"
-                className="w-full rounded-lg border border-stone-300 bg-white py-1.5 ps-8 pe-3 text-xs outline-hidden focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400"
+                className={`w-full rounded-lg border border-stone-500 bg-white py-1.5 ps-8 pe-3 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-900 ${bareFieldFocusRing}`}
               />
             </div>
             <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">

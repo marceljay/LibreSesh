@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -163,5 +163,43 @@ describe('the old skin is gone', () => {
       new RegExp(`(?:^|[\\s'"\`])${prefix}-\\[([\\d.]+rem)\\]`).exec(src)?.[1];
     expect(height(ui, 'min-h')).toBe('2.375rem');
     expect(height(select, 'h')).toBe('2.375rem');
+  });
+});
+
+describe('no hand-drawn field re-adds the global ring to its own border', () => {
+  /** Every `.tsx` under `web/src`. */
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  it('gives every bordered raw input the shared bare-field ring', () => {
+    // `index.css` rings every `:focus-visible` element with an *offset* ring.
+    // On an element that draws its own border that ring sits outside it, a gap
+    // away — border, gap, ring, three lines for one field. That was the "ugly
+    // focus border" on the three search boxes. `bareFieldFocusRing` replaces
+    // the border with one flush ring instead of stacking on it.
+    //
+    // Controls that are not fields (checkbox, radio, colour, file) keep the
+    // global ring: they have nothing to replace it with.
+    const NOT_A_FIELD = /type="(?:checkbox|radio|color|file)"/;
+    const offenders: string[] = [];
+
+    for (const path of sources(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      for (const el of src.match(/<(?:input|textarea)\b[\s\S]*?\/>/g) ?? []) {
+        if (NOT_A_FIELD.test(el)) continue;
+        // Draws its own border, so the global offset ring would double it.
+        if (!/\bborder\b|\bborder-/.test(el)) continue;
+        if (el.includes('bareFieldFocusRing')) continue;
+        offenders.push(path.slice(WEB_SRC.length + 1));
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

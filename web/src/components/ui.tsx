@@ -54,6 +54,21 @@ const fieldFocusRing =
   'focus-within:border-transparent focus-within:ring-2 focus-within:ring-stone-500 dark:focus-within:ring-stone-400';
 
 /**
+ * The same treatment for a field that is **not** wrapped in a `ControlShell` —
+ * `TextArea`, and the compact search boxes that are their own bordered element.
+ * `focus-visible` rather than `focus-within` because the ring belongs to the
+ * element itself, and `ring-offset-0` because the global rule in `index.css`
+ * sets an offset that would otherwise leave a gap between this ring and the
+ * border it is replacing: border, gap, ring — three lines for one field.
+ *
+ * Any bordered field the app draws by hand needs this. Without it the global
+ * `:focus-visible` ring is *added to* the border rather than replacing it,
+ * which is the "ugly focus border" in both of its directions.
+ */
+export const bareFieldFocusRing =
+  'focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 dark:focus-visible:ring-stone-400';
+
+/**
  * What a `Field` tells the control inside it: the id its label points at, the
  * ids its hint and error carry (so the control can name them in
  * `aria-describedby`), and whether it is in an invalid state.
@@ -261,7 +276,7 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-400 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 ${bareFieldFocusRing} ${
         invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />

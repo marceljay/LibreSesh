@@ -407,6 +407,7 @@ import {
   TextArea,
   TextInput,
   Toggle,
+  bareFieldFocusRing,
   linkClass,
   useConfirm,
   useToast,
@@ -1515,7 +1516,7 @@ export function AdminPage() {
                 onChange={(e) => setPeopleQuery(e.target.value)}
                 aria-label="Search people"
                 placeholder="Name, @username or UID"
-                className="ms-auto w-32 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 sm:w-48 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+                className={`ms-auto w-32 rounded-lg border border-stone-500 bg-white px-2 py-1 text-xs text-stone-700 outline-hidden sm:w-48 dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
               />
               <PeopleColumnsMenu columns={peopleColumns} />
             </div>
