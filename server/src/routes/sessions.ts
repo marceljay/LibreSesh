@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
-import { requireRole, requireWritable } from '../auth.js';
+import { requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { Role } from '../shared/types.js';
@@ -184,23 +184,23 @@ export function sessionRoutes(ctx: Ctx): Router {
    * `repeat.ts` holds it, so a run the JSON importer refuses is refused here
    * too.
    *
-   * Organisers only. Placing sixty sessions is programme-building, and the
-   * `session.create_open` capability is for an attendee putting one session on
-   * a board.
+   * Anyone who may place a single open session may place a run of them — the
+   * attendee offering morning yoga every day is the case the whole feature is
+   * for. An organiser's run may be official and hold the floor; everyone else's
+   * is open sessions, held to the same per-day rules a single open session is
+   * (open room, inside the event window, no clash, not under a hold).
    */
   router.post(
     '/sessions/repeat',
-    requireRole(ctx.db, 'admin'),
-    requireWritable,
-    limit(ctx.limiter, 'session'),
+    ...userWrite,
     (req, res) => {
       const body = parse(sessionRepeatSchema, req.body);
       const room = getRoom(ctx.db, req.event.id, body.roomId);
-      const type = body.type ?? 'official';
+      // Only admins choose the type or hold the floor; anyone else placing a
+      // run is placing open sessions, the same as a single one.
+      const type = req.role === 'admin' ? (body.type ?? 'official') : 'open';
       assertMayPlace(getPermissions(ctx.db, req.event.id), req.role, room, type);
-      // A plenary that happens every morning is a run like any other; the flag
-      // rides along so each occurrence holds its own day.
-      const blocks = assertMayBlock(type, body.blocksOpenBooking);
+      const blocks = req.role === 'admin' && assertMayBlock(type, body.blocksOpenBooking);
 
       const first = { startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) };
       assertValidTimes(req.event, first);
@@ -237,9 +237,20 @@ export function sessionRoutes(ctx: Ctx): Router {
         };
         // Checked per day rather than once: a wall-clock span that is 90
         // minutes most days is 30 on the day the clocks go forward, and a
-        // session that quietly changed length is worse than a refusal.
+        // session that quietly changed length is worse than a refusal. The
+        // day naming the failure rides along, so "Wed: outside the day" points
+        // at the one occurrence that cannot land, not the whole run.
         try {
           assertValidTimes(req.event, window);
+          // The same gate a single open session passes, once per occurrence:
+          // an organiser's run is trusted to overlap and to sit off-viewport,
+          // an attendee's is not.
+          if (req.role !== 'admin') {
+            assertWithinEventWindow(req.event, window);
+            assertNoOverlap(ctx.db, req.event.id, room.id, window);
+            assertNotBlocked(ctx.db, req.event.id, req.role, window);
+            assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
+          }
         } catch (err) {
           throw badRequest(`${date}: ${(err as Error).message}`);
         }

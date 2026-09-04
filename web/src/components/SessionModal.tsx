@@ -192,16 +192,17 @@ export function SessionModal({
    *  touches the times — how long a session runs is the session's business. */
   const pickFormat = (next: FormatDto) => setFormatId(formatId === next.id ? null : next.id);
 
-  // Repeating is for building a programme, so it belongs to organisers and to
-  // sessions that do not exist yet. Editing one day of a run edits that day:
-  // the sessions a run creates are independent from the moment they land, and
-  // the form does not pretend otherwise.
+  // Repeating puts a session on more than one day at once — the attendee
+  // offering morning yoga as much as an organiser building a programme, so it
+  // is for anyone who may place a session, not organisers alone. It is only for
+  // sessions that do not exist yet: editing one day of a run edits that day.
   const lastDay = days[days.length - 1] ?? day;
-  const canRepeat = isAdmin && !session && day < lastDay;
+  const canRepeat = role !== 'viewer' && !session && day < lastDay;
   const [repeating, setRepeating] = useState(false);
-  // Off by default: a repeat still expands to loose rows unless the organiser
-  // asks to keep the run in step.
-  const [repeatLink, setRepeatLink] = useState(false);
+  // An organiser's run defaults to loose rows (programme-building); everyone
+  // else's defaults to a linked series, since a recurring session someone runs
+  // themselves is the thing they will want to edit in one place.
+  const [repeatLink, setRepeatLink] = useState(!isAdmin);
   const [untilChoice, setUntilChoice] = useState(lastDay);
   const [weekdays, setWeekdays] = useState<Weekday[]>(WEEKDAYS_MONDAY_FIRST);
 

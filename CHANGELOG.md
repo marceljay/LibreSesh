@@ -12,10 +12,13 @@ All notable changes to this project are documented here.
   editing each day by hand. Attendees felt it most — someone offering morning
   yoga had no way to keep their copies together at all.
 
-  You can now **link** same-named sessions into a series. On a saved session,
-  *Link matching sessions…* lists the other times you run it under that title
-  (with select-all) and links the ones you tick; organisers building a
-  programme can instead tick *Keep these linked* when repeating a session.
+  You can now **link** same-named sessions into a series. The **Repeat** control
+  places a session on several days at once and is no longer organisers-only —
+  the attendee running morning yoga can lay down the whole week and keep it
+  linked in one go (an attendee's run is held to the same per-day rules a single
+  open session is). Or link after the fact: on a saved session, *Link matching
+  sessions…* lists the other times you run it under that title (with select-all)
+  and links the ones you tick.
   Editing a linked session then offers a reach — *this only*, *this and later*,
   or *all in the series* — and applies your change to the rest. The default
   stays this-session-only, and **time is never propagated**: each occurrence
