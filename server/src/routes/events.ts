@@ -101,8 +101,9 @@ export function eventRoutes(ctx: Ctx): Router {
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
              week_rail_from, viewer_pw_hash, user_pw_hash, admin_pw_hash, archived,
-             user_role_label, audit_keep, default_view, show_official_badge, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)`,
+             user_role_label, audit_keep, default_view, show_official_badge,
+             pitches_enabled, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           body.newSlug,
@@ -125,6 +126,9 @@ export function eventRoutes(ctx: Ctx): Router {
           // And whether it badges its programme — the same event runs the same
           // shape, so the same marking is right or wrong for both.
           source.show_official_badge,
+          // And whether it takes pitches. A copy of an event with a fixed
+          // programme should not open a board the original deliberately shut.
+          source.pitches_enabled,
           now,
         );
       const id = Number(info.lastInsertRowid);

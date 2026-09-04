@@ -24,10 +24,10 @@ import {
   todayInZone,
 } from "../lib/format";
 import { useEventData } from "../lib/useEventData";
-import { matchesQuery } from "../lib/search";
-import { useFilters } from "../lib/useFilters";
+import { matchesLens } from "../lib/sessionLens";
+import { lensParams, useFilters } from "../lib/useFilters";
 import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
-import { UNTRACKED, matchesTracks, trackNote } from "../lib/tracks";
+import { UNTRACKED, trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
 import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
 import { DetailSheet } from "../components/DetailSheet";
@@ -39,6 +39,7 @@ import {
   CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  PitchIcon,
   SettingsIcon,
 } from "../components/icons";
 import { ListView } from "../components/ListView";
@@ -147,6 +148,10 @@ const FOLD_AT = 24;
 const OVERRIDE_PX = 120;
 /** Past this, the way back to the top of the day is worth a button. */
 const TOP_BUTTON_AT = 160;
+/** A little air above the first session when a day opens on it, so the
+ *  half-hour line above it is still on screen and the block does not look
+ *  clipped to the top edge. */
+const DAY_LEAD_IN = 16;
 
 export function SchedulePage() {
   const { slug = "", sessionId } = useParams();
@@ -215,6 +220,10 @@ export function SchedulePage() {
   /** Whether the programme still holds sessions with no track — what makes the
    *  "Unassigned" filter chip, and the column of the same name, worth showing. */
   const hasUntracked = (bundle?.sessions ?? []).some((s) => s.trackId === null);
+  /** Pitches nobody has placed yet — the number beside the board's button. */
+  const openPitchCount = (bundle?.proposals ?? []).filter(
+    (p) => p.placedSessionId === null,
+  ).length;
   const axis: "room" | "track" =
     hasTracks && filters.axis === "track" ? "track" : "room";
 
@@ -367,47 +376,29 @@ export function SchedulePage() {
     [bundle?.starredSessionIds],
   );
 
-  /** Sessions on the current day that pass the filter chips (SPEC §7.3). */
+  /**
+   * Sessions that pass the filter chips (SPEC §7.3) — the whole event, not just
+   * the day: the lens has never had anything to do with the day, and `day` is
+   * applied separately below. The predicate is shared with the search page,
+   * which applies the same lens without narrowing to a day at all.
+   */
   const matchedIds = useMemo(() => {
     if (!bundle) return new Set<number>();
-    const q = filters.q.trim();
     const soonNow = nowMin;
     return new Set(
       bundle.sessions
-        .filter((s) => {
-          if (filters.rooms.length && !filters.rooms.includes(s.roomId))
-            return false;
-          if (
-            filters.tags.length &&
-            !s.tagIds.some((t) => filters.tags.includes(t))
-          )
-            return false;
-          if (!matchesTracks(filters.tracks, s)) return false;
-          if (filters.mine && !starredIds.has(s.id)) return false;
-          // Same matcher the search box uses: every word has to appear
-          // somewhere in the session, in any order.
-          if (q && !matchesQuery(s, q)) return false;
-          if (filters.soon) {
-            if (soonNow === null) return false;
-            const { endMin } = place(s, timezone);
-            if (endMin <= soonNow) return false;
-          }
-          return true;
-        })
+        .filter((s) =>
+          matchesLens(s, filters, {
+            starred: (x) => starredIds.has(x.id),
+            // The grid draws one day, so "now" is a minute of that day and
+            // `nowMin` is null unless the day on screen is today.
+            upcoming: (x) =>
+              soonNow !== null && place(x, timezone).endMin > soonNow,
+          }),
+        )
         .map((s) => s.id),
     );
-  }, [
-    bundle,
-    filters.rooms,
-    filters.tags,
-    filters.tracks,
-    filters.q,
-    filters.soon,
-    filters.mine,
-    starredIds,
-    nowMin,
-    timezone,
-  ]);
+  }, [bundle, filters, starredIds, nowMin, timezone]);
 
   const daySessions = useMemo(
     () =>
@@ -450,6 +441,21 @@ export function SchedulePage() {
   // brings the warning back.
   const clashKey = clashPairs.map(([a, b]) => `${a.id}-${b.id}`).join(",");
   const showClashBanner = clashKey !== "" && clashDismissed !== clashKey;
+
+  /**
+   * The same question, asked of the whole event.
+   *
+   * A filter narrows the day on screen, which is the wrong scope for "everything
+   * tagged design" — the only way to ask that was to set the tag and then walk
+   * the day strip. Every filter already lives in the query string, so the
+   * hand-off is a link: `lensParams` keeps what narrows sessions and drops
+   * `day`, `view` and `axis`, which are facts about a grid the search page does
+   * not have.
+   */
+  const searchEverywhere = useCallback(() => {
+    const params = lensParams(filters).toString();
+    navigate(`/e/${slug}/search${params ? `?${params}` : ""}`);
+  }, [filters, navigate, slug]);
 
   /** Jump to a search result on another day: switch day and open it in one nav. */
   const openResult = useCallback(
@@ -729,6 +735,49 @@ export function SchedulePage() {
     setChromeMode("auto");
     scroller()?.scrollTo({ top: 0, behavior: "smooth" });
   }, [scroller]);
+
+  /**
+   * Moving to another day, from the day strip or the button at the end of a
+   * list. The grid runs from the event's earliest hour to its latest, which are
+   * the outer edges of the whole event and not of any one day: a day whose
+   * first session is after lunch opened on a screenful of empty rows, and read
+   * as an empty day until you scrolled. So the grid opens on that day's first
+   * session instead.
+   *
+   * `startMin - dayStartMin` and no header offset is deliberate: the room cards
+   * are sticky inside the same scroller, so scrolling by exactly the session's
+   * distance into the day leaves it sitting just under them — the top of the
+   * readable area, which is where "the first session" belongs.
+   *
+   * A day with nothing on it, and the list — as long as its own rows, never
+   * longer — go to the top as before.
+   */
+  const goToDay = useCallback(
+    (date: string) => {
+      filters.set({ day: date });
+      // After paint: the day being scrolled has to be rendered first.
+      requestAnimationFrame(() => {
+        let first: number | null = null;
+        for (const session of bundle?.sessions ?? []) {
+          const at = place(session, timezone);
+          if (at.date === date && (first === null || at.startMin < first)) {
+            first = at.startMin;
+          }
+        }
+        const el = calRef.current;
+        if (el && event && first !== null) {
+          el.scrollTo({
+            top: Math.max(0, (first - event.dayStartMin) * PX_PER_MIN - DAY_LEAD_IN),
+          });
+        } else {
+          el?.scrollTo({ top: 0 });
+        }
+        mainRef.current?.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0 });
+      });
+    },
+    [bundle?.sessions, event, filters, timezone],
+  );
 
   /**
    * The fold takes time, so "folded" and "gone" are two different moments and
@@ -1190,7 +1239,7 @@ export function SchedulePage() {
                         <button
                           key={first}
                           type="button"
-                          onClick={() => filters.set({ day: holdsToday ? today : first })}
+                          onClick={() => goToDay(holdsToday ? today : first)}
                           aria-pressed={i === weekIndex}
                           aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
                           className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
@@ -1226,7 +1275,7 @@ export function SchedulePage() {
                       <button
                         key={d}
                         type="button"
-                        onClick={() => filters.set({ day: d })}
+                        onClick={() => goToDay(d)}
                         aria-pressed={day === d}
                         className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
                           day === d
@@ -1303,21 +1352,35 @@ export function SchedulePage() {
 
                 {/* Everyone needs the board: attendees pitch there, viewers can
                     register interest. It sits with the other ways of looking at the
-                    programme, not up with the account chrome. */}
-                <Link
-                  data-tour="pitches"
-                  to={`/e/${slug}/proposals`}
-                  className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                >
-                  Pitches
-                  {bundle.proposals.filter((p) => p.placedSessionId === null).length >
-                    0 && (
-                    <span className="ms-1 text-stone-400 dark:text-stone-500">
-                      {bundle.proposals.filter((p) => p.placedSessionId === null)
-                        .length}
-                    </span>
-                  )}
-                </Link>
+                    programme, not up with the account chrome.
+
+                    "Pitches" named the place; "Pitch a session" says what you
+                    can do there, which is what somebody who has never seen an
+                    unconference needs to read. It costs two words, so below
+                    `sm` — where this row already competes with Manage, Arrange
+                    and Add — the bulb carries it alone, with the words still on
+                    the button as its accessible name.
+
+                    Gone entirely on an event that has turned the board off: the
+                    pitches themselves are untouched, but there is nothing here
+                    to walk into. */}
+                {event.pitchesEnabled && (
+                  <Link
+                    data-tour="pitches"
+                    to={`/e/${slug}/proposals`}
+                    aria-label="Pitch a session"
+                    title="Pitch a session"
+                    className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                  >
+                    <PitchIcon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Pitch a session</span>
+                    {openPitchCount > 0 && (
+                      <span className="text-stone-400 dark:text-stone-500">
+                        {openPitchCount}
+                      </span>
+                    )}
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -1387,6 +1450,7 @@ export function SchedulePage() {
                 tracks={bundle.tracks}
                 hasUntracked={hasUntracked}
                 starredCount={starredIds.size}
+                onSearchEverywhere={searchEverywhere}
               />
               {/* Now lives with the filters rather than up in the action row:
                   this row is what survives folding, and jumping to the current
@@ -1603,10 +1667,7 @@ export function SchedulePage() {
             nextDay={nextDay}
             nowMin={nowMin}
             onOpen={openSession}
-            onGoToDay={(d) => {
-              filters.set({ day: d });
-              window.scrollTo({ top: 0 });
-            }}
+            onGoToDay={goToDay}
             onToggleStar={(s) => void toggleStar(s)}
           />
         )}

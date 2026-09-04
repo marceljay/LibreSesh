@@ -506,5 +506,7 @@ export interface SettingsWrite {
   defaultView?: ViewMode;
   /** Whether the grid and the list badge an official session. */
   showOfficialBadge?: boolean;
+  /** Whether this event runs a pitch board. Off hides it; nothing is deleted. */
+  pitchesEnabled?: boolean;
   archived?: boolean;
 }

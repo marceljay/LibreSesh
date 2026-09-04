@@ -20,6 +20,11 @@ const SNAP = 5;
 /** Hold this long before a touch drag starts, so the page can still scroll. */
 const TOUCH_HOLD_MS = 250;
 const RESIZE_HANDLE_PX = 12;
+/** A block stops this far short of its own end time, so two back-to-back
+ *  sessions read as two blocks rather than one tall one. Anything drawn *over*
+ *  the same hours has to stop short by the same amount or it shows below the
+ *  block as a sliver of itself — which is what the hold band was doing. */
+const BLOCK_GAP_PX = 3;
 
 const snap = (m: number): number => Math.round(m / SNAP) * SNAP;
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
@@ -660,13 +665,25 @@ export function Calendar({
               className="pointer-events-none absolute end-0 border-y border-amber-300/70 bg-amber-100/50 dark:border-amber-500/40 dark:bg-amber-500/10"
               style={{
                 top: (startMin - dayStartMin) * PX_PER_MIN,
-                height: durMin * PX_PER_MIN,
+                // The hold's own block sits inside this band and stops
+                // `BLOCK_GAP_PX` short of its end; a band drawn to the full
+                // duration therefore showed 3px of amber under the block and
+                // none above it, which reads as padding on one side only.
+                height: Math.max(durMin * PX_PER_MIN - BLOCK_GAP_PX, 0),
                 left: GUTTER_W,
               }}
             >
-              <span className="absolute end-1 top-0.5 text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
-                {session.title} — everyone should be here
-              </span>
+              {/* Centred in the band, both ways. Pinned to the top-right
+                  corner the label read as a caption for whatever block it
+                  happened to land on, and left every pixel of the band's
+                  height below it — the band looked bottom-padded and unowned.
+                  A band that spans the whole grid says "all of this", so the
+                  label sits in the middle of what it is claiming. */}
+              <div className="absolute inset-0 flex items-center justify-center px-2">
+                <span className="max-w-full truncate text-center text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
+                  {session.title} — everyone should be here
+                </span>
+              </div>
             </div>
           ))}
 
@@ -753,7 +770,7 @@ export function Calendar({
                   top: (effectiveStart - dayStartMin) * PX_PER_MIN,
                   left: GUTTER_W + roomIndex * COL_W + 4 + lane.lane * width,
                   width: width - 2,
-                  height: Math.max(effectiveDur * PX_PER_MIN - 3, 22),
+                  height: Math.max(effectiveDur * PX_PER_MIN - BLOCK_GAP_PX, 22),
                   touchAction: editable ? 'none' : 'auto',
                 }}
               >

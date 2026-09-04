@@ -96,6 +96,13 @@ export function proposalRoutes(ctx: Ctx): Router {
     requireWritable,
     limit(ctx.limiter, 'session'),
     (req, res) => {
+      // An event that has turned the board off keeps everything already on it
+      // — the hide is not a delete — but stops taking new pitches. Without this
+      // a tab left open before the switch could still post to a board nobody
+      // can reach.
+      if (req.event.pitches_enabled !== 1) {
+        throw forbidden('This event is not taking pitches');
+      }
       const body = parse(proposalSchema, req.body);
       const tagIds = body.tagIds ?? [];
       assertTagsBelong(ctx.db, req.event.id, tagIds);

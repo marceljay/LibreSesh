@@ -51,6 +51,7 @@ export const toEventDto = (e: EventRow): EventDto => ({
   auditKeep: e.audit_keep,
   showOfficialBadge: e.show_official_badge === 1,
   defaultView: e.default_view === 'cal' ? 'cal' : 'list',
+  pitchesEnabled: e.pitches_enabled === 1,
 });
 
 export const toRoomDto = (r: RoomRow): RoomDto => ({
