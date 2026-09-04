@@ -1,8 +1,9 @@
 import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useState } from 'react';
-import type { AuditEntryDto } from '@shared/types';
+import type { AuditEntryDto, AuditItemDto } from '@shared/types';
 import { api } from '../lib/api';
 import { relativeTime, rowId, uid } from '../lib/format';
+import { plural, pluralForm } from '../lib/plural';
 import { ControlShell, EmptyState, SecondaryButton, Section, Spinner, TextInput, useToast } from '../components/ui';
 
 /**
@@ -11,6 +12,10 @@ import { ControlShell, EmptyState, SecondaryButton, Section, Spinner, TextInput,
  * this says who took it away — and for the actions with no undo (a rename, a
  * permission change, a merge) it is the only record there is.
  */
+
+/** What the list counts: one line is one action, which may have written
+ *  several rows. */
+const LINES = { one: 'entry', other: 'entries' };
 
 /** Past tense, because every row is something that already happened. */
 const ACTIONS: Record<string, string> = {
@@ -45,19 +50,22 @@ const ACTIONS: Record<string, string> = {
   series_unlink: 'unlinked',
 };
 
-const ENTITIES: Record<string, string> = {
-  session: 'session',
-  contribution: 'contribution',
-  room: 'room',
-  tag: 'tag',
-  format: 'format',
-  track: 'track',
-  person: 'person',
-  proposal: 'pitch',
-  event: 'event',
-  identity: 'identity',
-  permissions: 'permissions',
-  instance: 'instance',
+/** Counted, because one action can write several rows — five sessions placed
+ *  in one press. Forms rather than an appended "s": "person" pluralises to
+ *  "people" and "pitch" to "pitches". */
+const ENTITIES: Record<string, { one: string; other: string }> = {
+  session: { one: 'session', other: 'sessions' },
+  contribution: { one: 'contribution', other: 'contributions' },
+  room: { one: 'room', other: 'rooms' },
+  tag: { one: 'tag', other: 'tags' },
+  format: { one: 'format', other: 'formats' },
+  track: { one: 'track', other: 'tracks' },
+  person: { one: 'person', other: 'people' },
+  proposal: { one: 'pitch', other: 'pitches' },
+  event: { one: 'event', other: 'events' },
+  identity: { one: 'identity', other: 'identities' },
+  permissions: { one: 'permissions', other: 'permissions' },
+  instance: { one: 'instance', other: 'instances' },
 };
 
 /** Deletions and failures are what an organiser is scanning for. */
@@ -68,11 +76,10 @@ const TONE: Record<string, string> = {
   merge: 'text-amber-700 dark:text-amber-400',
 };
 
-function Entry({ entry }: { entry: AuditEntryDto }) {
-  const action = ACTIONS[entry.action] ?? entry.action;
-  const entity = ENTITIES[entry.entity] ?? entry.entity;
+/** The actor, their UID and the time — the parts every line shares. */
+function Who({ entry }: { entry: AuditEntryDto }) {
   return (
-    <li className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800">
+    <>
       <span className="font-medium">{entry.actorName || 'someone'}</span>
       {/* The UID, not just the name: names are editable and this log is read
           precisely when someone wants to know who did a thing. The same code
@@ -85,33 +92,111 @@ function Entry({ entry }: { entry: AuditEntryDto }) {
           ({uid(entry.actorUid)})
         </span>
       )}
-      <span className={TONE[entry.action] ?? 'text-stone-600 dark:text-stone-300'}>{action}</span>
-      <span className="text-stone-500 dark:text-stone-400">{entity}</span>
+    </>
+  );
+}
+
+function When({ at }: { at: string }) {
+  return (
+    <time
+      dateTime={at}
+      title={new Date(at).toLocaleString()}
+      className="ms-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
+    >
+      {relativeTime(at)}
+    </time>
+  );
+}
+
+/** What was acted on: its name if it could still be looked up, and always its
+ *  id — the name is what it is called now, the id is what was acted on. */
+function What({ entry }: { entry: AuditEntryDto }) {
+  return (
+    <>
       {entry.entityLabel && (
         <span className="min-w-0 truncate font-medium">“{entry.entityLabel}”</span>
       )}
-      {/* Always, even when a name resolved — the name is what it is called
-          now, the id is what was acted on. Two people can share a name, and a
-          renamed thing would otherwise make its own history unreadable. */}
       {entry.entityId !== null && (
         <span className="font-mono text-xs text-stone-400 dark:text-stone-500">
           ({rowId(entry.entityId)})
         </span>
       )}
-      <time
-        dateTime={entry.at}
-        title={new Date(entry.at).toLocaleString()}
-        className="ms-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
-      >
-        {relativeTime(entry.at)}
-      </time>
+    </>
+  );
+}
+
+/**
+ * One line: usually one row, sometimes a whole bulk action.
+ *
+ * A repeat placed across a fortnight writes fourteen rows, and it must —
+ * each is a session with its own id, and the edit that moves one of them next
+ * week will name it alone. But fourteen lines for one press buries the rest of
+ * the morning's history, so the batch reads as one line and opens to show every
+ * member. Nothing is hidden; it is folded.
+ */
+function Entry({ entry }: { entry: AuditItemDto }) {
+  const [open, setOpen] = useState(false);
+  const action = ACTIONS[entry.action] ?? entry.action;
+  const forms = ENTITIES[entry.entity] ?? { one: entry.entity, other: entry.entity };
+  const members = entry.members;
+  const tone = TONE[entry.action] ?? 'text-stone-600 dark:text-stone-300';
+
+  if (members === undefined) {
+    return (
+      <li className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800">
+        <Who entry={entry} />
+        <span className={tone}>{action}</span>
+        <span className="text-stone-500 dark:text-stone-400">{pluralForm(1, forms)}</span>
+        <What entry={entry} />
+        <When at={entry.at} />
+      </li>
+    );
+  }
+
+  return (
+    <li className="border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800">
+      <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <Who entry={entry} />
+        <span className={tone}>{action}</span>
+        {/* The count, and the title they share — a repeat is the same session
+            on several days, so one name covers the batch. */}
+        <span className="text-stone-500 dark:text-stone-400">
+          {plural(members.length, forms)}
+        </span>
+        {entry.entityLabel && (
+          <span className="min-w-0 truncate font-medium">“{entry.entityLabel}”</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="rounded-sm text-xs font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+        >
+          {open ? 'Hide' : `Show all ${members.length}`}
+        </button>
+        <When at={entry.at} />
+      </div>
+      {open && (
+        <ul className="mt-1.5 space-y-1 border-s border-stone-200 ps-3 dark:border-stone-700">
+          {members.map((member) => (
+            <li
+              key={member.id}
+              className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs text-stone-500 dark:text-stone-400"
+            >
+              <span>{pluralForm(1, forms)}</span>
+              <What entry={member} />
+              <When at={member.at} />
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }
 
 export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: number }) {
   const toast = useToast();
-  const [entries, setEntries] = useState<AuditEntryDto[] | null>(null);
+  const [entries, setEntries] = useState<AuditItemDto[] | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState('');
@@ -148,21 +233,23 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
   // Filters what has been loaded, not the log — said plainly below, because a
   // search box that quietly ignores the other 900 rows is a trap.
   const needle = filter.trim().toLowerCase();
-  const shown = (entries ?? []).filter((e) =>
-    needle === ''
-      ? true
-      : [
-          e.actorName,
-          e.actorUid === null ? '' : uid(e.actorUid),
-          e.action,
-          e.entity,
-          e.entityLabel,
-          e.entityId === null ? '' : rowId(e.entityId),
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(needle),
-  );
+  /** Everything about one line that is worth matching — including the members
+   *  of a batch, so the id of a session placed in a run still finds the line
+   *  that placed it, folded or not. */
+  const haystack = (e: AuditItemDto): string =>
+    [
+      e.actorName,
+      e.actorUid === null ? '' : uid(e.actorUid),
+      e.action,
+      e.entity,
+      ...(e.members ?? [e]).flatMap((m) => [
+        m.entityLabel,
+        m.entityId === null ? '' : rowId(m.entityId),
+      ]),
+    ]
+      .join(' ')
+      .toLowerCase();
+  const shown = (entries ?? []).filter((e) => needle === '' || haystack(e).includes(needle));
 
   return (
     <Section
@@ -204,7 +291,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
               </SecondaryButton>
             )}
             <p className="text-xs text-stone-400 dark:text-stone-500">
-              {entries.length} loaded
+              {plural(entries.length, LINES)} loaded
               {needle !== '' && `, ${shown.length} matching`}
               {cursor === null ? ' — that is the whole log.' : '. The filter searches these only.'}
             </p>

@@ -1,4 +1,18 @@
+import { randomUUID } from 'node:crypto';
+
 import type { Db } from './db.js';
+
+/**
+ * A key shared by every row one bulk action writes — placing a repeat across
+ * five days, or applying an edit to a whole series.
+ *
+ * The rows stay one per session, because each is a separate session with its
+ * own id and every later edit will name exactly one of them. The batch is only
+ * how they are *read*: the log shows them as one line that expands. Mint one
+ * per action, and only when the action really did write more than one row — a
+ * batch of one is a lie the reader would have to undo.
+ */
+export const newBatch = (): string => randomUUID();
 
 /**
  * How far past its cap an event's log is allowed to drift before a write pays
@@ -24,10 +38,13 @@ export function audit(
     action: string;
     entity: string;
     entityId: number | null;
+    /** The bulk action this row belongs to; see {@link newBatch}. */
+    batch?: string;
   },
 ): void {
   db.prepare(
-    'INSERT INTO audit (identity_id, event_id, action, entity, entity_id, at) VALUES (?, ?, ?, ?, ?, ?)',
+    `INSERT INTO audit (identity_id, event_id, action, entity, entity_id, at, batch)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     entry.identityId,
     entry.eventId,
@@ -35,6 +52,7 @@ export function audit(
     entry.entity,
     entry.entityId,
     new Date().toISOString(),
+    entry.batch ?? null,
   );
 
   if (entry.eventId === null) return;

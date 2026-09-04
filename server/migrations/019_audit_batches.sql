@@ -1,0 +1,18 @@
+-- Which bulk action wrote this row, or NULL for a row that stands alone.
+--
+-- Placing a repeat across five days writes five sessions, and an edit applied
+-- to a whole series writes one update per occurrence. That is right: each of
+-- those is a separate session with its own id, and every later edit or deletion
+-- will name exactly one of them, so the log has to record each one or it cannot
+-- answer "who moved that Thursday talk".
+--
+-- What was wrong is the reading. Five rows for one press buried the rest of the
+-- morning's history, and a fortnight-long run could push earlier actions past
+-- the retention cap on its own. So the rows stay, one per session, and the ones
+-- written by a single action share a batch id — the reader groups them into one
+-- line that expands to show every member with its own id.
+--
+-- A string, not a foreign key: there is no batch table and nothing to point at.
+-- The value is a UUID minted per bulk action, so two actions can never collide
+-- even when their rows interleave under concurrent writes.
+ALTER TABLE audit ADD COLUMN batch TEXT;

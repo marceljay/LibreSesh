@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireWritable } from '../auth.js';
-import { audit } from '../audit.js';
+import { audit, newBatch } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { Role } from '../shared/types.js';
 import type { SessionRow } from '../db.js';
@@ -300,7 +300,11 @@ export function sessionRoutes(ctx: Ctx): Router {
 
       // One audit row and one broadcast each: they are separate sessions from
       // the moment they exist, and every later edit or deletion will name one.
+      // The rows share a batch so the log reads as one line — five rows for one
+      // press buried the rest of the morning, and a fortnight-long run could
+      // push earlier actions past the retention cap on its own.
       const dtos = ids.map((id) => loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id)));
+      const batch = dtos.length > 1 ? newBatch() : undefined;
       for (const dto of dtos) {
         audit(ctx.db, {
           identityId: req.identity.id,
@@ -308,6 +312,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           action: 'create',
           entity: 'session',
           entityId: dto.id,
+          batch,
         });
         ctx.broker.publish(req.event.slug, 'session.created', dto);
       }
@@ -508,7 +513,9 @@ export function sessionRoutes(ctx: Ctx): Router {
       return { touched, considered };
     })();
 
-    // One audit row and one broadcast per session the edit actually changed.
+    // One audit row and one broadcast per session the edit actually changed,
+    // batched so an edit across a series reads as one line in the log.
+    const editBatch = outcome.touched.length > 1 ? newBatch() : undefined;
     const dtos = outcome.touched.map((id) => {
       const d = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
       audit(ctx.db, {
@@ -517,6 +524,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         action: 'update',
         entity: 'session',
         entityId: id,
+        batch: editBatch,
       });
       ctx.broker.publish(req.event.slug, 'session.updated', d);
       return d;
@@ -557,8 +565,10 @@ export function sessionRoutes(ctx: Ctx): Router {
     req: { event: { id: number; slug: string }; identity: { id: number } },
     ids: number[],
     action: string,
-  ): ReturnType<typeof loadSessionDto>[] =>
-    ids.map((id) => {
+  ): ReturnType<typeof loadSessionDto>[] => {
+    // Linking six sessions is one action, however many rows it writes.
+    const batch = ids.length > 1 ? newBatch() : undefined;
+    return ids.map((id) => {
       const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
       audit(ctx.db, {
         identityId: req.identity.id,
@@ -566,10 +576,12 @@ export function sessionRoutes(ctx: Ctx): Router {
         action,
         entity: 'session',
         entityId: id,
+        batch,
       });
       ctx.broker.publish(req.event.slug, 'session.updated', dto);
       return dto;
     });
+  };
 
   /**
    * The sessions the actor could link to this one: same title, theirs to edit,
