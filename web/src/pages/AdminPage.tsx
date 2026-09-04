@@ -1783,14 +1783,16 @@ export function AdminPage() {
               }
             />
             <Field
-              label="Opens in"
-              hint="Which view someone gets who has not chosen one. The switch above the grid still works for everybody, and a view somebody picks travels in the link they share. The list reads well at any size; the grid earns its place once there are several rooms to compare."
+              label="Default view"
+              hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
             >
               <Select
                 value={defaultView}
                 onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
               >
-                <SelectTrigger aria-label="Opens in" className="w-48">
+                {/* Wide enough for the longest option in full: at w-48 both
+                    ran under the chevron. */}
+                <SelectTrigger aria-label="Default view" className="w-72">
                   <SelectValue>
                     {(v: string | null) =>
                       v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
