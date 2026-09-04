@@ -44,8 +44,12 @@
   --destructive: var(--color-red-600);
   --destructive-foreground: var(--color-stone-50);
   --border: var(--color-stone-200);
-  --input: var(--color-stone-300);
-  --ring: var(--color-stone-400);
+  /* Match the fields' own border and focus ring exactly (Phase 3: stone-500 is
+     the first step clearing 3:1 contrast in both themes). shadcn's lighter
+     defaults would give the dropdowns a paler border than the text inputs
+     beside them, and fail that contrast floor. */
+  --input: var(--color-stone-500);
+  --ring: var(--color-stone-500);
 }
 
 .dark {
@@ -66,8 +70,8 @@
   --destructive: var(--color-red-500);
   --destructive-foreground: var(--color-stone-50);
   --border: var(--color-stone-700);
-  --input: var(--color-stone-600);
-  --ring: var(--color-stone-500);
+  --input: var(--color-stone-500);
+  --ring: var(--color-stone-400);
 }
 
 @theme inline {
