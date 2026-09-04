@@ -20,15 +20,20 @@ route**, not on `dev` — the primitive layer stays shippable until this proves 
 
 ## Prerequisites / version bumps
 
-- [ ] **Tailwind v3 → v4** (the big one, app-wide, not just forms):
-  - `@import "tailwindcss"` replaces `@tailwind base/components/utilities`.
-  - Move `tailwind.config.js` theme (colours incl. `accent`, fonts) to CSS `@theme`.
-  - Drop `postcss.config.js` + `autoprefixer`; add `@tailwindcss/vite`.
-  - Sweep renamed utils: `shadow-sm→shadow-xs`, `outline-none→outline-hidden`,
-    `ring` default width change, `rounded-sm` etc. Grep + fix across `web/src`.
-- [ ] **React 18 → 19** (Base UI supports 18+, but 19 is the forward target;
-      confirm the floor at `shadcn init`). Check `react-router-dom` 6→7 interplay.
-- [ ] Confirm Vite/TS floors shadcn CLI wants at init.
+**Revised 2026-09-04:** shadcn/ui supports Tailwind **v3 + React 18** (CLI detects
+the version and generates v3-compatible components) — v4 is **not** required to
+adopt shadcn. And the `@tailwindcss/upgrade` codemod **cannot run in this arm64
+sandbox** (`tree-sitter-typescript` native binary fails to load). So:
+
+- [x] **Stay on Tailwind v3 + React 18** for the shadcn adoption. Lower risk, no
+      app-wide class sweep, unblocked here.
+- [ ] **Tailwind v3 → v4 — deferred, separate step.** Run `npx @tailwindcss/upgrade`
+      on an x64 host (or once the codemod runs here), on its own branch/commit, then
+      rebase this work. v4 brings: CSS-first config, `@tailwindcss/vite`, and renamed
+      utils (`shadow-sm→shadow-xs`, `outline-none→outline-hidden`, bare `border`/`ring`
+      default changes). Not blocking shadcn.
+- [ ] **React 18 → 19 + router 6 → 7 — deferred**, same reasoning. Base UI supports
+      React 18, so not blocking.
 
 ## Adopt (shadcn components, added selectively via `npx shadcn add`)
 
