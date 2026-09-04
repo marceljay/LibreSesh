@@ -1,8 +1,9 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
 
 import { popoverPanelClass, usePopover } from './Popover';
-import { Modal, linkClass } from './ui';
+import { linkClass } from './ui';
 
 /** Where the code lives — the answer to "can I run this myself?", which is
  *  most of the point of it being open source. */

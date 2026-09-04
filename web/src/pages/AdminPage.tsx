@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { useCallback, useEffect, useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -384,7 +385,6 @@ import {
   FormRow,
   FormStack,
   IconButton,
-  Modal,
   NumberField,
   PrimaryButton,
   SecondaryButton,

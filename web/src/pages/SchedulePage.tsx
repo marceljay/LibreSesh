@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
 import type {
@@ -59,7 +60,6 @@ import { Tour, type TourStep } from "../components/Tour";
 import {
   ControlShell,
   EmptyState,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   Spinner,

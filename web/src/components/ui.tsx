@@ -1,6 +1,8 @@
 import {
   createContext,
   forwardRef,
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -11,7 +13,6 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import type { Role } from '@shared/types';
 import {
   maxDigits,
@@ -19,7 +20,6 @@ import {
   sanitizeNumberInput,
   type NumberFieldSpec,
 } from '../lib/numberField';
-import { CloseIcon } from './icons';
 
 /**
  * Inline controls all stand 38px tall — a `text-sm` input with `py-2` and a
@@ -693,143 +693,6 @@ export function Toggle({
   );
 }
 
-/**
- * Bottom sheet on mobile, centred dialog from `sm` up. Closes on backdrop
- * click, on Escape, and on the × in its header; focus moves in on open.
- *
- * Three regions, and the middle one is the only one that scrolls:
- *
- *   header  title, an optional line saying what the dialog is for, close
- *   body    the form
- *   footer  the actions
- *
- * That structure is the fix for two habits every caller had grown. The intro
- * line under the title was a `-mt-2` paragraph hand-placed at the top of each
- * body, cancelling the heading's own margin — and once the header became
- * sticky, it slid underneath and was clipped. The actions were a `mt-4 flex
- * justify-end gap-2` row re-typed in every modal, at the very bottom of a form
- * tall enough that Save scrolled off the screen. Neither is the caller's
- * problem to solve, and each solved it slightly differently.
- */
-export function Modal({
-  title,
-  description,
-  onClose,
-  children,
-  wide,
-  footer,
-  onSubmit,
-}: {
-  title: string;
-  /** One line under the title: what this dialog is for, or what it will do. */
-  description?: ReactNode;
-  onClose: () => void;
-  children: ReactNode;
-  wide?: boolean;
-  /** The action bar. It does not scroll, so Save stays reachable from anywhere
-   *  in a long form. Right-aligned; give an item `mr-auto` to send it left, or
-   *  `basis-full` to put it on its own line above the buttons. */
-  footer?: ReactNode;
-  /** Given, the dialog is a real `<form>`: Enter in a field submits it, and the
-   *  primary action should be a `type="submit"` button. */
-  onSubmit?: () => void;
-}) {
-  const panel = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    // Only if nothing inside has claimed it already — a field with `autoFocus`
-    // has focus by now, and taking it back would undo the point of asking.
-    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const Body = onSubmit ? 'form' : 'div';
-
-  /* Rendered into `body`, not where it was written.
-   *
-   * `position: fixed` is only fixed to the viewport while no ancestor has a
-   * filter, transform or `backdrop-filter` — any of those become the
-   * containing block for fixed descendants instead. The schedule header has
-   * `backdrop-blur`, so a dialog opened from a menu up there (About, device
-   * linking) was laid out inside the header's own box: the backdrop covered a
-   * strip at the top of the page, and the panel, which sits at the bottom of
-   * its container on a phone, was pushed off the screen entirely. A portal
-   * takes it out of that box without moving it in the React tree, so the
-   * handlers and state stay exactly where they were written. */
-  return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
-      {/* Fixed, not absolute: the backdrop must cover the viewport whatever the
-          panel does. */}
-      <button
-        type="button"
-        aria-label="Close"
-        className="fixed inset-0 cursor-default bg-stone-900/40 dark:bg-black/60"
-        onClick={onClose}
-      />
-      <div className="flex h-full items-end justify-center sm:items-center sm:p-4">
-        <div
-          ref={panel}
-          tabIndex={-1}
-          // dvh, not vh: on mobile browsers vh counts the area behind the
-          // address bar, so 90vh can be taller than what you can actually see.
-          // The panel is capped and its body scrolls, so nothing can end up
-          // above the top of the screen where no scrolling reaches it.
-          className={`relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white outline-hidden dark:bg-stone-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl ${
-            wide ? 'max-w-2xl' : 'max-w-md'
-          }`}
-        >
-          <Body
-            className="flex min-h-0 flex-1 flex-col"
-            {...(onSubmit
-              ? {
-                  onSubmit: (e: React.FormEvent) => {
-                    e.preventDefault();
-                    onSubmit();
-                  },
-                }
-              : {})}
-          >
-            <div className="flex shrink-0 items-start gap-3 border-b border-stone-200 px-5 py-4 dark:border-stone-700">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-                {description && (
-                  <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-                    {description}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                title="Close"
-                className="-mr-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-              {children}
-            </div>
-
-            {footer && (
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3 dark:border-stone-700 dark:bg-stone-950/40">
-                {footer}
-              </div>
-            )}
-          </Body>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 /** Why the last attempt did not go through. Sits in the modal footer beside the
  *  button you just pressed, rather than at the top of a form you have scrolled
  *  away from. */
@@ -936,6 +799,15 @@ const ConfirmContext = createContext<(request: ConfirmRequest) => Promise<boolea
  * Shaped as a promise so it drops straight into the place a `confirm()` call
  * used to sit, rather than turning every caller into a state machine.
  */
+/**
+ * Loaded on demand, not imported. `ui.tsx` is pulled into the app shell for its
+ * providers, so a static import here would drag Base UI's Dialog (~20 kB gz)
+ * into the first-paint chunk for every visitor — including the ones who only
+ * ever read the schedule. A confirm is rare and always a response to a click,
+ * so fetching the dialog at that moment costs nothing anyone notices.
+ */
+const LazyModal = lazy(() => import('./Modal').then((m) => ({ default: m.Modal })));
+
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<{
     request: ConfirmRequest;
@@ -960,7 +832,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmContext.Provider value={ask}>
       {children}
       {pending && (
-        <Modal
+        <Suspense fallback={null}>
+        <LazyModal
           title={pending.request.title}
           onClose={() => close(false)}
           onSubmit={() => close(true)}
@@ -976,7 +849,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           }
         >
           <p className="text-sm text-stone-600 dark:text-stone-300">{pending.request.body}</p>
-        </Modal>
+        </LazyModal>
+        </Suspense>
       )}
     </ConfirmContext.Provider>
   );

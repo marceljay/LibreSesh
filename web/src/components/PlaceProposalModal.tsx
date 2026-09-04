@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import type { ProposalDto, RoomDto } from '@shared/types';
 import type { PlaceWrite } from '../lib/api';
@@ -16,7 +17,6 @@ import {
   Field,
   FormError,
   FormGrid,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextInput,

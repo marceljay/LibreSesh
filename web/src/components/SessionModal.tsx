@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
 import type {
   FormatDto,
@@ -45,7 +46,6 @@ import {
   HelpButton,
   HelpNote,
   IconButton,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextArea,

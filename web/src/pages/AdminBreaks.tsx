@@ -1,3 +1,4 @@
+import { Modal } from '../components/Modal';
 import { useState } from 'react';
 import type { BreakDto } from '@shared/types';
 import type { BreakWrite } from '../lib/api';
@@ -8,7 +9,6 @@ import {
   Field,
   FormRow,
   FormStack,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   Section,

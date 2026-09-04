@@ -14,9 +14,16 @@ import { describe, expect, it } from 'vitest';
  * `backdrop-blur`. There is no layout in this suite to measure that with, so
  * what is pinned is the escape hatch — the portal — and the fact that the
  * header still blurs, which is what makes the portal necessary.
+ *
+ * The portal is Base UI's `Dialog.Portal` now rather than React's
+ * `createPortal`; the guarantee is identical and still load-bearing, so this
+ * pins the mechanism that provides it rather than the one that used to.
  */
 const WEB_SRC = join(__dirname, '..', 'web', 'src');
-const ui = readFileSync(join(WEB_SRC, 'components', 'ui.tsx'), 'utf8');
+const MODAL = join('components', 'Modal.tsx');
+/** `Modal` lives outside `ui.tsx` so Base UI's Dialog stays out of the
+ *  first-paint chunk — see the note in the component. */
+const modal = readFileSync(join(WEB_SRC, MODAL), 'utf8');
 const schedule = readFileSync(join(WEB_SRC, 'pages', 'SchedulePage.tsx'), 'utf8');
 
 function tsxFiles(dir: string): string[] {
@@ -29,9 +36,28 @@ function tsxFiles(dir: string): string[] {
 
 describe('a dialog escapes whatever opened it', () => {
   it('renders into the body rather than where it was written', () => {
-    expect(ui).toContain("import { createPortal } from 'react-dom';");
-    expect(ui).toMatch(/return createPortal\(\n\s*<div className="fixed inset-0 z-50"/);
-    expect(ui).toMatch(/\n\s*document\.body,\n\s*\);/);
+    expect(modal).toContain("import { Dialog } from '@base-ui/react/dialog';");
+    // The panel and the backdrop both sit inside the portal, so neither is laid
+    // out in the blurred header's containing block.
+    expect(modal).toMatch(/<Dialog\.Portal>[\s\S]*<Dialog\.Backdrop[\s\S]*<Dialog\.Popup/);
+  });
+
+  it('leaves the trap, inert and scroll lock to Base UI rather than hand-rolling them', () => {
+    // The hand-rolled version had none of these — Phase 0 flagged the missing
+    // focus trap. If Modal ever grows its own Escape listener or focus juggling
+    // again, that is the regression this catches.
+    expect(modal).not.toContain("if (e.key === 'Escape') onClose();");
+    expect(modal).not.toContain('panel.current?.focus()');
+  });
+
+  it('keeps Base UI out of the first-paint chunk', () => {
+    // `ui.tsx` is imported by the app shell for its providers, so a static
+    // import of the dialog there would ship ~20 kB gzipped to every visitor,
+    // including the ones who only read the schedule. ConfirmProvider therefore
+    // reaches it through a dynamic import, not a static one.
+    const ui = readFileSync(join(WEB_SRC, 'components', 'ui.tsx'), 'utf8');
+    expect(ui).not.toContain('@base-ui/react/dialog');
+    expect(ui).toMatch(/lazy\(\(\) => import\('\.\/Modal'\)/);
   });
 
   it('is still the header that makes this necessary', () => {
@@ -44,7 +70,7 @@ describe('a dialog escapes whatever opened it', () => {
     // Every dialog goes through `Modal`; a second hand-rolled `fixed inset-0`
     // overlay would have the same bug and none of the fix.
     const strays = tsxFiles(WEB_SRC)
-      .filter((path) => !path.endsWith(join('components', 'ui.tsx')))
+      .filter((path) => !path.endsWith(MODAL))
       .filter((path) => readFileSync(path, 'utf8').includes('fixed inset-0 z-50'));
     expect(strays).toEqual([]);
   });

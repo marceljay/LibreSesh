@@ -1,3 +1,4 @@
+import { Modal } from './Modal';
 import { useState } from 'react';
 import type { PersonDto, ProposalDto, Role, TagDto } from '@shared/types';
 import type { ProposalWrite } from '../lib/api';
@@ -9,7 +10,6 @@ import {
   Field,
   FormError,
   FormStack,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextArea,

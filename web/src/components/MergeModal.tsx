@@ -1,10 +1,11 @@
+import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
 import type { PersonDto } from '@shared/types';
 import { api } from '../lib/api';
 import { relativeTime, uid } from '../lib/format';
 import { matchesSearch, mergeConsequence, sortPeople, suggestDuplicates } from '../lib/people';
 import { PersonLine, PersonStatusBadge } from './PersonLine';
-import { Modal, PrimaryButton, SecondaryButton, useToast } from './ui';
+import { PrimaryButton, SecondaryButton, useToast } from './ui';
 
 /**
  * Fold a duplicate profile into this one (identity spec, B2).
