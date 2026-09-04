@@ -147,6 +147,10 @@ const FOLD_AT = 24;
 const OVERRIDE_PX = 120;
 /** Past this, the way back to the top of the day is worth a button. */
 const TOP_BUTTON_AT = 160;
+/** A little air above the first session when a day opens on it, so the
+ *  half-hour line above it is still on screen and the block does not look
+ *  clipped to the top edge. */
+const DAY_LEAD_IN = 16;
 
 export function SchedulePage() {
   const { slug = "", sessionId } = useParams();
@@ -731,6 +735,49 @@ export function SchedulePage() {
   }, [scroller]);
 
   /**
+   * Moving to another day, from the day strip or the button at the end of a
+   * list. The grid runs from the event's earliest hour to its latest, which are
+   * the outer edges of the whole event and not of any one day: a day whose
+   * first session is after lunch opened on a screenful of empty rows, and read
+   * as an empty day until you scrolled. So the grid opens on that day's first
+   * session instead.
+   *
+   * `startMin - dayStartMin` and no header offset is deliberate: the room cards
+   * are sticky inside the same scroller, so scrolling by exactly the session's
+   * distance into the day leaves it sitting just under them — the top of the
+   * readable area, which is where "the first session" belongs.
+   *
+   * A day with nothing on it, and the list — as long as its own rows, never
+   * longer — go to the top as before.
+   */
+  const goToDay = useCallback(
+    (date: string) => {
+      filters.set({ day: date });
+      // After paint: the day being scrolled has to be rendered first.
+      requestAnimationFrame(() => {
+        let first: number | null = null;
+        for (const session of bundle?.sessions ?? []) {
+          const at = place(session, timezone);
+          if (at.date === date && (first === null || at.startMin < first)) {
+            first = at.startMin;
+          }
+        }
+        const el = calRef.current;
+        if (el && event && first !== null) {
+          el.scrollTo({
+            top: Math.max(0, (first - event.dayStartMin) * PX_PER_MIN - DAY_LEAD_IN),
+          });
+        } else {
+          el?.scrollTo({ top: 0 });
+        }
+        mainRef.current?.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0 });
+      });
+    },
+    [bundle?.sessions, event, filters, timezone],
+  );
+
+  /**
    * The fold takes time, so "folded" and "gone" are two different moments and
    * the rows need to know which one they are in: mid-move they have to be
    * clipped, and only once they have finished leaving can they drop out of the
@@ -1190,7 +1237,7 @@ export function SchedulePage() {
                         <button
                           key={first}
                           type="button"
-                          onClick={() => filters.set({ day: holdsToday ? today : first })}
+                          onClick={() => goToDay(holdsToday ? today : first)}
                           aria-pressed={i === weekIndex}
                           aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
                           className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
@@ -1226,7 +1273,7 @@ export function SchedulePage() {
                       <button
                         key={d}
                         type="button"
-                        onClick={() => filters.set({ day: d })}
+                        onClick={() => goToDay(d)}
                         aria-pressed={day === d}
                         className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
                           day === d
@@ -1603,10 +1650,7 @@ export function SchedulePage() {
             nextDay={nextDay}
             nowMin={nowMin}
             onOpen={openSession}
-            onGoToDay={(d) => {
-              filters.set({ day: d });
-              window.scrollTo({ top: 0 });
-            }}
+            onGoToDay={goToDay}
             onToggleStar={(s) => void toggleStar(s)}
           />
         )}
