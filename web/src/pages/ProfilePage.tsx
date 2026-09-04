@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { PersonDetailDto, PersonDto, LabelledLink, Role } from '@shared/types';
@@ -31,7 +32,7 @@ type FieldKey = 'displayName' | 'name' | 'bio' | 'links';
 
 // Same wrappers DetailSheet uses for session descriptions.
 const PROSE =
-  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2';
+  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ms-4 [&_li]:list-disc [&_p]:mb-2';
 
 /** A speaker or host profile with their sessions (follow-up to SPEC §4). */
 export function ProfilePage() {
@@ -79,7 +80,7 @@ export function ProfilePage() {
         } else if (err instanceof ApiError && err.status === 404) {
           setStatus('notfound');
         } else {
-          setError((err as Error).message);
+          setError(errorText(err));
           setStatus('error');
         }
       });
@@ -126,7 +127,7 @@ export function ProfilePage() {
       await run();
       await data.reload();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
     }
   };
   const canEdit = !!person && (person.isMine || isAdmin);
@@ -202,7 +203,7 @@ export function ProfilePage() {
       setDetail((d) => (d ? { ...d, person: updated } : d));
       data.apply({ type: 'person.updated', entity: updated });
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   };
 
@@ -217,7 +218,7 @@ export function ProfilePage() {
       setDetail((d) => (d ? { ...d, person: updated } : d));
       data.apply({ type: 'person.updated', entity: updated });
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   };
 
@@ -247,7 +248,7 @@ export function ProfilePage() {
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-sm">
+        <div className="mt-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               {open === 'name' ? (
@@ -360,7 +361,7 @@ export function ProfilePage() {
                     : `Archived ${new Date(person.archivedAt).toLocaleDateString()}. It is out of the People list and the speaker picker, and keeps its sessions, its role and its holder.`}
                 </span>
                 <PrimaryButton
-                  className="ml-auto py-1 text-xs"
+                  className="ms-auto py-1 text-xs"
                   onClick={() => void toggleArchive()}
                 >
                   {person.isMine ? 'I’m still here' : 'Take out of the archive'}
@@ -377,7 +378,7 @@ export function ProfilePage() {
                     You have asked to hold this profile. An organiser decides.
                   </span>
                   <SecondaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.withdrawClaim(slug, myClaim.id))}
                   >
                     Withdraw
@@ -389,7 +390,7 @@ export function ProfilePage() {
                     An organiser turned that request down.
                   </span>
                   <SecondaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.withdrawClaim(slug, myClaim.id))}
                   >
                     Dismiss
@@ -407,7 +408,7 @@ export function ProfilePage() {
                     Nobody holds this profile. If it is you, an organiser can hand it over.
                   </span>
                   <PrimaryButton
-                    className="ml-auto py-1 text-xs"
+                    className="ms-auto py-1 text-xs"
                     onClick={() => void claimAction(() => api.claimPerson(slug, person.id))}
                   >
                     This is me
@@ -596,7 +597,7 @@ export function ProfilePage() {
                 <li key={session.id}>
                   <Link
                     to={`/e/${slug}/s/${session.id}`}
-                    className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 shadow-sm hover:shadow"
+                    className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 shadow-xs hover:shadow-sm"
                   >
                     <div className="text-xs text-stone-500 dark:text-stone-400">
                       {label.top} {label.sub} · {fmtMin(startMin)}–{fmtMin(endMin)} ·{' '}
@@ -748,7 +749,7 @@ function FieldForm({
       await onSave();
       onClose();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
       setBusy(false);
     }
   };
@@ -809,7 +810,7 @@ function SpeakerAccess({
       setPhrase(res.phrase);
       onChanged();
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }
@@ -826,7 +827,7 @@ function SpeakerAccess({
       onChanged();
       toast.show('Speaker phrase revoked');
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }

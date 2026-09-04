@@ -7,9 +7,9 @@ Last updated: 2026-09-04
 
 ## In Progress
 
-Working on `dev`; `main` is the released line and only takes merges.
-`dev` is ahead of `origin/dev` (unpushed as of 2026-09-04). Suite at
-**908**, lint clean, build clean.
+Working on `feat/shadcn-baseui`, cut off `dev`; `main` is the released line
+and only takes merges. `dev` is ahead of `origin/dev` (unpushed as of
+2026-09-04). Suite at **921**, lint clean, build clean.
 
 Linked sessions is done and off this list — it landed on `dev` (through
 `4f9afdb`), is written up in ARCHITECTURE §Linked sessions, CHANGELOG
@@ -25,7 +25,8 @@ Medium-Priority backlog item.
   `ControlShell`, `TextInput`, proven on `NumberField`). **Phase 2**
   (2026-09-04, `b13ca1a`+`f863275`+`eee9b3c`) converted every `inputClass`
   call site — ~90 across 17 files — to `Field`+`ControlShell`+`TextInput`,
-  added `TextArea` and `selectClass`, made the text primitives `forwardRef`,
+  added `TextArea` and `selectClass` (the latter since retired with the last
+  native select), made the text primitives `forwardRef`,
   deleted `inputClass`, and added the ESLint guardrails (ban raw
   `<input>`/`<textarea>` outside `ui.tsx`, allowlist `<select>`, block
   re-declaring `inputClass`; the `<button>` ban dropped — 82 legit raw
@@ -39,9 +40,25 @@ Medium-Priority backlog item.
   focused speaker/host field). *Deliberately skipped:* the blanket
   `border-stone-300`/`text-stone-400` ESLint ban — it would flag dozens of
   legitimately decorative uses; the must-read tokens are fixed.
-  **Next: Phase 4** (form semantics), then **Phase 5** (`SpeakerCombobox`
-  chips-in-shell + the "Expect someone" inline-create) and **Phase 6**. The
-  **Forms backlog group** below is governed by this brief.
+  **Phases 4–6 were overtaken** — see the next item. The **Forms backlog
+  group** below is still governed by this brief.
+
+- **shadcn/ui on Base UI** (`_planning/plans/2026-09-04-shadcn-baseui-migration.md`),
+  on branch `feat/shadcn-baseui`. Started because the overhaul kept
+  re-hitting problems a library already owns: a native `<select>` whose open
+  menu cannot be styled, a `Modal` with no focus trap, and the focus-ring
+  edge cases that took three attempts to kill. **Landed:** Tailwind v3 → v4
+  by hand (the codemod is dead on arm64); shadcn foundation themed to the
+  app's stone; **every** dropdown converted to Base UI Select, so no native
+  `<select>` is left; `Modal` rebuilt on Base UI Dialog; route-level code
+  splitting; logical properties everywhere with an ESLint rule; and the two
+  i18n-readiness refactors (error codes → client sentences, plural forms).
+  **Decided against, with reasons in the plan:** rebuilding `SpeakerCombobox`
+  and swapping `TextInput`/`TextArea` for shadcn's — both would trade working
+  behaviour for visual sameness the app already has.
+  **Cost:** +44 kB gz of Base UI runtime, kept off first paint by
+  code-splitting; entry chunk is 60.6 kB gz.
+  **Left:** ARCHITECTURE write-up, then merge to `dev`.
 
 The pre-existing spec work still awaiting a browser pass:
 That whole spec
@@ -627,6 +644,16 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   cost something, which is why this is a real backlog item and not a fire.
 
 ## Medium Priority
+
+- **A real date/time picker for the session modal.** The native
+  `<input type="date">`/`<input type="time">` are the last controls not wearing
+  the app's own field styling, and the browser's popup cannot be themed — the
+  same complaint that moved every `<select>` to Base UI. Deferred out of the
+  shadcn/Base UI migration on 2026-09-04 because the right control depends on
+  a decision nobody has made: a one-day unconference wants a time picker and
+  no calendar at all, while a fortnight-long event wants a month grid. A real
+  calendar means `react-day-picker` (~12 kB gz) on top of Base UI, which is a
+  bundle question as much as a design one. Decide the shape first, then build.
 
 - **Publishing a session: a link that works without the gate.** A published
   session would be the app's first genuinely unauthenticated read — sharing one

@@ -1,3 +1,4 @@
+import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useState } from 'react';
 import type { AuditEntryDto } from '@shared/types';
 import { api } from '../lib/api';
@@ -100,7 +101,7 @@ function Entry({ entry }: { entry: AuditEntryDto }) {
       <time
         dateTime={entry.at}
         title={new Date(entry.at).toLocaleString()}
-        className="ml-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
+        className="ms-auto shrink-0 text-xs text-stone-400 dark:text-stone-500"
       >
         {relativeTime(entry.at)}
       </time>
@@ -121,7 +122,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       setEntries(page.entries);
       setCursor(page.nextCursor);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
       setEntries([]);
     }
   }, [slug, toast]);
@@ -138,7 +139,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       setEntries((prev) => [...(prev ?? []), ...page.entries]);
       setCursor(page.nextCursor);
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     } finally {
       setBusy(false);
     }

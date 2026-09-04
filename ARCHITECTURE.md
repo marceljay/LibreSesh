@@ -880,6 +880,46 @@ Markdown is rendered by escaping raw HTML **before** parsing
 (`web/src/lib/markdown.ts`), not by sanitising after. Nothing an author writes
 can produce markup. Link hrefs are additionally restricted to http/https/mailto.
 
+### The component layer, and what is not a library component
+
+Form controls come from **shadcn/ui on the Base UI engine** (`@base-ui/react`),
+added file by file into `web/src/components/ui/` rather than as a dependency
+with a component per import. Base UI owns what a hand-rolled control gets wrong
+and keeps getting wrong: the focus trap and `inert` on a dialog, the styleable
+popup a native `<select>` will never have, keyboard semantics on a listbox.
+Raw `<select>`, `<input>` and `<textarea>` are ESLint errors outside this
+directory and `ui.tsx`, which is what stops a new screen hand-rolling a field.
+
+Three controls are deliberately **not** library components, and the reasons are
+worth keeping because each looks like an oversight:
+
+- **`Field`/`ControlShell`/`TextInput`** (`ui.tsx`). `Field` owns the id and
+  passes it, `aria-describedby` and `aria-invalid` down through context, so a
+  call site cannot leave a control unlabelled — it had at 95 of 96 call sites
+  before. shadcn's `Input` is a styled `<input>` with none of that, and its
+  `Form`/`FormField` are react-hook-form, while this app is controlled
+  `useState`. Adopting them would trade working label association for sameness.
+- **`SpeakerCombobox`.** Its value is *either* an existing person id *or* a
+  newly typed name, gated by `onlySelf`/`isAdmin`/archived rules, with a
+  create-a-person row. That maps badly onto an item/value model.
+- **`NumberField`.** Digits-only input, range checked where it is typed, and
+  "empty is not yet wrong". `type="number"` looks like it does this and does
+  not — see `web/src/lib/numberField.ts`.
+
+**Base UI is never on the first-paint path.** Routes are `React.lazy`, and
+`Modal` sits in its own file (not `ui.tsx`) so importing a primitive cannot
+drag the dialog runtime into the entry chunk — it did exactly that once, and
+the entry went 62 → 83 kB gz. The entry is ~61 kB gz; Base UI rides the Modal
+and Select chunks. `tests/modalPortal.test.ts` guards the split, because the
+failure is invisible: everything still works, it just arrives late.
+
+Two rules keep English out of places it could not later be pulled from:
+`lib/errorText.ts` is the only place an API failure becomes a sentence (the
+server sends a code plus details, never prose the client renders), and
+`lib/plural.ts` picks a plural form via `Intl.PluralRules` instead of appending
+an "s". Both are enforced by source-text tests. This is not i18n — there is no
+translation layer and none is planned — it is keeping the option open.
+
 ## Security
 
 ### Threat model

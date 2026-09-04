@@ -1,3 +1,5 @@
+import { plural } from '../lib/plural';
+import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
@@ -57,7 +59,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   const nameProblem = (err: unknown): boolean => {
     if (!(err instanceof ApiError)) return false;
     if (err.code === 'name_taken') {
-      setError(err.message);
+      setError(errorText(err));
       setSuggestion(name.trim());
       return true;
     }
@@ -99,7 +101,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
     } catch (err) {
       setError(
         err instanceof ApiError && err.status !== 403
-          ? err.message
+          ? errorText(err)
           : 'That phrase didn’t match — it may have expired or been revoked.',
       );
       setBusy(false);
@@ -136,7 +138,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       if (!nameProblem(err)) {
         setError(
           err instanceof ApiError && (err.status === 429 || err.status === 404)
-            ? err.message
+            ? errorText(err)
             : 'That password doesn’t match this event.',
         );
       }
@@ -164,7 +166,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       setSuggestion(null);
       onEntered();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errorText(err));
       setBusy(false);
     }
   };
@@ -182,7 +184,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       await api.authenticateAsRole(slug, role, name.trim(), claimProfile);
       onEntered();
     } catch (err) {
-      if (!nameProblem(err)) setError((err as Error).message);
+      if (!nameProblem(err)) setError(errorText(err));
       setBusy(false);
     }
   };
@@ -235,7 +237,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       <p className="text-stone-800 dark:text-stone-100">
         There is a speaker profile here called <span className="font-semibold">{namesake.name}</span>
         {namesake.sessionCount > 0 &&
-          `, on ${namesake.sessionCount} ${namesake.sessionCount === 1 ? 'session' : 'sessions'}`}
+          `, on ${plural(namesake.sessionCount, { one: 'session', other: 'sessions' })}`}
         . Is that you?
       </p>
       <div className="mt-2 flex gap-2">
@@ -260,7 +262,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
-      <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 shadow-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 shadow-xs">
         <div className="mb-1 flex items-center gap-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-sm font-bold text-white">
             {initial}
@@ -279,7 +281,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               {roles.map((r) => (
                 <SecondaryButton
                   key={r.role}
-                  className="flex w-full flex-col items-start gap-0.5 py-2.5 text-left"
+                  className="flex w-full flex-col items-start gap-0.5 py-2.5 text-start"
                   onClick={() => void enterAs(r.role)}
                   disabled={busy || nameMissing}
                 >

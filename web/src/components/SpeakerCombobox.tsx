@@ -120,41 +120,53 @@ export function SpeakerCombobox({
     } else if (creatable) {
       onChange([...value, creatable]);
     }
-    // Cleared, not closed: adding a second name is the next thing you do.
-    setQuery('');
+    // Closed, not just cleared. This used to stay open on the theory that
+    // adding a second name was the next thing you would do — but almost every
+    // session has one host, so for almost everybody the list was hanging open
+    // over the rest of the form with nothing left to pick. Adding another is a
+    // keystroke away: the input keeps focus, and typing reopens the list.
+    setQuery(null);
   };
 
   return (
     <div className="relative" ref={wrap}>
-      {value.length > 0 && (
-        <ul className="mb-1.5 flex flex-wrap gap-1.5">
-          {value.map((choice, i) => (
-            <li
-              key={typeof choice === 'number' ? `p${choice}` : `n${choice}`}
-              className="flex items-center gap-1 rounded-full bg-stone-100 py-1 pl-2.5 pr-1 text-xs font-medium dark:bg-stone-800"
-            >
-              {nameOf(choice)}
-              {typeof choice === 'string' && (
-                <span className="text-stone-400 dark:text-stone-500">· new</span>
-              )}
-              {personOf(choice)?.isMine && (
-                <span className="text-stone-400 dark:text-stone-500">· you</span>
-              )}
-              <button
-                type="button"
-                aria-label={`Remove ${nameOf(choice)}`}
-                onClick={() => onChange(value.filter((_, j) => j !== i))}
-                className="grid h-4 w-4 place-items-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-stone-700 dark:hover:text-stone-200"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {(max === undefined || value.length < max) && (
+      {/*
+       * The chosen names sit *inside* the field, not in a row above it: the
+       * bordered box is the control, and what you have picked belongs in it —
+       * which is the whole reason `ControlShell` is a wrapping flex row rather
+       * than a skin on the input. Chips and the input share it, so the box
+       * grows to a second line when a session bills several speakers, and a
+       * press on the box's own padding focuses the input (ControlShell's job).
+       *
+       * The box is rendered even at `max`, when the input is gone: a field
+       * that vanishes once it is full reads as a bug, and the chips still need
+       * somewhere to live.
+       */}
       <ControlShell>
+        {value.map((choice, i) => (
+          <span
+            key={typeof choice === 'number' ? `p${choice}` : `n${choice}`}
+            className="flex shrink-0 items-center gap-1 rounded-full bg-stone-100 py-1 ps-2.5 pe-1 text-xs font-medium dark:bg-stone-800"
+          >
+            {nameOf(choice)}
+            {typeof choice === 'string' && (
+              <span className="text-stone-400 dark:text-stone-500">· new</span>
+            )}
+            {personOf(choice)?.isMine && (
+              <span className="text-stone-400 dark:text-stone-500">· you</span>
+            )}
+            <button
+              type="button"
+              aria-label={`Remove ${nameOf(choice)}`}
+              onClick={() => onChange(value.filter((_, j) => j !== i))}
+              className="grid h-4 w-4 place-items-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-stone-700 dark:hover:text-stone-200"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </span>
+        ))}
+
+        {(max === undefined || value.length < max) && (
         <TextInput
           value={query ?? ''}
           onChange={(e) => setQuery(e.target.value)}
@@ -189,8 +201,8 @@ export function SpeakerCombobox({
                 : 'Add another'
           }
         />
+        )}
       </ControlShell>
-      )}
 
       {open && rowCount > 0 && (max === undefined || value.length < max) && (
         <ul
@@ -205,7 +217,7 @@ export function SpeakerCombobox({
                 aria-selected={i === active}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(i)}
-                className={`flex w-full items-baseline gap-1.5 px-3 py-2 text-left text-xs font-medium text-stone-700 dark:text-stone-200 ${
+                className={`flex w-full items-baseline gap-1.5 px-3 py-2 text-start text-xs font-medium text-stone-700 dark:text-stone-200 ${
                   i === active ? 'bg-stone-100 dark:bg-stone-800' : ''
                 }`}
               >
@@ -231,7 +243,7 @@ export function SpeakerCombobox({
                 aria-selected={active === matches.length}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(matches.length)}
-                className={`block w-full px-3 py-2 text-left text-xs font-medium text-blue-700 dark:text-blue-400 ${
+                className={`block w-full px-3 py-2 text-start text-xs font-medium text-blue-700 dark:text-blue-400 ${
                   active === matches.length ? 'bg-stone-100 dark:bg-stone-800' : ''
                 }`}
               >

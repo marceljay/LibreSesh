@@ -17,7 +17,7 @@ import {
 /**
  * One anchored panel, positioned so it can never leave the screen.
  *
- * Every popdown here used to be `absolute left-0` inside a `relative` wrapper,
+ * Every popdown here used to be `absolute start-0` inside a `relative` wrapper,
  * sized `w-[min(28rem,calc(100vw-2rem))]`. That is only safe when the wrapper
  * starts at the left edge of the viewport. In the schedule's filter bar it does
  * not — the button sits a couple of hundred pixels in — so the panel's right

@@ -153,7 +153,7 @@ describe('the People table that uses it', () => {
     // Named like every column beside it, at every width — an unlabelled cell
     // at the end of a row is a column an organiser has to guess at. Not a
     // button, though: there is no fact in it to order by.
-    expect(admin).toContain('text-right`}>Edit</span>');
+    expect(admin).toContain('text-end`}>Edit</span>');
     expect(admin).not.toContain('<span className="sr-only">Actions</span>');
   });
 

@@ -81,7 +81,7 @@ export function ColorPicker({
           />
         </label>
 
-        <span className="ml-1 font-mono text-xs uppercase text-stone-400 dark:text-stone-500">
+        <span className="ms-1 font-mono text-xs uppercase text-stone-400 dark:text-stone-500">
           {value}
         </span>
       </div>

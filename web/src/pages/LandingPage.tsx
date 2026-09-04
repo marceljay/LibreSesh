@@ -30,7 +30,7 @@ export function LandingPage() {
         {/* The logo artwork carries the wordmark and the tagline, so the page's
             real heading is the one below it, not this. */}
         <Logo className="h-11 w-auto sm:h-14" />
-        <div className="ml-auto">
+        <div className="ms-auto">
           <ThemeToggle />
         </div>
       </header>

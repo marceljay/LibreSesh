@@ -22,7 +22,14 @@ export const unauthorized = (message = 'This event needs a password') =>
 export const forbidden = (message = 'Your role does not allow that') =>
   new HttpError(403, 'forbidden', message);
 export const notFound = (message = 'Not found') => new HttpError(404, 'not_found', message);
-export const conflict = (message: string, code = 'conflict') => new HttpError(409, code, message);
+/**
+ * `details` carries the moving parts of a message as data — the session that
+ * blocks a slot, the name already taken — so the client can build its own
+ * sentence instead of rendering ours. The `message` stays for logs and for
+ * anyone reading the API directly; it is not what the app shows.
+ */
+export const conflict = (message: string, code = 'conflict', details?: Record<string, unknown>) =>
+  new HttpError(409, code, message, details);
 
 /**
  * body-parser's own refusal, thrown before any route runs. It is a plain

@@ -202,7 +202,7 @@ export function Tour({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="pointer-events-auto fixed rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-lg outline-none"
+        className="pointer-events-auto fixed rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-lg outline-hidden"
         style={
           placement
             ? { top: placement.top, left: placement.left, width: placement.width }

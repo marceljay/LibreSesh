@@ -1,6 +1,8 @@
 import {
   createContext,
   forwardRef,
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -11,24 +13,23 @@ import {
   type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import type { Role } from '@shared/types';
 import {
   maxDigits,
+  numberFieldMessage,
   parseNumberField,
   sanitizeNumberInput,
   type NumberFieldSpec,
 } from '../lib/numberField';
-import { CloseIcon } from './icons';
 
-/**
- * Inline controls all stand 38px tall — a `text-sm` input with `py-2` and a
- * border, a `text-xs` button with `py-2.5` and a border (transparent on the
- * primary). `FormRow` bottom-aligns them; matching the height lines up their
- * tops too, which is what "New track" and "Add track" were missing. Bare
- * controls that can't be padded into it (a colour swatch) take this class.
+/*
+ * Inline controls all stand 38px tall — `2.375rem` — so a field, a select and a
+ * button on one line align by construction. It is written out as a literal at
+ * each of the three places that need it (`ControlShell` below as `min-h-`, the
+ * Select trigger in `ui/select.tsx` as `h-`) rather than shared as a constant,
+ * because Tailwind scans source text: an interpolated `h-[${x}]` generates no
+ * class at all. `tests/controlShell.test.ts` pins the three to each other.
  */
-export const controlHeightClass = 'h-[2.375rem]';
 
 /**
  * Field focus. There is already a global focus ring in `index.css`
@@ -156,8 +157,8 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
  * box however many children it holds. Clicking empty space in the box focuses
  * the input, the way a native field does.
  *
- * `controlHeightClass` is the floor here, matching the button primitives, so a
- * shell and a button on one line align by construction — see its note.
+ * The 38px control height is the floor here, matching the button primitives and
+ * the Select trigger — see the note at the top of this file.
  */
 export function ControlShell({
   invalid,
@@ -228,7 +229,7 @@ export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<
         aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
         aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
         {...props}
-        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-hidden placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
       />
     );
   },
@@ -260,25 +261,12 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
         invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />
   );
 });
-
-/**
- * The class for a native `<select>`. Native selects stay native — the plan
- * allowlists the element rather than wrapping it, because a native select is
- * the accessible default and holds nothing a `ControlShell` would carry. This
- * gives them the field's border, height and focus ring so they read as siblings
- * of the text fields, and is what a native select wears now that the old field
- * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
- */
-export const selectClass =
-  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-none transition-colors ` +
-  'focus:border-transparent focus:ring-2 focus:ring-stone-500 focus:ring-offset-0 sm:text-sm ' +
-  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole
@@ -372,7 +360,7 @@ export function NumberField({
   // wrap into a heap. `ControlAdornment` is for the short in-field kind (a ↵, a
   // real unit), which arrives with the inline-create control later.
   return (
-    <Field label={label} hint={hint} error={shown ?? undefined}>
+    <Field label={label} hint={hint} error={shown ? numberFieldMessage(shown) : undefined}>
       <div className="flex items-center gap-2">
         <ControlShell className={className}>
           <TextInput
@@ -609,7 +597,7 @@ export function TextLink({
   return (
     <a
       {...rest}
-      className={`rounded text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100 ${className}`}
+      className={`rounded-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100 ${className}`}
     >
       {children}
     </a>
@@ -619,10 +607,10 @@ export function TextLink({
 /** The class `TextLink` applies, for react-router `<Link>`, which needs to own
  *  its own element. Keeps one definition of what a link looks like. */
 export const linkClass =
-  'rounded text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline ' +
+  'rounded-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline ' +
   'focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100';
 
-/** A titled card. Replaces the `rounded-2xl border … p-5 shadow-sm` string that
+/** A titled card. Replaces the `rounded-2xl border … p-5 shadow-xs` string that
  *  was repeated at every section on the admin page. */
 export function Section({
   title,
@@ -639,7 +627,7 @@ export function Section({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900 ${className}`}
+      className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900 ${className}`}
     >
       <div
         className={`flex flex-wrap items-start gap-3 ${children ? 'mb-3' : ''}`}
@@ -690,143 +678,6 @@ export function Toggle({
       />
       {label}
     </label>
-  );
-}
-
-/**
- * Bottom sheet on mobile, centred dialog from `sm` up. Closes on backdrop
- * click, on Escape, and on the × in its header; focus moves in on open.
- *
- * Three regions, and the middle one is the only one that scrolls:
- *
- *   header  title, an optional line saying what the dialog is for, close
- *   body    the form
- *   footer  the actions
- *
- * That structure is the fix for two habits every caller had grown. The intro
- * line under the title was a `-mt-2` paragraph hand-placed at the top of each
- * body, cancelling the heading's own margin — and once the header became
- * sticky, it slid underneath and was clipped. The actions were a `mt-4 flex
- * justify-end gap-2` row re-typed in every modal, at the very bottom of a form
- * tall enough that Save scrolled off the screen. Neither is the caller's
- * problem to solve, and each solved it slightly differently.
- */
-export function Modal({
-  title,
-  description,
-  onClose,
-  children,
-  wide,
-  footer,
-  onSubmit,
-}: {
-  title: string;
-  /** One line under the title: what this dialog is for, or what it will do. */
-  description?: ReactNode;
-  onClose: () => void;
-  children: ReactNode;
-  wide?: boolean;
-  /** The action bar. It does not scroll, so Save stays reachable from anywhere
-   *  in a long form. Right-aligned; give an item `mr-auto` to send it left, or
-   *  `basis-full` to put it on its own line above the buttons. */
-  footer?: ReactNode;
-  /** Given, the dialog is a real `<form>`: Enter in a field submits it, and the
-   *  primary action should be a `type="submit"` button. */
-  onSubmit?: () => void;
-}) {
-  const panel = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    // Only if nothing inside has claimed it already — a field with `autoFocus`
-    // has focus by now, and taking it back would undo the point of asking.
-    if (!panel.current?.contains(document.activeElement)) panel.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const Body = onSubmit ? 'form' : 'div';
-
-  /* Rendered into `body`, not where it was written.
-   *
-   * `position: fixed` is only fixed to the viewport while no ancestor has a
-   * filter, transform or `backdrop-filter` — any of those become the
-   * containing block for fixed descendants instead. The schedule header has
-   * `backdrop-blur`, so a dialog opened from a menu up there (About, device
-   * linking) was laid out inside the header's own box: the backdrop covered a
-   * strip at the top of the page, and the panel, which sits at the bottom of
-   * its container on a phone, was pushed off the screen entirely. A portal
-   * takes it out of that box without moving it in the React tree, so the
-   * handlers and state stay exactly where they were written. */
-  return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={title}>
-      {/* Fixed, not absolute: the backdrop must cover the viewport whatever the
-          panel does. */}
-      <button
-        type="button"
-        aria-label="Close"
-        className="fixed inset-0 cursor-default bg-stone-900/40 dark:bg-black/60"
-        onClick={onClose}
-      />
-      <div className="flex h-full items-end justify-center sm:items-center sm:p-4">
-        <div
-          ref={panel}
-          tabIndex={-1}
-          // dvh, not vh: on mobile browsers vh counts the area behind the
-          // address bar, so 90vh can be taller than what you can actually see.
-          // The panel is capped and its body scrolls, so nothing can end up
-          // above the top of the screen where no scrolling reaches it.
-          className={`relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white outline-none dark:bg-stone-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl ${
-            wide ? 'max-w-2xl' : 'max-w-md'
-          }`}
-        >
-          <Body
-            className="flex min-h-0 flex-1 flex-col"
-            {...(onSubmit
-              ? {
-                  onSubmit: (e: React.FormEvent) => {
-                    e.preventDefault();
-                    onSubmit();
-                  },
-                }
-              : {})}
-          >
-            <div className="flex shrink-0 items-start gap-3 border-b border-stone-200 px-5 py-4 dark:border-stone-700">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-                {description && (
-                  <p className="mt-1 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-                    {description}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                title="Close"
-                className="-mr-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-              {children}
-            </div>
-
-            {footer && (
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-stone-200 bg-stone-50 px-5 py-3 dark:border-stone-700 dark:bg-stone-950/40">
-                {footer}
-              </div>
-            )}
-          </Body>
-        </div>
-      </div>
-    </div>,
-    document.body,
   );
 }
 
@@ -898,7 +749,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-4 left-1/2 z-[60] max-w-[90vw] -translate-x-1/2 rounded-lg bg-stone-900 px-4 py-2 text-center text-xs font-medium text-white shadow-lg dark:bg-stone-100 dark:text-stone-900"
+          className="fixed bottom-4 start-1/2 z-[60] max-w-[90vw] -translate-x-1/2 rounded-lg bg-stone-900 px-4 py-2 text-center text-xs font-medium text-white shadow-lg dark:bg-stone-100 dark:text-stone-900"
         >
           {message}
         </div>
@@ -936,6 +787,15 @@ const ConfirmContext = createContext<(request: ConfirmRequest) => Promise<boolea
  * Shaped as a promise so it drops straight into the place a `confirm()` call
  * used to sit, rather than turning every caller into a state machine.
  */
+/**
+ * Loaded on demand, not imported. `ui.tsx` is pulled into the app shell for its
+ * providers, so a static import here would drag Base UI's Dialog (~20 kB gz)
+ * into the first-paint chunk for every visitor — including the ones who only
+ * ever read the schedule. A confirm is rare and always a response to a click,
+ * so fetching the dialog at that moment costs nothing anyone notices.
+ */
+const LazyModal = lazy(() => import('./Modal').then((m) => ({ default: m.Modal })));
+
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [pending, setPending] = useState<{
     request: ConfirmRequest;
@@ -960,7 +820,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     <ConfirmContext.Provider value={ask}>
       {children}
       {pending && (
-        <Modal
+        <Suspense fallback={null}>
+        <LazyModal
           title={pending.request.title}
           onClose={() => close(false)}
           onSubmit={() => close(true)}
@@ -976,7 +837,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           }
         >
           <p className="text-sm text-stone-600 dark:text-stone-300">{pending.request.body}</p>
-        </Modal>
+        </LazyModal>
+        </Suspense>
       )}
     </ConfirmContext.Provider>
   );

@@ -176,7 +176,7 @@ export function AdminPermissions({
         <table className="w-full min-w-[28rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-stone-200 dark:border-stone-700">
-              <th className="py-2 pr-3 text-left text-xs font-semibold text-stone-500 dark:text-stone-400">
+              <th className="py-2 pe-3 text-start text-xs font-semibold text-stone-500 dark:text-stone-400">
                 Capability
               </th>
               {ROLES.map((role) => (
@@ -197,7 +197,7 @@ export function AdminPermissions({
                   key={cap.id}
                   className="border-b border-stone-100 last:border-0 dark:border-stone-800"
                 >
-                  <td className="py-2 pr-3 text-stone-700 dark:text-stone-300">{cap.label}</td>
+                  <td className="py-2 pe-3 text-stone-700 dark:text-stone-300">{cap.label}</td>
                   {ROLES.map((role) => (
                     <td key={role} className="py-2 text-center">
                       <span className="inline-flex justify-center">

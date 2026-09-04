@@ -1,7 +1,9 @@
+import { errorText } from '../lib/errorText';
+import { Modal } from './Modal';
 import { useEffect, useState } from 'react';
 import type { LinkCodeDto } from '@shared/types';
 import { api } from '../lib/api';
-import { FormError, Modal, PrimaryButton, SecondaryButton, Spinner } from './ui';
+import { FormError, PrimaryButton, SecondaryButton, Spinner } from './ui';
 
 /**
  * Shows a fresh link phrase (SPEC §3.1 follow-up): type it on another device
@@ -18,7 +20,7 @@ export function DeviceLinkModal({ onClose }: { onClose: () => void }) {
     api
       .mintLinkCode()
       .then(setCode)
-      .catch((err: unknown) => setError((err as Error).message));
+      .catch((err: unknown) => setError(errorText(err)));
   };
 
   useEffect(mint, []);

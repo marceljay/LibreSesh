@@ -1,3 +1,4 @@
+import { plural, pluralForm } from '../lib/plural';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RoomDto, SessionDto } from '@shared/types';
 import { dayLabel, fmtMin, place, speakerLine } from '../lib/format';
@@ -17,7 +18,7 @@ export function Highlight({ text, terms }: { text: string; terms: string[] }) {
   ranges.forEach(([from, to], i) => {
     if (from > at) parts.push(text.slice(at, from));
     parts.push(
-      <mark key={i} className="rounded bg-amber-200/70 text-inherit dark:bg-amber-400/30">
+      <mark key={i} className="rounded-sm bg-amber-200/70 text-inherit dark:bg-amber-400/30">
         {text.slice(from, to)}
       </mark>,
     );
@@ -67,7 +68,7 @@ export function SessionResultRow({
       type="button"
       onPointerDown={inMenu ? (e) => e.preventDefault() : undefined}
       onClick={onSelect}
-      className={`block w-full rounded-lg px-3 py-2 text-left ${
+      className={`block w-full rounded-lg px-3 py-2 text-start ${
         active ? 'bg-stone-100 dark:bg-stone-800' : 'hover:bg-stone-50 dark:hover:bg-stone-800/60'
       }`}
     >
@@ -200,7 +201,7 @@ export function SearchBox({
 
   return (
     <div ref={refs.setReference} className={`relative shrink-0 ${className}`}>
-      <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+      <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
       {/* eslint-disable-next-line no-restricted-syntax -- bespoke search combobox with its own listbox; not a plain text field */}
       <input
         ref={input}
@@ -245,7 +246,7 @@ export function SearchBox({
            touch screen the text is floored at 16px — under that Safari zooms
            the page in on focus and does not zoom back out — which the shorter
            placeholder leaves room for. */
-        className="w-36 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-44 sm:focus:w-72"
+        className="w-36 rounded-full border border-stone-300 bg-white py-1.5 ps-8 pe-8 text-xs outline-hidden focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-44 sm:focus:w-72"
       />
       {query && (
         <button
@@ -255,7 +256,7 @@ export function SearchBox({
             setQuery('');
             input.current?.focus();
           }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
+          className="absolute end-2 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-700 dark:hover:text-stone-200"
         >
           ×
         </button>
@@ -302,11 +303,14 @@ export function SearchBox({
               >
                 <span>
                   {all.length > hits.length
-                    ? `See all ${all.length} results`
-                    : `See ${all.length === 1 ? 'the result' : 'all results'} on one page`}
+                    ? `See all ${plural(all.length, { one: 'result', other: 'results' })}`
+                    : pluralForm(all.length, {
+                        one: 'See the result on one page',
+                        other: 'See all results on one page',
+                      })}
                 </span>
                 <span className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
-                  <kbd className="rounded border border-stone-300 px-1 font-sans text-[10px] dark:border-stone-600">
+                  <kbd className="rounded-sm border border-stone-300 px-1 font-sans text-[10px] dark:border-stone-600">
                     ↵
                   </kbd>
                   <ArrowRightIcon className="h-3.5 w-3.5" />

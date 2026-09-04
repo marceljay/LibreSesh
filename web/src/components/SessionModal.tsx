@@ -1,3 +1,5 @@
+import { plural } from '../lib/plural';
+import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
 import type {
   FormatDto,
@@ -33,6 +35,7 @@ import {
 } from '@shared/sessionLimits';
 import { RemoveIcon } from './icons';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Chip,
   DangerButton,
@@ -44,13 +47,11 @@ import {
   HelpButton,
   HelpNote,
   IconButton,
-  Modal,
   PrimaryButton,
   SecondaryButton,
   TextArea,
   TextInput,
   Toggle,
-  selectClass,
 } from './ui';
 
 
@@ -319,7 +320,7 @@ export function SessionModal({
           {/* Delete sits at the far end from Save, so the two are never
               neighbours under the same thumb. */}
           {onDelete && (
-            <DangerButton className="mr-auto inline-flex items-center gap-1.5" onClick={onDelete}>
+            <DangerButton className="me-auto inline-flex items-center gap-1.5" onClick={onDelete}>
               <RemoveIcon className="h-3.5 w-3.5" />
               Delete
             </DangerButton>
@@ -396,7 +397,7 @@ export function SessionModal({
                 {PLACEMENTS.map((p) => (
                   <Chip key={p.value} active={type === p.value} onClick={() => setType(p.value)}>
                     {p.label}
-                    {p.note && <span className="ml-1 font-normal opacity-70">: {p.note}</span>}
+                    {p.note && <span className="ms-1 font-normal opacity-70">: {p.note}</span>}
                   </Chip>
                 ))}
                 <HelpButton
@@ -545,40 +546,51 @@ export function SessionModal({
           )}
           <FormGrid>
             <Field label="Room">
-              <select
+              <Select
                 value={roomId}
-                onChange={(e) => setRoomId(Number(e.target.value))}
+                onValueChange={(v) => v != null && setRoomId(v)}
                 disabled={!canMove}
-                className={selectClass}
               >
-                {allowedRooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                    {r.openBooking ? ' (open)' : ''}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Room">
+                  <SelectValue>
+                    {(v: number | null) => allowedRooms.find((r) => r.id === v)?.name ?? ''}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {allowedRooms.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                      {r.openBooking ? ' (open)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             {tracks.length > 0 && (
               <Field label="Track" hint="Optional. The schedule can lay its columns out by track.">
-                <select
-                  value={trackId ?? ''}
-                  onChange={(e) => setTrackId(e.target.value ? Number(e.target.value) : null)}
-                  className={selectClass}
-                >
-                  <option value="">No track</option>
-                  {/* A track that keeps hours says so here, for the day being
-                      placed — cheaper than a refusal after Save, and it is the
-                      only place the choice and the day are on screen together. */}
-                  {tracks.map((t) => {
-                    const hours = windowOn(t, day);
-                    return (
-                      <option key={t.id} value={t.id}>
-                        {hours ? `${t.name} (${windowLabel(hours)})` : t.name}
-                      </option>
-                    );
-                  })}
-                </select>
+                <Select value={trackId} onValueChange={(v) => setTrackId(v)}>
+                  <SelectTrigger aria-label="Track">
+                    <SelectValue>
+                      {(v: number | null) =>
+                        v == null ? 'No track' : (tracks.find((t) => t.id === v)?.name ?? '')
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>No track</SelectItem>
+                    {/* A track that keeps hours says so here, for the day being
+                        placed — cheaper than a refusal after Save, and it is the
+                        only place the choice and the day are on screen together. */}
+                    {tracks.map((t) => {
+                      const hours = windowOn(t, day);
+                      return (
+                        <SelectItem key={t.id} value={t.id}>
+                          {hours ? `${t.name} (${windowLabel(hours)})` : t.name}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </Field>
             )}
           </FormGrid>
@@ -588,18 +600,18 @@ export function SessionModal({
               "duration" under "day" and left a hole beside it. */}
           <FormGrid cols={3}>
             <Field label="Day">
-              <select
-                value={day}
-                onChange={(e) => setDay(e.target.value)}
-                disabled={!canMove}
-                className={selectClass}
-              >
-                {days.map((d) => (
-                  <option key={d} value={d}>
-                    {dayLabels[d] ?? d}
-                  </option>
-                ))}
-              </select>
+              <Select value={day} onValueChange={(v) => v != null && setDay(v)} disabled={!canMove}>
+                <SelectTrigger aria-label="Day">
+                  <SelectValue>{(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {days.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {dayLabels[d] ?? d}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field label="Start" hint="In 5-minute steps.">
               <ControlShell disabled={!canMove}>
@@ -618,26 +630,36 @@ export function SessionModal({
                 hackathon all do. "Other" takes any multiple of five up to a
                 day, which is what the server accepts. */}
             <Field label="Duration">
-              <select
-                value={customDur ? 'other' : durMin}
-                onChange={(e) => {
-                  if (e.target.value === 'other') {
+              <Select
+                value={customDur ? 'other' : String(durMin)}
+                onValueChange={(v) => {
+                  if (v === 'other') {
                     setCustomDur(true);
                     return;
                   }
-                  setCustomDur(false);
-                  setDurMin(Number(e.target.value));
+                  if (v != null) {
+                    setCustomDur(false);
+                    setDurMin(Number(v));
+                  }
                 }}
                 disabled={!canMove}
-                className={selectClass}
               >
-                {DURATION_CHOICES.map((d) => (
-                  <option key={d} value={d}>
-                    {durationLabel(d)}
-                  </option>
-                ))}
-                <option value="other">Other…</option>
-              </select>
+                <SelectTrigger aria-label="Duration">
+                  <SelectValue>
+                    {(v: string | null) =>
+                      v === 'other' ? 'Other…' : v == null ? '' : durationLabel(Number(v))
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_CHOICES.map((d) => (
+                    <SelectItem key={d} value={String(d)}>
+                      {durationLabel(d)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="other">Other…</SelectItem>
+                </SelectContent>
+              </Select>
               {customDur && (
                 <div className="mt-1.5 flex items-center gap-1.5">
                   <ControlShell disabled={!canMove} className="w-24">
@@ -675,19 +697,22 @@ export function SessionModal({
                       rest, so neither is stretched and both fit across. */}
                   <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
                     <Field label="Until">
-                      <select
-                        value={until}
-                        onChange={(e) => setUntilChoice(e.target.value)}
-                        className={`${selectClass} w-auto`}
-                      >
-                        {days
-                          .filter((d) => d > day)
-                          .map((d) => (
-                            <option key={d} value={d}>
-                              {dayLabels[d] ?? d}
-                            </option>
-                          ))}
-                      </select>
+                      <Select value={until} onValueChange={(v) => v != null && setUntilChoice(v)}>
+                        <SelectTrigger aria-label="Until" className="w-auto">
+                          <SelectValue>
+                            {(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {days
+                            .filter((d) => d > day)
+                            .map((d) => (
+                              <SelectItem key={d} value={d}>
+                                {dayLabels[d] ?? d}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                     </Field>
                     <Field label="On these days">
                       <div className="flex flex-wrap gap-1.5">
@@ -715,8 +740,7 @@ export function SessionModal({
                   />
                   <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
                     {repeatProblem ??
-                      `Creates ${runCount} ${runCount === 1 ? 'session' : 'sessions'}, ` +
-                        `the first on ${dayLabels[day] ?? day}.`}{' '}
+                      `Creates ${plural(runCount, { one: 'session', other: 'sessions' })}, the first on ${dayLabels[day] ?? day}.`}{' '}
                     {repeatLink
                       ? 'Editing one later offers to apply to the rest — but each keeps its own time, so moving one never moves the others.'
                       : 'They are not linked: moving or deleting one afterwards leaves the rest where they are, so a day that runs late is a day you fix on its own.'}

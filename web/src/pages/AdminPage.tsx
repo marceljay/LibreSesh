@@ -1,3 +1,6 @@
+import { plural } from '../lib/plural';
+import { errorText } from '../lib/errorText';
+import { Modal } from '../components/Modal';
 import { useCallback, useEffect, useState } from 'react';
 import { FloatingFocusManager } from '@floating-ui/react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -213,7 +216,7 @@ function PersonActions({
     act();
   };
   const itemClass =
-    'flex w-full flex-col items-start rounded-lg px-2 py-1.5 text-left hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-stone-800';
+    'flex w-full flex-col items-start rounded-lg px-2 py-1.5 text-start hover:bg-stone-100 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-stone-800';
 
   return (
     <>
@@ -366,13 +369,26 @@ function PeopleColumnsMenu({ columns }: { columns: PeopleColumnsControl }) {
 }
 
 import { MergeModal } from '../components/MergeModal';
-import { auditKeepField, parseNumberField, weekRailFromField } from '../lib/numberField';
+import {
+  auditKeepField,
+  numberFieldMessage,
+  parseNumberField,
+  weekRailFromField,
+  type NumberFieldError,
+} from '../lib/numberField';
+
+/** "<field>: <problem>" as one template with two named parts, rather than the
+ *  message lowercased and glued onto a label — casing is language-specific
+ *  (German capitalises nouns), so it is not ours to change. */
+const fieldProblem = (field: string, error: NumberFieldError): string =>
+  `${field}: ${numberFieldMessage(error)}`;
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ControlShell,
   DangerButton,
@@ -383,7 +399,6 @@ import {
   FormRow,
   FormStack,
   IconButton,
-  Modal,
   NumberField,
   PrimaryButton,
   SecondaryButton,
@@ -393,7 +408,6 @@ import {
   TextInput,
   Toggle,
   linkClass,
-  selectClass,
   useConfirm,
   useToast,
 } from '../components/ui';
@@ -411,8 +425,11 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const plural = (n: number, one: string, many = `${one}s`): string =>
-  `${n} ${n === 1 ? one : many}`;
+/** The counted nouns this page says. Kept together so a translation has one
+ *  place to extend them, rather than an `+ 's'` at each call site. */
+const SESSIONS = { one: 'session', other: 'sessions' };
+const PITCHES = { one: 'pitch', other: 'pitches' };
+const DAYS = { one: 'day', other: 'days' };
 
 const slugify = (value: string): string =>
   value
@@ -509,7 +526,7 @@ export function AdminPage() {
     try {
       setTrash(await api.trash(slug));
     } catch (err) {
-      toast.show((err as Error).message);
+      toast.show(errorText(err));
     }
   }, [slug, toast]);
 
@@ -544,7 +561,7 @@ export function AdminPage() {
     setCloneOpen(false);
   }
 
-  const fail = (err: unknown) => toast.show((err as Error).message);
+  const fail = (err: unknown) => toast.show(errorText(err));
 
   if (data.status === 'loading') return <Spinner label="Loading…" />;
   if (!bundle || !event) {
@@ -931,7 +948,7 @@ export function AdminPage() {
       return true;
     } catch (err) {
       toast.show(
-        err instanceof ApiError ? err.message : 'Could not check that password',
+        errorText(err, 'Could not check that password'),
       );
       return false;
     }
@@ -954,9 +971,9 @@ export function AdminPage() {
       : slugField !== event?.slug && !/^[a-z0-9-]{3,40}$/.test(slugField)
         ? 'Slug must be 3–40 characters of a–z, 0–9 or -'
         : parsedWeekRail.error
-          ? `Group days into weeks past: ${parsedWeekRail.error.toLowerCase()}`
+          ? fieldProblem('Group days into weeks past', parsedWeekRail.error)
           : parsedAuditKeep.error
-            ? `Audit entries to keep: ${parsedAuditKeep.error.toLowerCase()}`
+            ? fieldProblem('Audit entries to keep', parsedAuditKeep.error)
             : [viewerPassword, userPassword, adminPassword].some((pw) => pw && pw.length < 6)
               ? 'Passwords must be at least 6 characters'
               : null;
@@ -1198,13 +1215,13 @@ export function AdminPage() {
                         <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
                           {windowLabel({ startMin: track.startMin, endMin: track.endMin ?? 1440 })}
                           {track.windows.length > 0 &&
-                            ` +${plural(track.windows.length, 'day')}`}
+                            ` +${plural(track.windows.length, DAYS)}`}
                         </span>
                       )}
                       <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
                         {plural(
                           bundle.sessions.filter((x) => x.trackId === track.id).length,
-                          'session',
+                          SESSIONS,
                         )}
                       </span>
                       <SecondaryButton
@@ -1436,7 +1453,7 @@ export function AdminPage() {
                       <span className="min-w-0 flex-1">
                         <span className="font-medium">@{claim.username}</span>
                         {claim.requesterUid != null && (
-                          <span className="ml-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
+                          <span className="ms-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
                             {claim.requesterUid.toUpperCase()}
                           </span>
                         )}
@@ -1498,7 +1515,7 @@ export function AdminPage() {
                 onChange={(e) => setPeopleQuery(e.target.value)}
                 aria-label="Search people"
                 placeholder="Name, @username or UID"
-                className="ml-auto w-32 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 sm:w-48 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+                className="ms-auto w-32 rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs text-stone-700 sm:w-48 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
               />
               <PeopleColumnsMenu columns={peopleColumns} />
             </div>
@@ -1550,7 +1567,7 @@ export function AdminPage() {
                     rather than a fact. "Edit" rather than "Actions" — it is
                     two characters cheaper in a column nine wide, and it is
                     what the menu is opened to do. */}
-                <span className={`${PEOPLE_COL.actions.className} text-right`}>Edit</span>
+                <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
               </div>
 
               <ul className="mb-4">
@@ -1568,7 +1585,7 @@ export function AdminPage() {
                       title={
                         (person.sessionCount ?? 0) === 0
                           ? 'Not credited on any session'
-                          : `Credited on ${person.sessionCount} session${person.sessionCount === 1 ? '' : 's'}`
+                          : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
                       }
                     >
                       <PersonLink
@@ -1792,7 +1809,7 @@ export function AdminPage() {
             </FormGrid>
             <NumberField
               label="Group days into weeks past"
-              hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${eventDays} day${eventDays === 1 ? '' : 's'}.`}
+              hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
               spec={weekRailFromField}
               value={weekRailFrom}
               onChange={setWeekRailFrom}
@@ -1808,14 +1825,22 @@ export function AdminPage() {
               label="Opens in"
               hint="Which view someone gets who has not chosen one. The switch above the grid still works for everybody, and a view somebody picks travels in the link they share. The list reads well at any size; the grid earns its place once there are several rooms to compare."
             >
-              <select
+              <Select
                 value={defaultView}
-                onChange={(e) => setDefaultView(e.target.value === 'cal' ? 'cal' : 'list')}
-                className={`${selectClass} w-48`}
+                onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
               >
-                <option value="list">List — one column, in time order</option>
-                <option value="cal">Calendar — a grid of rooms</option>
-              </select>
+                <SelectTrigger aria-label="Opens in" className="w-48">
+                  <SelectValue>
+                    {(v: string | null) =>
+                      v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="list">List — one column, in time order</SelectItem>
+                  <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
             <Field
               label="Mark the official programme"
@@ -2137,7 +2162,7 @@ function FormatEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
@@ -2169,7 +2194,7 @@ function FormatEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions === 0
           ? 'No session calls itself this yet. Deleting it affects nothing.'
-          : `${plural(sessions, 'session')} call themselves this. Deleting the format leaves them where they are, without a kind.`}
+          : `${plural(sessions, SESSIONS)} call themselves this. Deleting the format leaves them where they are, without a kind.`}
       </p>
     </Modal>
   );
@@ -2224,7 +2249,7 @@ function TagEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
@@ -2256,7 +2281,7 @@ function TagEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions + pitches === 0
           ? 'Nothing carries this tag yet. Deleting it affects nothing.'
-          : `Carried by ${plural(sessions, 'session')} and ${plural(pitches, 'pitch', 'pitches')}. Deleting the tag removes it from all of them.`}
+          : `Carried by ${plural(sessions, SESSIONS)} and ${plural(pitches, PITCHES)}. Deleting the tag removes it from all of them.`}
       </p>
     </Modal>
   );
@@ -2339,7 +2364,7 @@ function TrackHoursFields({
           {windows.map((w) => (
             <li
               key={w.date}
-              className="flex items-center gap-2 rounded bg-stone-50 px-2 py-1.5 text-sm dark:bg-stone-800"
+              className="flex items-center gap-2 rounded-sm bg-stone-50 px-2 py-1.5 text-sm dark:bg-stone-800"
             >
               <span className="min-w-0 flex-1 truncate">{dayName(w.date)}</span>
               <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
@@ -2359,18 +2384,18 @@ function TrackHoursFields({
       {free.length > 0 && (
         <FormRow>
           <Field label="A day that differs">
-            <select
-              value={day}
-              onChange={(e) => setDay(e.target.value)}
-              className={selectClass}
-              aria-label="Day"
-            >
-              {free.map((d) => (
-                <option key={d} value={d}>
-                  {dayName(d)}
-                </option>
-              ))}
-            </select>
+            <Select value={day} onValueChange={(v) => v != null && setDay(v)}>
+              <SelectTrigger aria-label="Day">
+                <SelectValue>{(v: string | null) => (v == null ? '' : dayName(v))}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {free.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {dayName(d)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
           <Field label="From">
             <ControlShell>
@@ -2477,7 +2502,7 @@ function TrackEditor({
       onSubmit={() => void save()}
       footer={
         <>
-          <DangerButton className="mr-auto" onClick={() => void remove()} disabled={busy}>
+          <DangerButton className="me-auto" onClick={() => void remove()} disabled={busy}>
             Delete
           </DangerButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
@@ -2539,7 +2564,7 @@ function TrackEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions === 0
           ? 'No sessions are on this track yet.'
-          : `${plural(sessions, 'session')} on this track. Deleting it keeps them — they lose the track, not their room.`}
+          : `${plural(sessions, SESSIONS)} on this track. Deleting it keeps them — they lose the track, not their room.`}
       </p>
       {limited && sessions > 0 && (
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">

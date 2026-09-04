@@ -263,7 +263,7 @@ describe('a rail says when the line goes on', () => {
    * tall enough that the two do not collide.
    */
   it('repeats the break label bottom-right on a wide grid', () => {
-    expect(calendar).toContain('absolute bottom-0.5 right-2');
+    expect(calendar).toContain('absolute bottom-0.5 end-2');
     expect(calendar).toMatch(/columns\.length > 2 &&[\s\S]{0,80}>= 44/);
   });
 

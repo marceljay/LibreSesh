@@ -1,3 +1,5 @@
+import { errorText } from '../lib/errorText';
+import { plural } from '../lib/plural';
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
@@ -29,8 +31,16 @@ const asKb = (bytes: number): string => `${Math.round(bytes / 1024)} KB`;
  *  byte each, and the cap the server applies is on bytes. */
 const byteLength = (text: string): number => new TextEncoder().encode(text).length;
 
-const plural = (n: number, one: string, many = `${one}s`): string =>
-  `${n} ${n === 1 ? one : many}`;
+/** The counted nouns the import summary lists. */
+const NOUNS = {
+  rooms: { one: 'room', other: 'rooms' },
+  tracks: { one: 'track', other: 'tracks' },
+  sessions: { one: 'session', other: 'sessions' },
+  breaks: { one: 'break', other: 'breaks' },
+  tags: { one: 'tag', other: 'tags' },
+  speakers: { one: 'speaker', other: 'speakers' },
+  things: { one: 'thing', other: 'things' },
+} as const;
 
 /**
  * Import a schedule.
@@ -108,11 +118,12 @@ export function ImportPage() {
       navigate(`/e/${result.slug}`);
     } catch (err) {
       // A slug collision is the one failure with an obvious fix, and the
-      // message alone ("That slug is already taken") does not say where.
+      // general sentence does not say where to apply it. One whole message,
+      // not the general one with a clause bolted on — see i18n readiness.
       const message =
         err instanceof ApiError && err.code === 'slug_taken'
-          ? `${err.message}. Change "slug" in the document to something free.`
-          : (err as Error).message;
+          ? 'That address is already taken. Change "slug" in the document to something free.'
+          : errorText(err);
       setError(message);
       setBusy(null);
     }
@@ -132,7 +143,7 @@ export function ImportPage() {
           document left blank — <strong>write them down now</strong>. They are stored
           hashed, so this screen is the only place they can be read.
         </p>
-        <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label} className="mb-3 last:mb-0">
@@ -165,7 +176,7 @@ export function ImportPage() {
         it and said so.
       </p>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
         <Field
           label="Instance password"
           hint="Set by whoever runs this server. Importing makes an event rather than editing one, so it asks for the same password creating one by hand does — not an event password."
@@ -265,12 +276,12 @@ export function ImportPage() {
 /** What is in the box, read locally. Not a verdict — that is the dry run's. */
 function Summary({ summary }: { summary: DocSummary }) {
   const parts = [
-    plural(summary.rooms, 'room'),
-    plural(summary.tracks, 'track'),
-    plural(summary.sessions, 'session'),
-    ...(summary.breaks > 0 ? [plural(summary.breaks, 'break')] : []),
-    ...(summary.tags > 0 ? [plural(summary.tags, 'tag')] : []),
-    ...(summary.speakers > 0 ? [plural(summary.speakers, 'speaker')] : []),
+    plural(summary.rooms, NOUNS.rooms),
+    plural(summary.tracks, NOUNS.tracks),
+    plural(summary.sessions, NOUNS.sessions),
+    ...(summary.breaks > 0 ? [plural(summary.breaks, NOUNS.breaks)] : []),
+    ...(summary.tags > 0 ? [plural(summary.tags, NOUNS.tags)] : []),
+    ...(summary.speakers > 0 ? [plural(summary.speakers, NOUNS.speakers)] : []),
   ];
   return (
     <div className="mt-2 text-xs text-stone-500 dark:text-stone-400">
@@ -320,10 +331,10 @@ function Rehearsal({ result }: { result: ImportResult }) {
       {warnings.length > 0 && (
         <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-700">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            {plural(warnings.length, 'thing')} worth a second look — none of them stop the
+            {plural(warnings.length, NOUNS.things)} worth a second look — none of them stop the
             import:
           </p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-stone-600 dark:text-stone-300">
+          <ul className="mt-1.5 list-disc space-y-1 ps-4 text-xs text-stone-600 dark:text-stone-300">
             {warnings.map((warning) => (
               <li key={warning}>{warning}</li>
             ))}
