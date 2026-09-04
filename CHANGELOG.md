@@ -80,6 +80,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Changing the day lands on that day's first session.** The grid runs from
+  the event's earliest hour to its latest — the edges of the whole event, not
+  of any one day — so a day whose programme starts after lunch opened on a
+  screenful of empty rows and read as an empty day until you scrolled. The day
+  strip, the week rail and the Next day button at the end of a list now all
+  open the day on its first session. An empty day, and the list, go to the top
+  as before.
+
 - **A short session on the grid no longer clips its own time.** Grid blocks
   carried enough vertical padding, plus a top margin on the tag dots, that a
   15–20 minute block spent its whole height on chrome and cut off the time row
