@@ -16,7 +16,7 @@ import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { MentionText, PersonLink, personByUsername } from './MentionText';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
-import { IconButton, PrimaryButton, SecondaryButton, inputClass } from './ui';
+import { ControlShell, IconButton, PrimaryButton, SecondaryButton, TextArea, TextInput } from './ui';
 
 const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
@@ -462,22 +462,23 @@ export function SessionDetail({
           </button>
         ))}
       </div>
-      <textarea
+      <TextArea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         rows={page ? 4 : 2}
         maxLength={2000}
         placeholder={kind === 'link' ? 'Link label' : `Add a ${kind}…`}
-        className={`${inputClass} resize-none`}
+        className="resize-none"
       />
       {kind === 'link' && (
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://…"
-          inputMode="url"
-          className={`${inputClass} mt-1.5`}
-        />
+        <ControlShell className="mt-1.5">
+          <TextInput
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://…"
+            inputMode="url"
+          />
+        </ControlShell>
       )}
       <PrimaryButton
         className="mt-2 w-full py-1.5"

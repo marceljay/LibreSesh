@@ -11,13 +11,15 @@ import {
   durationLabel,
 } from '@shared/sessionLimits';
 import {
+  ControlShell,
   Field,
   FormError,
   FormGrid,
   Modal,
   PrimaryButton,
   SecondaryButton,
-  inputClass,
+  TextInput,
+  selectClass,
 } from './ui';
 
 
@@ -90,7 +92,7 @@ export function PlaceProposalModal({
           <select
             value={roomId}
             onChange={(e) => setRoomId(Number(e.target.value))}
-            className={inputClass}
+            className={selectClass}
           >
             {rooms.map((r) => (
               <option key={r.id} value={r.id}>
@@ -101,7 +103,7 @@ export function PlaceProposalModal({
           </select>
         </Field>
         <Field label="Day">
-          <select value={day} onChange={(e) => setDay(e.target.value)} className={inputClass}>
+          <select value={day} onChange={(e) => setDay(e.target.value)} className={selectClass}>
             {days.map((d) => (
               <option key={d} value={d}>
                 {dayLabels[d] ?? d}
@@ -110,13 +112,14 @@ export function PlaceProposalModal({
           </select>
         </Field>
         <Field label="Start" hint="In 5-minute steps.">
-          <input
-            type="time"
-            step={300}
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            className={inputClass}
-          />
+          <ControlShell>
+            <TextInput
+              type="time"
+              step={300}
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+            />
+          </ControlShell>
         </Field>
         {/* Same list and same escape hatch as the session form: a pitch being
             placed is a session, and two dialogs that disagree about how long
@@ -132,7 +135,7 @@ export function PlaceProposalModal({
               setCustomDur(false);
               setDurMin(Number(e.target.value));
             }}
-            className={inputClass}
+            className={selectClass}
           >
             {DURATION_CHOICES.map((d) => (
               <option key={d} value={d}>
@@ -142,17 +145,18 @@ export function PlaceProposalModal({
             <option value="other">Other…</option>
           </select>
           {customDur && (
-            <input
-              type="number"
-              value={durMin}
-              onChange={(e) => setDurMin(Number(e.target.value))}
-              min={MIN_DURATION_MINUTES}
-              max={MAX_DURATION_MINUTES}
-              step={SNAP_MINUTES}
-              aria-label="Duration in minutes"
-              autoFocus
-              className={`${inputClass} mt-1.5`}
-            />
+            <ControlShell className="mt-1.5">
+              <TextInput
+                type="number"
+                value={durMin}
+                onChange={(e) => setDurMin(Number(e.target.value))}
+                min={MIN_DURATION_MINUTES}
+                max={MAX_DURATION_MINUTES}
+                step={SNAP_MINUTES}
+                aria-label="Duration in minutes"
+                autoFocus
+              />
+            </ControlShell>
           )}
         </Field>
       </FormGrid>

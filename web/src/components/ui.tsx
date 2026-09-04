@@ -1,5 +1,6 @@
 import {
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -201,21 +202,69 @@ export function ControlShell({
  * every text field in the app has had that bug. 14px returns above `sm`, where
  * there is no such behaviour and the denser size reads better.
  */
-export function TextInput({
-  className = '',
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
+export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function TextInput({ className = '', ...props }, ref) {
+    const ctx = useFieldContext();
+    return (
+      <input
+        ref={ref}
+        id={props.id ?? ctx?.id}
+        aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
+        aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
+        {...props}
+        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+      />
+    );
+  },
+);
+
+/**
+ * The multi-line sibling of `TextInput`. Unlike `TextInput` it owns its own
+ * border rather than living inside a `ControlShell`: a textarea never holds
+ * chips or adornments, which is the whole reason `ControlShell` exists, so
+ * wrapping one buys nothing and fights the flex layout. It still reads
+ * `FieldContext` for `id`/`aria-invalid`/`aria-describedby` and carries the
+ * same 16px-on-mobile fix, so a `Field` + `TextArea` is wired up with none of
+ * it at the call site.
+ *
+ * Border and focus tokens are kept in step with `ControlShell` by hand; the
+ * Phase 3 contrast pass changes both together (and the `border-stone-300` ban
+ * lands only after it).
+ */
+export const TextArea = forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function TextArea({ className = '', ...props }, ref) {
   const ctx = useFieldContext();
+  const invalid = props['aria-invalid'] ?? ctx?.invalid;
   return (
-    <input
+    <textarea
+      ref={ref}
       id={props.id ?? ctx?.id}
-      aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
+      aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus:ring-2 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 ${
+        invalid
+          ? 'border-red-400 focus:ring-red-400 dark:border-red-700'
+          : 'border-stone-300 focus:border-stone-500 focus:ring-stone-500 dark:border-stone-600 dark:focus:border-stone-400 dark:focus:ring-stone-400'
+      } ${className}`}
     />
   );
-}
+});
+
+/**
+ * The class for a native `<select>`. Native selects stay native — the plan
+ * allowlists the element rather than wrapping it, because a native select is
+ * the accessible default and holds nothing a `ControlShell` would carry. This
+ * gives them the field's border, height and focus ring so they read as siblings
+ * of the text fields, and replaces their old `inputClass` when it is deleted.
+ * Tokens track `ControlShell`; Phase 3 changes them together.
+ */
+export const selectClass =
+  `${controlHeightClass} w-full rounded-lg border border-stone-300 bg-white px-3 text-base outline-none transition-colors ` +
+  'focus:border-stone-500 focus:ring-2 focus:ring-stone-500 sm:text-sm ' +
+  'dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:focus:border-stone-400 dark:focus:ring-stone-400';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole

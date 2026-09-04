@@ -45,7 +45,7 @@ describe('Field owns the id and the label points at it', () => {
 
 describe('ControlShell is the only field border', () => {
   it('owns border, a height floor, focus-within ring and invalid state', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export function TextInput'));
+    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
     expect(shell).toContain('min-h-[2.375rem]');
     expect(shell).toContain('flex-wrap'); // chips and adornments sit inside the border
     expect(shell).toContain('focus-within:ring-2');
@@ -55,14 +55,14 @@ describe('ControlShell is the only field border', () => {
   });
 
   it('focuses its input when its own padding is clicked', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export function TextInput'));
+    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
     expect(shell).toContain('if (e.target !== ref.current) return;');
     expect(shell).toMatch(/querySelector<HTMLElement>\(\s*'input, textarea, select/);
   });
 });
 
 describe('TextInput is bare and wired from context', () => {
-  const input = ui.slice(ui.indexOf('export function TextInput'), ui.indexOf('export function ControlAdornment'));
+  const input = ui.slice(ui.indexOf('export const TextInput'), ui.indexOf('export const TextArea'));
 
   it('takes its id and aria wiring from the Field, not the call site', () => {
     expect(input).toContain('id={props.id ?? ctx?.id}');
@@ -75,6 +75,26 @@ describe('TextInput is bare and wired from context', () => {
     expect(input).toContain('sm:text-sm');
     // The bare input draws no border or background of its own — the shell does.
     expect(input).toContain('bg-transparent');
+  });
+
+  it('forwards a ref, so a call site can select or focus the node', () => {
+    expect(input).toContain('forwardRef');
+    expect(input).toContain('ref={ref}');
+  });
+});
+
+describe('TextArea owns its own border', () => {
+  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export const selectClass'));
+
+  it('is a multi-line field wired from context, unlike TextInput it is not shell-bound', () => {
+    expect(area).toContain('<textarea');
+    expect(area).toContain('id={props.id ?? ctx?.id}');
+    expect(area).toContain('rounded-lg border'); // draws its own border, no ControlShell
+  });
+
+  it('carries the same 16px-on-mobile fix', () => {
+    expect(area).toContain('text-base');
+    expect(area).toContain('sm:text-sm');
   });
 });
 

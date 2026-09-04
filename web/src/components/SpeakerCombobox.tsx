@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonDto } from '@shared/types';
-import { inputClass } from './ui';
+import { ControlShell, TextInput } from './ui';
 
 /**
  * One name the form will submit: a number for somebody already on the roster,
@@ -154,41 +154,42 @@ export function SpeakerCombobox({
       )}
 
       {(max === undefined || value.length < max) && (
-      <input
-        value={query ?? ''}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => setQuery(query ?? '')}
-        onKeyDown={(e) => {
-          if (!open) return;
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (rowCount > 0)
-              setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + rowCount) % rowCount);
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (rowCount > 0) add(active);
-          } else if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
-            // The chip-field convention: backspace on an empty field takes the
-            // last one off, so a mistyped name is one key away from gone.
-            onChange(value.slice(0, -1));
-          } else if (e.key === 'Escape') {
-            e.stopPropagation();
-            setQuery(null);
+      <ControlShell>
+        <TextInput
+          value={query ?? ''}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setQuery(query ?? '')}
+          onKeyDown={(e) => {
+            if (!open) return;
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              if (rowCount > 0)
+                setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + rowCount) % rowCount);
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              if (rowCount > 0) add(active);
+            } else if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
+              // The chip-field convention: backspace on an empty field takes the
+              // last one off, so a mistyped name is one key away from gone.
+              onChange(value.slice(0, -1));
+            } else if (e.key === 'Escape') {
+              e.stopPropagation();
+              setQuery(null);
+            }
+          }}
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
+          maxLength={120}
+          placeholder={
+            onlySelf
+              ? 'Only you can be credited here'
+              : value.length === 0
+                ? 'Search people or type a new name'
+                : 'Add another'
           }
-        }}
-        role="combobox"
-        aria-expanded={open}
-        aria-autocomplete="list"
-        maxLength={120}
-        placeholder={
-          onlySelf
-            ? 'Only you can be credited here'
-            : value.length === 0
-              ? 'Search people or type a new name'
-              : 'Add another'
-        }
-        className={inputClass}
-      />
+        />
+      </ControlShell>
       )}
 
       {open && rowCount > 0 && (max === undefined || value.length < max) && (
