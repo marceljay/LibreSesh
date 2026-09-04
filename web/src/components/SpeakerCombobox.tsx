@@ -126,35 +126,43 @@ export function SpeakerCombobox({
 
   return (
     <div className="relative" ref={wrap}>
-      {value.length > 0 && (
-        <ul className="mb-1.5 flex flex-wrap gap-1.5">
-          {value.map((choice, i) => (
-            <li
-              key={typeof choice === 'number' ? `p${choice}` : `n${choice}`}
-              className="flex items-center gap-1 rounded-full bg-stone-100 py-1 pl-2.5 pr-1 text-xs font-medium dark:bg-stone-800"
-            >
-              {nameOf(choice)}
-              {typeof choice === 'string' && (
-                <span className="text-stone-400 dark:text-stone-500">· new</span>
-              )}
-              {personOf(choice)?.isMine && (
-                <span className="text-stone-400 dark:text-stone-500">· you</span>
-              )}
-              <button
-                type="button"
-                aria-label={`Remove ${nameOf(choice)}`}
-                onClick={() => onChange(value.filter((_, j) => j !== i))}
-                className="grid h-4 w-4 place-items-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-stone-700 dark:hover:text-stone-200"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {(max === undefined || value.length < max) && (
+      {/*
+       * The chosen names sit *inside* the field, not in a row above it: the
+       * bordered box is the control, and what you have picked belongs in it —
+       * which is the whole reason `ControlShell` is a wrapping flex row rather
+       * than a skin on the input. Chips and the input share it, so the box
+       * grows to a second line when a session bills several speakers, and a
+       * press on the box's own padding focuses the input (ControlShell's job).
+       *
+       * The box is rendered even at `max`, when the input is gone: a field
+       * that vanishes once it is full reads as a bug, and the chips still need
+       * somewhere to live.
+       */}
       <ControlShell>
+        {value.map((choice, i) => (
+          <span
+            key={typeof choice === 'number' ? `p${choice}` : `n${choice}`}
+            className="flex shrink-0 items-center gap-1 rounded-full bg-stone-100 py-1 pl-2.5 pr-1 text-xs font-medium dark:bg-stone-800"
+          >
+            {nameOf(choice)}
+            {typeof choice === 'string' && (
+              <span className="text-stone-400 dark:text-stone-500">· new</span>
+            )}
+            {personOf(choice)?.isMine && (
+              <span className="text-stone-400 dark:text-stone-500">· you</span>
+            )}
+            <button
+              type="button"
+              aria-label={`Remove ${nameOf(choice)}`}
+              onClick={() => onChange(value.filter((_, j) => j !== i))}
+              className="grid h-4 w-4 place-items-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 dark:hover:bg-stone-700 dark:hover:text-stone-200"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </span>
+        ))}
+
+        {(max === undefined || value.length < max) && (
         <TextInput
           value={query ?? ''}
           onChange={(e) => setQuery(e.target.value)}
@@ -189,8 +197,8 @@ export function SpeakerCombobox({
                 : 'Add another'
           }
         />
+        )}
       </ControlShell>
-      )}
 
       {open && rowCount > 0 && (max === undefined || value.length < max) && (
         <ul
