@@ -33,6 +33,7 @@ import {
 } from '@shared/sessionLimits';
 import { RemoveIcon } from './icons';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Chip,
   DangerButton,
@@ -545,19 +546,25 @@ export function SessionModal({
           )}
           <FormGrid>
             <Field label="Room">
-              <select
+              <Select
                 value={roomId}
-                onChange={(e) => setRoomId(Number(e.target.value))}
+                onValueChange={(v) => v != null && setRoomId(v)}
                 disabled={!canMove}
-                className={selectClass}
               >
-                {allowedRooms.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                    {r.openBooking ? ' (open)' : ''}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Room">
+                  <SelectValue>
+                    {(v: number | null) => allowedRooms.find((r) => r.id === v)?.name ?? ''}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {allowedRooms.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                      {r.openBooking ? ' (open)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             {tracks.length > 0 && (
               <Field label="Track" hint="Optional. The schedule can lay its columns out by track.">
