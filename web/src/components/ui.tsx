@@ -69,6 +69,29 @@ export const bareFieldFocusRing =
   'focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 dark:focus-visible:ring-stone-400';
 
 /**
+ * Secondary text in a form — a hint under a field, an aside beside a control.
+ *
+ * The numbers, measured against the Tailwind v4 stone palette on the surfaces
+ * these actually sit on (white, and stone-900 in dark):
+ *
+ * | colour    | on white | on stone-900 |
+ * |-----------|----------|--------------|
+ * | stone-400 |   2.59   |    6.76      |
+ * | stone-500 |   4.81   |    3.64      |
+ * | stone-600 |   7.64   |     —        |
+ * | stone-300 |    —     |   11.75      |
+ *
+ * stone-500 light was the old value: it clears 4.5:1 by 0.31, which is a pass
+ * on paper and thin grey text in a bright room. stone-600 is the same choice
+ * the label already made. Dark stays stone-400 — comfortable at 6.76, and it
+ * keeps the hint distinct from the label's stone-300.
+ *
+ * Exported because SessionModal wrote this pair by hand in five places; a
+ * token is what stops the next hint being a shade of its own.
+ */
+export const hintClass = 'text-xs text-stone-600 dark:text-stone-400';
+
+/**
  * What a `Field` tells the control inside it: the id its label points at, the
  * ids its hint and error carry (so the control can name them in
  * `aria-describedby`), and whether it is in an invalid state.
@@ -135,7 +158,7 @@ export function Field({
         </label>
         {children}
         {hint && (
-          <p id={hintId} className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+          <p id={hintId} className={`mt-1 ${hintClass}`}>
             {hint}
           </p>
         )}
@@ -244,7 +267,7 @@ export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<
         aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
         aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
         {...props}
-        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-hidden placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-hidden placeholder:text-stone-500 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-400 ${className}`}
       />
     );
   },
@@ -276,7 +299,7 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-400 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 ${bareFieldFocusRing} ${
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-500 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-400 ${bareFieldFocusRing} ${
         invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />
@@ -657,7 +680,7 @@ export function InlineCreate({
           Cancel
         </SecondaryButton>
       </FormRow>
-      {hint && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{hint}</p>}
+      {hint && <p className={`mt-1 ${hintClass}`}>{hint}</p>}
       {children}
     </div>
   );

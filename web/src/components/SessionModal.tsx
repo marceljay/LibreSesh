@@ -46,6 +46,7 @@ import {
   FormGrid,
   HelpButton,
   HelpNote,
+  hintClass,
   IconButton,
   PrimaryButton,
   SecondaryButton,
@@ -350,7 +351,7 @@ export function SessionModal({
               Attendees are spared it: they cannot add one. */}
           {formats.length === 0 && isAdmin && (
             <Field label="Format">
-              <p className="text-xs text-stone-500 dark:text-stone-400">
+              <p className={hintClass}>
                 This event defines none yet. Add them under Manage Event →
                 Programme and they appear here, at the top of this form.
               </p>
@@ -675,7 +676,7 @@ export function SessionModal({
                       disabled={!canMove}
                     />
                   </ControlShell>
-                  <span className="text-xs text-stone-500 dark:text-stone-400">
+                  <span className={hintClass}>
                     minutes{durMin >= 60 ? ` · ${durationLabel(durMin)}` : ''}
                   </span>
                 </div>
@@ -738,7 +739,7 @@ export function SessionModal({
                     onChange={setRepeatLink}
                     label="Keep these linked, so an edit can apply to the whole run"
                   />
-                  <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+                  <p className={`${hintClass} leading-relaxed`}>
                     {repeatProblem ??
                       `Creates ${plural(runCount, { one: 'session', other: 'sessions' })}, the first on ${dayLabels[day] ?? day}.`}{' '}
                     {repeatLink
@@ -768,7 +769,7 @@ export function SessionModal({
                       </button>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                  <p className={`mt-1 ${hintClass}`}>
                     Apply your changes to
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -783,7 +784,7 @@ export function SessionModal({
                     </Chip>
                   </div>
                   {applyScope !== 'one' && (
-                    <p className="mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+                    <p className={`mt-2 ${hintClass} leading-relaxed`}>
                       The others keep their own time — only the words, room and details change.
                     </p>
                   )}

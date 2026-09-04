@@ -117,7 +117,7 @@ export function Modal({
                   type="button"
                   aria-label="Close"
                   title="Close"
-                  className="-me-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+                  className="-me-1.5 -mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
                 >
                   <CloseIcon />
                 </Dialog.Close>
