@@ -1645,6 +1645,8 @@ export function SchedulePage() {
               // changes but the state it left behind does not.
               arrange={arrange && canArrange}
               canEdit={canEdit}
+              nextDay={nextDay}
+              onGoToDay={goToDay}
               onOpen={openSession}
               onMove={(s, startMin, durMin, roomId) =>
                 void moveSession(s, startMin, durMin, roomId)

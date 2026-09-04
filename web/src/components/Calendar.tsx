@@ -308,6 +308,12 @@ export interface CalendarProps {
   activeId?: number;
   timezone: string;
   day: string;
+  /** The day after this one, for the button under the grid. Absent on the last
+   *  day, which has nothing after it. */
+  nextDay?: { date: string; label: string };
+  /** Go to another day. Given together with `nextDay`, the grid offers the way
+   *  out of this one at the bottom, as the list does at the end of its rows. */
+  onGoToDay?: (date: string) => void;
   dayStartMin: number;
   dayEndMin: number;
   nowMin: number | null;
@@ -342,6 +348,8 @@ export function Calendar({
   activeId,
   timezone,
   day,
+  nextDay,
+  onGoToDay,
   dayStartMin,
   dayEndMin,
   nowMin,
@@ -864,6 +872,31 @@ export function Calendar({
             );
           })}
         </div>
+
+        {/* The end of the day, and the way out of it — the same offer the list
+            makes at the foot of its rows. In a grid "the end" is the bottom of
+            the last hour, so it sits under the day and inside the grid's own
+            scroller.
+
+            Centred under the day rather than pinned to its near edge. Centred
+            *on the grid*, which is the same thing as centred on screen for a
+            grid that fits — and on a wider one it is under the middle of what
+            you are scrolling through, which is where the eye already is.
+            Pinning it with `sticky start-0` would keep it in view at every
+            scroll position, but it read as a stray control tacked to the left
+            margin, and this button is not worth a resize observer to centre it
+            on the viewport instead. */}
+        {nextDay && onGoToDay && (
+          <div className="mx-auto w-[min(24rem,100%)] px-1 pb-3 pt-2">
+            <button
+              type="button"
+              onClick={() => onGoToDay(nextDay.date)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-stone-300 px-3 py-3 text-sm font-semibold text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400 dark:hover:text-stone-100"
+            >
+              Next day · {nextDay.label}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

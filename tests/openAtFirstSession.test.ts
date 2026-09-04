@@ -52,9 +52,24 @@ describe('a day opens on its first session', () => {
     expect(goToDay).toMatch(/requestAnimationFrame/);
   });
 
-  it('is the one way in: day strip, week rail and the end-of-list button', () => {
+  it('is the one way in: day strip, week rail, and both views’ end-of-day button', () => {
     expect(schedule).toMatch(/onClick=\{\(\) => goToDay\(d\)\}/);
     expect(schedule).toMatch(/onClick=\{\(\) => goToDay\(holdsToday \? today : first\)\}/);
-    expect(schedule).toMatch(/onGoToDay=\{goToDay\}/);
+    // Both the list and the grid are handed the same callback and the same day.
+    expect([...schedule.matchAll(/onGoToDay=\{goToDay\}/g)]).toHaveLength(2);
+    expect([...schedule.matchAll(/nextDay=\{nextDay\}/g)]).toHaveLength(2);
+  });
+
+  it('offers the next day at the bottom of the grid, not only the list', () => {
+    // It was a list-only affordance from the day it was added (`83c54bd`), so
+    // in the grid the only way on was the day strip at the top of the page.
+    const calendar = readFileSync(
+      join(WEB_SRC, 'components', 'Calendar.tsx'),
+      'utf8',
+    );
+    expect(calendar).toMatch(/Next day · \{nextDay\.label\}/);
+    // Centred under the day, not tacked to its left margin.
+    expect(calendar).toMatch(/mx-auto w-\[min\(24rem,100%\)\]/);
+    expect(calendar).not.toMatch(/sticky start-0 w-\[min/);
   });
 });
