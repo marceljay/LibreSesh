@@ -22,14 +22,14 @@ import {
   type NumberFieldSpec,
 } from '../lib/numberField';
 
-/**
- * Inline controls all stand 38px tall — a `text-sm` input with `py-2` and a
- * border, a `text-xs` button with `py-2.5` and a border (transparent on the
- * primary). `FormRow` bottom-aligns them; matching the height lines up their
- * tops too, which is what "New track" and "Add track" were missing. Bare
- * controls that can't be padded into it (a colour swatch) take this class.
+/*
+ * Inline controls all stand 38px tall — `2.375rem` — so a field, a select and a
+ * button on one line align by construction. It is written out as a literal at
+ * each of the three places that need it (`ControlShell` below as `min-h-`, the
+ * Select trigger in `ui/select.tsx` as `h-`) rather than shared as a constant,
+ * because Tailwind scans source text: an interpolated `h-[${x}]` generates no
+ * class at all. `tests/controlShell.test.ts` pins the three to each other.
  */
-export const controlHeightClass = 'h-[2.375rem]';
 
 /**
  * Field focus. There is already a global focus ring in `index.css`
@@ -157,8 +157,8 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
  * box however many children it holds. Clicking empty space in the box focuses
  * the input, the way a native field does.
  *
- * `controlHeightClass` is the floor here, matching the button primitives, so a
- * shell and a button on one line align by construction — see its note.
+ * The 38px control height is the floor here, matching the button primitives and
+ * the Select trigger — see the note at the top of this file.
  */
 export function ControlShell({
   invalid,
@@ -267,19 +267,6 @@ export const TextArea = forwardRef<
     />
   );
 });
-
-/**
- * The class for a native `<select>`. Native selects stay native — the plan
- * allowlists the element rather than wrapping it, because a native select is
- * the accessible default and holds nothing a `ControlShell` would carry. This
- * gives them the field's border, height and focus ring so they read as siblings
- * of the text fields, and is what a native select wears now that the old field
- * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
- */
-export const selectClass =
-  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-hidden transition-colors ` +
-  'focus:border-transparent focus:ring-2 focus:ring-stone-500 focus:ring-offset-0 sm:text-sm ' +
-  'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400';
 
 /** Trailing (or leading) content inside a `ControlShell` — a unit like "days",
  *  a submit ↵, an icon button. Sits inside the border, which is the whole

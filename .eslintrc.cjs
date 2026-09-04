@@ -21,11 +21,21 @@ const logicalProperties = [
   { selector: `TemplateElement[value.raw=/${TEXT_ALIGN}/]`, message: LOGICAL_MESSAGE },
 ];
 
-/** `inputClass` was the old field skin, deleted in Phase 2. */
-const noInputClass = {
-  selector: "VariableDeclarator[id.name='inputClass']",
+/** The two old field skins: `inputClass` went in Phase 2, `selectClass` with
+ *  the last native `<select>` in the Base UI migration. */
+const noOldSkins = {
+  selector: "VariableDeclarator[id.name=/^(inputClass|selectClass)$/]",
   message:
-    'inputClass is gone — it was the old field skin. Use <ControlShell> + <TextInput>, or selectClass for a native <select>.',
+    'The old field skins are gone. Use <ControlShell> + <TextInput> for a text field, or <Select> from components/ui/select for a dropdown.',
+};
+
+/** Every dropdown is a Base UI Select now, themed to the fields. A native one
+ *  would be the only control in the app not wearing the field's border, height
+ *  and focus ring — which is the inconsistency the migration existed to fix. */
+const noNativeSelect = {
+  selector: "JSXOpeningElement[name.name='select']",
+  message:
+    'Use <Select> from components/ui/select. Raw <select> is banned — every dropdown is a Base UI Select (see the shadcn/Base UI migration).',
 };
 
 module.exports = {
@@ -67,18 +77,18 @@ module.exports = {
             selector: "JSXOpeningElement[name.name='textarea']",
             message: 'Use <TextArea> from ui.tsx. Raw <textarea> outside ui.tsx is banned.',
           },
-          noInputClass,
+          noNativeSelect,
+          noOldSkins,
           ...logicalProperties,
         ],
       },
     },
     {
-      // `select` is deliberately not banned — a native select is the accessible
-      // default (Phase 0). The primitives legitimately use raw elements here, so
-      // only the class-level rules apply.
-      files: ['web/src/components/ui.tsx'],
+      // `ui.tsx` and `ui/select.tsx` are where the primitives legitimately use
+      // the raw elements, so only the class-level rules apply to them.
+      files: ['web/src/components/ui.tsx', 'web/src/components/ui/*.tsx'],
       rules: {
-        'no-restricted-syntax': ['error', noInputClass, ...logicalProperties],
+        'no-restricted-syntax': ['error', noOldSkins, ...logicalProperties],
       },
     },
   ],

@@ -101,7 +101,7 @@ describe('TextInput is bare and wired from context', () => {
 });
 
 describe('TextArea owns its own border', () => {
-  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export const selectClass'));
+  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export function ControlAdornment'));
 
   it('is a multi-line field wired from context, unlike TextInput it is not shell-bound', () => {
     expect(area).toContain('<textarea');
@@ -144,7 +144,24 @@ describe('the old skin is gone', () => {
     expect(ui).not.toContain('inputClass');
   });
 
-  it('keeps selectClass for the native selects Phase 0 left native', () => {
-    expect(ui).toContain('export const selectClass =');
+  it('has deleted selectClass along with the last native select', () => {
+    // Every `<select>` is a Base UI Select now (`ui/select.tsx`), so the class
+    // that skinned the native ones has nothing left to skin.
+    expect(ui).not.toContain('selectClass');
+  });
+
+  it('keeps the field and the Select trigger the same height', () => {
+    // Tailwind scans source text, so an arbitrary value cannot come from a
+    // shared constant — `h-[${x}]` generates nothing. The height is therefore
+    // written out in both files, and this is what stops the two drifting: a
+    // field and a select on one row must align.
+    const select = readFileSync(
+      join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui', 'select.tsx'),
+      'utf8',
+    );
+    const height = (src: string, prefix: string): string | undefined =>
+      new RegExp(`(?:^|[\\s'"\`])${prefix}-\\[([\\d.]+rem)\\]`).exec(src)?.[1];
+    expect(height(ui, 'min-h')).toBe('2.375rem');
+    expect(height(select, 'h')).toBe('2.375rem');
   });
 });
