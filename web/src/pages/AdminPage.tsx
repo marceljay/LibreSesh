@@ -385,6 +385,12 @@ const fieldProblem = (field: string, error: NumberFieldError): string =>
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminPermissions } from './AdminPermissions';
+import { AdminSearch } from './AdminSearch';
+import {
+  ADMIN_TABS,
+  type AdminSetting,
+  type AdminTabId,
+} from '../lib/adminSearch';
 import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
@@ -415,17 +421,45 @@ import {
 } from '../components/ui';
 
 
-const TABS = [
-  { id: 'programme', label: 'Programme' },
-  { id: 'people', label: 'People' },
-  { id: 'permissions', label: 'Permissions' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'backup', label: 'Backup' },
-  { id: 'trash', label: 'Trash' },
-  { id: 'audit', label: 'Audit' },
-] as const;
+/** The tabs and everything findable inside them live together in one index, so
+ *  the search box and the tab bar cannot disagree about what this page holds. */
+const TABS = ADMIN_TABS;
 
-type TabId = (typeof TABS)[number]['id'];
+type TabId = AdminTabId;
+
+/** How long a jumped-to setting keeps its ring. Long enough to catch the eye
+ *  after the scroll settles, short enough not to look like an error state. */
+const FLASH_MS = 1800;
+
+/**
+ * Marks a setting so the search box can scroll to it and ring it.
+ *
+ * Declared here rather than inside `AdminPage` on purpose: a component defined
+ * during render is a new type on every render, so React would unmount and
+ * remount everything inside it — which in a form means losing focus and the
+ * caret mid-word. `scroll-mt-24` keeps the scrolled-to field clear of the
+ * sticky heading above it.
+ */
+function SettingAnchor({
+  id,
+  flashed,
+  children,
+}: {
+  id: string;
+  flashed: string | null;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      id={`setting-${id}`}
+      className={`scroll-mt-24 rounded-xl transition-shadow duration-300 ${
+        flashed === id ? 'ring-2 ring-highlight' : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 /** The counted nouns this page says. Kept together so a translation has one
  *  place to extend them, rather than an `+ 's'` at each call site. */
@@ -519,6 +553,38 @@ export function AdminPage() {
       );
     },
     [setSearchParams],
+  );
+
+  /**
+   * Open a setting the search box found: switch to its tab, scroll to it, and
+   * ring it for a moment.
+   *
+   * The ring is the point. Landing on the right tab still leaves an organiser
+   * scanning a screenful of fields for the one they asked for, which is the
+   * problem the search was meant to solve rather than move.
+   */
+  const [flashed, setFlashed] = useState<string | null>(null);
+  useEffect(() => {
+    if (flashed === null) return;
+    const timer = setTimeout(() => setFlashed(null), FLASH_MS);
+    return () => clearTimeout(timer);
+  }, [flashed]);
+
+  const openSetting = useCallback(
+    (setting: AdminSetting) => {
+      setTab(setting.tab);
+      const anchor = setting.anchor;
+      if (anchor === undefined) return;
+      // After paint: the tab it lives on has to be rendered before it can be
+      // scrolled to.
+      requestAnimationFrame(() => {
+        document
+          .getElementById(`setting-${anchor}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setFlashed(anchor);
+      });
+    },
+    [setTab],
   );
 
   const loadTrash = useCallback(async () => {
@@ -1122,6 +1188,10 @@ export function AdminPage() {
           ← Schedule
         </button>
         <h1 className="text-lg font-semibold tracking-tight">Manage {event.name}</h1>
+        {/* Above the tabs, because it is the way past them: seven tabs is seven
+            places a setting could be, and knowing what you want to change says
+            nothing about which. */}
+        <AdminSearch onPick={openSetting} />
       </div>
 
       {/* Manage is seven unrelated jobs on one page. Tabs keep each of them a
@@ -1725,168 +1795,188 @@ export function AdminPage() {
         <div role="tabpanel" id="admin-panel-settings" aria-labelledby="admin-tab-settings">
           <Section title="Event settings" className="mb-6">
             <FormStack>
-            <Field label="Name">
-              <ControlShell>
-                <TextInput value={name} onChange={(e) => setName(e.target.value)} />
-              </ControlShell>
-            </Field>
+            <SettingAnchor id="name" flashed={flashed}>
+  <Field label="Name">
+                <ControlShell>
+                  <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+                </ControlShell>
+              </Field>
+            </SettingAnchor>
             {/* Renaming an event is renaming its address, which sounds more
                 dangerous than it is: roles are held against the event itself,
                 not its slug, so nobody is signed out or demoted — and the old
                 address goes on working rather than 404ing. The hint says both,
                 because an organiser who does not know that will not touch
                 this field. */}
-            <Field
-              label="Slug"
-              hint={
-                slugField && slugField !== event?.slug
-                  ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
-                  : `Used in the URL: /e/${slugField || event?.slug}`
-              }
-            >
-              <ControlShell>
-                <TextInput
-                  value={slugField}
-                  onChange={(e) => setSlugField(slugify(e.target.value))}
-                />
-              </ControlShell>
-            </Field>
-            <FormGrid>
-              <Field label="Start date">
-                <ControlShell>
-                  <TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field label="End date">
-                <ControlShell>
-                  <TextInput type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field label="Day starts">
-                <ControlShell>
-                  <TextInput type="time" step={300} value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field label="Day ends">
-                <ControlShell>
-                  <TextInput type="time" step={300} value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
-                </ControlShell>
-              </Field>
-            </FormGrid>
-            <NumberField
-              label="Group days into weeks past"
-              hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
-              spec={weekRailFromField}
-              value={weekRailFrom}
-              onChange={setWeekRailFrom}
-              suffix={
-                parsedWeekRail.value === null
-                  ? 'days'
-                  : eventDays > parsedWeekRail.value
-                    ? 'days · the rail is on for this event'
-                    : 'days · one row of tabs for this event'
-              }
-            />
-            <Field
-              label="Default view"
-              hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
-            >
-              <Select
-                value={defaultView}
-                onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
+            <SettingAnchor id="slug" flashed={flashed}>
+  <Field
+                label="Slug"
+                hint={
+                  slugField && slugField !== event?.slug
+                    ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
+                    : `Used in the URL: /e/${slugField || event?.slug}`
+                }
               >
-                {/* Wide enough for the longest option in full: at w-48 both
-                    ran under the chevron. */}
-                <SelectTrigger aria-label="Default view" className="w-72">
-                  <SelectValue>
-                    {(v: string | null) =>
-                      v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="list">List — one column, in time order</SelectItem>
-                  <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field
-              label="Mark the official programme"
-              hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
-            >
-              <Toggle
-                checked={showOfficialBadge}
-                onChange={setShowOfficialBadge}
-                label="Show an “Official” tag on grid blocks and list cards"
+                <ControlShell>
+                  <TextInput
+                    value={slugField}
+                    onChange={(e) => setSlugField(slugify(e.target.value))}
+                  />
+                </ControlShell>
+              </Field>
+            </SettingAnchor>
+            <SettingAnchor id="when" flashed={flashed}>
+  <FormGrid>
+                <Field label="Start date">
+                  <ControlShell>
+                    <TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field label="End date">
+                  <ControlShell>
+                    <TextInput type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field label="Day starts">
+                  <ControlShell>
+                    <TextInput type="time" step={300} value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field label="Day ends">
+                  <ControlShell>
+                    <TextInput type="time" step={300} value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
+                  </ControlShell>
+                </Field>
+              </FormGrid>
+            </SettingAnchor>
+            <SettingAnchor id="week-rail" flashed={flashed}>
+  <NumberField
+                label="Group days into weeks past"
+                hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
+                spec={weekRailFromField}
+                value={weekRailFrom}
+                onChange={setWeekRailFrom}
+                suffix={
+                  parsedWeekRail.value === null
+                    ? 'days'
+                    : eventDays > parsedWeekRail.value
+                      ? 'days · the rail is on for this event'
+                      : 'days · one row of tabs for this event'
+                }
               />
-            </Field>
-            <Field
-              label="Pitch board"
-              hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
-            >
-              <Toggle
-                checked={pitchesEnabled}
-                onChange={setPitchesEnabled}
-                label="Let people pitch sessions"
-              />
-              {!pitchesEnabled && openPitches > 0 && (
-                <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-                  {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the
-                  board and will be hidden, not deleted.
-                </p>
-              )}
-            </Field>
-            <NumberField
-              label="Audit entries to keep"
-              hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
-              spec={auditKeepField}
-              value={auditKeep}
-              onChange={setAuditKeep}
-              className="w-32"
-              suffix={
-                parsedAuditKeep.value === 0
-                  ? 'entries · keeping everything'
-                  : 'entries · older ones are dropped'
-              }
-            />
-            <Field
-              label="What you call your participants"
-              hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
-            >
-              <ControlShell>
-                <TextInput
-                  value={userRoleLabel}
-                  onChange={(e) => setUserRoleLabel(e.target.value)}
-                  maxLength={24}
+            </SettingAnchor>
+            <SettingAnchor id="default-view" flashed={flashed}>
+  <Field
+                label="Default view"
+                hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
+              >
+                <Select
+                  value={defaultView}
+                  onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
+                >
+                  {/* Wide enough for the longest option in full: at w-48 both
+                      ran under the chevron. */}
+                  <SelectTrigger aria-label="Default view" className="w-72">
+                    <SelectValue>
+                      {(v: string | null) =>
+                        v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="list">List — one column, in time order</SelectItem>
+                    <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </SettingAnchor>
+            <SettingAnchor id="official-badge" flashed={flashed}>
+  <Field
+                label="Mark the official programme"
+                hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
+              >
+                <Toggle
+                  checked={showOfficialBadge}
+                  onChange={setShowOfficialBadge}
+                  label="Show an “Official” tag on grid blocks and list cards"
                 />
-              </ControlShell>
-            </Field>
+              </Field>
+            </SettingAnchor>
+            <SettingAnchor id="pitches" flashed={flashed}>
+  <Field
+                label="Pitch board"
+                hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
+              >
+                <Toggle
+                  checked={pitchesEnabled}
+                  onChange={setPitchesEnabled}
+                  label="Let people pitch sessions"
+                />
+                {!pitchesEnabled && openPitches > 0 && (
+                  <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+                    {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the
+                    board and will be hidden, not deleted.
+                  </p>
+                )}
+              </Field>
+            </SettingAnchor>
+            <SettingAnchor id="audit-keep" flashed={flashed}>
+  <NumberField
+                label="Audit entries to keep"
+                hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
+                spec={auditKeepField}
+                value={auditKeep}
+                onChange={setAuditKeep}
+                className="w-32"
+                suffix={
+                  parsedAuditKeep.value === 0
+                    ? 'entries · keeping everything'
+                    : 'entries · older ones are dropped'
+                }
+              />
+            </SettingAnchor>
+            <SettingAnchor id="role-label" flashed={flashed}>
+  <Field
+                label="What you call your participants"
+                hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
+              >
+                <ControlShell>
+                  <TextInput
+                    value={userRoleLabel}
+                    onChange={(e) => setUserRoleLabel(e.target.value)}
+                    maxLength={24}
+                  />
+                </ControlShell>
+              </Field>
+            </SettingAnchor>
 
-            <div className="mt-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                Change passwords
-              </p>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                Leave blank to keep the current one.
-              </p>
-            </div>
-            <FormGrid cols={3}>
-              <Field label="Viewer">
-                <ControlShell>
-                  <TextInput value={viewerPassword} onChange={(e) => setViewerPassword(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field label={userRoleLabel.trim() || 'User'}>
-                <ControlShell>
-                  <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field label="Admin">
-                <ControlShell>
-                  <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
-                </ControlShell>
-              </Field>
-            </FormGrid>
+            <SettingAnchor id="passwords" flashed={flashed}>
+  <div className="mt-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                  Change passwords
+                </p>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                  Leave blank to keep the current one.
+                </p>
+              </div>
+              <FormGrid cols={3}>
+                <Field label="Viewer">
+                  <ControlShell>
+                    <TextInput value={viewerPassword} onChange={(e) => setViewerPassword(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field label={userRoleLabel.trim() || 'User'}>
+                  <ControlShell>
+                    <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field label="Admin">
+                  <ControlShell>
+                    <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+                  </ControlShell>
+                </Field>
+              </FormGrid>
+            </SettingAnchor>
             <div>
               {settingsProblem && <FormError className="mb-2">{settingsProblem}</FormError>}
               <PrimaryButton
@@ -1899,107 +1989,113 @@ export function AdminPage() {
             </FormStack>
           </Section>
 
-          <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
+          <SettingAnchor id="invite" flashed={flashed}>
+            <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
+          </SettingAnchor>
 
-          <Section
-            title="Duplicate Event/Conf"
-            description="Rooms and tags carry over to the new event; sessions and contributions do not."
-            className="mb-6"
-            actions={
-              <SecondaryButton
-                className="shrink-0 py-1.5"
-                onClick={() => setCloneOpen(!cloneOpen)}
-                aria-expanded={cloneOpen}
-              >
-                {cloneOpen ? 'Close' : 'Duplicate…'}
-              </SecondaryButton>
-            }
-          >
-            {cloneOpen && (
-              <FormStack>
-              <Field label="New name">
-                <ControlShell>
-                  <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
-                </ControlShell>
-              </Field>
-              <Field
-                label="New slug"
-                hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
-              >
-                <ControlShell>
-                  <TextInput
-                    value={cloneSlug}
-                    onChange={(e) => setCloneSlug(slugify(e.target.value))}
-                    placeholder={slugify(cloneName) || 'your-event'}
-                  />
-                </ControlShell>
-              </Field>
-              <FormGrid>
-                <Field label="Start date">
+          <SettingAnchor id="duplicate" flashed={flashed}>
+            <Section
+              title="Duplicate Event/Conf"
+              description="Rooms and tags carry over to the new event; sessions and contributions do not."
+              className="mb-6"
+              actions={
+                <SecondaryButton
+                  className="shrink-0 py-1.5"
+                  onClick={() => setCloneOpen(!cloneOpen)}
+                  aria-expanded={cloneOpen}
+                >
+                  {cloneOpen ? 'Close' : 'Duplicate…'}
+                </SecondaryButton>
+              }
+            >
+              {cloneOpen && (
+                <FormStack>
+                <Field label="New name">
+                  <ControlShell>
+                    <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
+                  </ControlShell>
+                </Field>
+                <Field
+                  label="New slug"
+                  hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
+                >
                   <ControlShell>
                     <TextInput
-                      type="date"
-                      value={cloneStart}
-                      onChange={(e) => {
-                        setCloneStart(e.target.value);
-                        if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
-                      }}
+                      value={cloneSlug}
+                      onChange={(e) => setCloneSlug(slugify(e.target.value))}
+                      placeholder={slugify(cloneName) || 'your-event'}
                     />
                   </ControlShell>
                 </Field>
-                <Field label="End date">
-                  <ControlShell>
-                    <TextInput
-                      type="date"
-                      value={cloneEnd}
-                      min={cloneStart}
-                      onChange={(e) => setCloneEnd(e.target.value)}
-                    />
-                  </ControlShell>
-                </Field>
-              </FormGrid>
-              <div className="mt-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                  New passwords
-                </p>
-                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">At least 6 characters each.</p>
-              </div>
-              <FormGrid cols={3}>
-                <Field label="Viewer">
-                  <ControlShell>
-                    <TextInput value={cloneViewer} onChange={(e) => setCloneViewer(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label="User">
-                  <ControlShell>
-                    <TextInput value={cloneUser} onChange={(e) => setCloneUser(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label="Admin">
-                  <ControlShell>
-                    <TextInput value={cloneAdmin} onChange={(e) => setCloneAdmin(e.target.value)} />
-                  </ControlShell>
-                </Field>
-              </FormGrid>
-              <div>
-                <PrimaryButton onClick={() => void cloneEvent()} disabled={!cloneReady || cloning}>
-                  {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
-                </PrimaryButton>
-              </div>
-              </FormStack>
-            )}
-          </Section>
+                <FormGrid>
+                  <Field label="Start date">
+                    <ControlShell>
+                      <TextInput
+                        type="date"
+                        value={cloneStart}
+                        onChange={(e) => {
+                          setCloneStart(e.target.value);
+                          if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
+                        }}
+                      />
+                    </ControlShell>
+                  </Field>
+                  <Field label="End date">
+                    <ControlShell>
+                      <TextInput
+                        type="date"
+                        value={cloneEnd}
+                        min={cloneStart}
+                        onChange={(e) => setCloneEnd(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                </FormGrid>
+                <div className="mt-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                    New passwords
+                  </p>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">At least 6 characters each.</p>
+                </div>
+                <FormGrid cols={3}>
+                  <Field label="Viewer">
+                    <ControlShell>
+                      <TextInput value={cloneViewer} onChange={(e) => setCloneViewer(e.target.value)} />
+                    </ControlShell>
+                  </Field>
+                  <Field label="User">
+                    <ControlShell>
+                      <TextInput value={cloneUser} onChange={(e) => setCloneUser(e.target.value)} />
+                    </ControlShell>
+                  </Field>
+                  <Field label="Admin">
+                    <ControlShell>
+                      <TextInput value={cloneAdmin} onChange={(e) => setCloneAdmin(e.target.value)} />
+                    </ControlShell>
+                  </Field>
+                </FormGrid>
+                <div>
+                  <PrimaryButton onClick={() => void cloneEvent()} disabled={!cloneReady || cloning}>
+                    {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
+                  </PrimaryButton>
+                </div>
+                </FormStack>
+              )}
+            </Section>
+          </SettingAnchor>
 
-          <Section
-            title="Archive"
-            description="An archived event stays readable with the viewer password, but nobody can change anything."
-          >
-            {event.archived ? (
-              <SecondaryButton onClick={() => void setArchived(false)}>Un-archive event</SecondaryButton>
-            ) : (
-              <SecondaryButton onClick={() => void setArchived(true)}>Archive event</SecondaryButton>
-            )}
-          </Section>
+          <SettingAnchor id="archive" flashed={flashed}>
+            <Section
+              title="Archive"
+              description="An archived event stays readable with the viewer password, but nobody can change anything."
+            >
+              {event.archived ? (
+                <SecondaryButton onClick={() => void setArchived(false)}>Un-archive event</SecondaryButton>
+              ) : (
+                <SecondaryButton onClick={() => void setArchived(true)}>Archive event</SecondaryButton>
+              )}
+            </Section>
+          </SettingAnchor>
         </div>
       )}
 

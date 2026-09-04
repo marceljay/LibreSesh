@@ -37,8 +37,14 @@ export const searchTerms = (query: string): string[] =>
 const isBoundary = (text: string, i: number): boolean =>
   i === 0 || !/[\p{L}\p{N}]/u.test(text[i - 1] as string);
 
-/** Score one term against one field: word-start beats mid-word, nothing is 0. */
-function scoreField(folded: string, term: string, wordStart: number, inside: number): number {
+/**
+ * Score one term against one field: word-start beats mid-word, nothing is 0.
+ *
+ * Exported for the admin settings search, which ranks labels rather than
+ * sessions but wants the same answer to "does typing more of a word count for
+ * more than typing the middle of one".
+ */
+export function scoreField(folded: string, term: string, wordStart: number, inside: number): number {
   let best = 0;
   for (let i = folded.indexOf(term); i !== -1; i = folded.indexOf(term, i + 1)) {
     const hit = isBoundary(folded, i) ? wordStart : inside;
