@@ -76,7 +76,7 @@ const GROUPS: { time: string; slots: Slot[] }[] = [
 function Card({ slot }: { slot: Slot }) {
   return (
     <div
-      className={`rounded-xl border bg-white p-3 shadow-sm dark:bg-stone-900 ${
+      className={`rounded-xl border bg-white p-3 shadow-xs dark:bg-stone-900 ${
         slot.open
           ? 'border-dashed border-emerald-400 dark:border-emerald-500'
           : 'border-stone-200 dark:border-stone-700'
@@ -91,7 +91,7 @@ function Card({ slot }: { slot: Slot }) {
           </div>
         </div>
         {slot.live && (
-          <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
+          <span className="shrink-0 rounded-sm bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
             now
           </span>
         )}
@@ -131,13 +131,13 @@ export function BoardPreview() {
     <figure className="m-0 flex flex-col gap-3">
       <div
         aria-hidden="true"
-        className="rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-950"
+        className="rounded-2xl border border-stone-200 bg-stone-50 p-4 shadow-xs dark:border-stone-700 dark:bg-stone-950"
       >
         {/* The chrome of a real day: the event, and how far through it you are. */}
         <div className="mb-4 flex items-center gap-2 border-b border-stone-200 pb-3 text-xs dark:border-stone-700">
           <span className="font-semibold">LongConf 2026</span>
           <span className="text-stone-500 dark:text-stone-400">· schedule is live</span>
-          <span className="ml-auto rounded bg-accent px-1.5 py-0.5 font-bold text-stone-900">
+          <span className="ml-auto rounded-sm bg-accent px-1.5 py-0.5 font-bold text-stone-900">
             Now 14:12
           </span>
         </div>

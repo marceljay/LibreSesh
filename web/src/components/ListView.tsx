@@ -108,7 +108,7 @@ export function ListView({
           <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
             {fmtMin(row.group.start)}
             {index === nowGroupIndex && (
-              <span className="rounded bg-accent px-1.5 py-0.5 font-bold text-stone-900">
+              <span className="rounded-sm bg-accent px-1.5 py-0.5 font-bold text-stone-900">
                 next / now
               </span>
             )}
@@ -136,7 +136,7 @@ export function ListView({
                       onOpen(session.id);
                     }
                   }}
-                  className={`block w-full cursor-pointer rounded-xl border bg-white dark:bg-stone-900 p-3 text-left shadow-sm hover:shadow ${
+                  className={`block w-full cursor-pointer rounded-xl border bg-white dark:bg-stone-900 p-3 text-left shadow-xs hover:shadow-sm ${
                     session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'
                   } ${live ? 'ring-2 ring-stone-900/10 dark:ring-stone-100/10' : ''}`}
                 >
@@ -149,7 +149,7 @@ export function ListView({
                       </div>
                     </div>
                     {live && (
-                      <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
+                      <span className="shrink-0 rounded-sm bg-accent px-1.5 py-0.5 text-xs font-bold text-stone-900">
                         now
                       </span>
                     )}

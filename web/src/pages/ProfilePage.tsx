@@ -31,7 +31,7 @@ type FieldKey = 'displayName' | 'name' | 'bio' | 'links';
 
 // Same wrappers DetailSheet uses for session descriptions.
 const PROSE =
-  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2';
+  'prose-sm text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2';
 
 /** A speaker or host profile with their sessions (follow-up to SPEC §4). */
 export function ProfilePage() {
@@ -247,7 +247,7 @@ export function ProfilePage() {
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-sm">
+        <div className="mt-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               {open === 'name' ? (
@@ -596,7 +596,7 @@ export function ProfilePage() {
                 <li key={session.id}>
                   <Link
                     to={`/e/${slug}/s/${session.id}`}
-                    className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 shadow-sm hover:shadow"
+                    className="block rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 px-3 py-2 shadow-xs hover:shadow-sm"
                   >
                     <div className="text-xs text-stone-500 dark:text-stone-400">
                       {label.top} {label.sub} · {fmtMin(startMin)}–{fmtMin(endMin)} ·{' '}

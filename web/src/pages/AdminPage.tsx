@@ -2339,7 +2339,7 @@ function TrackHoursFields({
           {windows.map((w) => (
             <li
               key={w.date}
-              className="flex items-center gap-2 rounded bg-stone-50 px-2 py-1.5 text-sm dark:bg-stone-800"
+              className="flex items-center gap-2 rounded-sm bg-stone-50 px-2 py-1.5 text-sm dark:bg-stone-800"
             >
               <span className="min-w-0 flex-1 truncate">{dayName(w.date)}</span>
               <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">

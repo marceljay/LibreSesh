@@ -77,7 +77,7 @@ export function EventListPage() {
           <li key={event.slug}>
             <Link
               to={`/e/${event.slug}`}
-              className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-sm hover:shadow"
+              className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-4 shadow-xs hover:shadow-sm"
             >
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{event.name}</div>

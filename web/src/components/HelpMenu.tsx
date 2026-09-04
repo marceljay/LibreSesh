@@ -10,7 +10,7 @@ const REPO_URL = 'https://github.com/marceljay/LibreSesh';
 
 const itemClass =
   'block w-full px-3 py-2 text-left text-xs font-medium text-stone-700 ' +
-  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-none ' +
+  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-hidden ' +
   'dark:text-stone-200 dark:hover:bg-stone-800 dark:focus-visible:bg-stone-800';
 
 /**

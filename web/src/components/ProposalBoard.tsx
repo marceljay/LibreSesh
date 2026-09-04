@@ -328,7 +328,7 @@ function ProposalCard({
 
   return (
     <li
-      className={`rounded-xl border bg-white dark:bg-stone-900 p-4 shadow-sm ${
+      className={`rounded-xl border bg-white dark:bg-stone-900 p-4 shadow-xs ${
         placed
           ? 'border-stone-200 dark:border-stone-800 opacity-60'
           : 'border-stone-200 dark:border-stone-700'
@@ -366,7 +366,7 @@ function ProposalCard({
 
       {description && (
         <div
-          className="prose-sm mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2"
+          className="prose-sm mt-2 text-sm leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2"
           // Markdown is escaped before parsing, so no author markup survives.
           dangerouslySetInnerHTML={{ __html: description }}
         />

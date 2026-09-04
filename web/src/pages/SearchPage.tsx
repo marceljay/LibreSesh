@@ -148,7 +148,7 @@ export function SearchPage() {
                     {sessions.map((session) => (
                       <li
                         key={session.id}
-                        className="rounded-xl border border-stone-200 bg-white shadow-sm hover:shadow dark:border-stone-700 dark:bg-stone-900"
+                        className="rounded-xl border border-stone-200 bg-white shadow-xs hover:shadow-sm dark:border-stone-700 dark:bg-stone-900"
                       >
                         <SessionResultRow
                           session={session}

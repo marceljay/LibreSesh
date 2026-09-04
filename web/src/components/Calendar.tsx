@@ -737,14 +737,14 @@ export function Calendar({
                     onOpen(session.id);
                   }
                 }}
-                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-left shadow-sm transition-shadow
+                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-left shadow-xs transition-shadow
                   ${session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'}
                   ${
                     highlighted
                       ? 'z-20 shadow-lg ring-2 ring-stone-900 dark:ring-stone-100'
                       : editable
                         ? 'cursor-grab ring-1 ring-stone-300 dark:ring-stone-600'
-                        : 'cursor-pointer hover:shadow'
+                        : 'cursor-pointer hover:shadow-sm'
                   }
                   ${active ? 'z-30 opacity-90 shadow-lg' : ''}
                   ${active?.pending ? 'cursor-progress' : ''}
@@ -768,7 +768,7 @@ export function Calendar({
                   {clash && (
                     <span
                       title="Overlaps another session in this room"
-                      className="ml-auto rounded bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
+                      className="ml-auto rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
                     >
                       clash
                     </span>
@@ -776,14 +776,14 @@ export function Calendar({
                   {competes && (
                     <span
                       title="Runs against a session everyone should be at"
-                      className={`${clash ? '' : 'ml-auto '}rounded bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300`}
+                      className={`${clash ? '' : 'ml-auto '}rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300`}
                     >
                       competing
                     </span>
                   )}
                   {live && (
                     <span
-                      className={`${clash || competes ? '' : 'ml-auto '}rounded bg-accent px-1 text-xs font-bold text-stone-900`}
+                      className={`${clash || competes ? '' : 'ml-auto '}rounded-sm bg-accent px-1 text-xs font-bold text-stone-900`}
                     >
                       now
                     </span>
@@ -828,7 +828,7 @@ export function Calendar({
                     count={starCount}
                     onToggle={onToggleStar ? () => onToggleStar(session) : undefined}
                     sessionTitle={session.title}
-                    className={`absolute bottom-0.5 right-1 rounded bg-white/90 pl-1 text-xs leading-none dark:bg-stone-900/90 ${
+                    className={`absolute bottom-0.5 right-1 rounded-sm bg-white/90 pl-1 text-xs leading-none dark:bg-stone-900/90 ${
                       onToggleStar ? '' : 'pointer-events-none'
                     }`}
                   />

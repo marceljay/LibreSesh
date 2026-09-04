@@ -132,7 +132,7 @@ export function ImportPage() {
           document left blank — <strong>write them down now</strong>. They are stored
           hashed, so this screen is the only place they can be read.
         </p>
-        <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label} className="mb-3 last:mb-0">
@@ -165,7 +165,7 @@ export function ImportPage() {
         it and said so.
       </p>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
         <Field
           label="Instance password"
           hint="Set by whoever runs this server. Importing makes an event rather than editing one, so it asks for the same password creating one by hand does — not an event password."

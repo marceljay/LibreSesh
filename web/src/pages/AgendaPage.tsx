@@ -228,7 +228,7 @@ export function AgendaPage() {
                       return (
                         <li
                           key={session.id}
-                          className={`flex items-start gap-2 rounded-xl border bg-white shadow-sm dark:bg-stone-900 ${
+                          className={`flex items-start gap-2 rounded-xl border bg-white shadow-xs dark:bg-stone-900 ${
                             clashIds.has(session.id)
                               ? 'border-amber-300 dark:border-amber-800'
                               : 'border-stone-200 dark:border-stone-700'
@@ -244,12 +244,12 @@ export function AgendaPage() {
                                 {fmtMin(startMin)}–{fmtMin(endMin)}
                               </span>
                               {live && (
-                                <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] font-bold text-stone-900">
+                                <span className="rounded-sm bg-accent px-1.5 py-0.5 text-[10px] font-bold text-stone-900">
                                   on now
                                 </span>
                               )}
                               {clashIds.has(session.id) && (
-                                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                                <span className="rounded-sm bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
                                   clash
                                 </span>
                               )}

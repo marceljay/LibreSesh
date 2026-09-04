@@ -17,7 +17,7 @@ export function Highlight({ text, terms }: { text: string; terms: string[] }) {
   ranges.forEach(([from, to], i) => {
     if (from > at) parts.push(text.slice(at, from));
     parts.push(
-      <mark key={i} className="rounded bg-amber-200/70 text-inherit dark:bg-amber-400/30">
+      <mark key={i} className="rounded-sm bg-amber-200/70 text-inherit dark:bg-amber-400/30">
         {text.slice(from, to)}
       </mark>,
     );
@@ -245,7 +245,7 @@ export function SearchBox({
            touch screen the text is floored at 16px — under that Safari zooms
            the page in on focus and does not zoom back out — which the shorter
            placeholder leaves room for. */
-        className="w-36 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-none focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-44 sm:focus:w-72"
+        className="w-36 rounded-full border border-stone-300 bg-white py-1.5 pl-8 pr-8 text-xs outline-hidden focus:w-56 focus:border-stone-500 dark:border-stone-600 dark:bg-stone-900 dark:focus:border-stone-400 sm:w-44 sm:focus:w-72"
       />
       {query && (
         <button
@@ -306,7 +306,7 @@ export function SearchBox({
                     : `See ${all.length === 1 ? 'the result' : 'all results'} on one page`}
                 </span>
                 <span className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
-                  <kbd className="rounded border border-stone-300 px-1 font-sans text-[10px] dark:border-stone-600">
+                  <kbd className="rounded-sm border border-stone-300 px-1 font-sans text-[10px] dark:border-stone-600">
                     ↵
                   </kbd>
                   <ArrowRightIcon className="h-3.5 w-3.5" />

@@ -1395,7 +1395,7 @@ export function SchedulePage() {
                 type="button"
                 data-tour="now"
                 onClick={jumpToNow}
-                className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-stone-900 shadow-sm hover:brightness-95"
+                className="shrink-0 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
               >
                 ● Now {fmtMin(nowMinuteOfDay(timezone))}
               </button>
@@ -1533,7 +1533,7 @@ export function SchedulePage() {
                 type="button"
                 onClick={() => setClashDismissed(clashKey)}
                 aria-label="Dismiss agenda clash warning"
-                className="-m-1 shrink-0 rounded p-1 text-lg leading-none hover:text-amber-950 dark:hover:text-amber-100"
+                className="-m-1 shrink-0 rounded-sm p-1 text-lg leading-none hover:text-amber-950 dark:hover:text-amber-100"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -1649,7 +1649,7 @@ export function SchedulePage() {
                     <button
                       type="button"
                       onClick={() => openResult(session)}
-                      className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-left shadow-sm hover:shadow"
+                      className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-left shadow-xs hover:shadow-sm"
                     >
                       <div className="truncate text-sm font-semibold">
                         {session.title}
@@ -1786,7 +1786,7 @@ export function SchedulePage() {
       )}
 
       {arrange && (
-        <div className="fixed bottom-4 right-4 z-40 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs text-stone-600 dark:text-stone-300 shadow">
+        <div className="fixed bottom-4 right-4 z-40 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs text-stone-600 dark:text-stone-300 shadow-sm">
           Drag sessions you may edit · snaps to 5 min
         </div>
       )}

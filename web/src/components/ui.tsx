@@ -228,7 +228,7 @@ export const TextInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<
         aria-invalid={props['aria-invalid'] ?? (ctx?.invalid || undefined)}
         aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
         {...props}
-        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-none placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
+        className={`min-w-0 flex-1 bg-transparent text-base text-stone-900 outline-hidden placeholder:text-stone-400 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-500 ${className}`}
       />
     );
   },
@@ -260,7 +260,7 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-none transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
+      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-400 focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-stone-500 focus-visible:ring-offset-0 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500 dark:focus-visible:ring-stone-400 ${
         invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />
@@ -276,7 +276,7 @@ export const TextArea = forwardRef<
  * skin is gone. Tokens track `ControlShell`; Phase 3 changes them together.
  */
 export const selectClass =
-  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-none transition-colors ` +
+  `${controlHeightClass} w-full rounded-lg border border-stone-500 bg-white px-3 text-base outline-hidden transition-colors ` +
   'focus:border-transparent focus:ring-2 focus:ring-stone-500 focus:ring-offset-0 sm:text-sm ' +
   'dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-400';
 
@@ -609,7 +609,7 @@ export function TextLink({
   return (
     <a
       {...rest}
-      className={`rounded text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100 ${className}`}
+      className={`rounded-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100 ${className}`}
     >
       {children}
     </a>
@@ -619,10 +619,10 @@ export function TextLink({
 /** The class `TextLink` applies, for react-router `<Link>`, which needs to own
  *  its own element. Keeps one definition of what a link looks like. */
 export const linkClass =
-  'rounded text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline ' +
+  'rounded-sm text-stone-600 underline-offset-2 hover:text-stone-900 hover:underline ' +
   'focus-visible:underline dark:text-stone-400 dark:hover:text-stone-100';
 
-/** A titled card. Replaces the `rounded-2xl border … p-5 shadow-sm` string that
+/** A titled card. Replaces the `rounded-2xl border … p-5 shadow-xs` string that
  *  was repeated at every section on the admin page. */
 export function Section({
   title,
@@ -639,7 +639,7 @@ export function Section({
 }) {
   return (
     <section
-      className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900 ${className}`}
+      className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900 ${className}`}
     >
       <div
         className={`flex flex-wrap items-start gap-3 ${children ? 'mb-3' : ''}`}
@@ -778,7 +778,7 @@ export function Modal({
           // address bar, so 90vh can be taller than what you can actually see.
           // The panel is capped and its body scrolls, so nothing can end up
           // above the top of the screen where no scrolling reaches it.
-          className={`relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white outline-none dark:bg-stone-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl ${
+          className={`relative flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl bg-white outline-hidden dark:bg-stone-900 sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl ${
             wide ? 'max-w-2xl' : 'max-w-md'
           }`}
         >

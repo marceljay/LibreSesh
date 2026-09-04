@@ -93,7 +93,7 @@ export function NewEventPage() {
           left blank — <strong>write them down now</strong>. They are stored hashed, so
           this screen is the only place they can be read.
         </p>
-        <dl className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-sm">
+        <dl className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label} className="mb-3 last:mb-0">
@@ -128,7 +128,7 @@ export function NewEventPage() {
         afterwards, and they decide what each person can do inside your event.
       </p>
 
-      <div className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-sm">
+      <div className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
         <FormStack>
         <Field
           label="Instance password"

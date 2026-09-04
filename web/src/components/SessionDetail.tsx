@@ -267,7 +267,7 @@ export function SessionDetail({
 
   const descriptionBlock = description ? (
     <div
-      className={`prose-sm mb-4 leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2 ${
+      className={`prose-sm mb-4 leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2 ${
         page ? 'text-base' : 'text-sm'
       }`}
       // Markdown is escaped before parsing, so no author markup survives.

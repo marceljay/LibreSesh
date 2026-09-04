@@ -9,7 +9,7 @@ import { RoleBadge, useToast } from './ui';
 
 const itemClass =
   'block w-full px-3 py-2 text-left text-xs font-medium text-stone-700 ' +
-  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-none disabled:opacity-40 ' +
+  'hover:bg-stone-100 focus-visible:bg-stone-100 focus:outline-hidden disabled:opacity-40 ' +
   'dark:text-stone-200 dark:hover:bg-stone-800 dark:focus-visible:bg-stone-800';
 
 export interface ProfileMenuProps {
