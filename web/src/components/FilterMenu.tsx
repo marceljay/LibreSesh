@@ -104,7 +104,7 @@ export function FilterMenu({
                 onChange={(e) => filters.set({ q: e.target.value })}
                 placeholder="Filter by title, speaker…"
                 aria-label="Filter sessions by text"
-                className={`w-full rounded-lg border border-stone-500 bg-white py-1.5 ps-8 pe-3 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-900 ${bareFieldFocusRing}`}
+                className={`w-full rounded-lg border border-stone-500 bg-stone-50 py-1.5 ps-8 pe-3 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-950 ${bareFieldFocusRing}`}
               />
             </div>
             <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400">

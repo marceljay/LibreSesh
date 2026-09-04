@@ -26,7 +26,9 @@ export function SelectTrigger({
   return (
     <BaseSelect.Trigger
       className={cn(
-        'flex h-[2.375rem] w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 text-base sm:text-sm',
+        // Same fill as `fieldSurfaceClass` in ui.tsx; written out because this
+        // file is token-driven and Tailwind must see the literal classes.
+        'flex h-[2.375rem] w-full items-center justify-between gap-2 rounded-lg border border-input bg-stone-50 px-3 text-base sm:text-sm dark:bg-stone-950',
         'outline-hidden transition-colors data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60',
         'focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-ring',
         'text-foreground data-[placeholder]:text-muted-foreground',

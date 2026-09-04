@@ -145,7 +145,7 @@ export function AdminPermissions({
       }
     >
       {!unlocked && (
-        <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-800">
+        <div className="mb-4 rounded-lg border border-stone-200 bg-stone-100 p-3 dark:border-stone-700 dark:bg-stone-800">
           {/* The button lives *inside* the Field, so the label sits above the
               whole row and the hint below it. Put it outside and `items-end`
               aligns it to the bottom of the hint — two lines lower than the

@@ -92,6 +92,25 @@ export const bareFieldFocusRing =
 export const hintClass = 'text-xs text-stone-600 dark:text-stone-400';
 
 /**
+ * What a field is filled with.
+ *
+ * Fields used to be `bg-white` on a `bg-white` panel, so the only thing saying
+ * "you can type here" was a 1px border. Dark was worse than that: the field was
+ * `stone-900` and so was the modal behind it — the same colour, exactly, with
+ * the border doing all of the work in both themes.
+ *
+ * A step off the panel in each direction instead — stone-50 on white, stone-950
+ * on stone-900 — so the box reads as a box before you look for its outline. It
+ * is deliberately a small step (1.04:1 light, 1.13:1 dark): enough to see the
+ * shape, not so much that a form of eight fields turns into a striped page.
+ * Typed text keeps 16.8:1 on it and the border 4.61:1.
+ *
+ * A container that is itself stone-50 has to move (see `AdminPermissions`), or
+ * the fill inside it disappears.
+ */
+export const fieldSurfaceClass = 'bg-stone-50 dark:bg-stone-950';
+
+/**
  * What a `Field` tells the control inside it: the id its label points at, the
  * ids its hint and error carry (so the control can name them in
  * `aria-describedby`), and whether it is in an invalid state.
@@ -229,7 +248,7 @@ export function ControlShell({
           field.focus();
         }
       }}
-      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 transition-colors ${fieldFocusRing} dark:bg-stone-900 ${
+      className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border ${fieldSurfaceClass} px-3 py-1.5 transition-colors ${fieldFocusRing} ${
         isInvalid
           ? 'border-red-500 dark:border-red-500'
           : 'border-stone-500 dark:border-stone-500'
@@ -299,7 +318,7 @@ export const TextArea = forwardRef<
       aria-invalid={invalid || undefined}
       aria-describedby={props['aria-describedby'] ?? ctx?.describedBy}
       {...props}
-      className={`w-full rounded-lg border bg-white px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-500 disabled:cursor-not-allowed sm:text-sm dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-400 ${bareFieldFocusRing} ${
+      className={`w-full rounded-lg border ${fieldSurfaceClass} px-3 py-2 text-base text-stone-900 outline-hidden transition-colors placeholder:text-stone-500 disabled:cursor-not-allowed sm:text-sm dark:text-stone-100 dark:placeholder:text-stone-400 ${bareFieldFocusRing} ${
         invalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${className}`}
     />

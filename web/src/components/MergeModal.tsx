@@ -208,7 +208,7 @@ export function MergeModal({
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search people"
           placeholder="Search by name, @username or UID"
-          className={`w-full rounded-lg border border-stone-500 bg-white ps-8 pe-2.5 py-1.5 text-sm text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
+          className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2.5 py-1.5 text-sm text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
         />
       </div>
 

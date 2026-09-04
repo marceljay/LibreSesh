@@ -1487,7 +1487,7 @@ export function AdminPage() {
                 onChange={(e) => setPeopleQuery(e.target.value)}
                 aria-label="Search people"
                 placeholder="Name, @username or UID"
-                className={`w-full rounded-lg border border-stone-500 bg-white ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
+                className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
               />
               </div>
               <PeopleColumnsMenu columns={peopleColumns} />

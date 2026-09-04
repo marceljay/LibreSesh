@@ -247,7 +247,7 @@ export function SearchBox({
            touch screen the text is floored at 16px — under that Safari zooms
            the page in on focus and does not zoom back out — which the shorter
            placeholder leaves room for. */
-        className={`w-36 rounded-full border border-stone-500 bg-white py-1.5 ps-8 pe-8 text-xs outline-hidden transition-[width] focus:w-56 dark:border-stone-500 dark:bg-stone-900 sm:w-44 sm:focus:w-72 ${bareFieldFocusRing}`}
+        className={`w-36 rounded-full border border-stone-500 bg-stone-50 py-1.5 ps-8 pe-8 text-xs outline-hidden transition-[width] focus:w-56 dark:border-stone-500 dark:bg-stone-950 sm:w-44 sm:focus:w-72 ${bareFieldFocusRing}`}
       />
       {query && (
         <button

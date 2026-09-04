@@ -19,6 +19,7 @@ const ui = readFileSync(join(import.meta.dirname, '..', 'web', 'src', 'component
 
 /** Tailwind v4 stone, as published: [L, C, H]. */
 const STONE: Record<number, [number, number, number]> = {
+  50: [0.985, 0.001, 106.423],
   100: [0.97, 0.001, 106.424],
   200: [0.923, 0.003, 48.717],
   300: [0.869, 0.005, 56.366],
@@ -27,6 +28,7 @@ const STONE: Record<number, [number, number, number]> = {
   600: [0.444, 0.011, 73.639],
   700: [0.374, 0.01, 67.558],
   900: [0.216, 0.006, 56.043],
+  950: [0.147, 0.004, 49.25],
 };
 
 function oklchToSrgb([L, C, H]: [number, number, number]): [number, number, number] {
@@ -131,5 +133,42 @@ describe('nobody writes their own hint colour', () => {
     );
     expect(modal).not.toContain('text-stone-500 dark:text-stone-400');
     expect(modal).toContain('hintClass');
+  });
+});
+
+describe('a field is a visible box, not just a border', () => {
+  const select = readFileSync(
+    join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui', 'select.tsx'),
+    'utf8',
+  );
+
+  it('fills the field a step off the panel behind it, in both themes', () => {
+    const surface = ui.slice(ui.indexOf("export const fieldSurfaceClass ="));
+    const light = step(surface.slice(0, surface.indexOf(';')), 'bg');
+    const dark = step(surface.slice(0, surface.indexOf(';')), 'dark:bg');
+
+    // The panel: white in light, stone-900 in dark (Modal, Section).
+    // Before this, light was white-on-white and dark was stone-900 on
+    // stone-900 — the same colour exactly, border doing all the work.
+    expect(contrast(light, null)).toBeGreaterThan(1.0);
+    expect(contrast(dark, 900)).toBeGreaterThan(1.0);
+    // ...but only a step. A bigger jump turns a form of eight fields into
+    // stripes, which is a different complaint.
+    expect(contrast(light, null)).toBeLessThan(1.35);
+    expect(contrast(dark, 900)).toBeLessThan(1.35);
+  });
+
+  it('keeps typed text and the border legible on the new fill', () => {
+    expect(contrast(900, 50)).toBeGreaterThanOrEqual(TEXT); // text, light
+    expect(contrast(100, 950)).toBeGreaterThanOrEqual(TEXT); // text, dark
+    expect(contrast(500, 50)).toBeGreaterThanOrEqual(UI); // border, light
+  });
+
+  it('gives the Select trigger the same fill as a text field', () => {
+    // `bg-transparent` would inherit the panel and leave the one control in a
+    // row looking unfilled beside its neighbours.
+    expect(select).toContain('bg-stone-50');
+    expect(select).toContain('dark:bg-stone-950');
+    expect(select).not.toContain('bg-transparent');
   });
 });
