@@ -1721,26 +1721,28 @@ export function AdminPage() {
               />
             )}
 
-            <FormRow>
-              <div className="min-w-40 flex-1">
-                <Field
-                  label="Expect someone"
-                  hint="Creates a profile nobody holds yet — for a speaker you are billing before they arrive. They claim it at the gate, or with a speaker code."
-                >
-                  <ControlShell>
-                    <TextInput
-                      value={personName}
-                      onChange={(e) => setPersonName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && void addPerson()}
-                      maxLength={120}
-                    />
-                  </ControlShell>
-                </Field>
-              </div>
-              <PrimaryButton onClick={() => void addPerson()} disabled={!personName.trim()}>
-                Add person
-              </PrimaryButton>
-            </FormRow>
+            {/* The button lives *inside* the Field: the label then sits above
+                the whole row and the hint below it, and the box and the button
+                are siblings of equal height. Outside it, `items-end` aligned
+                the button to the bottom of a three-line hint. */}
+            <Field
+              label="Expect someone"
+              hint="Creates a profile nobody holds yet — for a speaker you are billing before they arrive. They claim it at the gate, or with a speaker code."
+            >
+              <FormRow>
+                <ControlShell className="min-w-40 flex-1">
+                  <TextInput
+                    value={personName}
+                    onChange={(e) => setPersonName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void addPerson()}
+                    maxLength={120}
+                  />
+                </ControlShell>
+                <PrimaryButton onClick={() => void addPerson()} disabled={!personName.trim()}>
+                  Add person
+                </PrimaryButton>
+              </FormRow>
+            </Field>
           </Section>
         </div>
       )}

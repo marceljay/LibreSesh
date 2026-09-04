@@ -303,6 +303,31 @@ export function FormStack({ children, className = '' }: { children: ReactNode; c
  * Controls on one line, bottom-aligned so inputs and buttons share a baseline
  * regardless of label or hint height. This is what replaces the `mb-3` hack.
  */
+/**
+ * Controls side by side, wrapping when the viewport cannot hold them.
+ *
+ * `items-end` is what lines a control up with the button beside it: both stand
+ * 38px, so bottom-aligning puts their tops together too, whatever labels sit
+ * above them.
+ *
+ * **A `Field` with a `hint` must not be a direct child of a row that also holds
+ * a button.** A `Field` is label + control + hint stacked, so its bottom edge is
+ * the last line of the hint, not the box — `items-end` then drops the button a
+ * hint's height below the control it belongs to. Put the button *inside* the
+ * Field instead, in a `FormRow` of its own:
+ *
+ * ```tsx
+ * <Field label="Expect someone" hint="…">
+ *   <FormRow>
+ *     <ControlShell className="min-w-40 flex-1"><TextInput … /></ControlShell>
+ *     <PrimaryButton>Add person</PrimaryButton>
+ *   </FormRow>
+ * </Field>
+ * ```
+ *
+ * The label then spans the whole row and the hint sits under both, which is
+ * also what the hint means. `tests/controlShell.test.ts` enforces this.
+ */
 export function FormRow({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`flex flex-wrap items-end gap-2 ${className}`}>{children}</div>;
 }

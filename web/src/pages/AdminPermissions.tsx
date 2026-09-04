@@ -4,6 +4,7 @@ import { CAPABILITIES, type Capability, type PermissionMatrix } from '@shared/ca
 import {
   ControlShell,
   Field,
+  FormRow,
   PrimaryButton,
   SecondaryButton,
   Section,
@@ -145,27 +146,29 @@ export function AdminPermissions({
     >
       {!unlocked && (
         <div className="mb-4 rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-700 dark:bg-stone-800">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-40 flex-1">
-              <Field
-                label="Unlock with the organiser password"
-                hint="Every switch here saves the moment you click it, and there is no undo."
-              >
-                <ControlShell>
-                  <TextInput
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void unlock()}
-                    autoComplete="off"
-                  />
-                </ControlShell>
-              </Field>
-            </div>
-            <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
-              {checking ? 'Checking…' : 'Unlock'}
-            </PrimaryButton>
-          </div>
+          {/* The button lives *inside* the Field, so the label sits above the
+              whole row and the hint below it. Put it outside and `items-end`
+              aligns it to the bottom of the hint — two lines lower than the
+              box it belongs to. See `FormRow` in ui.tsx. */}
+          <Field
+            label="Unlock with the organiser password"
+            hint="Every switch here saves the moment you click it, and there is no undo."
+          >
+            <FormRow>
+              <ControlShell className="min-w-40 flex-1">
+                <TextInput
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && void unlock()}
+                  autoComplete="off"
+                />
+              </ControlShell>
+              <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
+                {checking ? 'Checking…' : 'Unlock'}
+              </PrimaryButton>
+            </FormRow>
+          </Field>
         </div>
       )}
 

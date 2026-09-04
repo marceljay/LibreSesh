@@ -203,3 +203,56 @@ describe('no hand-drawn field re-adds the global ring to its own border', () => 
     expect(offenders).toEqual([]);
   });
 });
+
+describe('a control and the button beside it are one line, the same height', () => {
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  it('gives buttons the same 38px the fields have', () => {
+    // 38px = 2.375rem, three ways of arriving at the same number:
+    //   button  text-xs (16px line) + py-2.5 (20px) + border (2px) = 38
+    //   field   ControlShell min-h-[2.375rem]
+    //   select  trigger h-[2.375rem]
+    // A button that changes its padding without changing the others breaks the
+    // row, so the padding is pinned here rather than left to be noticed.
+    for (const cls of ['primaryButtonClass', 'secondaryButtonClass']) {
+      const decl = ui.slice(ui.indexOf(`export const ${cls}`));
+      const body = decl.slice(0, decl.indexOf(';'));
+      expect(body, cls).toContain('py-2.5');
+      expect(body, cls).toContain('text-xs');
+    }
+  });
+
+  it('never puts a hinted Field next to a button in the same row', () => {
+    // A Field is label + control + hint stacked, so its bottom edge is the last
+    // line of the hint. `items-end` then aligns a sibling button to *that* —
+    // dropping it a hint's height below the box it belongs to. The button goes
+    // inside the Field instead; see the FormRow doc comment.
+    const offenders: string[] = [];
+    for (const path of sources(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      const lines = src.split('\n');
+      lines.forEach((line, i) => {
+        // Both spellings of a row: the primitive, and a hand-rolled flex that
+        // bottom-aligns (which is what FormRow expands to).
+        const isRow = line.includes('<FormRow') || /className="[^"]*items-end/.test(line);
+        if (!isRow) return;
+        const block = lines.slice(i, i + 24).join('\n');
+        const field = block.indexOf('<Field');
+        if (field === -1) return;
+        // The hint must belong to the Field, not to something later in the row.
+        const fieldBlock = block.slice(field, field + 400);
+        if (!/hint=/.test(fieldBlock.slice(0, fieldBlock.indexOf('>')))) return;
+        if (!/<(Primary|Secondary|Danger)Button/.test(block)) return;
+        offenders.push(`${path.slice(WEB_SRC.length + 1)}:${i + 1}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
