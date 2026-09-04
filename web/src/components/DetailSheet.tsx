@@ -4,6 +4,7 @@ import type {
   ContributionDto,
   ContributionKind,
   Me,
+  PersonDto,
   RoomDto,
   Role,
   SessionDto,
@@ -19,6 +20,7 @@ export interface DetailSheetProps {
   rooms: RoomDto[];
   tags: TagDto[];
   formats: FormatDto[];
+  people: PersonDto[];
   contributions: ContributionDto[] | undefined;
   role: Role;
   me: Me | null;

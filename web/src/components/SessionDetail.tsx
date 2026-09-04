@@ -4,6 +4,7 @@ import type {
   ContributionDto,
   ContributionKind,
   Me,
+  PersonDto,
   RoomDto,
   Role,
   SessionDto,
@@ -13,6 +14,7 @@ import type {
 import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
+import { MentionText, PersonLink, personByUsername } from './MentionText';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
 import { IconButton, PrimaryButton, SecondaryButton, inputClass } from './ui';
 
@@ -42,6 +44,9 @@ export interface SessionDetailProps {
   tags: TagDto[];
   /** Every format the event defines, to name the one this session wears. */
   formats: FormatDto[];
+  /** Everyone in the event, so a comment author and an `@username` mention can
+   *  each link to a profile. */
+  people: PersonDto[];
   contributions: ContributionDto[] | undefined;
   role: Role;
   me: Me | null;
@@ -78,6 +83,7 @@ export function SessionDetail({
   rooms,
   tags,
   formats,
+  people,
   contributions,
   role,
   me,
@@ -377,12 +383,15 @@ export function SessionDetail({
                       </a>
                     ) : (
                       <span className="whitespace-pre-wrap text-stone-800 dark:text-stone-200">
-                        {c.body}
+                        <MentionText slug={slug} people={people} text={c.body} />
                       </span>
                     )}
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
                       <span className="truncate">
-                        {c.createdByName} · {relativeTime(c.createdAt)}
+                        <PersonLink slug={slug} person={personByUsername(people, c.createdByName)}>
+                          {c.createdByName}
+                        </PersonLink>{' '}
+                        · {relativeTime(c.createdAt)}
                         {c.hidden && ' · hidden'}
                       </span>
                       {/* Icon buttons rather than the underlined words these

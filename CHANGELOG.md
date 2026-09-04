@@ -6,6 +6,18 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Mentioning a person, first cut — names you can click, and `@username` that
+  links.** A name in a comment used to be plain text, so the way to point at a
+  co-host was to describe them. Now a comment's author links to their profile,
+  and writing `@ada` in a comment links to Ada — the same profile a speaker's
+  name on the session already opens. Matching is against the usernames the event
+  actually holds (unique per event), case-insensitive and longest-match, so a
+  multi-word username resolves and `a@b.com` stays an email. The parse is a
+  shared tokenizer so a mention means the same thing everywhere it is written.
+  **No notifications yet** — a mention links, it does not yet land anywhere that
+  survives a closed tab. Spec and the delivery half:
+  `_planning/specs/mentions-and-notifications.md`.
+
 - **Linked sessions — keep a recurring session in step without locking it
   down.** A talk that runs every morning was placed one row per day, and those
   rows knew nothing about each other: renaming or re-rooming the run meant

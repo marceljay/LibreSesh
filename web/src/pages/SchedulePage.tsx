@@ -1482,6 +1482,7 @@ export function SchedulePage() {
             rooms={bundle.rooms}
             tags={bundle.tags}
             formats={bundle.formats}
+            people={bundle.people}
             contributions={data.contributions[selected.id]}
             role={role}
             me={me}
@@ -1675,6 +1676,7 @@ export function SchedulePage() {
           rooms={bundle.rooms}
           tags={bundle.tags}
           formats={bundle.formats}
+          people={bundle.people}
           contributions={data.contributions[selected.id]}
           role={role}
           me={me}
