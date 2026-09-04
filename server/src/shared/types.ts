@@ -549,8 +549,25 @@ export interface AuditEntryDto {
   entityLabel: string;
 }
 
+/**
+ * One line in the log: usually one row, sometimes a whole bulk action.
+ *
+ * A repeat placed across five days, or an edit applied to a series, writes one
+ * row per session — each is a session with its own id, and every later edit
+ * will name exactly one of them — but reads as a single line that expands.
+ */
+export interface AuditItemDto extends AuditEntryDto {
+  /**
+   * Every row the action wrote, newest first, and only when there is more than
+   * one. The first member is this entry itself. Absent for an ordinary line,
+   * so "is this a batch" is `members !== undefined` and never a count of one.
+   */
+  members?: AuditEntryDto[];
+}
+
 export interface AuditPageDto {
-  entries: AuditEntryDto[];
+  /** A page of *actions*, not of rows: a batch counts as one. */
+  entries: AuditItemDto[];
   /** Pass back as `?before=` for the next page. Null at the end of the log. */
   nextCursor: number | null;
 }
