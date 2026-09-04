@@ -215,6 +215,44 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The landing page stops looking like a toolbar and stops making offers it
+  cannot keep.** Four things were wrong with the front door, and all four were
+  the same mistake — the page borrowed the app's clothes. *New event* and
+  *Import* were two link-coloured words in the footer: the least visible thing
+  on the page, and an unqualified offer, since both routes want the
+  **instance** password (the server owner's, not an event's), which almost
+  nobody loading the page has. They are gone from the front door altogether.
+  Explaining that password there was the tell — it defines, for every visitor,
+  a thing almost none of them will ever meet, which is a question they did not
+  ask. Both buttons already sit on `/events`, which is where whoever deployed
+  the box is going anyway, and the one sentence that distinguishes the two
+  passwords now sits under the list beside them.
+
+  *Browse events* and *Self-host it* were the app's inline controls: 38px,
+  `text-xs`, sized to line up beside a field in a toolbar. That restraint is
+  right inside an event, where the schedule is the thing you look at, and wrong
+  on the one page whose buttons *are* the content. The landing page owns its
+  button sizing now — bigger box, softer corner, a real shadow, a hover that
+  lifts (and does not, under `prefers-reduced-motion`).
+
+  The page is also a screen shorter, and fits one without scrolling on a
+  laptop: the block is gone, the vertical rhythm is tighter, and the preview
+  shows three cards rather than four — a normal slot, an open one and the live
+  one already say everything the picture is there to say.
+
+  The board preview was being read as the running app and clicked at, because
+  it is built from `ListView`'s own classes and so its cards, its star and its
+  "anyone can claim this" pill *are* the real ones. It sits in a browser frame
+  now — chrome around a thing is read as "here is that thing, pictured" before
+  any caption is — with a deliberately fake host in the address bar, and with
+  pointer events and text selection off inside it, which are the two ways a
+  picture made of markup betrays itself.
+
+  Finally, the source link wears GitHub's mark rather than spelling the word: a
+  logo is recognised before it is read, and it is the paragraph's "open source"
+  being made good. Reproduced as issued, taking `currentColor` so it inherits
+  the link's hover and dark-mode colours.
+
 - **Every form field now reads and focuses the same, and meets contrast.**
   The form layer was rebuilt on a small set of primitives so a text field, its
   label, its hint and its error, its border, height and focus ring all come

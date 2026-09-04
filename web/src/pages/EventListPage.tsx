@@ -93,8 +93,18 @@ export function EventListPage() {
         ))}
       </ul>
 
-      <p className="mt-6 text-xs text-stone-400 dark:text-stone-500">
-        Every event is password-protected — you’ll be asked for one when you enter.
+      {/* Two different passwords meet on this page, and only here. Entering an
+          event wants that event's; the two buttons in the header want the
+          *instance's* (SPEC §3.3), which is the server owner's and which nobody
+          attending an event ever sees. That distinction used to be spelled out
+          on the landing page, where it defined a password almost every visitor
+          will never meet — a question they had not asked. It belongs where the
+          two buttons are, which is also where whoever deployed this box goes. */}
+      <p className="mt-6 max-w-[70ch] text-xs leading-5 text-stone-400 dark:text-stone-500">
+        Every event is password-protected — you’ll be asked for one when you enter.{' '}
+        <span className="font-semibold">New event</span> and{' '}
+        <span className="font-semibold">Import</span> ask for a different one: this
+        instance’s password, set by whoever hosts the server.
       </p>
     </div>
   );

@@ -19,6 +19,8 @@ const WEB_SRC = join(__dirname, '..', 'web', 'src');
 const app = readFileSync(join(WEB_SRC, 'App.tsx'), 'utf8');
 const landing = readFileSync(join(WEB_SRC, 'pages', 'LandingPage.tsx'), 'utf8');
 const preview = readFileSync(join(WEB_SRC, 'pages', 'BoardPreview.tsx'), 'utf8');
+const ui = readFileSync(join(WEB_SRC, 'components', 'ui.tsx'), 'utf8');
+const eventList = readFileSync(join(WEB_SRC, 'pages', 'EventListPage.tsx'), 'utf8');
 
 describe('the root is a landing page, not the event list', () => {
   it('answers `/` with the landing page', () => {
@@ -94,14 +96,6 @@ describe('the landing page says what this is', () => {
     expect(landing).toMatch(/Holding a link to an event/);
   });
 
-  it('gives its call to action the flex the shared button class must not carry', () => {
-    // `primaryButtonClass` stays free of `inline-flex`, because a <button>
-    // that becomes a flex container left-aligns its own label — which would
-    // hit all eight full-width PrimaryButtons, the gate's included. An <a> is
-    // inline and does need it, so it asks for it here.
-    expect(landing).toContain('inline-flex items-center ${primaryButtonClass}');
-  });
-
   it('does not fetch the event list', () => {
     // The second reason `/` stopped being the list: loading the root of a
     // public instance should not enumerate every event on the box.
@@ -134,6 +128,121 @@ describe('the board preview is markup, not a screenshot', () => {
     // and `readableInk` is what keeps the label legible on it.
     expect(preview).toContain("from '@shared/tagColors'");
     expect(preview).toContain('readableInk');
+  });
+});
+
+describe('the shared button class keeps the shape a <button> needs', () => {
+  it('leaves `inline-flex` off the primary class', () => {
+    // A <button> centres its label by the UA's `text-align: center`; make it a
+    // flex container and the label becomes a flex item at `flex-start`, which
+    // silently left-aligns all eight full-width PrimaryButtons — the gate's
+    // "Enter schedule" among them. This used to be pinned through the landing
+    // page, which was the only <a> borrowing the class; the landing page has
+    // its own, larger buttons now, so the rule is pinned where it lives.
+    const primary = /export const primaryButtonClass =([\s\S]*?);\n/.exec(ui)?.[1] ?? '';
+    expect(primary).not.toBe('');
+    expect(primary).not.toContain('inline-flex');
+  });
+
+  it('keeps it on the secondary class, which only ever dresses an <a> or a <button>', () => {
+    const secondary = /export const secondaryButtonClass =([\s\S]*?);\n/.exec(ui)?.[1] ?? '';
+    expect(secondary).toContain('inline-flex');
+  });
+});
+
+describe('the landing page does not borrow the app\'s inline controls', () => {
+  it('draws its own buttons instead', () => {
+    // The app's buttons are 38px, `text-xs`, sized to sit beside a field in a
+    // toolbar. On the one page whose buttons *are* the content that reads as
+    // an afterthought, which is what "new event and import are almost
+    // invisible" was really about. The landing page owns its sizing.
+    // What it imports from `ui`, not what it mentions — the comment above the
+    // page's own classes names the two it deliberately does not use.
+    const uiImport = /import \{([\s\S]*?)\} from '\.\.\/components\/ui'/.exec(landing)?.[1] ?? '';
+    expect(uiImport).not.toBe('');
+    expect(uiImport).not.toContain('primaryButtonClass');
+    expect(uiImport).not.toContain('secondaryButtonClass');
+    expect(landing).toContain('const ctaPrimaryClass');
+    expect(landing).toContain('const ctaSecondaryClass');
+  });
+
+  it('turns the hover lift off for anyone who asked for less motion', () => {
+    expect(landing).toContain('motion-reduce:transform-none');
+  });
+});
+
+describe('creating and importing live with the list, not on the front door', () => {
+  it('keeps them off the landing page entirely', () => {
+    // They were two link-coloured words in the footer, then a block that
+    // explained the *instance* password (SPEC §3.3) before offering them. The
+    // explanation was the tell: almost nobody who loads `/` will ever meet
+    // that password, so defining it there answers a question the page's
+    // audience did not ask, and spends every visitor's attention to reassure
+    // one. Neither the buttons nor the explanation belong here.
+    expect(landing).not.toContain('to="/new"');
+    expect(landing).not.toContain('to="/import"');
+    // Narrowly: the *password* must not be explained here. "Browse events on
+    // this instance" is fine and stays — that is the offer, not a caveat.
+    expect(landing).not.toMatch(/instance&rsquo;s password|instance’s password|instance password/);
+    expect(landing).not.toMatch(/Running this server/);
+  });
+
+  it('keeps the front door to one job', () => {
+    // What is left: what this is, the two things a stranger can act on, and
+    // what to do if they were handed an event link.
+    expect(landing).toContain('to="/events"');
+    expect(landing).toMatch(/Holding a link to an event/);
+  });
+
+  it('offers both from the event list, which is where the organiser is going', () => {
+    expect(eventList).toContain('to="/new"');
+    expect(eventList).toContain('to="/import"');
+  });
+
+  it('names the instance password there, beside the buttons that want it', () => {
+    // Two different passwords meet on that page and only that page: an event's
+    // to enter one, the instance's to make one. Said where both are in view.
+    expect(eventList).toMatch(/instance&rsquo;s password|instance’s password/);
+    expect(eventList).toMatch(/ask for a different one/);
+  });
+});
+
+describe('the source link wears the mark', () => {
+  it('puts GitHub in the footer, where provenance is looked for', () => {
+    const footer = /<footer[\s\S]*?<\/footer>/.exec(landing)?.[0] ?? '';
+    expect(footer).toContain('MIT licensed');
+    expect(footer).toContain('<GitHubMark');
+  });
+
+  it('draws the mark filled, not as one of the app\'s stroke glyphs', () => {
+    // It is somebody else's logo: reproduced as issued, taking `currentColor`
+    // so it inherits the link's hover and dark-mode colours, which is the one
+    // liberty GitHub's guidelines allow.
+    const icons = readFileSync(join(WEB_SRC, 'components', 'icons.tsx'), 'utf8');
+    const mark = /export function GitHubMark[\s\S]*?\n}/.exec(icons)?.[0] ?? '';
+    expect(mark).toContain('fill="currentColor"');
+    expect(mark).not.toContain('stroke=');
+  });
+});
+
+describe('the preview is framed as a picture, not offered as a board', () => {
+  it('puts it in a browser window', () => {
+    // It is built from the app's own classes, so its cards and its star look
+    // exactly like the real ones — because they are. People clicked at them.
+    // Chrome around a thing is read as "here is that thing, pictured".
+    expect(preview).toContain('function WindowFrame');
+    expect(preview).toContain('<WindowFrame>');
+  });
+
+  it('names a host nobody should try to visit', () => {
+    expect(preview).toContain('example.libresesh.org');
+  });
+
+  it('does not answer the cursor', () => {
+    // No hover state lights up, and no text selects: the two ways a picture
+    // made of markup betrays that it is not one.
+    expect(preview).toContain('[&_*]:pointer-events-none');
+    expect(preview).toContain('select-none');
   });
 });
 
