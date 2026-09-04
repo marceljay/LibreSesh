@@ -664,9 +664,17 @@ export function Calendar({
                 left: GUTTER_W,
               }}
             >
-              <span className="absolute end-1 top-0.5 text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
-                {session.title} — everyone should be here
-              </span>
+              {/* Centred in the band, both ways. Pinned to the top-right
+                  corner the label read as a caption for whatever block it
+                  happened to land on, and left every pixel of the band's
+                  height below it — the band looked bottom-padded and unowned.
+                  A band that spans the whole grid says "all of this", so the
+                  label sits in the middle of what it is claiming. */}
+              <div className="absolute inset-0 flex items-center justify-center px-2">
+                <span className="max-w-full truncate text-center text-xs font-semibold text-amber-800/80 dark:text-amber-300/80">
+                  {session.title} — everyone should be here
+                </span>
+              </div>
             </div>
           ))}
 
