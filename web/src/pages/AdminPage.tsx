@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { Modal } from '../components/Modal';
 import { useCallback, useEffect, useState } from 'react';
@@ -368,7 +369,19 @@ function PeopleColumnsMenu({ columns }: { columns: PeopleColumnsControl }) {
 }
 
 import { MergeModal } from '../components/MergeModal';
-import { auditKeepField, parseNumberField, weekRailFromField } from '../lib/numberField';
+import {
+  auditKeepField,
+  numberFieldMessage,
+  parseNumberField,
+  weekRailFromField,
+  type NumberFieldError,
+} from '../lib/numberField';
+
+/** "<field>: <problem>" as one template with two named parts, rather than the
+ *  message lowercased and glued onto a label — casing is language-specific
+ *  (German capitalises nouns), so it is not ours to change. */
+const fieldProblem = (field: string, error: NumberFieldError): string =>
+  `${field}: ${numberFieldMessage(error)}`;
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminPermissions } from './AdminPermissions';
@@ -412,8 +425,11 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const plural = (n: number, one: string, many = `${one}s`): string =>
-  `${n} ${n === 1 ? one : many}`;
+/** The counted nouns this page says. Kept together so a translation has one
+ *  place to extend them, rather than an `+ 's'` at each call site. */
+const SESSIONS = { one: 'session', other: 'sessions' };
+const PITCHES = { one: 'pitch', other: 'pitches' };
+const DAYS = { one: 'day', other: 'days' };
 
 const slugify = (value: string): string =>
   value
@@ -955,9 +971,9 @@ export function AdminPage() {
       : slugField !== event?.slug && !/^[a-z0-9-]{3,40}$/.test(slugField)
         ? 'Slug must be 3–40 characters of a–z, 0–9 or -'
         : parsedWeekRail.error
-          ? `Group days into weeks past: ${parsedWeekRail.error.toLowerCase()}`
+          ? fieldProblem('Group days into weeks past', parsedWeekRail.error)
           : parsedAuditKeep.error
-            ? `Audit entries to keep: ${parsedAuditKeep.error.toLowerCase()}`
+            ? fieldProblem('Audit entries to keep', parsedAuditKeep.error)
             : [viewerPassword, userPassword, adminPassword].some((pw) => pw && pw.length < 6)
               ? 'Passwords must be at least 6 characters'
               : null;
@@ -1199,13 +1215,13 @@ export function AdminPage() {
                         <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
                           {windowLabel({ startMin: track.startMin, endMin: track.endMin ?? 1440 })}
                           {track.windows.length > 0 &&
-                            ` +${plural(track.windows.length, 'day')}`}
+                            ` +${plural(track.windows.length, DAYS)}`}
                         </span>
                       )}
                       <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
                         {plural(
                           bundle.sessions.filter((x) => x.trackId === track.id).length,
-                          'session',
+                          SESSIONS,
                         )}
                       </span>
                       <SecondaryButton
@@ -1569,7 +1585,7 @@ export function AdminPage() {
                       title={
                         (person.sessionCount ?? 0) === 0
                           ? 'Not credited on any session'
-                          : `Credited on ${person.sessionCount} session${person.sessionCount === 1 ? '' : 's'}`
+                          : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
                       }
                     >
                       <PersonLink
@@ -1793,7 +1809,7 @@ export function AdminPage() {
             </FormGrid>
             <NumberField
               label="Group days into weeks past"
-              hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${eventDays} day${eventDays === 1 ? '' : 's'}.`}
+              hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
               spec={weekRailFromField}
               value={weekRailFrom}
               onChange={setWeekRailFrom}
@@ -2178,7 +2194,7 @@ function FormatEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions === 0
           ? 'No session calls itself this yet. Deleting it affects nothing.'
-          : `${plural(sessions, 'session')} call themselves this. Deleting the format leaves them where they are, without a kind.`}
+          : `${plural(sessions, SESSIONS)} call themselves this. Deleting the format leaves them where they are, without a kind.`}
       </p>
     </Modal>
   );
@@ -2265,7 +2281,7 @@ function TagEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions + pitches === 0
           ? 'Nothing carries this tag yet. Deleting it affects nothing.'
-          : `Carried by ${plural(sessions, 'session')} and ${plural(pitches, 'pitch', 'pitches')}. Deleting the tag removes it from all of them.`}
+          : `Carried by ${plural(sessions, SESSIONS)} and ${plural(pitches, PITCHES)}. Deleting the tag removes it from all of them.`}
       </p>
     </Modal>
   );
@@ -2548,7 +2564,7 @@ function TrackEditor({
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
         {sessions === 0
           ? 'No sessions are on this track yet.'
-          : `${plural(sessions, 'session')} on this track. Deleting it keeps them — they lose the track, not their room.`}
+          : `${plural(sessions, SESSIONS)} on this track. Deleting it keeps them — they lose the track, not their room.`}
       </p>
       {limited && sessions > 0 && (
         <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">

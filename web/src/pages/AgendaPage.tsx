@@ -1,4 +1,5 @@
 import { errorText } from '../lib/errorText';
+import { plural } from '../lib/plural';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { SessionDto } from '@shared/types';
@@ -22,6 +23,10 @@ import { EmptyState, Spinner, useToast } from '../components/ui';
 /** Same cadence as the schedule's clock: a minute is the resolution anything
  *  on this page is drawn at. */
 const NOW_TICK_MS = 30_000;
+
+/** The counted nouns this page says. */
+const SESSIONS = { one: 'session', other: 'sessions' };
+const DAYS = { one: 'day', other: 'days' };
 
 /**
  * Everything you have starred, in one list, across every day of the event.
@@ -162,9 +167,7 @@ export function AgendaPage() {
           <p className="text-xs text-stone-500 dark:text-stone-400">
             {mine.length === 0
               ? 'Nothing starred yet'
-              : `${mine.length} session${mine.length === 1 ? '' : 's'} across ${byDay.length} day${
-                  byDay.length === 1 ? '' : 's'
-                }`}
+              : `${plural(mine.length, SESSIONS)} across ${plural(byDay.length, DAYS)}`}
           </p>
           {mine.length > 0 && (
             // Straight to the file rather than through the calendar dialog:

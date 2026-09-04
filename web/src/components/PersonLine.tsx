@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import type { PersonDto } from '@shared/types';
 import { relativeTime, uid } from '../lib/format';
 import { personStatus } from '../lib/people';
@@ -110,7 +111,7 @@ export function PersonLine({
       </span>
 
       <span className="hidden w-20 shrink-0 text-xs tabular-nums text-stone-500 sm:block dark:text-stone-400">
-        {sessions === 0 ? '—' : `${sessions} session${sessions === 1 ? '' : 's'}`}
+        {sessions === 0 ? '—' : plural(sessions, { one: 'session', other: 'sessions' })}
       </span>
 
       <span

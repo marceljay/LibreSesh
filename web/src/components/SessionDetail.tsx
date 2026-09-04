@@ -1,3 +1,4 @@
+import { pluralForm, type PluralForms } from '../lib/plural';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type {
@@ -22,6 +23,13 @@ const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
   note: 'Notes',
   link: 'Links',
+};
+/** The same three words counted, for "Show 4 earlier notes". A heading is not a
+ *  plural form — English lets one string serve both, most languages do not. */
+const KIND_PLURAL: Record<ContributionKind, PluralForms> = {
+  question: { one: 'question', other: 'questions' },
+  note: { one: 'note', other: 'notes' },
+  link: { one: 'link', other: 'links' },
 };
 const KINDS: ContributionKind[] = ['question', 'note', 'link'];
 
@@ -361,7 +369,7 @@ export function SessionDetail({
                 >
                   {expanded
                     ? 'Show fewer'
-                    : `Show ${hiddenCount} earlier ${k}${hiddenCount === 1 ? '' : 's'}`}
+                    : `Show ${hiddenCount} earlier ${pluralForm(hiddenCount, KIND_PLURAL[k])}`}
                 </button>
               )}
               <ul className="space-y-1.5">

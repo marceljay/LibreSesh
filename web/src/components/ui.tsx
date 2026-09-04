@@ -16,6 +16,7 @@ import {
 import type { Role } from '@shared/types';
 import {
   maxDigits,
+  numberFieldMessage,
   parseNumberField,
   sanitizeNumberInput,
   type NumberFieldSpec,
@@ -372,7 +373,7 @@ export function NumberField({
   // wrap into a heap. `ControlAdornment` is for the short in-field kind (a ↵, a
   // real unit), which arrives with the inline-create control later.
   return (
-    <Field label={label} hint={hint} error={shown ?? undefined}>
+    <Field label={label} hint={hint} error={shown ? numberFieldMessage(shown) : undefined}>
       <div className="flex items-center gap-2">
         <ControlShell className={className}>
           <TextInput

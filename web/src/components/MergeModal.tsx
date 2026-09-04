@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
@@ -255,7 +256,7 @@ function PersonCard({
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <PersonStatusBadge person={person} userLabel={userLabel} />
         <span className="text-xs text-stone-500 dark:text-stone-400">
-          {sessions === 0 ? 'no sessions' : `${sessions} session${sessions === 1 ? '' : 's'}`}
+          {plural(sessions, { one: 'session', other: 'sessions', zero: 'no sessions' })}
         </span>
         {person.lastSeenAt != null && (
           <span className="text-xs text-stone-400 dark:text-stone-500">

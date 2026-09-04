@@ -1,4 +1,5 @@
 import { errorText } from '../lib/errorText';
+import { plural } from '../lib/plural';
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
@@ -30,8 +31,16 @@ const asKb = (bytes: number): string => `${Math.round(bytes / 1024)} KB`;
  *  byte each, and the cap the server applies is on bytes. */
 const byteLength = (text: string): number => new TextEncoder().encode(text).length;
 
-const plural = (n: number, one: string, many = `${one}s`): string =>
-  `${n} ${n === 1 ? one : many}`;
+/** The counted nouns the import summary lists. */
+const NOUNS = {
+  rooms: { one: 'room', other: 'rooms' },
+  tracks: { one: 'track', other: 'tracks' },
+  sessions: { one: 'session', other: 'sessions' },
+  breaks: { one: 'break', other: 'breaks' },
+  tags: { one: 'tag', other: 'tags' },
+  speakers: { one: 'speaker', other: 'speakers' },
+  things: { one: 'thing', other: 'things' },
+} as const;
 
 /**
  * Import a schedule.
@@ -267,12 +276,12 @@ export function ImportPage() {
 /** What is in the box, read locally. Not a verdict — that is the dry run's. */
 function Summary({ summary }: { summary: DocSummary }) {
   const parts = [
-    plural(summary.rooms, 'room'),
-    plural(summary.tracks, 'track'),
-    plural(summary.sessions, 'session'),
-    ...(summary.breaks > 0 ? [plural(summary.breaks, 'break')] : []),
-    ...(summary.tags > 0 ? [plural(summary.tags, 'tag')] : []),
-    ...(summary.speakers > 0 ? [plural(summary.speakers, 'speaker')] : []),
+    plural(summary.rooms, NOUNS.rooms),
+    plural(summary.tracks, NOUNS.tracks),
+    plural(summary.sessions, NOUNS.sessions),
+    ...(summary.breaks > 0 ? [plural(summary.breaks, NOUNS.breaks)] : []),
+    ...(summary.tags > 0 ? [plural(summary.tags, NOUNS.tags)] : []),
+    ...(summary.speakers > 0 ? [plural(summary.speakers, NOUNS.speakers)] : []),
   ];
   return (
     <div className="mt-2 text-xs text-stone-500 dark:text-stone-400">
@@ -322,7 +331,7 @@ function Rehearsal({ result }: { result: ImportResult }) {
       {warnings.length > 0 && (
         <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-700">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            {plural(warnings.length, 'thing')} worth a second look — none of them stop the
+            {plural(warnings.length, NOUNS.things)} worth a second look — none of them stop the
             import:
           </p>
           <ul className="mt-1.5 list-disc space-y-1 ps-4 text-xs text-stone-600 dark:text-stone-300">

@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { useMemo } from 'react';
 import type { BreakDto, RoomDto, SessionDto, TagDto } from '@shared/types';
 import { readableInk } from '@shared/tagColors';
@@ -186,7 +187,7 @@ export function ListView({
                     <span className="ms-auto flex items-center gap-2 text-xs">
                       {count > 0 && (
                         <span className="text-stone-400 dark:text-stone-500">
-                          {count} contribution{count > 1 ? 's' : ''}
+                          {plural(count, { one: 'contribution', other: 'contributions' })}
                         </span>
                       )}
                       <StarTally

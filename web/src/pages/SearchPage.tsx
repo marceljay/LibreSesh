@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import type { SessionDto } from '@shared/types';
+import { plural } from '../lib/plural';
 import { dayLabel, place, todayInZone } from '../lib/format';
 import { rankSessions, searchTerms } from '../lib/search';
 import { useEventData } from '../lib/useEventData';
@@ -9,6 +10,9 @@ import { Gate } from '../components/Gate';
 import { Logo } from '../components/Logo';
 import { SearchBox, SessionResultRow } from '../components/SearchBox';
 import { EmptyState, Spinner } from '../components/ui';
+
+/** What a search returns, counted. */
+const RESULTS = { one: 'result', other: 'results' };
 
 /**
  * Every hit for a query, on its own page.
@@ -120,7 +124,7 @@ export function SearchPage() {
         <h1 className="text-sm font-semibold">
           {query.trim() === ''
             ? 'Search the programme'
-            : `${hits.length} result${hits.length === 1 ? '' : 's'} for “${query.trim()}”`}
+            : `${plural(hits.length, RESULTS)} for “${query.trim()}”`}
         </h1>
 
         {query.trim() === '' ? (
@@ -141,7 +145,7 @@ export function SearchPage() {
                   <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                     {label.top} {label.sub}
                     <span className="ms-1.5 font-normal normal-case tracking-normal">
-                      · {sessions.length} result{sessions.length === 1 ? '' : 's'}
+                      · {plural(sessions.length, RESULTS)}
                     </span>
                   </h2>
                   <ul className="space-y-1.5">

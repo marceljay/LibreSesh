@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import type { Me, Role } from '@shared/types';
@@ -236,7 +237,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       <p className="text-stone-800 dark:text-stone-100">
         There is a speaker profile here called <span className="font-semibold">{namesake.name}</span>
         {namesake.sessionCount > 0 &&
-          `, on ${namesake.sessionCount} ${namesake.sessionCount === 1 ? 'session' : 'sessions'}`}
+          `, on ${plural(namesake.sessionCount, { one: 'session', other: 'sessions' })}`}
         . Is that you?
       </p>
       <div className="mt-2 flex gap-2">

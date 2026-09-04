@@ -129,7 +129,8 @@ describe('NumberField is the proof, rebuilt on the primitives', () => {
 
   it('keeps "empty is not yet wrong" and hands the error to Field', () => {
     expect(nf).toContain("const shown = value.trim() === '' ? null : error;");
-    expect(nf).toContain('error={shown ?? undefined}');
+    // The verdict is data; the sentence is rendered from it at the boundary.
+    expect(nf).toContain('error={shown ? numberFieldMessage(shown) : undefined}');
   });
 
   it("keeps the running-text suffix beside the box, not inside a w-32 shell", () => {

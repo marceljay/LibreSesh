@@ -32,11 +32,24 @@ export interface NumberFieldSpec {
   unit?: string;
 }
 
+/**
+ * Why a value was refused, as a code and its parameters rather than a finished
+ * sentence. Building the sentence here would mean assembling it from fragments
+ * ("Must be " + extras + ", or " + range), which is the shape a translator
+ * cannot work with: word order and list punctuation differ by language. The
+ * caller renders it through `numberFieldMessage`, where each case is one whole
+ * template (forms strategy, i18n readiness rule 3).
+ */
+export type NumberFieldError =
+  | { code: 'required' }
+  | { code: 'digits_only' }
+  | { code: 'range'; min: number; max: number; unit?: string; alsoAllow: readonly number[] };
+
 export interface NumberFieldValue {
   /** `null` when blank, or when the text is not a number we can use. */
   value: number | null;
-  /** What to show under the field, or `null` when there is nothing wrong. */
-  error: string | null;
+  /** Why it was refused, or `null` when there is nothing wrong. */
+  error: NumberFieldError | null;
 }
 
 const group = (n: number): string => n.toLocaleString('en-US');
@@ -59,28 +72,54 @@ export const sanitizeNumberInput = (raw: string, spec: NumberFieldSpec): string 
     .replace(/^0+(?=\d)/, '')
     .slice(0, maxDigits(spec));
 
-/** How a violated range reads. Built from the spec so the message cannot drift
- *  away from what the field actually accepts. */
-export const rangeMessage = (spec: NumberFieldSpec): string => {
-  const unit = spec.unit ? ` ${spec.unit}` : '';
-  const range = `between ${group(spec.min)} and ${group(spec.max)}${unit}`;
-  const extras = (spec.alsoAllow ?? []).map(group);
-  return extras.length ? `Must be ${extras.join(' or ')}, or ${range}` : `Must be ${range}`;
+/** Why this spec would refuse a number, as data. */
+export const rangeError = (spec: NumberFieldSpec): NumberFieldError => ({
+  code: 'range',
+  min: spec.min,
+  max: spec.max,
+  unit: spec.unit,
+  alsoAllow: spec.alsoAllow ?? [],
+});
+
+/**
+ * The sentence for a refusal. Each case is one complete message with its values
+ * filled in — never a stem with clauses appended — so a translation can reorder
+ * it freely. The list of extra allowed values goes through `Intl.ListFormat`
+ * rather than `join(' or ')`, because "a or b" is not how every language joins
+ * a list.
+ */
+export const numberFieldMessage = (error: NumberFieldError): string => {
+  if (error.code === 'required') return 'Enter a number';
+  if (error.code === 'digits_only') return 'Digits only';
+
+  const min = group(error.min);
+  const max = group(error.max);
+  const extras = new Intl.ListFormat('en', { style: 'short', type: 'disjunction' }).format(
+    error.alsoAllow.map(group),
+  );
+  if (error.alsoAllow.length > 0) {
+    return error.unit
+      ? `Must be ${extras}, or between ${min} and ${max} ${error.unit}`
+      : `Must be ${extras}, or between ${min} and ${max}`;
+  }
+  return error.unit
+    ? `Must be between ${min} and ${max} ${error.unit}`
+    : `Must be between ${min} and ${max}`;
 };
 
 /** The number a field's text stands for, and why it does not stand for one. */
 export const parseNumberField = (raw: string, spec: NumberFieldSpec): NumberFieldValue => {
   const trimmed = raw.trim();
   if (trimmed === '') {
-    return { value: null, error: spec.allowEmpty ? null : 'Enter a number' };
+    return { value: null, error: spec.allowEmpty ? null : { code: 'required' } };
   }
   // Unreachable from the input, which sanitizes every change — but a value can
   // also arrive from props, and this is the function callers trust.
-  if (!/^\d+$/.test(trimmed)) return { value: null, error: 'Digits only' };
+  if (!/^\d+$/.test(trimmed)) return { value: null, error: { code: 'digits_only' } };
 
   const n = Number(trimmed);
   const allowed = (spec.alsoAllow ?? []).includes(n) || (n >= spec.min && n <= spec.max);
-  return allowed ? { value: n, error: null } : { value: null, error: rangeMessage(spec) };
+  return allowed ? { value: n, error: null } : { value: null, error: rangeError(spec) };
 };
 
 /* ------------------- The numeric fields this app has ------------------- */

@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import { Modal } from './Modal';
 import { useMemo, useState } from 'react';
 import type {
@@ -739,8 +740,7 @@ export function SessionModal({
                   />
                   <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
                     {repeatProblem ??
-                      `Creates ${runCount} ${runCount === 1 ? 'session' : 'sessions'}, ` +
-                        `the first on ${dayLabels[day] ?? day}.`}{' '}
+                      `Creates ${plural(runCount, { one: 'session', other: 'sessions' })}, the first on ${dayLabels[day] ?? day}.`}{' '}
                     {repeatLink
                       ? 'Editing one later offers to apply to the rest — but each keeps its own time, so moving one never moves the others.'
                       : 'They are not linked: moving or deleting one afterwards leaves the rest where they are, so a day that runs late is a day you fix on its own.'}

@@ -1,3 +1,4 @@
+import { plural, pluralForm } from '../lib/plural';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { RoomDto, SessionDto } from '@shared/types';
 import { dayLabel, fmtMin, place, speakerLine } from '../lib/format';
@@ -302,8 +303,11 @@ export function SearchBox({
               >
                 <span>
                   {all.length > hits.length
-                    ? `See all ${all.length} results`
-                    : `See ${all.length === 1 ? 'the result' : 'all results'} on one page`}
+                    ? `See all ${plural(all.length, { one: 'result', other: 'results' })}`
+                    : pluralForm(all.length, {
+                        one: 'See the result on one page',
+                        other: 'See all results on one page',
+                      })}
                 </span>
                 <span className="flex items-center gap-1.5 text-stone-400 dark:text-stone-500">
                   <kbd className="rounded-sm border border-stone-300 px-1 font-sans text-[10px] dark:border-stone-600">
