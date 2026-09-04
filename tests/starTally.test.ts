@@ -67,7 +67,7 @@ describe('the grid block', () => {
   });
 
   it('no longer puts it in the row above the title', () => {
-    const row = calendar.match(/<div className="flex gap-1">[\s\S]*?<\/div>/);
+    const row = calendar.match(/<div className="flex items-center gap-1">[\s\S]*?<\/div>/);
     expect(row).not.toBeNull();
     expect((row as RegExpMatchArray)[0]).not.toContain('★');
     expect((row as RegExpMatchArray)[0]).not.toContain('StarTally');
