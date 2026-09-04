@@ -221,10 +221,12 @@ All notable changes to this project are documented here.
   *Import* were two link-coloured words in the footer: the least visible thing
   on the page, and an unqualified offer, since both routes want the
   **instance** password (the server owner's, not an event's), which almost
-  nobody loading the page has. They now sit in a **Running this server?** block
-  that names that condition before the click, below the two things everybody
-  else came for. They are not dropped — the person who just deployed this has
-  nowhere else to start.
+  nobody loading the page has. They are gone from the front door altogether.
+  Explaining that password there was the tell — it defines, for every visitor,
+  a thing almost none of them will ever meet, which is a question they did not
+  ask. Both buttons already sit on `/events`, which is where whoever deployed
+  the box is going anyway, and the one sentence that distinguishes the two
+  passwords now sits under the list beside them.
 
   *Browse events* and *Self-host it* were the app's inline controls: 38px,
   `text-xs`, sized to line up beside a field in a toolbar. That restraint is
@@ -232,6 +234,11 @@ All notable changes to this project are documented here.
   on the one page whose buttons *are* the content. The landing page owns its
   button sizing now — bigger box, softer corner, a real shadow, a hover that
   lifts (and does not, under `prefers-reduced-motion`).
+
+  The page is also a screen shorter, and fits one without scrolling on a
+  laptop: the block is gone, the vertical rhythm is tighter, and the preview
+  shows three cards rather than four — a normal slot, an open one and the live
+  one already say everything the picture is there to say.
 
   The board preview was being read as the running app and clicked at, because
   it is built from `ListView`'s own classes and so its cards, its star and its

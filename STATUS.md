@@ -139,13 +139,17 @@ the mentions, linked-sessions and clash work. Each takes a minute.
 7. **R25 · The landing page** (`/`, logged out, in **both themes**). *Pass:*
    **Browse events** and **Self-host it** read as the page's two offers — full
    buttons, not the toolbar-sized controls they were — and the hover lift is
-   there (and gone if your system asks for less motion). Below them, a
-   **Running this server?** block says the instance password is the condition
-   *before* you click **New event** or **Import a schedule**; neither is in the
-   footer any more. The board preview sits in a browser frame with a fake host
-   in its address bar: check it no longer invites a click — nothing hovers,
+   there (and gone if your system asks for less motion). Below them, the page
+   ends at *Holding a link to an event?* — **New event** and **Import**
+   are not on it at all, and the whole page should sit inside one screen with
+   no scrollbar (this is the bit I could not check: there is no browser in the
+   container, so the fit is reasoned, not measured — if it still scrolls, say
+   by how much). The board preview sits in a browser frame with a fake host in
+   its address bar: check it no longer invites a click — nothing hovers,
    nothing selects. The footer's source link wears GitHub's mark. **Narrow the
    window** too: the two columns stack and no button row wraps badly.
+   Then **`/events`**: the note under the list is where the instance-password
+   sentence went, beside the **New event** / **Import** buttons that want it.
 8. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
    (Add session, Manage Event → Settings). *Pass:* field borders read a touch
    darker and even; **clicking into a field shows one clean focus ring, not a

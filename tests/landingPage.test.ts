@@ -20,6 +20,7 @@ const app = readFileSync(join(WEB_SRC, 'App.tsx'), 'utf8');
 const landing = readFileSync(join(WEB_SRC, 'pages', 'LandingPage.tsx'), 'utf8');
 const preview = readFileSync(join(WEB_SRC, 'pages', 'BoardPreview.tsx'), 'utf8');
 const ui = readFileSync(join(WEB_SRC, 'components', 'ui.tsx'), 'utf8');
+const eventList = readFileSync(join(WEB_SRC, 'pages', 'EventListPage.tsx'), 'utf8');
 
 describe('the root is a landing page, not the event list', () => {
   it('answers `/` with the landing page', () => {
@@ -170,28 +171,39 @@ describe('the landing page does not borrow the app\'s inline controls', () => {
   });
 });
 
-describe('creating and importing are offered as what they are: gated', () => {
-  it('says the instance password is the condition, before the click', () => {
-    // Both routes want the *instance* password (SPEC §3.3) — the server
-    // owner's, not an event's. As two link-coloured words in the footer they
-    // were an unqualified offer that almost every visitor cannot take, and
-    // could not know they could not take until they had filled in a form.
-    expect(landing).toMatch(/instance&rsquo;s password/);
-    expect(landing).toContain('It is not an\n              event password');
+describe('creating and importing live with the list, not on the front door', () => {
+  it('keeps them off the landing page entirely', () => {
+    // They were two link-coloured words in the footer, then a block that
+    // explained the *instance* password (SPEC §3.3) before offering them. The
+    // explanation was the tell: almost nobody who loads `/` will ever meet
+    // that password, so defining it there answers a question the page's
+    // audience did not ask, and spends every visitor's attention to reassure
+    // one. Neither the buttons nor the explanation belong here.
+    expect(landing).not.toContain('to="/new"');
+    expect(landing).not.toContain('to="/import"');
+    // Narrowly: the *password* must not be explained here. "Browse events on
+    // this instance" is fine and stays — that is the offer, not a caveat.
+    expect(landing).not.toMatch(/instance&rsquo;s password|instance’s password|instance password/);
+    expect(landing).not.toMatch(/Running this server/);
   });
 
-  it('keeps both routes reachable, because the person who deployed this needs them', () => {
-    expect(landing).toContain('to="/new"');
-    expect(landing).toContain('to="/import"');
+  it('keeps the front door to one job', () => {
+    // What is left: what this is, the two things a stranger can act on, and
+    // what to do if they were handed an event link.
+    expect(landing).toContain('to="/events"');
+    expect(landing).toMatch(/Holding a link to an event/);
   });
 
-  it('no longer hides them in the footer', () => {
-    // The footer is where they were, and where they were invisible. It now
-    // ends at the licence and the source.
-    const footer = /<footer[\s\S]*?<\/footer>/.exec(landing)?.[0] ?? '';
-    expect(footer).not.toBe('');
-    expect(footer).not.toContain('to="/new"');
-    expect(footer).not.toContain('to="/import"');
+  it('offers both from the event list, which is where the organiser is going', () => {
+    expect(eventList).toContain('to="/new"');
+    expect(eventList).toContain('to="/import"');
+  });
+
+  it('names the instance password there, beside the buttons that want it', () => {
+    // Two different passwords meet on that page and only that page: an event's
+    // to enter one, the instance's to make one. Said where both are in view.
+    expect(eventList).toMatch(/instance&rsquo;s password|instance’s password/);
+    expect(eventList).toMatch(/ask for a different one/);
   });
 });
 

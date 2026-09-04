@@ -38,12 +38,6 @@ const ctaSecondaryClass =
   `${ctaShape} px-5 py-3 text-sm shadow-xs border border-stone-300 bg-white text-stone-800 hover:border-stone-400 hover:shadow-md ` +
   'dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:hover:border-stone-500';
 
-/** The organiser buttons, a size down: they are real offers, but they are not
- *  what this page is for, and matching the two above would say they were. */
-const ctaQuietClass =
-  `${ctaShape} px-4 py-2.5 text-sm border border-stone-300 bg-white text-stone-800 hover:border-stone-400 hover:shadow-sm ` +
-  'dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:hover:border-stone-500';
-
 /**
  * The front door.
  *
@@ -59,18 +53,19 @@ const ctaQuietClass =
  * shows as a flat screenshot is `BoardPreview` here instead — see the note
  * there for why.
  *
- * **New event and Import are gated, and the page now says so.** They were two
- * link-coloured words in the footer: the least visible thing on the page, and
- * an unqualified offer. Both routes want the *instance* password (SPEC §3.3),
- * which is the server owner's, so for almost every visitor they are a dead
- * end they cannot know is a dead end until they have filled in a form. They
- * are not dropped, because the person who just deployed this needs them and
- * has nowhere else to start; they move into a block that names the condition
- * up front and sits below the two things everybody else came for.
+ * **New event and Import are not on this page at all.** They were two
+ * link-coloured words in the footer, then a block explaining that both want
+ * the *instance* password (SPEC §3.3) — the server owner's, which almost
+ * nobody loading this page has. The explanation was the tell: a front door
+ * that has to define a password nobody attending an event will ever meet is
+ * answering a question its audience did not ask, and spends the attention of
+ * every visitor to reassure one. `/events` already carries both buttons, and
+ * whoever deployed this box is going there anyway — so the caveat lives next
+ * to them there, and this page keeps its one job.
  */
 export function LandingPage() {
   return (
-    <div className="mx-auto flex min-h-[100dvh] max-w-5xl flex-col gap-10 px-4 py-10">
+    <div className="mx-auto flex min-h-[100dvh] max-w-5xl flex-col gap-8 px-4 py-8">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
         {/* The logo artwork carries the wordmark and the tagline, so the page's
             real heading is the one below it, not this. */}
@@ -80,8 +75,8 @@ export function LandingPage() {
         </div>
       </header>
 
-      <div className="grid flex-1 items-start gap-10 lg:grid-cols-2 lg:gap-14">
-        <div className="flex flex-col gap-7">
+      <div className="grid flex-1 items-start gap-8 lg:grid-cols-2 lg:gap-x-14">
+        <div className="flex flex-col gap-6">
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
             {/* The one flash of brand colour on the page, on the two words that
                 are the claim. `--color-highlight` is the same yellow the board
@@ -125,22 +120,6 @@ export function LandingPage() {
             You will be asked for the event&rsquo;s password once, and nothing else.
           </p>
 
-          <section className="rounded-2xl border border-stone-200 bg-stone-50 p-5 dark:border-stone-800 dark:bg-stone-900/60">
-            <h2 className="text-sm font-semibold">Running this server?</h2>
-            <p className="mt-1.5 max-w-[52ch] text-sm leading-6 text-stone-600 dark:text-stone-400">
-              Starting a board, or importing a programme you already have, needs this
-              instance&rsquo;s password — the one set by whoever hosts it. It is not an
-              event password, and nobody attending an event ever needs it.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              <Link to="/new" className={ctaQuietClass}>
-                New event
-              </Link>
-              <Link to="/import" className={ctaQuietClass}>
-                Import a schedule
-              </Link>
-            </div>
-          </section>
         </div>
 
         <BoardPreview />

@@ -70,7 +70,6 @@ const GROUPS: { time: string; slots: Slot[] }[] = [
         ],
         live: true,
       },
-      { title: 'Zine workshop', when: '14:00–15:30', where: 'Workshop A', who: 'Rae' },
     ],
   },
 ];
@@ -204,8 +203,7 @@ export function BoardPreview() {
       </WindowFrame>
 
       <figcaption className="text-xs leading-5 text-stone-500 dark:text-stone-400">
-        A live board, pictured: today&rsquo;s sessions, rooms and times — open slots
-        marked for anyone to claim.
+        A live board, pictured — open slots marked for anyone to claim.
       </figcaption>
     </figure>
   );
