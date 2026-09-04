@@ -289,3 +289,46 @@ describe('InlineCreate is a button that becomes its field', () => {
     expect(ic).toMatch(/setValue\(''\);\s*box\.current\?\.focus\(\);/);
   });
 });
+
+describe('every search box looks like a search box', () => {
+  function sources(dir: string): string[] {
+    return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const path = join(dir, e.name);
+      if (e.isDirectory()) return sources(path);
+      return e.name.endsWith('.tsx') ? [path] : [];
+    });
+  }
+  const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+
+  /** The four: the header combobox, the filter panel, People, and the merge
+   *  dialog. Two of them had no icon at all, and the two that did drew it in a
+   *  different grey from each other. */
+  const searchFiles = () =>
+    sources(WEB_SRC).filter((path) => {
+      const src = readFileSync(path, 'utf8');
+      return /type="search"|aria-label="Search /.test(src);
+    });
+
+  it('gives each one the leading icon, and room for it', () => {
+    const offenders = searchFiles()
+      .filter((path) => {
+        const src = readFileSync(path, 'utf8');
+        // The icon is absolutely placed, so the box has to reserve the space.
+        return !src.includes('<SearchIcon') || !/\bps-8\b/.test(src);
+      })
+      .map((path) => path.slice(WEB_SRC.length + 1));
+    expect(offenders).toEqual([]);
+  });
+
+  it('draws the icon in one grey, readable on white', () => {
+    // stone-400 on white is 2.59 — see tests/formContrast.test.ts. The icon is
+    // decorative (each box carries an aria-label), but it is the affordance
+    // people look for, and four boxes should not be four different greys.
+    const offenders = searchFiles()
+      .filter((path) =>
+        /<SearchIcon[^/]*text-stone-(?!500 dark:text-stone-400)/.test(readFileSync(path, 'utf8')),
+      )
+      .map((path) => path.slice(WEB_SRC.length + 1));
+    expect(offenders).toEqual([]);
+  });
+});

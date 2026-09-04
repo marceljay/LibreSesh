@@ -202,7 +202,7 @@ export function SearchBox({
 
   return (
     <div ref={refs.setReference} className={`relative shrink-0 ${className}`}>
-      <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400 dark:text-stone-500" />
+      <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
       {/* eslint-disable-next-line no-restricted-syntax -- bespoke search combobox with its own listbox; not a plain text field */}
       <input
         ref={input}

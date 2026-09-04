@@ -6,6 +6,7 @@ import type { PersonDto } from '@shared/types';
 import { api } from '../lib/api';
 import { relativeTime, uid } from '../lib/format';
 import { matchesSearch, mergeConsequence, sortPeople, suggestDuplicates } from '../lib/people';
+import { SearchIcon } from './icons';
 import { PersonLine, PersonStatusBadge } from './PersonLine';
 import { PrimaryButton, SecondaryButton, bareFieldFocusRing, useToast } from './ui';
 
@@ -198,15 +199,18 @@ export function MergeModal({
         </>
       )}
 
-      {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label="Search people"
-        placeholder="Search by name, @username or UID"
-        className={`mb-2 w-full rounded-lg border border-stone-500 bg-white px-2.5 py-1.5 text-sm text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
-      />
+      <div className="relative mb-2">
+        <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
+        {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search people"
+          placeholder="Search by name, @username or UID"
+          className={`w-full rounded-lg border border-stone-500 bg-white ps-8 pe-2.5 py-1.5 text-sm text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
+        />
+      </div>
 
       <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
         {searching ? 'Matches' : 'Everyone else'}

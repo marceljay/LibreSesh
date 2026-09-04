@@ -37,7 +37,7 @@ import {
   type PeopleSortColumn,
 } from '../lib/people';
 import { usePeopleColumns, type PeopleColumnsControl } from '../lib/usePeopleColumns';
-import { ColumnsIcon, MoreIcon } from '../components/icons';
+import { ColumnsIcon, MoreIcon, SearchIcon } from '../components/icons';
 import { PersonStatusBadge } from '../components/PersonLine';
 import { popoverPanelClass, usePopover } from '../components/Popover';
 import { RoleControl } from '../components/RoleControl';
@@ -1478,6 +1478,8 @@ export function AdminPage() {
                   </button>
                 ))}
               </div>
+              <div className="relative ms-auto w-32 sm:w-48">
+              <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
               {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
               <input
                 type="search"
@@ -1485,8 +1487,9 @@ export function AdminPage() {
                 onChange={(e) => setPeopleQuery(e.target.value)}
                 aria-label="Search people"
                 placeholder="Name, @username or UID"
-                className={`ms-auto w-32 rounded-lg border border-stone-500 bg-white px-2 py-1 text-xs text-stone-700 outline-hidden sm:w-48 dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
+                className={`w-full rounded-lg border border-stone-500 bg-white ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200 ${bareFieldFocusRing}`}
               />
+              </div>
               <PeopleColumnsMenu columns={peopleColumns} />
             </div>
 
@@ -1694,7 +1697,7 @@ export function AdminPage() {
               action="Expect someone"
               fieldLabel="Name of the person to expect"
               submitLabel="Add person"
-              hint="Creates a profile nobody holds yet — for a speaker you are billing before they arrive. They claim it at the gate, or with a speaker code."
+              hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the gate, or with a speaker code."
               maxLength={120}
               onSubmit={addPerson}
             />
