@@ -112,11 +112,15 @@ clash work. Each takes a minute.
    four checkboxes above the download button. *Pass:* unticking **Sessions**
    greys out **Contributions** with a note saying why; the download link
    carries `?include=…` for what is ticked (hover it); the file has no key for
-   a part left out. Then open **Import a schedule**, paste the file: the
-   summary says *An export made <date>*, **Check it** lists the counts and, if
-   people/pitches were in the file, a first warning naming what is not carried;
-   change `"slug"` and **Import** lands the programme. Compare the two events'
-   grids side by side — speakers, tags, streams, breaks, track hours.
+   a part left out. Then open **Import a schedule**: **Choose a JSON file** (or
+   drop it on the box) shows the name and size; the summary says *An export
+   made <date>*; **Check it** lists the counts and, if people/pitches were in
+   the file, a first warning naming what is not carried; leave **Address**
+   blank and Import is refused naming that field; fill it in and the rehearsal
+   is withdrawn until you check again; **Import** lands the programme. Compare
+   the two events' grids side by side — speakers, tags, streams, breaks, track
+   hours. While there: the Backup tab's amber warning now runs to feeds, codes
+   and names — check it still reads as one paragraph on a phone.
 1. **R19 · The “everyone should be here” band** (the item you sent twice — I
    found two faults, so this is the one to look at first). On a day with a
    floor-holding session, the amber band across the grid. *Pass:* its label sits
