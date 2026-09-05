@@ -287,6 +287,22 @@ its reflog shows a push after each commit) and **start forms Phase 2** (phases
 0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
 they left behind landed 2026-09-05 as R26).
 
+- **D3 · Security hardening — order and two thresholds.** Written up
+  2026-09-05 as `_planning/specs/security-hardening.md` with a five-phase plan
+  in `_planning/plans/2026-09-05-security-hardening.md`. What it found: the
+  instance password sits behind the `write` budget on three of its four routes
+  (43,000 guesses a day per address); a cookieless request mints an identity
+  row with no limit; chosen event passwords may be 6 characters and nothing
+  counts attempts per event or tells the organiser. What it proposes: the
+  `auth` budget on every instance-key route; a per-IP mint budget; per-IP
+  backoff and a per-event closure of the door (60 failures an hour → shut for
+  15 minutes to new entrants only, audit row, organiser notice); passwords of
+  10+ off a denylist; lockdown (any admin freezes, only the instance password
+  lifts); tokens hashed at rest. I need: `D3 go` for the order as written, or
+  a reorder; and the two numbers if 60/hour and 300/quarter-hour look wrong.
+  No captcha or edge proxy assumed — the question was whether the server can
+  do this alone, and it can, up to "slow and visible" rather than "impossible".
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
