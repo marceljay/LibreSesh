@@ -12,6 +12,7 @@ import {
   durationLabel,
 } from '@shared/sessionLimits';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { TimeSelect } from './TimeSelect';
 import {
   ControlShell,
   Field,
@@ -31,6 +32,7 @@ export interface PlaceProposalModalProps {
   dayLabels: Record<string, string>;
   defaultDay: string;
   dayStartMin: number;
+  dayEndMin: number;
   saving: boolean;
   onCancel: () => void;
   onPlace: (body: PlaceWrite) => void;
@@ -46,6 +48,7 @@ export function PlaceProposalModal({
   dayLabels,
   defaultDay,
   dayStartMin,
+  dayEndMin,
   saving,
   onCancel,
   onPlace,
@@ -119,15 +122,14 @@ export function PlaceProposalModal({
             </SelectContent>
           </Select>
         </Field>
-        <Field label="Start" hint="In 5-minute steps.">
-          <ControlShell>
-            <TextInput
-              type="time"
-              step={300}
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
-          </ControlShell>
+        <Field label="Start">
+          <TimeSelect
+            aria-label="Start"
+            value={start}
+            onChange={setStart}
+            from={dayStartMin}
+            to={dayEndMin}
+          />
         </Field>
         {/* Same list and same escape hatch as the session form: a pitch being
             placed is a session, and two dialogs that disagree about how long

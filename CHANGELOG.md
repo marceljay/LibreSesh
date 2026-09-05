@@ -4,7 +4,20 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- **The time fields are the app's own, like every other dropdown.** A
+  session's start, a break's from and to, a track's hours and the day's
+  own start and end were the browser's clock widget: segmented digits with
+  the operating system's blue highlight, a clock glyph that could only be
+  dimmed or inverted, and a popup that could not be themed at all — the one
+  control left on the page that looked like the browser rather than the
+  app. They are now the same list control as Room, Day and Duration, in the
+  same border, height and focus ring, offering the event's day in
+  five-minute steps (the only grid the calendar accepts anyway) and, for an
+  organiser, the rest of the clock in half-hours for the odd early start.
+  Typing "14" jumps to 14:00. A time that was saved off the grid still shows
+  and re-saves as it was.
 
 ## [0.3.0] — 2026-09-05
 

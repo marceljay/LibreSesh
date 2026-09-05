@@ -1,4 +1,5 @@
 import { Modal } from '../components/Modal';
+import { TimeSelect } from '../components/TimeSelect';
 import { useState } from 'react';
 import type { BreakDto } from '@shared/types';
 import type { BreakWrite } from '../lib/api';
@@ -88,6 +89,11 @@ export interface AdminBreaksProps {
   breaks: BreakDto[];
   /** Every date the event runs, for the day picker. */
   days: string[];
+  /** The event's day — the part of the clock the time lists walk in 5-minute
+   *  steps. A break outside it (breakfast before a nine o'clock start) is
+   *  still there, in half-hours. */
+  dayStartMin: number;
+  dayEndMin: number;
   onCreate: (draft: BreakWrite) => Promise<boolean>;
   onPatch: (item: BreakDto, draft: BreakWrite) => Promise<boolean>;
   onDelete: (item: BreakDto) => Promise<boolean>;
@@ -102,7 +108,15 @@ export interface AdminBreaksProps {
  * everything and cannot be clicked; this page is the only place they are
  * edited.
  */
-export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: AdminBreaksProps) {
+export function AdminBreaks({
+  breaks,
+  days,
+  dayStartMin,
+  dayEndMin,
+  onCreate,
+  onPatch,
+  onDelete,
+}: AdminBreaksProps) {
   const [draft, setDraft] = useState<Draft>({
     label: '',
     start: '12:00',
@@ -173,24 +187,24 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
               </Field>
             </div>
             <Field label="From">
-              <ControlShell>
-                <TextInput
-                  type="time"
-                  step={300}
-                  value={draft.start}
-                  onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-                />
-              </ControlShell>
+              <TimeSelect
+                aria-label="From"
+                className="w-28"
+                value={draft.start}
+                onChange={(v) => setDraft({ ...draft, start: v })}
+                from={dayStartMin}
+                to={dayEndMin}
+              />
             </Field>
             <Field label="To">
-              <ControlShell>
-                <TextInput
-                  type="time"
-                  step={300}
-                  value={draft.end}
-                  onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-                />
-              </ControlShell>
+              <TimeSelect
+                aria-label="To"
+                className="w-28"
+                value={draft.end}
+                onChange={(v) => setDraft({ ...draft, end: v })}
+                from={dayStartMin}
+                to={dayEndMin}
+              />
             </Field>
             <Field label="Day">
               <DayPicker
@@ -210,6 +224,8 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
         <BreakEditor
           item={editing}
           days={days}
+          dayStartMin={dayStartMin}
+          dayEndMin={dayEndMin}
           onPatch={onPatch}
           onDelete={onDelete}
           onClose={() => setEditing(null)}
@@ -222,12 +238,16 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
 function BreakEditor({
   item,
   days,
+  dayStartMin,
+  dayEndMin,
   onPatch,
   onDelete,
   onClose,
 }: {
   item: BreakDto;
   days: string[];
+  dayStartMin: number;
+  dayEndMin: number;
   onPatch: (item: BreakDto, draft: BreakWrite) => Promise<boolean>;
   onDelete: (item: BreakDto) => Promise<boolean>;
   onClose: () => void;
@@ -292,24 +312,24 @@ function BreakEditor({
         </Field>
         <FormRow>
           <Field label="From">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
+            <TimeSelect
+                aria-label="From"
+                className="w-28"
                 value={draft.start}
-                onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+                onChange={(v) => setDraft({ ...draft, start: v })}
+                from={dayStartMin}
+                to={dayEndMin}
               />
-            </ControlShell>
           </Field>
           <Field label="To">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
+            <TimeSelect
+                aria-label="To"
+                className="w-28"
                 value={draft.end}
-                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+                onChange={(v) => setDraft({ ...draft, end: v })}
+                from={dayStartMin}
+                to={dayEndMin}
               />
-            </ControlShell>
           </Field>
           <div className="min-w-40 flex-1">
             <Field label="Day">
