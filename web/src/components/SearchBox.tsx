@@ -6,6 +6,7 @@ import { bestField, matchRanges, rankSessions, searchTerms, snippet } from '../l
 import { ArrowRightIcon, SearchIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
 import { bareFieldFocusRing } from './ui';
+import { useListbox } from './useListbox';
 
 /** How many hits the popdown shows before it hands you off to the full page. */
 const PREVIEW = 5;
@@ -143,8 +144,6 @@ export function SearchBox({
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [open, setOpen] = useState(false);
-  // -1 = nothing picked, which is what makes Enter mean "show me everything".
-  const [active, setActive] = useState(-1);
   const input = useRef<HTMLInputElement>(null);
 
   const terms = useMemo(() => searchTerms(query), [query]);
@@ -156,8 +155,6 @@ export function SearchBox({
   );
   const all = useMemo(() => rankSessions(chronological, query), [chronological, query]);
   const hits = all.slice(0, PREVIEW);
-
-  useEffect(() => setActive(-1), [query]);
   // The results page owns the query in its URL; going back or forward there has
   // to move the box with it, or the box says one thing and the page another.
   useEffect(() => setQuery(initialQuery), [initialQuery]);
@@ -190,6 +187,25 @@ export function SearchBox({
 
   const showPanel = open && terms.length > 0;
 
+  // `allowNone`: the highlight rests on no row, which is what makes Enter mean
+  // "show me everything" until an arrow has picked a hit.
+  const list = useListbox({
+    open: showPanel,
+    count: hits.length,
+    allowNone: true,
+    resetOn: query,
+    onPick: (i) => {
+      const hit = i >= 0 ? hits[i] : undefined;
+      if (hit) pick(hit);
+      else seeAll();
+    },
+    onEscape: () => {
+      if (open) setOpen(false);
+      else setQuery('');
+    },
+  });
+  const active = list.active;
+
   // The box itself is the anchor, not the input inside it, so the results line
   // up with the whole control and a press on the clear "×" still counts as
   // inside. Escape stays this component's own — see the input's keydown.
@@ -214,32 +230,13 @@ export function SearchBox({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            if (hits.length === 0) return;
-            e.preventDefault();
-            setOpen(true);
-            setActive((a) => {
-              const next = a + (e.key === 'ArrowDown' ? 1 : -1);
-              if (next < -1) return hits.length - 1;
-              if (next >= hits.length) return -1;
-              return next;
-            });
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const hit = active >= 0 ? hits[active] : undefined;
-            if (hit) pick(hit);
-            else seeAll();
-          } else if (e.key === 'Escape') {
-            e.stopPropagation();
-            if (open) setOpen(false);
-            else setQuery('');
-          }
+          // An arrow reopens a list that Escape closed; the hook then moves in it.
+          if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && hits.length > 0) setOpen(true);
+          list.onKeyDown(e);
         }}
-        role="combobox"
-        aria-expanded={showPanel}
-        aria-controls="search-results"
-        aria-autocomplete="list"
+        {...list.comboboxProps}
         aria-label="Search sessions"
+        enterKeyHint="search"
         placeholder="Search…"
         /* Sized for what it holds rather than for the placeholder it used to
            spell out: a query is a word or two, and the field grows on focus
@@ -268,8 +265,7 @@ export function SearchBox({
           ref={refs.setFloating}
           style={floatingStyles}
           {...getFloatingProps()}
-          id="search-results"
-          role="listbox"
+          {...list.listboxProps}
           className={`${popoverPanelClass} w-[28rem] p-1`}
         >
           {hits.length === 0 ? (
@@ -280,7 +276,7 @@ export function SearchBox({
             <>
               <ul>
                 {hits.map((session, i) => (
-                  <li key={session.id} role="option" aria-selected={i === active}>
+                  <li key={session.id} {...list.optionProps(i)}>
                     <SessionResultRow
                       session={session}
                       rooms={rooms}

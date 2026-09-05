@@ -134,6 +134,51 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A phone's keyboard says what Enter will do.** At the gate the key reads
+  *Go*, in the two search boxes *Search*, and when editing a name on a
+  profile *Done* — rather than a return arrow that could mean anything. Only
+  a label: the key did the right thing already, it just did not say so.
+
+- **Adding a track, tag, format or expected person is announced.** The
+  add-row stays open and clears itself after a save so the next one can be
+  typed, which to a screen reader is indistinguishable from a save that was
+  thrown away; the new row appears further up the page, where nothing is
+  reading. A polite announcement now says *Lightning talks added*. A failed
+  save is not announced twice: the message that reports it already is.
+
+- **The "?" beside a session's placement and its hold-the-floor switch is
+  big enough to tap.** It was 20 px across, under the 24 px that WCAG 2.2 sets
+  as the floor for a touch target, and it sits in a row of chips with no
+  room around it to make up the difference. Now 24 px; the glyph is the same
+  size, so it still reads as a note rather than a button.
+
+- **A screen reader hears which row the arrow keys are on.** The speaker
+  field, the schedule search and the *Find a setting* box each showed a list
+  under the box and let the arrows move a highlight through it, but only
+  sighted people could tell where the highlight was: the box never named the
+  row it was on. It does now, the way the ARIA combobox pattern asks, and
+  the three lists share one keyboard handler instead of three that had
+  quietly drifted apart at the ends of the list.
+
+- **A password manager can save and fill the event password.** The gate's
+  password box was a lone field with no form around it and no hint about
+  what it was, so browsers and password managers never offered to remember
+  it — every visit meant finding the password again. The password and the
+  username are one real login form now, marked as such, so the manager
+  offers to save on first entry and fills on the next. Enter works from
+  either box, and arriving with the name empty says *Pick a username to
+  enter* instead of doing nothing. The device-link phrase stays out of the
+  manager: it is a one-time code, not a password to keep.
+
+- **Enter submits an add-row from any field in it.** The new-room, new-break,
+  invite-check and unlock rows were inputs and a button with no form around
+  them, so Enter did whatever each field's own key handler said: it added the
+  room from its name but not from its capacity, and made the QR from the
+  password box but nowhere else. Every one of those rows is a real form now,
+  with a real submit button — so Enter works from every field, a phone's
+  keyboard labels the key, and a screen reader calls the button what it is.
+  The browser's own validation bubbles are switched off on every form,
+  including dialogs, so the app's sentence is the only one you see.
 - **An event's own export imports back.** The importer's first field said it
   recognised `libresesh.event` and then refused every export carrying it — 103
   errors on a 96-session programme, starting with `breaks.0.start: Required`.

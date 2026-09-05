@@ -8,6 +8,7 @@ import {
   ControlShell,
   Field,
   FormStack,
+  InlineForm,
   PrimaryButton,
   RoleBadge,
   SecondaryButton,
@@ -162,35 +163,36 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
       className="mb-6"
     >
       <FormStack>
-        <Field
-          label="Password to encode"
-          hint="Type the viewer, attendee or organiser password. The role is whichever one it turns out to be — this event stores only hashes, so it has to be checked rather than looked up."
-        >
-          <ControlShell>
-            <TextInput
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                // The old QR encodes the old password; keeping it on screen
-                // while the box says something else invites printing the wrong one.
-                setVerified(null);
-                setError(null);
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && void check()}
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-          </ControlShell>
-        </Field>
-        {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-        {!verified && (
-          <div>
-            <PrimaryButton onClick={() => void check()} disabled={busy || !password.trim()}>
-              {busy ? 'Checking…' : 'Make QR'}
-            </PrimaryButton>
-          </div>
-        )}
+        <InlineForm className="contents" onSubmit={() => void check()}>
+          <Field
+            label="Password to encode"
+            hint="Type the viewer, attendee or organiser password. The role is whichever one it turns out to be — this event stores only hashes, so it has to be checked rather than looked up."
+          >
+            <ControlShell>
+              <TextInput
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  // The old QR encodes the old password; keeping it on screen
+                  // while the box says something else invites printing the wrong one.
+                  setVerified(null);
+                  setError(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </ControlShell>
+          </Field>
+          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          {!verified && (
+            <div>
+              <PrimaryButton type="submit" disabled={busy || !password.trim()}>
+                {busy ? 'Checking…' : 'Make QR'}
+              </PrimaryButton>
+            </div>
+          )}
+        </InlineForm>
 
         {verified && url && (
           <>

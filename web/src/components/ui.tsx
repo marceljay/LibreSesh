@@ -10,7 +10,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
 import type { Role } from '@shared/types';
@@ -395,6 +394,51 @@ export function FormGrid({
 }
 
 /**
+ * A real `<form>` for controls that are not in a dialog: an add-row on a
+ * settings tab, the gate, an unlock box. `Modal` already renders one when it
+ * is given `onSubmit`; this is the same contract for everything else.
+ *
+ * It replaces the hand-rolled `onKeyDown={(e) => e.key === 'Enter' && …}` that
+ * every loose section had grown, each on some of its fields and not others —
+ * so Enter submitted the room's name but not its capacity, and the gate's
+ * password but not the phrase beside it. A form submits from any field in it,
+ * and the primary button is `type="submit"` so a phone's keyboard labels the
+ * key for it (`enterKeyHint`) and a screen reader calls it what it is.
+ *
+ * `noValidate` is load-bearing: a `required` or `pattern` on a field would
+ * otherwise raise the browser's own bubble — unstyled, in the browser's
+ * language, pointed at whichever field it chose — a beat before the app's
+ * sentence arrives. Validation is the handler's job, and the handler renders
+ * its verdict where the rest of the app does (see ARCHITECTURE §The component
+ * layer, "where a failure goes").
+ *
+ * Carries no layout of its own. Put a `FormRow` or `FormStack` inside it, or
+ * pass `className="contents"` to let a surrounding stack keep its spacing.
+ */
+export function InlineForm({
+  onSubmit,
+  className = '',
+  children,
+}: {
+  onSubmit: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+      className={className}
+    >
+      {children}
+    </form>
+  );
+}
+
+/**
  * A field that holds a number. The only one — see `lib/numberField.ts` for why
  * `type="number"` is not it.
  *
@@ -409,7 +453,6 @@ export function NumberField({
   spec,
   value,
   onChange,
-  onKeyDown,
   suffix,
   className = 'w-24',
   autoFocus,
@@ -419,7 +462,6 @@ export function NumberField({
   spec: NumberFieldSpec;
   value: string;
   onChange: (next: string) => void;
-  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   /** Reads on from the field: "days · the rail is on for this event". */
   suffix?: ReactNode;
   className?: string;
@@ -450,7 +492,6 @@ export function NumberField({
             autoComplete="off"
             value={value}
             onChange={(e) => onChange(sanitizeNumberInput(e.target.value, spec))}
-            onKeyDown={onKeyDown}
             maxLength={maxDigits(spec)}
             autoFocus={autoFocus}
           />
@@ -593,6 +634,12 @@ export const SecondaryButton = forwardRef<
  *
  * `onSubmit` answers whether it saved. It never throws: these handlers report
  * failure as a toast, and the box needs to know only whether to clear.
+ *
+ * A save is announced — "Lightning talks added" — through a polite live
+ * region, because the box stays open and clears: to a screen reader a cleared
+ * box and a failed save look the same, and the new row appears somewhere
+ * else on the page where nothing is reading. Failure is *not* announced here;
+ * the toast that reports it already is, and would be read twice.
  */
 export function InlineCreate({
   action,
@@ -628,6 +675,7 @@ export function InlineCreate({
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
+  const [announced, setAnnounced] = useState('');
   const opener = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLInputElement>(null);
   /** Set only when *this* closed the form, so focus goes back to the button
@@ -655,6 +703,7 @@ export function InlineCreate({
     // Failure is already a toast; keeping the text means the fix is a word,
     // not typing the whole thing again.
     if (!saved) return;
+    setAnnounced(`${name} added`);
     setValue('');
     box.current?.focus();
   };
@@ -668,7 +717,7 @@ export function InlineCreate({
   }
 
   return (
-    <div className={className}>
+    <InlineForm className={className} onSubmit={() => void submit()}>
       <FormRow>
         <ControlShell className="min-w-40 flex-1">
           <TextInput
@@ -680,10 +729,7 @@ export function InlineCreate({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void submit();
-              } else if (e.key === 'Escape') {
+              if (e.key === 'Escape') {
                 // Stopped here so a surrounding dialog does not also close:
                 // Escape in this box means "not this after all", not "leave".
                 e.stopPropagation();
@@ -692,7 +738,7 @@ export function InlineCreate({
             }}
           />
         </ControlShell>
-        <PrimaryButton onClick={() => void submit()} disabled={!value.trim() || busy}>
+        <PrimaryButton type="submit" disabled={!value.trim() || busy}>
           {submitLabel}
         </PrimaryButton>
         <SecondaryButton onClick={close} disabled={busy}>
@@ -701,7 +747,12 @@ export function InlineCreate({
       </FormRow>
       {hint && <p className={`mt-1 ${hintClass}`}>{hint}</p>}
       {children}
-    </div>
+      {/* Rendered from the moment the row opens, empty: a live region only
+          announces changes to a node that was already there. */}
+      <p className="sr-only" aria-live="polite">
+        {announced}
+      </p>
+    </InlineForm>
   );
 }
 
@@ -746,7 +797,12 @@ export function HelpButton({
       onClick={onClick}
       aria-expanded={open}
       aria-label={`Explain ${label}`}
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${
+      // 24px, not 20: WCAG 2.2 SC 2.5.8 (Target Size, AA) wants a 24×24 CSS px
+      // target unless the spacing exception applies, and this sits in a row of
+      // chips with a 6px gap, which is not the 24px offset the exception needs.
+      // Phase 0 finding 5; the glyph stays 11px so the circle reads as a note,
+      // not a button.
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${
         open
           ? 'border-stone-500 bg-stone-500 text-white dark:border-stone-400 dark:bg-stone-400 dark:text-stone-900'
           : 'border-stone-300 text-stone-500 hover:border-stone-500 hover:text-stone-700 dark:border-stone-600 dark:text-stone-400 dark:hover:border-stone-400 dark:hover:text-stone-200'

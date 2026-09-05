@@ -3,13 +3,13 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## In Progress
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1013**, lint clean, build clean.
+nothing local is unsaved. Suite at **1046**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -248,6 +248,18 @@ clash work. Each takes a minute.
 25. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
+26. **R26 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
+    the eight leftovers from `_planning/forms-overhaul-review.md`). At the
+    gate: your browser or password manager **offers to save** the event
+    password on entry and fills it next visit; Enter enters from the name box
+    as well as the password box, and Enter with no name says *Pick a username
+    to enter*; the link phrase is **not** offered for saving. In Manage Event:
+    Enter adds a room from the **capacity** box, a break from any of its
+    boxes, and the unlock box and the QR check both submit on Enter; adding a
+    track with a screen reader on announces *… added*. The **?** beside
+    Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
+    arrowing through the list reads the row you land on. On a phone, the
+    Enter key reads *Go* at the gate and *Search* in the search box.
 
 ### Decisions I need from you
 
@@ -268,7 +280,8 @@ clash work. Each takes a minute.
 
 *Resolved and removed:* **push `dev`** (it is pushed — `origin/dev` matches, and
 its reflog shows a push after each commit) and **start forms Phase 2** (phases
-0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration).
+0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
+they left behind landed 2026-09-05 as R26).
 
 ## Blockers
 
@@ -716,26 +729,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ### Forms
 
-_A group, because the first item is one instance of a pattern and the rest of
-the site's forms are the others. Add to it rather than scattering form work
-through the priorities._
-
-- **"Expect someone" should be a button, not a field standing open.** The
-  People tab ends in a permanently-open **Expect someone** text field with its
-  own hint paragraph, which costs the bottom of the tab a form-sized block for
-  something an organiser does a handful of times an event — and it reads as
-  something waiting to be filled in rather than an action they can take.
-
-  Make it an inline create affordance: a button labelled **Add new
-  Guest/Speaker**, which on click reveals the name field (focused) with its
-  hint, and collapses again on save or cancel. The affordance is the button;
-  the field is the consequence of pressing it. Keeps the tab's foot to one
-  line at rest, and says what pressing it does — which "Expect someone" over
-  an empty box does not.
-
-  Nothing about what it creates changes: an unclaimed profile the person
-  claims at the gate or with a speaker code. The hint text is worth keeping,
-  moved into the revealed state.
+_A group, so form work is not scattered through the priorities._
 
 - **The same pass over every other form on the site.** This is the first of
   them, not the only one — sessions, rooms, tracks, tags, formats, breaks and
