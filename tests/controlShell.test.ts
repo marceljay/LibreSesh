@@ -332,3 +332,15 @@ describe('every search box looks like a search box', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('HelpButton is a target a finger can hit', () => {
+  it('is 24px square, the WCAG 2.2 minimum', () => {
+    // SC 2.5.8 Target Size (Minimum) is AA and asks for 24×24 CSS px unless the
+    // target is 24px clear of its neighbours; it sits in a chip row with a 6px
+    // gap, so the size has to carry it. It was h-5 w-5 (20px) — Phase 0
+    // finding 5, the one nobody picked up.
+    const hb = ui.slice(ui.indexOf('export function HelpButton'), ui.indexOf('export function HelpNote'));
+    expect(hb).toMatch(/\bh-6 w-6\b/);
+    expect(hb).not.toMatch(/\bh-5 w-5\b/);
+  });
+});

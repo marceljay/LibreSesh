@@ -134,6 +134,12 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The "?" beside a session's placement and its hold-the-floor switch is
+  big enough to tap.** It was 20 px across, under the 24 px that WCAG 2.2 sets
+  as the floor for a touch target, and it sits in a row of chips with no
+  room around it to make up the difference. Now 24 px; the glyph is the same
+  size, so it still reads as a note rather than a button.
+
 - **A screen reader hears which row the arrow keys are on.** The speaker
   field, the schedule search and the *Find a setting* box each showed a list
   under the box and let the arrows move a highlight through it, but only

@@ -784,7 +784,12 @@ export function HelpButton({
       onClick={onClick}
       aria-expanded={open}
       aria-label={`Explain ${label}`}
-      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${
+      // 24px, not 20: WCAG 2.2 SC 2.5.8 (Target Size, AA) wants a 24×24 CSS px
+      // target unless the spacing exception applies, and this sits in a row of
+      // chips with a 6px gap, which is not the 24px offset the exception needs.
+      // Phase 0 finding 5; the glyph stays 11px so the circle reads as a note,
+      // not a button.
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold leading-none ${
         open
           ? 'border-stone-500 bg-stone-500 text-white dark:border-stone-400 dark:bg-stone-400 dark:text-stone-900'
           : 'border-stone-300 text-stone-500 hover:border-stone-500 hover:text-stone-700 dark:border-stone-600 dark:text-stone-400 dark:hover:border-stone-400 dark:hover:text-stone-200'
