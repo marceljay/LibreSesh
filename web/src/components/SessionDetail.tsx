@@ -12,13 +12,20 @@ import type {
   FormatDto,
   TagDto,
 } from '@shared/types';
-import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { MentionText, PersonLink, personByUsername } from './MentionText';
 import { MentionTextArea } from './MentionTextArea';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
-import { ControlShell, IconButton, PrimaryButton, SecondaryButton, TextInput } from './ui';
+import {
+  ControlShell,
+  FormatLabel,
+  IconButton,
+  PrimaryButton,
+  SecondaryButton,
+  TagChip,
+  TextInput,
+} from './ui';
 
 const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
@@ -190,19 +197,6 @@ export function SessionDetail({
     <div className={`flex items-start gap-2 ${page ? 'mb-6' : 'mb-3'}`}>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          {/* First in the row, because it is what the thing *is*; the
-              official/open badge beside it says who put it there. */}
-          {(() => {
-            const format = formats.find((f) => f.id === session.formatId);
-            return format ? (
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ background: format.color, color: readableInk(format.color) }}
-              >
-                {format.name}
-              </span>
-            ) : null;
-          })()}
           {session.type === 'open' ? (
             <span className="rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
               non-official
@@ -224,23 +218,28 @@ export function SessionDetail({
             const tag = tags.find((t) => t.id === id);
             if (!tag) return null;
             return (
-              <span
-                key={id}
-                className="rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{ background: tag.color, color: readableInk(tag.color) }}
-              >
+              <TagChip key={id} color={tag.color}>
                 {tag.name}
-              </span>
+              </TagChip>
             );
           })}
         </div>
-        <h2
-          className={`mt-1.5 font-semibold leading-snug tracking-tight ${
-            page ? 'text-2xl sm:text-3xl' : 'text-lg'
-          }`}
-        >
-          {session.title}
-        </h2>
+        {/* The format sits after the title, not in the chip row above it: it
+            says what the session *is*, which is a note on the title rather
+            than another of the labels the session carries. */}
+        <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <h2
+            className={`font-semibold leading-snug tracking-tight ${
+              page ? 'text-2xl sm:text-3xl' : 'text-lg'
+            }`}
+          >
+            {session.title}
+          </h2>
+          {(() => {
+            const format = formats.find((f) => f.id === session.formatId);
+            return format ? <FormatLabel color={format.color}>{format.name}</FormatLabel> : null;
+          })()}
+        </div>
         <p
           className={`mt-1 text-stone-500 dark:text-stone-400 ${page ? 'text-base' : 'text-sm'}`}
         >
