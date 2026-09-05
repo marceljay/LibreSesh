@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## In Progress
 
@@ -716,26 +716,45 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ### Forms
 
-_A group, because the first item is one instance of a pattern and the rest of
-the site's forms are the others. Add to it rather than scattering form work
-through the priorities._
+_A group, so form work is not scattered through the priorities. The first
+item is the overhaul's residue; the rest are the sweeps that follow it._
 
-- **"Expect someone" should be a button, not a field standing open.** The
-  People tab ends in a permanently-open **Expect someone** text field with its
-  own hint paragraph, which costs the bottom of the tab a form-sized block for
-  something an organiser does a handful of times an event — and it reads as
-  something waiting to be filled in rather than an action they can take.
+- **What the forms overhaul left behind.** Reviewed 2026-09-04 in
+  `_planning/forms-overhaul-review.md`: the overhaul is complete as an
+  undertaking, but Phase 4 of `_planning/forms_overhaul_strategy.md` was the
+  phase the Base UI pivot ran over, and two Phase 0 findings were never picked
+  up. None of this is regressible work — it is the residue, queued here so the
+  migration plan's "complete" is true. In the order worth doing them:
 
-  Make it an inline create affordance: a button labelled **Add new
-  Guest/Speaker**, which on click reveals the name field (focused) with its
-  hint, and collapses again on save or cancel. The affordance is the button;
-  the field is the consequence of pressing it. Keeps the tab's foot to one
-  line at rest, and says what pressing it does — which "Expect someone" over
-  an empty box does not.
-
-  Nothing about what it creates changes: an unclaimed profile the person
-  claims at the gate or with a speaker code. The hint text is worth keeping,
-  moved into the revealed state.
+  - [ ] **Put the gate's password field in a real `<form>`** with
+        `name="password"` and `autoComplete="current-password"`. Password
+        managers still cannot reliably save or fill it. Most user-visible item.
+  - [ ] **An `InlineForm` primitive** (`<form noValidate onSubmit>`) for the
+        loose-controls sections, retiring the seven hand-rolled Enter-to-submit
+        handlers that remain on real forms: Gate (two), AdminInvite,
+        AdminBreaks, AdminRooms (two), AdminPermissions. Add `noValidate` to
+        `Modal`'s form at the same time — moot today (no field carries
+        `required` or `pattern`) but the first one added will race the app's
+        own message.
+  - [ ] **Write the failure-path rule into ARCHITECTURE §The component layer.**
+        The code already follows one — a modal's rejected save is a `FormError`
+        in the footer beside the button; a loose admin row's failure is a toast
+        through `errorText` — but nothing states it, which is what Phase 6
+        asked for.
+  - [ ] **`aria-controls` and `aria-activedescendant` on the three comboboxes**
+        (`SpeakerCombobox`, `SearchBox`, `AdminSearch`), and one shared
+        Arrow/Enter/Escape listbox behaviour instead of three copies. A screen
+        reader hears the box open but not which row the arrows are on.
+  - [ ] **`HelpButton` to 24 px.** Still `h-5 w-5` (20 px); WCAG 2.2 SC 2.5.8
+        wants 24 unless the spacing exception applies — check its call sites.
+  - [ ] **Test keyboard focus behind the sticky modal footer** (SC 2.4.11,
+        AA). "Plausible, not proven" in Phase 0; a live Tab through a tall
+        Add-session form is all it needs, then a `scroll-padding-bottom` if it
+        fails.
+  - [ ] **`enterKeyHint` / `inputMode`** where they help — three sites today;
+        `enterKeyHint="done"` on the single-field inline edits at least.
+  - [ ] **A polite live region on `InlineCreate`** announcing "*name* added".
+        Errors stay out of it — the error node is already `role="alert"`.
 
 - **The same pass over every other form on the site.** This is the first of
   them, not the only one — sessions, rooms, tracks, tags, formats, breaks and
