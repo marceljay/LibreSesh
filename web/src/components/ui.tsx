@@ -10,7 +10,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type KeyboardEventHandler,
   type ReactNode,
 } from 'react';
 import type { Role } from '@shared/types';
@@ -395,6 +394,51 @@ export function FormGrid({
 }
 
 /**
+ * A real `<form>` for controls that are not in a dialog: an add-row on a
+ * settings tab, the gate, an unlock box. `Modal` already renders one when it
+ * is given `onSubmit`; this is the same contract for everything else.
+ *
+ * It replaces the hand-rolled `onKeyDown={(e) => e.key === 'Enter' && …}` that
+ * every loose section had grown, each on some of its fields and not others —
+ * so Enter submitted the room's name but not its capacity, and the gate's
+ * password but not the phrase beside it. A form submits from any field in it,
+ * and the primary button is `type="submit"` so a phone's keyboard labels the
+ * key for it (`enterKeyHint`) and a screen reader calls it what it is.
+ *
+ * `noValidate` is load-bearing: a `required` or `pattern` on a field would
+ * otherwise raise the browser's own bubble — unstyled, in the browser's
+ * language, pointed at whichever field it chose — a beat before the app's
+ * sentence arrives. Validation is the handler's job, and the handler renders
+ * its verdict where the rest of the app does (see ARCHITECTURE §The component
+ * layer, "where a failure goes").
+ *
+ * Carries no layout of its own. Put a `FormRow` or `FormStack` inside it, or
+ * pass `className="contents"` to let a surrounding stack keep its spacing.
+ */
+export function InlineForm({
+  onSubmit,
+  className = '',
+  children,
+}: {
+  onSubmit: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+      className={className}
+    >
+      {children}
+    </form>
+  );
+}
+
+/**
  * A field that holds a number. The only one — see `lib/numberField.ts` for why
  * `type="number"` is not it.
  *
@@ -409,7 +453,6 @@ export function NumberField({
   spec,
   value,
   onChange,
-  onKeyDown,
   suffix,
   className = 'w-24',
   autoFocus,
@@ -419,7 +462,6 @@ export function NumberField({
   spec: NumberFieldSpec;
   value: string;
   onChange: (next: string) => void;
-  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
   /** Reads on from the field: "days · the rail is on for this event". */
   suffix?: ReactNode;
   className?: string;
@@ -450,7 +492,6 @@ export function NumberField({
             autoComplete="off"
             value={value}
             onChange={(e) => onChange(sanitizeNumberInput(e.target.value, spec))}
-            onKeyDown={onKeyDown}
             maxLength={maxDigits(spec)}
             autoFocus={autoFocus}
           />
@@ -668,7 +709,7 @@ export function InlineCreate({
   }
 
   return (
-    <div className={className}>
+    <InlineForm className={className} onSubmit={() => void submit()}>
       <FormRow>
         <ControlShell className="min-w-40 flex-1">
           <TextInput
@@ -680,10 +721,7 @@ export function InlineCreate({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void submit();
-              } else if (e.key === 'Escape') {
+              if (e.key === 'Escape') {
                 // Stopped here so a surrounding dialog does not also close:
                 // Escape in this box means "not this after all", not "leave".
                 e.stopPropagation();
@@ -692,7 +730,7 @@ export function InlineCreate({
             }}
           />
         </ControlShell>
-        <PrimaryButton onClick={() => void submit()} disabled={!value.trim() || busy}>
+        <PrimaryButton type="submit" disabled={!value.trim() || busy}>
           {submitLabel}
         </PrimaryButton>
         <SecondaryButton onClick={close} disabled={busy}>
@@ -701,7 +739,7 @@ export function InlineCreate({
       </FormRow>
       {hint && <p className={`mt-1 ${hintClass}`}>{hint}</p>}
       {children}
-    </div>
+    </InlineForm>
   );
 }
 

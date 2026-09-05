@@ -90,6 +90,10 @@ export function Modal({
               className="flex min-h-0 flex-1 flex-col"
               {...(onSubmit
                 ? {
+                    // No native bubbles: a `required` on a field would raise the
+                    // browser's own message a beat before the app's sentence in
+                    // the footer. The handler validates; see `InlineForm`.
+                    noValidate: true,
                     onSubmit: (e: React.FormEvent) => {
                       e.preventDefault();
                       onSubmit();

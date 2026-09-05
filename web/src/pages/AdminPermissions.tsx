@@ -5,6 +5,7 @@ import {
   ControlShell,
   Field,
   FormRow,
+  InlineForm,
   PrimaryButton,
   SecondaryButton,
   Section,
@@ -154,20 +155,21 @@ export function AdminPermissions({
             label="Unlock with the organiser password"
             hint="Every switch here saves the moment you click it, and there is no undo."
           >
-            <FormRow>
-              <ControlShell className="min-w-40 flex-1">
-                <TextInput
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void unlock()}
-                  autoComplete="off"
-                />
-              </ControlShell>
-              <PrimaryButton onClick={() => void unlock()} disabled={!password.trim() || checking}>
-                {checking ? 'Checking…' : 'Unlock'}
-              </PrimaryButton>
-            </FormRow>
+            <InlineForm onSubmit={() => void unlock()}>
+              <FormRow>
+                <ControlShell className="min-w-40 flex-1">
+                  <TextInput
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="off"
+                  />
+                </ControlShell>
+                <PrimaryButton type="submit" disabled={!password.trim() || checking}>
+                  {checking ? 'Checking…' : 'Unlock'}
+                </PrimaryButton>
+              </FormRow>
+            </InlineForm>
           </Field>
         </div>
       )}

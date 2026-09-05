@@ -134,6 +134,15 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Enter submits an add-row from any field in it.** The new-room, new-break,
+  invite-check and unlock rows were inputs and a button with no form around
+  them, so Enter did whatever each field's own key handler said: it added the
+  room from its name but not from its capacity, and made the QR from the
+  password box but nowhere else. Every one of those rows is a real form now,
+  with a real submit button — so Enter works from every field, a phone's
+  keyboard labels the key, and a screen reader calls the button what it is.
+  The browser's own validation bubbles are switched off on every form,
+  including dialogs, so the app's sentence is the only one you see.
 - **An event's own export imports back.** The importer's first field said it
   recognised `libresesh.event` and then refused every export carrying it — 103
   errors on a 96-session programme, starting with `breaks.0.start: Required`.
