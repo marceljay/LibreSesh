@@ -10,6 +10,9 @@ const RETRY_MS = 3000;
  */
 export class Broker {
   private readonly channels = new Map<string, Set<Response>>();
+  /** Who each open stream belongs to, for `publishTo`. A `WeakMap` so a
+   *  response that is dropped without unsubscribing takes its entry with it. */
+  private readonly owner = new WeakMap<Response, number>();
   private readonly heartbeat: NodeJS.Timeout;
 
   constructor() {
@@ -17,8 +20,11 @@ export class Broker {
     this.heartbeat.unref?.();
   }
 
-  /** Attach a response as a stream subscriber; returns an unsubscribe function. */
-  subscribe(slug: string, res: Response): () => void {
+  /** Attach a response as a stream subscriber; returns an unsubscribe function.
+   *  `identityId` is who is listening, which `publishTo` needs — a
+   *  notification is addressed to one person and must not be broadcast to
+   *  every tab open on the event. */
+  subscribe(slug: string, res: Response, identityId?: number): () => void {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -35,6 +41,7 @@ export class Broker {
       this.channels.set(slug, set);
     }
     set.add(res);
+    if (identityId !== undefined) this.owner.set(res, identityId);
 
     return () => {
       const current = this.channels.get(slug);
@@ -50,6 +57,30 @@ export class Broker {
     const payload: ChangeEvent = { type, entity };
     const frame = `event: change\ndata: ${JSON.stringify(payload)}\n\n`;
     for (const res of set) {
+      try {
+        res.write(frame);
+      } catch {
+        set.delete(res);
+      }
+    }
+  }
+
+  /**
+   * Publish to one person's streams on this channel, and to nobody else.
+   *
+   * The event channel is the wrong place for a notification: everyone reading
+   * the schedule is subscribed to it, so broadcasting "Ada mentioned you"
+   * tells the room who was mentioned and when. The payload is deliberately
+   * contentless — the client refetches its own inbox over an authenticated
+   * request — so even a stream attributed to the wrong identity leaks nothing
+   * but a nudge.
+   */
+  publishTo(slug: string, identityId: number, type: ChangeType, entity: unknown): void {
+    const set = this.channels.get(slug);
+    if (!set || set.size === 0) return;
+    const frame = `event: change\ndata: ${JSON.stringify({ type, entity } satisfies ChangeEvent)}\n\n`;
+    for (const res of set) {
+      if (this.owner.get(res) !== identityId) continue;
       try {
         res.write(frame);
       } catch {

@@ -12,7 +12,8 @@ export function streamRoutes(ctx: Ctx): Router {
     req.socket.setNoDelay(true);
     req.socket.setKeepAlive(true);
 
-    const unsubscribe = ctx.broker.subscribe(req.event.slug, res);
+    // Named, so the broker can address a notification to this person alone.
+    const unsubscribe = ctx.broker.subscribe(req.event.slug, res, req.identity.id);
     req.on('close', unsubscribe);
   });
 

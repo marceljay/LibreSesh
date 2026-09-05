@@ -8,6 +8,7 @@ import type { Role } from '../shared/types.js';
 import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
+import { isAMove, notifySessionAudience } from '../notifications.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -457,6 +458,13 @@ export function sessionRoutes(ctx: Ctx): Router {
       return true;
     };
 
+    // Snapshotted before the write, because "did this move?" cannot be asked
+    // afterwards — and a retitle must not be announced as a move.
+    const before = new Map<number, SessionRow>([[existing.id, existing]]);
+    if (scope !== 'one' && existing.series_id) {
+      for (const m of seriesMembers(ctx.db, existing.series_id)) before.set(m.id, m);
+    }
+
     const outcome = ctx.db.transaction((): { touched: number[]; considered: number } => {
       // Resolve the credits once — it can mint people — and reuse it for every
       // session the edit touches, so a name typed once lands the same everywhere.
@@ -527,6 +535,24 @@ export function sessionRoutes(ctx: Ctx): Router {
         batch: editBatch,
       });
       ctx.broker.publish(req.event.slug, 'session.updated', d);
+
+      const was = before.get(id);
+      const now = getSession(ctx.db, req.event.id, id);
+      if (was && isAMove(was, now)) {
+        notifySessionAudience(
+          ctx.db,
+          {
+            eventId: req.event.id,
+            sessionId: id,
+            actorId: req.identity.id,
+            // No body: the panel links to the session, which is where the new
+            // time and room actually live. Freezing them into the line would
+            // leave it wrong the moment the session moves again.
+            title: `${d.title} moved`,
+          },
+          (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+        );
+      }
       return d;
     });
 
@@ -557,6 +583,16 @@ export function sessionRoutes(ctx: Ctx): Router {
       entityId: existing.id,
     });
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
+    notifySessionAudience(
+      ctx.db,
+      {
+        eventId: req.event.id,
+        sessionId: existing.id,
+        actorId: req.identity.id,
+        title: `${existing.title} was cancelled`,
+      },
+      (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+    );
     res.status(204).end();
   });
 

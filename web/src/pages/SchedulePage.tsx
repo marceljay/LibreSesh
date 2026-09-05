@@ -43,6 +43,7 @@ import {
 } from "../components/icons";
 import { ListView } from "../components/ListView";
 import { Logo } from "../components/Logo";
+import { NotificationBell } from "../components/NotificationBell";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
@@ -1189,6 +1190,7 @@ export function SchedulePage() {
                   header had five controls competing for the width left over after
                   the event name. */}
               <div className="ms-auto flex items-center justify-end gap-2">
+                <NotificationBell slug={slug} ping={data.notificationPing} />
                 <ProfileMenu
                   onTour={() => setTourOpen(true)}
                   demo={me?.demoMode === true}

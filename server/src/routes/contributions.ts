@@ -6,6 +6,7 @@ import type { Ctx } from '../context.js';
 import type { ContributionRow } from '../db.js';
 import { forbidden, notFound } from '../errors.js';
 import { NameResolver } from '../eventIdentity.js';
+import { mentionedIdentities, notify } from '../notifications.js';
 import { toContributionDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
 import { getSession } from '../sessionRules.js';
@@ -61,6 +62,25 @@ export function contributionRoutes(ctx: Ctx): Router {
         entityId: dto.id,
       });
       ctx.broker.publish(req.event.slug, 'contribution.created', dto);
+
+      // The mention parse runs here, on the server, over the same tokenizer
+      // the comment renders through — so what was stored as a mention and what
+      // is drawn as a link cannot disagree. The title is frozen now because an
+      // edited comment must not rewrite the line that already reached someone.
+      for (const identityId of mentionedIdentities(ctx.db, req.event.id, body.body)) {
+        const id = notify(ctx.db, {
+          eventId: req.event.id,
+          identityId,
+          kind: 'mention',
+          subjectType: 'session',
+          subjectId: session.id,
+          title: `${dto.createdByName} mentioned you`,
+          body: body.body,
+          actorId: req.identity.id,
+        });
+        if (id !== null) ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {});
+      }
+
       res.status(201).json(dto);
     },
   );

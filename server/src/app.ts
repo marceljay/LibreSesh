@@ -17,6 +17,7 @@ import { breakRoutes } from './routes/breaks.js';
 import { bundleRoutes } from './routes/bundle.js';
 import { claimRoutes } from './routes/claims.js';
 import { contributionRoutes } from './routes/contributions.js';
+import { notificationRoutes } from './routes/notifications.js';
 import { eventAuthRoutes } from './routes/eventAuth.js';
 import { eventRoutes } from './routes/events.js';
 import { importRoutes } from './routes/import.js';
@@ -77,6 +78,7 @@ export function createApp(db: Db, config: Config): App {
   event.use(sessionRoutes(ctx));
   event.use(proposalRoutes(ctx));
   event.use(contributionRoutes(ctx));
+  event.use(notificationRoutes(ctx));
   event.use(peopleRoutes(ctx));
   event.use(claimRoutes(ctx));
   event.use(agendaRoutes(ctx));
