@@ -19,6 +19,7 @@ import type { Ctx } from '../context.js';
 import { exportEvent } from '../exportEvent.js';
 import { forbidden } from '../errors.js';
 import { limit } from '../ratelimit.js';
+import { EXPORT_PARTS, type ExportPart } from '../shared/exportParts.js';
 import { parse } from '../validation.js';
 
 /**
@@ -34,6 +35,17 @@ const backupSchema = z.object({
 
 const stamp = (): string => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
+/**
+ * `?include=sessions,people` — which of the optional parts to write. Absent
+ * means all of them, so a plain GET is the whole event as it always was; given
+ * and empty means the frame alone. A name that is not a part is a 400 rather
+ * than a silently thinner file.
+ */
+const includeSchema = z
+  .string()
+  .transform((raw) => raw.split(',').map((s) => s.trim()).filter((s) => s !== ''))
+  .pipe(z.array(z.enum(EXPORT_PARTS)));
+
 /** Per-event JSON export. Admin of *this* event, no instance password needed. */
 export function exportRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
@@ -43,7 +55,12 @@ export function exportRoutes(ctx: Ctx): Router {
     requireRole(ctx.db, 'admin'),
     limit(ctx.limiter, 'read'),
     (req, res) => {
-      const payload = exportEvent(ctx.db, req.event);
+      const include = req.query.include;
+      const parts: ReadonlySet<ExportPart> =
+        include === undefined
+          ? new Set(EXPORT_PARTS)
+          : new Set(parse(includeSchema, Array.isArray(include) ? include.join(',') : include));
+      const payload = exportEvent(ctx.db, req.event, parts);
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,

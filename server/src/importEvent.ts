@@ -10,7 +10,8 @@
  * event's own timezone turns them into instants. That is also why it is not
  * `export.json` read backwards — an export is a record of ids, this is a
  * description of a schedule, and only the second one can be typed by hand or
- * produced from a picture.
+ * produced from a picture. (An export is accepted all the same: it is
+ * translated into this shape at the door, in `importDocument.ts`.)
  *
  * Two rules make it safe to point at a production database:
  *
@@ -44,6 +45,7 @@ import {
   defaultViewSchema,
   distinctPasswordsRefinement,
   isoInstantSchema,
+  linkSchema,
   minuteOfDaySchema,
   optionalTrimmed,
   passwordSchema,
@@ -163,6 +165,9 @@ const importSessionSchema = z
      *  order. `speaker` remains the one-name spelling; a document may use
      *  either, and a document that uses both is billed to the list. */
     speakers: z.array(trimmed(120)).max(12).optional(),
+    /** Where it is streamed, one link per feed. Rarely on a printed
+     *  programme; carried so an export reads back whole. */
+    livestreams: z.array(linkSchema).max(6).optional(),
     /** Local date and times, as printed on the schedule. */
     date: dateSchema.optional(),
     start: startTimeSchema.optional(),
@@ -363,13 +368,16 @@ export interface ImportOptions {
   /** Whose import this is: creator of every row, and admin of the new event. */
   actorIdentityId: number;
   dryRun?: boolean;
+  /** Said before the import ran — what reading an export back left behind, for
+   *  one — and reported ahead of anything the import itself finds. */
+  warnings?: string[];
 }
 
 export function importEvent(
   db: Db,
   config: Config,
   doc: EventImport,
-  { actorIdentityId, dryRun = false }: ImportOptions,
+  { actorIdentityId, dryRun = false, warnings: leading = [] }: ImportOptions,
 ): ImportResult {
   const rooms = doc.rooms ?? [];
   const tracks = doc.tracks ?? [];
@@ -397,7 +405,7 @@ export function importEvent(
     isDemoEvent(config, doc.event.slug),
   );
 
-  const warnings: string[] = [];
+  const warnings: string[] = [...leading];
   /** Every occurrence of a repeat earns the same warning; one of it is the
    *  useful number. */
   const warn = (message: string): void => {
@@ -552,7 +560,7 @@ export function importEvent(
         (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
          description, speaker, livestreams, starts_at, ends_at,
          created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', '[]', ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
     );
     const insertSessionSpeaker = db.prepare(
       'INSERT OR IGNORE INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
@@ -649,6 +657,7 @@ export function importEvent(
           session.blocksOpenBooking ? 1 : 0,
           session.title,
           session.description ?? '',
+          JSON.stringify(session.livestreams ?? []),
           startsAt.toISOString(),
           endsAt.toISOString(),
           actorIdentityId,

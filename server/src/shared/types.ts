@@ -424,6 +424,12 @@ export interface BundleDto {
  * to keep opening in five years. `version` moves when the shape does.
  *
  * Carries no secrets by construction — see `exportEvent` for the list.
+ *
+ * `sessions`, `people`, `proposals` and `contributions` are each **absent**
+ * when the export was asked to leave them out (`?include=`, or the checkboxes
+ * in Manage Event → Backup) and `[]` when the event simply has none — a reader
+ * must not confuse the two. The rest is always present: it is the frame the
+ * four hang off, and there is no reason to withhold it.
  */
 export interface EventExport {
   format: 'libresesh.event';
@@ -468,7 +474,7 @@ export interface EventExport {
   formats: { id: number; name: string; color: string }[];
   /** Local minutes of day; `date` null means every day of the event. */
   breaks: { id: number; label: string; startMin: number; endMin: number; date: string | null }[];
-  people: {
+  people?: {
     id: number;
     name: string;
     bio: string;
@@ -478,7 +484,7 @@ export interface EventExport {
     createdAt: string;
     updatedAt: string;
   }[];
-  sessions: {
+  sessions?: {
     id: number;
     roomId: number;
     trackId: number | null;
@@ -500,7 +506,7 @@ export interface EventExport {
     updatedAt: string;
     starCount: number;
   }[];
-  proposals: {
+  proposals?: {
     id: number;
     title: string;
     description: string;
@@ -513,7 +519,7 @@ export interface EventExport {
     updatedAt: string;
     interestCount: number;
   }[];
-  contributions: {
+  contributions?: {
     id: number;
     sessionId: number;
     kind: ContributionKind;

@@ -6,6 +6,15 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Choose what an export carries.** The event export was all or nothing — a
+  speaker list for a website, a programme to move elsewhere and a co-organiser's
+  copy all came with every profile, pitch and comment. Manage Event → Backup now
+  has four checkboxes: **Sessions**, **People**, **Pitches**, **Contributions**.
+  The event's settings, rooms, tracks, tags, formats and breaks are always in
+  the file; a part left out is absent from it rather than empty, so a reader can
+  tell "none" from "not exported". From the command line it is
+  `?include=sessions,people` on `export.json`; a plain GET is still everything.
+
 - **A repeat is one line in the audit log, not fourteen.** Placing a session
   across a fortnight wrote fourteen entries, and an edit applied to a series
   wrote one per occurrence — enough to bury the rest of the morning's history,
@@ -124,6 +133,19 @@ All notable changes to this project are documented here.
   ever being asked.
 
 ### Fixed
+
+- **An event's own export imports back.** The importer's first field said it
+  recognised `libresesh.event` and then refused every export carrying it — 103
+  errors on a 96-session programme, starting with `breaks.0.start: Required`.
+  The export and the import document were two formats under one name: ids and
+  minutes on one side, room names and `HH:MM` on the other. An export is now
+  translated at the door — ids to the names they stood for, minutes to `HH:MM`,
+  `null` to an absent key — and imported as the programme it describes, so every
+  export ever downloaded works, not only new ones. Change `event.slug` first. The
+  programme comes across whole (sessions now carry their `livestreams` through
+  an import too); profiles, pitches, contributions and star counts do not, and
+  the dry run's first warning says so. The round trip — export, import, export,
+  compare — is a test now, which is what was missing.
 
 - **The “everyone should be here” band sits straight.** The amber band a
   floor-holding session draws across the grid had its label pinned to the

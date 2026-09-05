@@ -1,5 +1,7 @@
 import { errorText } from '../lib/errorText';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { ExportPart } from '@shared/exportParts';
 import { api } from '../lib/api';
 import {
   ControlShell,
@@ -8,9 +10,38 @@ import {
   PrimaryButton,
   Section,
   TextInput,
+  linkClass,
   secondaryButtonClass,
   useToast,
 } from '../components/ui';
+
+/**
+ * The four parts an export can leave out, in the order they are offered. The
+ * frame — settings, rooms, tracks, tags, formats, breaks — is not a choice:
+ * it is a few hundred bytes and nothing in it is anyone's but the organiser's.
+ */
+const EXPORT_CHOICES: { id: ExportPart; label: string; hint: string }[] = [
+  {
+    id: 'sessions',
+    label: 'Sessions',
+    hint: 'The programme itself — every session with its speakers, tags, streams and star count.',
+  },
+  {
+    id: 'people',
+    label: 'People',
+    hint: 'Every profile: name, bio and links. Never who holds one.',
+  },
+  {
+    id: 'proposals',
+    label: 'Pitches',
+    hint: 'The pitch board, with how many are interested in each.',
+  },
+  {
+    id: 'contributions',
+    label: 'Contributions',
+    hint: 'Notes, links and questions posted on sessions, with the name that wrote them.',
+  },
+];
 
 /**
  * The two backups, which are deliberately not the same thing.
@@ -28,6 +59,22 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
   const [passphrase, setPassphrase] = useState('');
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
+  const [parts, setParts] = useState<Set<ExportPart>>(
+    () => new Set(EXPORT_CHOICES.map((c) => c.id)),
+  );
+
+  const togglePart = (id: ExportPart) =>
+    setParts((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  // A contribution is a note *on a session*, addressed by that session's id;
+  // without the sessions it would point at nothing.
+  const chosen = EXPORT_CHOICES.map((c) => c.id).filter(
+    (id) => parts.has(id) && (id !== 'contributions' || parts.has('sessions')),
+  );
 
   const ready = instanceKey.length > 0 && passphrase.length >= 12 && passphrase === confirm;
 
@@ -59,11 +106,41 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
     <>
       <Section
         title="Export this event"
-        description="Rooms, tracks, tags, people, sessions, pitches and contributions as one JSON file — the programme, with star and interest counts. It holds no passwords, no identity tokens and no speaker codes, so it is safe to hand to a co-organiser."
+        description="One JSON file, with no passwords, identity tokens or speaker codes in it — safe to hand to a co-organiser. The event's settings, rooms, tracks, tags, formats and breaks are always in it; choose what else goes."
         className="mb-6"
       >
+        <div className="mb-4 grid gap-2 sm:grid-cols-2">
+          {EXPORT_CHOICES.map(({ id, label, hint }) => {
+            const disabled = id === 'contributions' && !parts.has('sessions');
+            return (
+              <label
+                key={id}
+                className={`flex items-start gap-2 rounded-lg border border-stone-200 px-3 py-2 text-xs dark:border-stone-700 ${
+                  disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                }`}
+              >
+                {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
+                <input
+                  type="checkbox"
+                  checked={chosen.includes(id)}
+                  disabled={disabled}
+                  onChange={() => togglePart(id)}
+                  className="mt-0.5 shrink-0 accent-stone-900 dark:accent-stone-100"
+                />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-stone-700 dark:text-stone-200">
+                    {label}
+                  </span>
+                  <span className="block text-stone-500 dark:text-stone-400">
+                    {disabled ? 'Only with the sessions they were posted on.' : hint}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
         <a
-          href={api.exportUrl(slug)}
+          href={api.exportUrl(slug, chosen)}
           download
           className={`${secondaryButtonClass} no-underline`}
         >
@@ -71,7 +148,12 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
         </a>
         <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
           Deleted sessions and contributions are left out — they are still in
-          Trash until you empty it.
+          Trash until you empty it. The file can be imported back as a new event
+          from{' '}
+          <Link to="/import" className={`${linkClass} underline`}>
+            Import a schedule
+          </Link>
+          : the programme comes across; people, pitches and contributions do not.
         </p>
       </Section>
 

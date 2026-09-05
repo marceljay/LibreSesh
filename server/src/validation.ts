@@ -287,7 +287,7 @@ export const formatPatchSchema = formatSchema.partial();
 
 /** A labelled link. Profiles carry a handful; so does a session, one per
  *  stream. Same rules as a contribution's link — see `safeLink`. */
-const linkSchema = z.object({
+export const linkSchema = z.object({
   label: trimmed(60),
   url: z
     .string()

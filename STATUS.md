@@ -9,7 +9,7 @@ Last updated: 2026-09-04
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **997**, lint clean, build clean.
+nothing local is unsaved. Suite at **1013**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -23,6 +23,13 @@ nothing local is unsaved. Suite at **997**, lint clean, build clean.
   out of the footer into a block that names the instance password, the board
   preview framed as a browser window, GitHub's mark on the source link).
   All code-complete and queued for your eyes as R19–R25.
+
+- **Export ↔ import** (2026-09-04, from your backlog line *Import Export fix,
+  also make it possible to select what should be exported*). Two commits: the
+  importer now reads an export back — translated at the door in
+  `server/src/importDocument.ts`, with the round trip pinned in
+  `tests/importExport.test.ts` — and Manage Event → Backup has four checkboxes
+  (`?include=` on the route) for what an export carries. Queued as R26.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -96,10 +103,20 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — **R19–R25 are today's checklist pass** and are the ones I have
-never seen rendered; R1–R2 are the forms overhaul and the grid-block fix, R3–R5
-the mentions, linked-sessions and clash work. Each takes a minute.
+Freshest first — **R26 is the export/import work and R19–R25 are today's
+checklist pass**, all of them ones I have never seen rendered; R1–R2 are the
+forms overhaul and the grid-block fix, R3–R5 the mentions, linked-sessions and
+clash work. Each takes a minute.
 
+0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
+   four checkboxes above the download button. *Pass:* unticking **Sessions**
+   greys out **Contributions** with a note saying why; the download link
+   carries `?include=…` for what is ticked (hover it); the file has no key for
+   a part left out. Then open **Import a schedule**, paste the file: the
+   summary says *An export made <date>*, **Check it** lists the counts and, if
+   people/pitches were in the file, a first warning naming what is not carried;
+   change `"slug"` and **Import** lands the programme. Compare the two events'
+   grids side by side — speakers, tags, streams, breaks, track hours.
 1. **R19 · The “everyone should be here” band** (the item you sent twice — I
    found two faults, so this is the one to look at first). On a day with a
    floor-holding session, the amber band across the grid. *Pass:* its label sits
@@ -386,41 +403,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   meant to be shared. Decide which way round, because the inverted form is
   the one that stays safe as new working files appear.
 
-- **An event this app exported cannot be imported back.** Found 2026-09-02
-  restoring a production event onto a fresh staging box: the export downloads,
-  the import rejects it. The first error reads `breaks.0.start: Required`, but
-  that is one of **103** — every one of the 96 sessions fails too, and the real
-  answer is that these are two different formats wearing one name.
-
-  `exportEvent.ts` writes a dump keyed by database id: `startMin`/`endMin`
-  integers on breaks and tracks, `roomId`/`trackId`/`tagIds` on sessions,
-  `date: null` where there is no date. `eventImportSchema` takes the authoring
-  document: `start`/`end` as `HH:MM`, rooms/tracks/tags **by name**, and an
-  absent key rather than a null. It is also `.strict()` at the top level, so
-  the export's `people`, `proposals`, `contributions` and `exportedAt` are
-  rejected outright rather than ignored.
-
-  What makes this a bug and not a documented limitation is the importer's own
-  first field: `format: z.literal('libresesh.event').optional()`, commented
-  "Present on a document this app produced; ignored, but not rejected". It
-  says it recognises our export and then refuses it. There is no round-trip
-  test in the suite, which is why nobody noticed.
-
-  One piece of luck sizes the fix: `importSessionSchema` already accepts
-  `startsAt`/`endsAt` as ISO instants, so no timezone conversion is involved —
-  the mapping is id → name, minutes → `HH:MM`, null → absent, plus tolerating
-  the export-only top-level keys. A converter proving that is in
-  `_planning/` (it turned the Valley export into a document the schema
-  accepts, verified against `eventImportSchema` itself), but it belongs in the
-  app, not in a script an organiser has to be handed.
-
-  Decide where it goes: the importer accepting both shapes, or export learning
-  to emit the authoring document. Whichever, the missing test is the round
-  trip — export an event, import it, and compare. Note also what the export
-  cannot carry back either way: `people` profiles, `contributions` and every
-  `starCount`. If restoring an instance is the real goal, the encrypted
-  whole-database backup is the tool; this path is for moving one event.
-
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
@@ -500,13 +482,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   document would be cheap; `start_min`/`end_min` on the `tracks` table is the
   bigger version and changes what a track means in the session form, the grid
   and the filters — worth doing only to make the app _enforce_ track hours.
-
-- **Nothing imports an event _export_.** `POST /events/import` builds an event
-  from a JSON schedule, but does not read `GET /export.json` back: an export is
-  a record of ids, instants and authorship belonging to identities the target
-  instance has never seen, and reading one back wants a new slug, fresh ids and
-  a decision about those names. So the encrypted whole-DB backup is still the
-  only restore path.
 
 - **Compact button overrides do nothing.** `SecondaryButton className="py-1"`
   and the `py-1.5` variants in DetailSheet, ProfilePage, ProposalBoard and

@@ -29,6 +29,10 @@ export interface DocSummary {
   sessions: number;
   /** Distinct speaker names — the profiles an import would look for or make. */
   speakers: number;
+  /** When this is an export the app made rather than a typed document: the
+   *  `exportedAt` stamp. The server translates one at the door; saying so
+   *  here is what tells the person pasting it that it was recognised. */
+  exportedAt: string | null;
 }
 
 export type ParseResult =
@@ -95,6 +99,7 @@ export function summarise(doc: unknown): DocSummary {
     breaks: len(root.breaks),
     sessions: len(root.sessions),
     speakers: speakers.size,
+    exportedAt: str(root.exportedAt),
   };
 }
 

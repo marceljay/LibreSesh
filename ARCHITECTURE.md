@@ -744,9 +744,17 @@ Three consequences worth knowing:
   front door refuses is refused by the other, because there is only one thing to
   refuse it.
 
-Nothing reads an export back. Doing so would need decisions this route does not
-have to make — a new slug, fresh ids, and what to do with authorship that names
-identities the target instance has never met.
+An export *is* read back, but not as a second format: `importDocument.ts`
+recognises one (`exportedAt`, or the ids only an export has) and translates it
+into the authoring document — ids to the names they stood for, minutes to
+`HH:MM`, `null` to an absent key — before the schema ever sees it. The export
+stays an archive keyed by ids, every export ever downloaded becomes importable,
+and there is one importer to keep right. The translation says what it cannot
+carry as the first warning: profiles, pitches, contributions and star counts
+are a record of an event being used, which is not what an import builds. The
+one decision it hands back is the slug — an export names the event it came
+from, and the importer refuses a taken one like any other. The round trip is
+pinned in `tests/importExport.test.ts`: export, import, export, compare.
 
 ### Linked sessions
 
