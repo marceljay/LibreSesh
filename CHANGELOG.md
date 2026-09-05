@@ -170,6 +170,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The page follows the system theme without being asked.** With the theme
+  set to *System*, the operating system switching to dark at sunset left the
+  page light until you opened the profile menu — the thing listening for the
+  switch lived inside that menu's toggle, and so only existed while the menu
+  was open. It listens from the app itself now, on every page, and a theme
+  chosen in another tab of the same site applies here too. An explicit
+  *Dark* or *Light* still wins over the system.
+
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
   dropping a block was meant to hold it where it landed until the server
   answered; instead it snapped back for the whole round trip — about half a

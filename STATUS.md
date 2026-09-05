@@ -276,7 +276,10 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
     time field** (session Start, break From/To, track hours, Day starts/ends)
     is now the same dropdown as Room and Day: check both themes, that typing
     "14" jumps to 14:00, and that a break at 07:30 is still offered on a
-    nine o'clock day (half-hours outside the day, five minutes inside).
+    nine o'clock day (half-hours outside the day, five minutes inside). Two
+    from your 2026-09-05 notes: in **Arrange**, a dropped block stays put and
+    never flashes back to its old slot before landing; and with the theme on
+    *System*, flipping the OS to dark re-themes the page at once, menu closed.
 27. **R27 · The `@` menu in the comment box.** Open a session and type `@` in
     the comment field. *Pass:* a list of the event's people appears above the
     field and narrows as you type; ↑/↓ moves the highlight, Enter *or* Tab
