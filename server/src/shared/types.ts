@@ -613,7 +613,43 @@ export type ChangeType =
   | 'person.updated'
   | 'person.deleted'
   | 'event.updated'
-  | 'permissions.updated';
+  | 'permissions.updated'
+  /** Contentless, and sent to one person's streams only (`Broker.publishTo`):
+   *  the client refetches its own inbox rather than being told what is in it. */
+  | 'notification.ping';
+
+/** What put a notification in someone's inbox. `session_changed` covers a move
+ *  and a cancellation together, because "what happened to my talk" is one
+ *  switch to a speaker, not two. */
+export type NotificationKind =
+  | 'mention'
+  | 'session_changed'
+  | 'starred_changed'
+  | 'pitch_scheduled'
+  | 'pitch_posted';
+
+export interface NotificationDto {
+  id: number;
+  kind: NotificationKind;
+  /** What it is about, so the panel can link to it. */
+  subjectType: 'session' | 'contribution' | 'proposal';
+  subjectId: number;
+  /** Frozen when the row was written: a mention must still read correctly
+   *  after the comment is edited or the session renamed. */
+  title: string;
+  body: string;
+  /** Who caused it, in this event's naming, or null when nobody did. */
+  actorName: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface InboxDto {
+  items: NotificationDto[];
+  unread: number;
+  /** The kinds this person has switched off here. */
+  muted: NotificationKind[];
+}
 
 export interface ChangeEvent {
   type: ChangeType;

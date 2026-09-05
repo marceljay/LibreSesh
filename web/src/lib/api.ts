@@ -25,6 +25,8 @@ import type {
   TrackDto,
   TrackWindowDto,
   ViewMode,
+  InboxDto,
+  NotificationKind,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
 import type { ExportPart } from '@shared/exportParts';
@@ -158,6 +160,15 @@ export const api = {
   /** Which role a password grants, without granting it — admin only. The
    *  invite-QR panel asks before drawing a code, because the server holds only
    *  bcrypt hashes and cannot check the organiser's typing any other way. */
+  /** This person's inbox for one event. Rows are selected by identity on the
+   *  server, so there is nothing to pass but the event. */
+  notifications: (slug: string) => request<InboxDto>('GET', `/e/${encode(slug)}/notifications`),
+  /** Opening the panel is the read; the marked inbox comes back, so the panel
+   *  does not need a second round trip to redraw. */
+  readNotifications: (slug: string) =>
+    request<InboxDto>('POST', `/e/${encode(slug)}/notifications/read`),
+  muteNotification: (slug: string, kind: NotificationKind, muted: boolean) =>
+    request<InboxDto>('PATCH', `/e/${encode(slug)}/notifications/mutes`, { kind, muted }),
   passwordRole: (slug: string, password: string) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/password-role`, { password }),
   /** Rename yourself inside one event. 409 if the name is taken there. */

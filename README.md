@@ -51,6 +51,17 @@ Open <http://localhost:3000>. Demo passwords: `viewer2026`, `user2026`,
 The Vite dev server owns port 3000 and proxies `/api` to the API on 3001,
 so the port you open is the same in dev and in production.
 
+`npm run dev` reads a `.env` beside this file if one is there (gitignored, and
+optional — a fresh clone boots without it). The one variable worth putting in
+it is `COOKIE_SECRET`. Without it the secret is generated once and kept in
+`data/.cookie-secret`, which is per checkout — so a second checkout, such as a
+git worktree with its own `data/`, signs with a different key. Browser cookies
+ignore the port, so both dev servers share one `localhost` cookie jar: whichever
+you opened last mints a new identity and overwrites the cookie, and the other
+sends you back through the gate. Give every checkout the same `COOKIE_SECRET`
+(and point them at one database) and the switch costs nothing. See
+**§What a cookie is, exactly** in [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ### Native module note
 
 `better-sqlite3` is a native addon. This repo sets `ignore-scripts=true` in
@@ -69,6 +80,9 @@ In Docker the build stage passes `--ignore-scripts=false`, so this is handled.
 | ------------------------ | ------------------------------------------------- |
 | `npm run dev`            | API + Vite dev server together                    |
 | `npm run dev:demo`       | The same, with a role picker on the seeded demos  |
+| `npm run dev:fresh`      | Stop this checkout's dev servers first, then `dev`|
+| `npm run dev:demo:fresh` | The same, then `dev:demo`                         |
+| `npm run dev:kill`       | Just stop them                                    |
 | `npm run build`          | Compiles the server and builds `web/dist`         |
 | `npm start`              | Runs the built server (serves `web/dist` too)     |
 | `npm run seed`           | Recreates the two-day demo event                  |

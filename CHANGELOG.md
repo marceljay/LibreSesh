@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **A mention lands somewhere now.** Writing `@ada` in a comment linked to Ada
+  and told her nothing; the way she found out was the hallway. There is a bell
+  in the header — where the **?** used to be — with the things addressed to
+  you: mentions, a session you speak at moving or being cancelled, one you
+  starred moving, your pitch getting a slot, and a new pitch for organisers.
+  Each of the five is a switch you own, under **Settings** in the panel; they
+  are yours and per event. Opening the panel is the read, so there is no
+  second button for it. Nothing is sent by email.
+
+  What it stays quiet about is the point: your own actions, a name repeated in
+  one comment, and an edit that only changed the title — a session has to
+  actually move. Notifications keep for 30 days once read and 90 unread.
+
 ### Fixed
 
 - **A dragged session no longer flashes back to its old slot.** In Arrange,

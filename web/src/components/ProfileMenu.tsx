@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { PersonDto, Role } from '@shared/types';
 import { api } from '../lib/api';
 import { uid } from '../lib/format';
+import { AboutModal } from './About';
 import { DeviceLinkModal } from './DeviceLink';
 import { ThemeToggle } from './ThemeToggle';
 import { RoleBadge, useToast } from './ui';
@@ -36,6 +37,12 @@ export interface ProfileMenuProps {
    *  menu row said the same word twice for the same dialog. */
   onCalendar: (section: 'download' | 'subscribe') => void;
   onSignOut: () => void;
+  /** Starts the coach-mark tour. It used to hang off its own "?" in the
+   *  header; that slot belongs to the notification bell now, and a tour is
+   *  asked for once, which is exactly what a menu is for. */
+  onTour: () => void;
+  /** Whether this instance resets its data, shown in About. */
+  demo: boolean;
 }
 
 /**
@@ -54,10 +61,13 @@ export function ProfileMenu({
   publicId,
   onCalendar,
   onSignOut,
+  onTour,
+  demo,
 }: ProfileMenuProps) {
   const navigate = useNavigate();
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [about, setAbout] = useState(false);
   const [busy, setBusy] = useState(false);
   const [linking, setLinking] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -216,6 +226,35 @@ export function ProfileMenu({
             role="separator"
             className="my-1 border-t border-stone-200 dark:border-stone-700"
           />
+          {/* The two halves of what used to be the header's "?": a tour you
+              ask for, and what this thing is. Their own group, because unlike
+              everything above they are about the app rather than about you. */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onTour();
+            }}
+            className={itemClass}
+          >
+            Take the tour
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setAbout(true);
+            }}
+            className={itemClass}
+          >
+            About LibreSesh
+          </button>
+          <div
+            role="separator"
+            className="my-1 border-t border-stone-200 dark:border-stone-700"
+          />
           <button
             type="button"
             role="menuitem"
@@ -231,6 +270,7 @@ export function ProfileMenu({
       )}
 
       {linking && <DeviceLinkModal onClose={() => setLinking(false)} />}
+      {about && <AboutModal demo={demo} onClose={() => setAbout(false)} />}
     </div>
   );
 }

@@ -385,6 +385,13 @@ export const contributionSchema = z
 
 export const hiddenSchema = z.object({ hidden: z.boolean() });
 
+/** One notification switch. The kinds are listed here rather than imported
+ *  from `notifications.ts` so validation stays a leaf module. */
+export const muteSchema = z.object({
+  kind: z.enum(['mention', 'session_changed', 'starred_changed', 'pitch_scheduled', 'pitch_posted']),
+  muted: z.boolean(),
+});
+
 /** A partial permission matrix: capability -> the roles allowed to use it. */
 export const permissionsSchema = z.record(
   z.string().max(64),
