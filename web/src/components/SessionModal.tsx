@@ -621,6 +621,8 @@ export function SessionModal({
                 className="w-full"
                 value={start}
                 onChange={setStart}
+                min={dayStartMin}
+                max={dayEndMin}
                 disabled={!canMove}
               />
             </Field>

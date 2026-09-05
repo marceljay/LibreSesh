@@ -35,18 +35,29 @@ const ARROW_STEP = 5;
  * put back to the last good value on blur, so the field can never hand its
  * caller a value it cannot use.
  *
+ * `min`/`max` cap it to the event's day: the list offers only that window,
+ * and a typed or nudged time outside it lands on the nearer edge rather than
+ * being refused — a person typing `7` on a nine o'clock day meant "as early
+ * as it goes", and the server would reject seven anyway. The two fields that
+ * *define* the day pass no cap.
+ *
  * Value in and out is the `HH:MM` string the old input used, so no caller's
  * state changed shape.
  */
 export function TimeField({
   value,
   onChange,
+  min = 0,
+  max = DAY,
   disabled,
   className = 'w-28',
   'aria-label': ariaLabel,
 }: {
   value: string;
   onChange: (next: string) => void;
+  /** Minutes since midnight, inclusive. Defaults to the whole day. */
+  min?: number;
+  max?: number;
   disabled?: boolean;
   className?: string;
   'aria-label'?: string;
@@ -58,7 +69,9 @@ export function TimeField({
   const anchor = useRef<HTMLDivElement>(null);
 
   const invalid = text.trim() !== '' && parseTime(text) === null;
-  const choices = timeChoices({ from: 0, to: DAY, step: LIST_STEP, beyond: null, current: value });
+  const choices = timeChoices({ from: min, to: max, step: LIST_STEP, beyond: null, current: value });
+  const capped = (minute: number): string =>
+    fmtMin(Math.min(Math.min(max, DAY - ARROW_STEP), Math.max(min, minute)));
 
   const commit = () => {
     const parsed = parseTime(text);
@@ -66,14 +79,14 @@ export function TimeField({
       setText(value);
       return;
     }
-    setText(parsed);
-    if (parsed !== value) onChange(parsed);
+    const next = capped(minutesOf(parsed));
+    setText(next);
+    if (next !== value) onChange(next);
   };
 
   const nudge = (delta: number) => {
     const base = parseTime(text) ?? value;
-    const next = Math.min(DAY - ARROW_STEP, Math.max(0, minutesOf(base) + delta));
-    onChange(fmtMin(next));
+    onChange(capped(minutesOf(base) + delta));
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
