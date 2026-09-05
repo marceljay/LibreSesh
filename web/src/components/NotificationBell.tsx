@@ -30,7 +30,7 @@ const badge = (n: number) => (n > 9 ? '9+' : String(n));
  *
  * **Opening the panel is the read.** There is no "mark all read" — a second
  * control for what the first already did is one nobody presses. The count goes
- * to zero on open, and the rows keep an unread tint until it closes, so what
+ * to zero on open, and the rows keep their unread rule until it closes, so what
  * was new is still visible while you look at it.
  *
  * The live nudge is contentless (`notification.ping`, addressed to one person
@@ -50,7 +50,7 @@ export function NotificationBell({
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(false);
   const [inbox, setInbox] = useState<InboxDto | null>(null);
-  /** Frozen at open, so a row does not lose its tint under the cursor. */
+  /** Frozen at open, so a row does not lose its mark under the cursor. */
   const [wasUnread, setWasUnread] = useState<Set<number>>(new Set());
 
   const { refs, floatingStyles, context, getReferenceProps, getFloatingProps } = usePopover({
@@ -122,7 +122,9 @@ export function NotificationBell({
             // `aria-hidden`: the count is already in the button's label, and a
             // screen reader announcing "3" beside "3 unread" says it twice.
             aria-hidden="true"
-            className="absolute -end-1 -top-1 min-w-4 rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-4 text-white"
+            // The app's own ink (`primaryButtonClass`), not an accent of its own:
+            // a count is emphasis, and the page already has a colour for that.
+            className="absolute -end-1 -top-1 min-w-4 rounded-full bg-stone-900 px-1 text-[10px] font-semibold leading-4 text-white dark:bg-stone-100 dark:text-stone-900"
           >
             {badge(unread)}
           </span>
@@ -187,8 +189,13 @@ export function NotificationBell({
                     <button
                       type="button"
                       onClick={() => go(n)}
-                      className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-start hover:bg-stone-100 dark:hover:bg-stone-800 ${
-                        wasUnread.has(n.id) ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
+                      // Unread is a rule down the leading edge rather than a
+                      // fill: the row's own fill is what hover uses, so a tint
+                      // there would either fight it or vanish under it.
+                      className={`flex w-full flex-col items-start gap-0.5 border-s-2 px-3 py-2 text-start hover:bg-stone-100 dark:hover:bg-stone-800 ${
+                        wasUnread.has(n.id)
+                          ? 'border-stone-900 dark:border-stone-100'
+                          : 'border-transparent'
                       }`}
                     >
                       <span className="text-xs font-medium text-stone-900 dark:text-stone-100">
