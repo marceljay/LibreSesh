@@ -1,8 +1,9 @@
 # Mentioning a person, and somewhere for a mention to land
 
-**Status:** resolution done (first cut 2026-09-04, the `@` menu 2026-09-05).
-Clickable authors, `@username` links and an autocomplete in the comment box all
-ship; notifications are the second half and are **not** built yet.
+**Status:** resolution done and shipped in 0.3.0 (first cut 2026-09-04, the `@`
+menu 2026-09-05). Clickable authors, `@username` links and an autocomplete in
+the comment box all ship. Delivery is the second half: **designed and decided
+2026-09-05** (see *Settled* below), being built on `feat/notifications`.
 
 ## Why
 
@@ -57,6 +58,44 @@ a link.
 
 Not built. When it lands it changes where the parse lives.
 
+### Settled 2026-09-05 (the questions this section used to leave open)
+
+- **Four triggers, each a switch the person owns.** A mention in a comment; a
+  session you speak at moved or was cancelled; a session you starred moved or
+  was cancelled; your pitch scheduled — plus its organiser-facing twin, a new
+  pitch posted. All four ship together and every one is individually
+  switchable, so the noisy ones (a starred session during an organiser's
+  reshuffle) are the holder's problem to turn off rather than ours to guess at.
+  That means a **preferences row per identity**, not a global default, and a
+  **Settings** item in the profile menu to edit it.
+- **Retention: read at 30 days, unread at 90.** Time-based, so the existing
+  `pruneAudit` sweep can take a second table rather than needing a new kind of
+  job. 90 days on the unread side is chosen so a mention survives someone
+  missing a whole conference and coming back to it.
+- **Username case-collision: left alone.** The picker (2026-09-05) inserts the
+  directory's own casing, so a mention that came from the menu is unambiguous
+  at the point of writing. Only a hand-typed `@ada` in an event holding both
+  "Ada" and "ada" can reach the wrong person, and it resolves to *one* of them
+  rather than to nobody — a wrong delivery in a rare case, not a broken
+  feature. No `COLLATE NOCASE` migration. If a real event ever hits it, the
+  migration is still the fix; this is a decision not to pay for it up front.
+- **Still no mail.** Unchanged and deliberate: nothing leaves the app by email,
+  so a notification is something you come back and find.
+
+### The shape that follows from those
+
+- `notifications`: recipient identity, event, kind, source (session/
+  contribution/pitch id), created-at, read-at. Recipient is the **identity**,
+  not the name, so a rename does not orphan an inbox.
+- `notification_prefs`: one row per identity per event, a boolean per kind,
+  defaulting to on. A row is written only when someone changes something, so
+  the table stays empty for the people who never open Settings.
+- Migration **020** (the spec used to say 018; 018 and 019 went to pitches and
+  audit batches in the meantime).
+- Transport is `sse.ts` for a bell that moves while the tab is open, and a
+  fetch on load for everything it missed. The table is the truth; SSE is the
+  nudge.
+
 - **Parse moves to the server, once.** Today the client tokenizes for rendering.
   A notification needs the server to know who was mentioned, so the parse becomes
   a server step over the shared tokenizer (`shared/mentions.ts` is written to be
@@ -66,10 +105,10 @@ Not built. When it lands it changes where the parse lives.
   right transport (in-process broker per event slug) and the wrong storage: a
   mention must survive a closed tab.
 - **A header panel** with an unread count.
-- **What else creates one** besides a mention: being added as a speaker, a starred
-  session moving, a pitch of yours being scheduled.
-- **Pruning**, with `pruneAudit` as the precedent for a table that would otherwise
-  grow forever.
+- **What else creates one** besides a mention — settled above: four triggers,
+  each individually switchable.
+- **Pruning**, with `pruneAudit` as the precedent — settled above: read 30 days,
+  unread 90.
 - **No mail.** Nothing leaves the app by email today; adding it changes what this
   project stores about people, and is out of scope for this feature.
 
