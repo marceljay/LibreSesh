@@ -163,10 +163,15 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
       >
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
           <strong className="font-semibold">This file is a credential, not a document.</strong>{' '}
-          It contains the sign-in token of everyone who has ever opened an event
-          here, and the hashes of every device and speaker code. Anyone who opens
-          it can become any of them. Store it where you would store the instance
-          password — and nowhere else.
+          It is the whole database: the sign-in token of everyone who has ever
+          opened an event here, their calendar-feed tokens, the hashes of every
+          device and speaker code, and every name, bio, comment and who-starred-what
+          on this instance. With the cookie secret, whoever opens it can become any of
+          them; without it, the calendar feeds work as they are and a speaker code's
+          hash gives way to a laptop in minutes. Store it where you would store the
+          instance password — and nowhere else — and restore it only onto a box at
+          the same address with the same cookie secret, or everyone comes back a
+          stranger.
         </div>
 
         <FormStack>

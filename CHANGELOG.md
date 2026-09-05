@@ -237,6 +237,14 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The whole-database backup says what it really holds.** The warning named
+  the sign-in tokens and the code hashes. It now also names the calendar-feed
+  tokens, which work against the live server as they are; the speaker-code
+  hashes, which crack offline in minutes; and every name, bio, comment and
+  who-starred-what on the instance — and it says to restore only onto a box at
+  the same address with the same cookie secret, or everyone comes back a
+  stranger.
+
 - **The landing page stops looking like a toolbar and stops making offers it
   cannot keep.** Four things were wrong with the front door, and all four were
   the same mistake — the page borrowed the app's clothes. *New event* and
