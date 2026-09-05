@@ -1,51 +1,69 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { timeChoices } from '../web/src/lib/timeChoices';
+import { parseTime, timeChoices } from '../web/src/lib/timeChoices';
 
 /**
- * The time picker is the app's own list, not the browser's clock widget —
- * the last native control that still looked like the browser, replaced for
- * the same reasons as the native `<select>`. The list is a pure function,
- * tested as one; the rest is text, since there is no DOM in this suite.
+ * The time field is the app's own — a box you type into with a list of
+ * quarter-hours beside it — not the browser's clock widget, the last native
+ * control that still looked like the browser. The two pure halves are tested
+ * as functions; the wiring is text, since there is no DOM in this suite.
  */
-describe('timeChoices: the day in steps', () => {
-  it('walks the window in 5-minute steps, inclusive at both ends', () => {
-    const list = timeChoices({ from: 9 * 60, to: 9 * 60 + 15, beyond: null });
-    expect(list).toEqual(['09:00', '09:05', '09:10', '09:15']);
+describe('parseTime: what the box accepts', () => {
+  it.each([
+    ['9', '09:00'],
+    ['09', '09:00'],
+    ['930', '09:30'],
+    ['1430', '14:30'],
+    ['9:30', '09:30'],
+    ['9.30', '09:30'],
+    ['14h30', '14:30'],
+    [' 14:30 ', '14:30'],
+    ['2pm', '14:00'],
+    ['2:15 PM', '14:15'],
+    ['12am', '00:00'],
+    ['12pm', '12:00'],
+  ])('reads %s as %s', (typed, hhmm) => {
+    expect(parseTime(typed)).toBe(hhmm);
   });
 
-  it('adds the rest of the clock in coarse steps around the window', () => {
-    const list = timeChoices({ from: 9 * 60, to: 10 * 60, beyond: 60 });
+  it('settles onto the five-minute grid the calendar keeps', () => {
+    expect(parseTime('9:32')).toBe('09:30');
+    expect(parseTime('9:33')).toBe('09:35');
+    expect(parseTime('23:59')).toBe('23:55'); // never rounds past midnight
+  });
+
+  it('refuses what is not a time', () => {
+    for (const bad of ['', 'noon', '25:00', '9:60', '2400', '12:3', '9:30:00', '13pm']) {
+      expect(parseTime(bad), bad).toBeNull();
+    }
+  });
+});
+
+describe('timeChoices: the list beside the box', () => {
+  it('walks the window in steps, inclusive at both ends', () => {
+    expect(timeChoices({ from: 9 * 60, to: 9 * 60 + 15, beyond: null })).toEqual([
+      '09:00',
+      '09:05',
+      '09:10',
+      '09:15',
+    ]);
+  });
+
+  it('covers the whole day in quarter hours when asked', () => {
+    const list = timeChoices({ from: 0, to: 24 * 60, step: 15, beyond: null });
+    expect(list).toHaveLength(96);
     expect(list[0]).toBe('00:00');
-    expect(list).toContain('08:00');
-    expect(list).not.toContain('08:05'); // coarse outside
-    expect(list).toContain('09:05'); // fine inside
-    expect(list).toContain('11:00');
-    expect(list.at(-1)).toBe('23:00');
-  });
-
-  it('offers nothing outside the window when told so', () => {
-    const list = timeChoices({ from: 9 * 60, to: 10 * 60, beyond: null });
-    expect(list[0]).toBe('09:00');
-    expect(list.at(-1)).toBe('10:00');
+    expect(list.at(-1)).toBe('23:45');
   });
 
   it('keeps an off-grid current value in its place rather than snapping it', () => {
-    const list = timeChoices({ from: 9 * 60, to: 10 * 60, beyond: null, current: '09:03' });
-    expect(list.indexOf('09:03')).toBe(1);
-    // And a current value outside the window is still there to re-save.
-    expect(timeChoices({ from: 9 * 60, to: 10 * 60, beyond: null, current: '07:30' })[0]).toBe('07:30');
+    const list = timeChoices({ from: 0, to: 60, step: 15, beyond: null, current: '00:35' });
+    expect(list).toEqual(['00:00', '00:15', '00:30', '00:35', '00:45', '01:00']);
   });
 
   it('ignores a current value that is not a time', () => {
-    expect(timeChoices({ from: 0, to: 5, beyond: null, current: '' })).toEqual(['00:00', '00:05']);
     expect(timeChoices({ from: 0, to: 5, beyond: null, current: 'noon' })).toEqual(['00:00', '00:05']);
-  });
-
-  it('never runs past midnight', () => {
-    const list = timeChoices({ from: 23 * 60, to: 25 * 60, beyond: null });
-    expect(list.at(-1)).toBe('23:55');
   });
 });
 
@@ -59,18 +77,24 @@ function tsxFiles(dir: string): string[] {
   });
 }
 
-describe('no time field is the browser\'s', () => {
-  it('has no <input type="time"> left in web/src', () => {
+describe("no time field is the browser's", () => {
+  it('has no native time input left in web/src', () => {
     const strays = tsxFiles(WEB_SRC)
       .filter((path) => /<(?:input|TextInput)\b[^>]*type="time"/.test(readFileSync(path, 'utf8')))
       .map((path) => path.slice(WEB_SRC.length + 1));
     expect(strays).toEqual([]);
   });
 
-  it('builds TimeSelect on the same Select every other dropdown uses', () => {
-    const src = readFileSync(join(WEB_SRC, 'components', 'TimeSelect.tsx'), 'utf8');
+  it('is a box in the field shell with the same list every other dropdown uses', () => {
+    const src = readFileSync(join(WEB_SRC, 'components', 'TimeField.tsx'), 'utf8');
+    expect(src).toContain('<ControlShell');
+    expect(src).toContain('<TextInput');
     expect(src).toContain("from './ui/select'");
-    expect(src).toContain('timeChoices({');
-    expect(src).not.toContain('<input');
+    expect(src).toContain('const LIST_STEP = 15;');
+    // Typing commits on blur and Enter, never per keystroke — see the comment.
+    expect(src).toContain('onBlur={commit}');
+    expect(src).not.toMatch(/onChange=\{\(e\) => \{?\s*commit/);
+    // Enter settles the time; it must not also save the dialog around it.
+    expect(src).toMatch(/e\.key === 'Enter'[\s\S]{0,60}e\.preventDefault\(\);\s*commit\(\);/);
   });
 });

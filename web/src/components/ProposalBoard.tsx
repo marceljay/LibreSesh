@@ -304,7 +304,6 @@ export function ProposalBoard() {
           dayLabels={dayLabels}
           defaultDay={days.includes(today) ? today : (days[0] ?? '')}
           dayStartMin={event.dayStartMin}
-          dayEndMin={event.dayEndMin}
           saving={saving}
           onCancel={() => setPlacing(null)}
           onPlace={(body) => void placeProposal(body)}

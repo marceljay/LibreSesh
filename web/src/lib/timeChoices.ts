@@ -1,4 +1,4 @@
-import { fmtMin, minutesOf } from './format';
+import { fmtMin, minutesOf, snapMinute } from './format';
 
 const DAY = 24 * 60;
 
@@ -43,4 +43,28 @@ export function timeChoices({
     if (m >= 0 && m < DAY) minutes.add(m);
   }
   return [...minutes].sort((a, b) => a - b).map(fmtMin);
+}
+
+/**
+ * What somebody typed into a time box, as `HH:MM` on the five-minute grid, or
+ * `null` if it is not a time.
+ *
+ * Generous on the way in — `9`, `930`, `9:30`, `9.30`, `14h30`, `2pm`,
+ * `2:15 PM` — because a box that only takes `09:30` is a worse version of the
+ * clock widget it replaced. Strict on the way out: one shape, on the grid the
+ * calendar and the server keep, never past 23:55.
+ */
+export function parseTime(text: string): string | null {
+  const m = /^\s*(\d{1,2})(?:[:.h]?(\d{2}))?\s*(am|pm)?\s*$/i.exec(text);
+  if (!m) return null;
+  let hours = Number(m[1]);
+  const minutes = m[2] === undefined ? 0 : Number(m[2]);
+  const meridiem = m[3]?.toLowerCase();
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridiem === 'pm' && hours < 12) hours += 12;
+    if (meridiem === 'am' && hours === 12) hours = 0;
+  }
+  if (hours > 23 || minutes > 59) return null;
+  return fmtMin(Math.min(DAY - 5, snapMinute(hours * 60 + minutes)));
 }

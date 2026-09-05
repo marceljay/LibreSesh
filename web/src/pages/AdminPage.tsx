@@ -41,7 +41,7 @@ import { ColumnsIcon, MoreIcon, SearchIcon } from '../components/icons';
 import { PersonStatusBadge } from '../components/PersonLine';
 import { popoverPanelClass, usePopover } from '../components/Popover';
 import { RoleControl } from '../components/RoleControl';
-import { TimeSelect } from '../components/TimeSelect';
+import { TimeField } from '../components/TimeField';
 
 /**
  * The People table's columns, shared by the header and every row so the two
@@ -1330,8 +1330,6 @@ export function AdminPage() {
               track={editingTrack}
               sessions={bundle.sessions.filter((x) => x.trackId === editingTrack.id).length}
               days={dayList}
-              dayStartMin={event.dayStartMin}
-              dayEndMin={event.dayEndMin}
               onPatch={patchTrack}
               onDelete={removeTrack}
               onClose={() => setEditingTrack(null)}
@@ -1341,8 +1339,6 @@ export function AdminPage() {
           <AdminBreaks
             breaks={bundle.breaks}
             days={dayList}
-            dayStartMin={event.dayStartMin}
-            dayEndMin={event.dayEndMin}
             onCreate={addBreak}
             onPatch={patchBreak}
             onDelete={removeBreak}
@@ -1843,10 +1839,10 @@ export function AdminPage() {
                   </ControlShell>
                 </Field>
                 <Field label="Day starts">
-                  <TimeSelect aria-label="Day starts" value={dayStart} onChange={setDayStart} from={0} to={24 * 60} step={15} beyond={null} />
+                  <TimeField aria-label="Day starts" className="w-full" value={dayStart} onChange={setDayStart} />
                 </Field>
                 <Field label="Day ends">
-                  <TimeSelect aria-label="Day ends" value={dayEnd} onChange={setDayEnd} from={0} to={24 * 60} step={15} beyond={null} />
+                  <TimeField aria-label="Day ends" className="w-full" value={dayEnd} onChange={setDayEnd} />
                 </Field>
               </FormGrid>
             </SettingAnchor>
@@ -2387,8 +2383,6 @@ function TrackHoursFields({
   end,
   windows,
   days,
-  dayStartMin,
-  dayEndMin,
   onStart,
   onEnd,
   onWindows,
@@ -2397,9 +2391,6 @@ function TrackHoursFields({
   end: string;
   windows: TrackWindowDto[];
   days: string[];
-  /** The event's day, which is the fine-grained part of every time list. */
-  dayStartMin: number;
-  dayEndMin: number;
   onStart: (next: string) => void;
   onEnd: (next: string) => void;
   onWindows: (next: TrackWindowDto[]) => void;
@@ -2424,24 +2415,10 @@ function TrackHoursFields({
     <div className="space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
       <FormRow>
         <Field label="From">
-          <TimeSelect
-              aria-label="From"
-              className="w-28"
-              value={start}
-              onChange={onStart}
-              from={dayStartMin}
-              to={dayEndMin}
-            />
+          <TimeField aria-label="From" value={start} onChange={onStart} />
         </Field>
         <Field label="To" hint={minutesOf(end) > minutesOf(start) ? undefined : 'Must be later.'}>
-          <TimeSelect
-              aria-label="To"
-              className="w-28"
-              value={end}
-              onChange={onEnd}
-              from={dayStartMin}
-              to={dayEndMin}
-            />
+          <TimeField aria-label="To" value={end} onChange={onEnd} />
         </Field>
       </FormRow>
 
@@ -2484,24 +2461,10 @@ function TrackHoursFields({
             </Select>
           </Field>
           <Field label="From">
-            <TimeSelect
-              aria-label="From"
-              className="w-28"
-              value={from}
-              onChange={setFrom}
-              from={dayStartMin}
-              to={dayEndMin}
-            />
+            <TimeField aria-label="From" value={from} onChange={setFrom} />
           </Field>
           <Field label="To">
-            <TimeSelect
-              aria-label="To"
-              className="w-28"
-              value={to}
-              onChange={setTo}
-              from={dayStartMin}
-              to={dayEndMin}
-            />
+            <TimeField aria-label="To" value={to} onChange={setTo} />
           </Field>
           <SecondaryButton onClick={addDay} disabled={!day || minutesOf(to) <= minutesOf(from)}>
             Add day
@@ -2516,8 +2479,6 @@ function TrackEditor({
   track,
   sessions,
   days,
-  dayStartMin,
-  dayEndMin,
   onPatch,
   onDelete,
   onClose,
@@ -2527,8 +2488,6 @@ function TrackEditor({
   sessions: number;
   /** Every date the event runs, for the per-day rows. */
   days: string[];
-  dayStartMin: number;
-  dayEndMin: number;
   onPatch: (track: TrackDto, patch: TrackWrite) => Promise<boolean>;
   onDelete: (track: TrackDto) => Promise<boolean>;
   onClose: () => void;
@@ -2644,8 +2603,6 @@ function TrackEditor({
             end={end}
             windows={windows}
             days={days}
-            dayStartMin={dayStartMin}
-            dayEndMin={dayEndMin}
             onStart={setStart}
             onEnd={setEnd}
             onWindows={setWindows}

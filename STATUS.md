@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1088**, lint clean, build clean.
+nothing local is unsaved. Suite at **1100**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -274,9 +274,11 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
     arrowing through the list reads the row you land on. On a phone, the
     Enter key reads *Go* at the gate and *Search* in the search box. **Every
     time field** (session Start, break From/To, track hours, Day starts/ends)
-    is now the same dropdown as Room and Day: check both themes, that typing
-    "14" jumps to 14:00, and that a break at 07:30 is still offered on a
-    nine o'clock day (half-hours outside the day, five minutes inside). Two
+    is now a box plus a chevron: type `930` or `2pm` and tab away — it reads
+    09:30 / 14:00; type `noon` — the box goes red and reverts on blur; ↑/↓
+    move five minutes; the chevron opens quarter hours dropped *below* the
+    field, in both themes. Enter in the box settles the time and does **not**
+    save the dialog; a second Enter does. Two
     from your 2026-09-05 notes: in **Arrange**, a dropped block stays put and
     never flashes back to its old slot before landing; and with the theme on
     *System*, flipping the OS to dark re-themes the page at once, menu closed.

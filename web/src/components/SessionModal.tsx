@@ -35,7 +35,7 @@ import {
 } from '@shared/sessionLimits';
 import { RemoveIcon } from './icons';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
-import { TimeSelect } from './TimeSelect';
+import { TimeField } from './TimeField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Chip,
@@ -615,17 +615,12 @@ export function SessionModal({
                 </SelectContent>
               </Select>
             </Field>
-            {/* The day's hours in 5-minute steps; an organiser also gets the
-                rest of the clock, coarsely, for the odd early start. An
-                attendee gets only the window the server will accept. */}
-            <Field label="Start">
-              <TimeSelect
+            <Field label="Start" hint="Type it, or pick a quarter hour.">
+              <TimeField
                 aria-label="Start"
+                className="w-full"
                 value={start}
                 onChange={setStart}
-                from={dayStartMin}
-                to={dayEndMin}
-                beyond={isAdmin ? 30 : null}
                 disabled={!canMove}
               />
             </Field>

@@ -26,18 +26,19 @@ All notable changes to this project are documented here.
 
 ### Changed
 
-- **The time fields are the app's own, like every other dropdown.** A
-  session's start, a break's from and to, a track's hours and the day's
-  own start and end were the browser's clock widget: segmented digits with
-  the operating system's blue highlight, a clock glyph that could only be
-  dimmed or inverted, and a popup that could not be themed at all — the one
-  control left on the page that looked like the browser rather than the
-  app. They are now the same list control as Room, Day and Duration, in the
-  same border, height and focus ring, offering the event's day in
-  five-minute steps (the only grid the calendar accepts anyway) and, for an
-  organiser, the rest of the clock in half-hours for the odd early start.
-  Typing "14" jumps to 14:00. A time that was saved off the grid still shows
-  and re-saves as it was.
+- **The time fields are the app's own: type it, or pick a quarter hour.** A
+  session's start, a break's from and to, a track's hours and the day's own
+  start and end were the browser's clock widget: segmented digits with the
+  operating system's blue highlight, a clock glyph that could only be dimmed
+  or inverted, and a popup that could not be themed at all — the one control
+  left on the page that looked like the browser rather than the app. Each is
+  now a box in the app's own field, with a chevron beside it that opens the
+  same list control as Room and Day. The box takes what you would actually
+  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
+  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
+  quarter hours, for when a glance beats typing. Something that is not a
+  time is marked while it sits in the box and put back when you leave. A
+  time saved off the grid still shows and re-saves as it was.
 
 ## [0.3.0] — 2026-09-05
 
