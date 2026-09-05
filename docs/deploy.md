@@ -111,6 +111,17 @@ afternoon):
   the hashes of every device and speaker code, so whoever holds it can
   become anyone here.
 
+**What a restore does to sign-ins.** An identity is its cookie, and the
+cookie is checked against `COOKIE_SECRET` and only ever sent to the host
+that set it. So a backup restored onto a **replacement box at the same
+address with the same secret** brings everyone back still signed in — that
+is what it is for. Restored under a **different secret**, every visitor
+comes back a stranger *and* finds their name held by their former self (see
+*Rotating it* below, and the `DELETE FROM event_identities` line). Restored
+at a **different address**, nobody is signed in whatever the secret,
+because browsers will not send the cookie there. None of this stops the
+file's holder reading it — hence the encryption.
+
 Neither replaces a scheduled backup on the host, which is the one that
 runs when nobody remembers to click anything. `VACUUM INTO` is safe
 against a live WAL database:

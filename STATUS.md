@@ -325,6 +325,19 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
+- **Hash identity and calendar tokens at rest.** From your security question
+  (2026-09-05): a copy of the database — a backup, a volume snapshot, a
+  screenshot of a `SELECT` — should not be a sign-in credential. The tokens
+  are random (~131 bits), so a plain `SHA-256` at rest is enough: cookie and
+  feed URL keep carrying the plaintext, the server hashes on lookup. Migration
+  018 hashes `identities.token` and `ics_token` in place, which keeps every
+  existing cookie working and every old backup restorable. `identity.ts` and
+  `agenda.ts:78` change; the backup warning and the threat-model row get
+  weaker in the good sense. It does **not** protect anyone from the running
+  server — see ARCHITECTURE §Security, *The running server can act as any
+  user* — and the file still needs encrypting for the names in it and the
+  crackable speaker-code hashes. Its own branch: it is a migration on identity.
+
 - **Search cannot find a person.** Phases 2–4 of
   `_planning/specs/search.md`, which is written and settled — phase 1
   (event-wide filters and the "Search everywhere" hand-off) shipped

@@ -975,7 +975,7 @@ explicitly *not* built to withstand a targeted attacker with time.
 | Leaking one person's agenda | Stars and interest are never broadcast and never attributed in any payload; only aggregate counts are exposed |
 | A leaked calendar URL | The token grants only what its owner's role already allows, and only for that one event; revoking the role kills the feed |
 | A leaked `COOKIE_SECRET` | Little on its own — a forged signature still needs a real 131-bit token, and an unknown one just mints an anonymous identity. Kept out of the database's volume so a copied DB and the secret do not leak together |
-| A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget |
+| A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget. If one leaks open anyway: identity tokens need `COOKIE_SECRET` as well before they sign anyone in, but `ics_token`s work against the live server as they are, and speaker-code hashes (~37 bits) crack offline — revoke roles and codes |
 
 **Out of scope, accepted:**
 
@@ -996,6 +996,24 @@ explicitly *not* built to withstand a targeted attacker with time.
   instance host is trusted, full stop. If that ever stops being true, hash the
   tokens at rest (they are random, so a plain SHA-256 lookup works) rather
   than bolting auth onto the trust boundary.
+- **The running server can act as any user, and nothing done in the browser
+  changes that.** Considered and declined (2026-09-05). Hashing the token
+  client-side before sending it only makes the hash the bearer credential: the
+  server still sees, and can replay, whatever the client presents, so it buys
+  nothing against the host — and the token is random and instance-specific, so
+  there is no reused secret to shield. What *would* work is asymmetric
+  challenge–response — a per-device private key, i.e. WebAuthn/passkeys — and
+  it buys exactly one thing: the host cannot act as you **while you are away**.
+  It cannot stop a host that serves the JavaScript from acting as you while you
+  are on the page, so "the owner can't eavesdrop" is not on offer to any web
+  app. Against that one gain: a key prompt at the gate (the highest-stakes
+  screen, on a phone, at a door), per-device enrolment instead of link phrases,
+  a calendar feed that cannot sign and stays a bearer token regardless, and
+  giving up the `httpOnly` cookie for a key XSS can reach. Not worth it for a
+  schedule. If a deployment ever needs it, the identity model — one row, many
+  devices — can carry a public key per device without redesign. The cheaper
+  layer that *does* pay for itself is hashing tokens at rest (previous point),
+  which makes a copy of the database useless as a credential; do that first.
 - **No CSRF tokens.** Cookies are `SameSite=Lax`, which covers the cross-site
   form-post case for the state-changing verbs used here. Any future `GET` that
   mutates state would break that assumption.
