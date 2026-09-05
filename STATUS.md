@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1046**, lint clean, build clean.
+nothing local is unsaved. Suite at **1074**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -31,15 +31,23 @@ nothing local is unsaved. Suite at **1046**, lint clean, build clean.
   `tests/importExport.test.ts` — and Manage Event → Backup has four checkboxes
   (`?include=` on the route) for what an export carries. Queued as R26.
 
+- **The comment box's `@` menu** (2026-09-05). Typing `@` did nothing until the
+  whole username was spelled right; it now opens a filtered list of the event's
+  people and inserts the name it resolved. Code-complete, 27 tests, queued as
+  R27 — the last item in the browser list, not the first, because it is the
+  only one there that is not part of the checklist pass.
+
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
-`[Unreleased]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
+`[0.3.0]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
 documented in ARCHITECTURE §Form controls, and what survives of either is the
 **Forms** backlog group below. Linked sessions, the everyone-is-a-person spec,
 the breaks rework and session formats are likewise code-complete and logged
 (migrations 014–017); all that is left of them is the browser pass in
-**Awaiting your review**. 0.2.0 was tagged 2026-08-30; everything since is under
-CHANGELOG `[Unreleased]`.
+**Awaiting your review**. Everything collected since 0.2.3 (2026-09-02) is now
+cut as **0.3.0** in the CHANGELOG; `[Unreleased]` is empty again. Only v0.1.0
+and v0.2.0 carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling
+before the next cut.
 
 The 2026-08-29 UI-overhaul/permissions/pitches plan was **retired on
 2026-09-04**: of its 28 open boxes, 25 had shipped without being ticked (every
@@ -106,7 +114,8 @@ that is where these break.
 Freshest first — **R26 is the export/import work and R19–R25 are today's
 checklist pass**, all of them ones I have never seen rendered; R1–R2 are the
 forms overhaul and the grid-block fix, R3–R5 the mentions, linked-sessions and
-clash work. Each takes a minute.
+clash work. **R27, the `@` menu, is at the foot of the list** — newest of all,
+but it belongs beside R3 rather than in the checklist run. Each takes a minute.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -264,6 +273,13 @@ clash work. Each takes a minute.
     Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
     arrowing through the list reads the row you land on. On a phone, the
     Enter key reads *Go* at the gate and *Search* in the search box.
+27. **R27 · The `@` menu in the comment box.** Open a session and type `@` in
+    the comment field. *Pass:* a list of the event's people appears above the
+    field and narrows as you type; ↑/↓ moves the highlight, Enter *or* Tab
+    inserts the name with a space after it, Escape closes only the menu (not
+    the session panel). Typing a surname finds the person; typing prose past a
+    stray `@` closes the menu and backspacing reopens it; `a@b.com` opens
+    nothing. On a phone, tapping a name inserts it and the keyboard stays up.
 
 ### Decisions I need from you
 
@@ -366,12 +382,14 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentioning a person: the delivery half.** The **first cut landed
-  2026-09-04** (CHANGELOG `[Unreleased]`) — a comment's author links to their
-  profile, and `@username` in a comment body links too, via a shared tokenizer
-  (`shared/mentions.ts`, `web/src/components/MentionText.tsx`). It resolves but
-  does not yet *deliver*: a mention links, it does not land anywhere that
-  survives a closed tab. Full design in
+- **Mentioning a person: the delivery half.** Resolution is **done**: the
+  first cut landed 2026-09-04 (a comment's author links to their profile,
+  `@username` in a body links, via the shared tokenizer in
+  `shared/mentions.ts` + `MentionText.tsx`), and the `@` autocomplete landed
+  2026-09-05 (`MentionTextArea.tsx`, `findMentionQuery`/`matchMentionNames`),
+  so a mention is now picked rather than spelled. Both are in CHANGELOG
+  `[0.3.0]`. What is not done is *delivery*: a mention links, it does not
+  land anywhere that survives a closed tab. Full design in
   `_planning/specs/mentions-and-notifications.md`.
 
   What is left is everything that makes a mention arrive. There is no
@@ -396,8 +414,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   adoption (`adoptProfile` in `people.ts`), not be dropped. (The first cut
   resolves by username only, so an unclaimed profile is not yet a mention
   target; that arrives with delivery.) Extending mentions from comments to
-  descriptions, bios and pitches — which render through `renderMarkdown` — is a
-  separate step queued behind this.
+  descriptions, bios and pitches — which render through `renderMarkdown`, and
+  whose composers do not yet have the `@` menu — is a separate step queued
+  behind this.
 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** Noticed 2026-09-02 when a `git add -A` swept
@@ -421,7 +440,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   the one that stays safe as new working files appear.
 
 - **The drop still flickers, and the fix so far only made it smaller.**
-  Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
+  Reported 2026-08-31, after the two fixes in CHANGELOG `[0.3.0]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
   visible pop, "just maybe a bit less glitchy". What is already ruled out is
   the double-application — the drop hold is absolute now, so the server's echo
@@ -1000,7 +1019,7 @@ against the code on 2026-08-30:
   to the letter — there is no mail, upload or i18n anywhere in the tree.
 - **Per-room QR codes** — a code on a door that opens that room's schedule.
   Still out. Note that the tree now _has_ a QR encoder, added 2026-09-01 for
-  invite codes (CHANGELOG `[Unreleased]`, ARCHITECTURE §Invite QR codes), so
+  invite codes (CHANGELOG `[0.3.0]`, ARCHITECTURE §Invite QR codes), so
   what keeps this out is the decision and no longer the absence of the means.
 
 ## Voting: pitches yes, programme no
