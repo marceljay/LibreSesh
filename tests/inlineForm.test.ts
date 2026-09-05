@@ -100,7 +100,9 @@ describe('the gate is a login a password manager can see', () => {
     // username field share a <form>; the gate had neither, so the event
     // password could not be saved or filled. Phase 0 finding 8.
     expect(gate).toContain('<InlineForm onSubmit={() => void submit()}>');
-    expect(gate).toMatch(/type="password"\s+name="password"\s+autoComplete="current-password"/);
+    // The field is a `PasswordInput` now (its eye is pinned in
+    // `passwordInput.test.ts`); the manager-facing attributes are unchanged.
+    expect(gate).toMatch(/<PasswordInput\s+name="password"\s+autoComplete="current-password"/);
     expect(gate).toMatch(/name="username"\s+autoComplete="username"/);
   });
 

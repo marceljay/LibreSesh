@@ -9,6 +9,7 @@ import {
   ControlShell,
   Field,
   InlineForm,
+  PasswordInput,
   PrimaryButton,
   RoleBadge,
   SecondaryButton,
@@ -382,8 +383,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
 
         <Field label="Event password">
           <ControlShell invalid={Boolean(error)}>
-            <TextInput
-              type="password"
+            <PasswordInput
               name="password"
               autoComplete="current-password"
               enterKeyHint="go"

@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1102**, lint clean, build clean.
+nothing local is unsaved. Suite at **1106**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -22,7 +22,11 @@ nothing local is unsaved. Suite at **1102**, lint clean, build clean.
   landing page's front door (its own button sizing, *New event*/*Import* moved
   out of the footer into a block that names the instance password, the board
   preview framed as a browser window, GitHub's mark on the source link).
-  All code-complete and queued for your eyes as R19–R25.
+  All code-complete and queued for your eyes as R19–R25. From 2026-09-05:
+  an **eye beside the event password** at the gate that shows what you
+  typed (the `PasswordInput` primitive in `ui.tsx`, used only there so far —
+  the instance-password boxes on New event, Import and the admin pages are
+  still bare), filed under R26.
 
 - **Export ↔ import** (2026-09-04, from your backlog line *Import Export fix,
   also make it possible to select what should be exported*). Two commits: the
@@ -266,7 +270,9 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
     gate: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
     as well as the password box, and Enter with no name says *Pick a username
-    to enter*; the link phrase is **not** offered for saving. In Manage Event:
+    to enter*; the link phrase is **not** offered for saving; the **eye**
+    beside the password shows the characters and hides them again, without
+    submitting, and the caret stays where it was. In Manage Event:
     Enter adds a room from the **capacity** box, a break from any of its
     boxes, and the unlock box and the QR check both submit on Enter; adding a
     track with a screen reader on announces *… added*. The **?** beside
