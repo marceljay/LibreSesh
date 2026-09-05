@@ -9,6 +9,7 @@ import {
   Field,
   FormRow,
   FormStack,
+  InlineForm,
   PrimaryButton,
   SecondaryButton,
   Section,
@@ -157,51 +158,52 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
           </p>
         )}
 
-        <FormRow>
-          <div className="min-w-40 flex-1">
-            <Field label="New break">
+        <InlineForm onSubmit={() => void add()}>
+          <FormRow>
+            <div className="min-w-40 flex-1">
+              <Field label="New break">
+                <ControlShell>
+                  <TextInput
+                    value={draft.label}
+                    onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                    placeholder="Lunch"
+                    maxLength={60}
+                  />
+                </ControlShell>
+              </Field>
+            </div>
+            <Field label="From">
               <ControlShell>
                 <TextInput
-                  value={draft.label}
-                  onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && void add()}
-                  placeholder="Lunch"
-                  maxLength={60}
+                  type="time"
+                  step={300}
+                  value={draft.start}
+                  onChange={(e) => setDraft({ ...draft, start: e.target.value })}
                 />
               </ControlShell>
             </Field>
-          </div>
-          <Field label="From">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
-                value={draft.start}
-                onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+            <Field label="To">
+              <ControlShell>
+                <TextInput
+                  type="time"
+                  step={300}
+                  value={draft.end}
+                  onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+                />
+              </ControlShell>
+            </Field>
+            <Field label="Day">
+              <DayPicker
+                value={draft.date}
+                days={days}
+                onChange={(date) => setDraft({ ...draft, date })}
               />
-            </ControlShell>
-          </Field>
-          <Field label="To">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
-                value={draft.end}
-                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-              />
-            </ControlShell>
-          </Field>
-          <Field label="Day">
-            <DayPicker
-              value={draft.date}
-              days={days}
-              onChange={(date) => setDraft({ ...draft, date })}
-            />
-          </Field>
-          <PrimaryButton onClick={() => void add()} disabled={!valid(draft) || busy}>
-            Add break
-          </PrimaryButton>
-        </FormRow>
+            </Field>
+            <PrimaryButton type="submit" disabled={!valid(draft) || busy}>
+              Add break
+            </PrimaryButton>
+          </FormRow>
+        </InlineForm>
       </FormStack>
 
       {editing && (

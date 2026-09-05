@@ -281,7 +281,7 @@ export function toSessionDto(
 }
 
 /**
- * Everyone speaking at each of `sessionIds`, in billing order, in one query.
+ * Everyone speaking at each of `sessionIds`, in credit order, in one query.
  * Sessions with nobody credited are simply absent from the map.
  */
 export function speakersBySession(db: Db, sessionIds: number[]): Map<number, PersonRef[]> {

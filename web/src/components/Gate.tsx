@@ -5,7 +5,16 @@ import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
 import { takeInvite } from '../lib/inviteLink';
 import { useMe } from '../lib/useMe';
-import { ControlShell, Field, PrimaryButton, RoleBadge, SecondaryButton, TextInput, linkClass } from './ui';
+import {
+  ControlShell,
+  Field,
+  InlineForm,
+  PrimaryButton,
+  RoleBadge,
+  SecondaryButton,
+  TextInput,
+  linkClass,
+} from './ui';
 
 export interface GateProps {
   slug: string;
@@ -124,7 +133,13 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   };
 
   const submit = async (claimProfile?: boolean) => {
-    if (!password.trim() || !name.trim() || busy) return;
+    if (busy || !password.trim()) return;
+    // The form submits from the password box too, and `noValidate` means the
+    // browser will not point at the empty name field — so this has to.
+    if (!name.trim()) {
+      setError('Pick a username to enter');
+      return;
+    }
     setBusy(true);
     setError(null);
     setSuggestion(null);
@@ -217,6 +232,9 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
     >
       <ControlShell>
         <TextInput
+          name="username"
+          autoComplete="username"
+          enterKeyHint="go"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
@@ -304,8 +322,16 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
                 Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
               </button>
             )}
+            {!invite && (
+              <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">{nameField}</div>
+            )}
           </>
-        ) : invite ? (
+        ) : (
+          /* One form for both ways in: the password box and the name box submit
+             it, so Enter in either enters — and a password manager, which only
+             sees a login when the fields share a form, can save and fill it. */
+          <InlineForm onSubmit={() => void submit()}>
+          {invite ? (
           <>
             <div className="mb-1 mt-3 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
               <span>Invited as</span>
@@ -330,7 +356,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
             )}
             <PrimaryButton
               className="mt-4 w-full py-2 text-sm"
-              onClick={() => void submit()}
+              type="submit"
               disabled={busy || nameMissing}
             >
               {busy ? 'Entering…' : 'Enter'}
@@ -358,9 +384,11 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
           <ControlShell invalid={Boolean(error)}>
             <TextInput
               type="password"
+              name="password"
+              autoComplete="current-password"
+              enterKeyHint="go"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void submit()}
               placeholder="••••••••"
               autoFocus
             />
@@ -383,21 +411,22 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
 
         <PrimaryButton
           className="mt-4 w-full py-2 text-sm"
-          onClick={() => void submit()}
+          type="submit"
           disabled={busy || nameMissing}
         >
           {busy ? 'Checking…' : 'Enter schedule'}
         </PrimaryButton>
           </>
-        )}
-
-        {!invite && (
-          <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">{nameField}</div>
+          )}
+          {!invite && (
+            <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">{nameField}</div>
+          )}
+          </InlineForm>
         )}
 
         <div className="mt-4 border-t border-stone-100 dark:border-stone-800 pt-4">
           {linkMode ? (
-            <>
+            <InlineForm onSubmit={() => void link()}>
               <Field
                 label="Link phrase"
                 hint="From “Link another device” in the menu behind your name on your other device — or the speaker phrase an organiser gave you."
@@ -406,8 +435,9 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
                   <TextInput
                     value={phrase}
                     onChange={(e) => setPhrase(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && void link()}
                     placeholder="house-dog-erratic"
+                    autoComplete="off"
+                    enterKeyHint="go"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
@@ -417,12 +447,12 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
               <PrimaryButton
                 className="mt-3 w-full py-2 text-sm"
-                onClick={() => void link()}
+                type="submit"
                 disabled={busy}
               >
                 {busy ? 'Linking…' : 'Link this device'}
               </PrimaryButton>
-            </>
+            </InlineForm>
           ) : (
             <button
               type="button"

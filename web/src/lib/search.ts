@@ -14,7 +14,7 @@
 export interface SearchableSession {
   id: number;
   title: string;
-  /** Everyone billed, in order. Searching matches any of them: "who is Ada
+  /** Everyone credited, in order. Searching matches any of them: "who is Ada
    *  speaking with?" is the same question as "what is Ada speaking at". */
   speakers: { name: string }[];
   description: string;

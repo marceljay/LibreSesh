@@ -152,7 +152,7 @@ conflated is worth keeping in view:
    request carried, because the session form posts the whole session on every
    save and a presence check reads an untouched field as a move.
 3. **May they delete it?** The creator and the organisers. `assertMayMutate` is
-   called without `speaksHere` on the delete route: being billed on a session
+   called without `speaksHere` on the delete route: being credited on a session
    is a claim on its words, not a mandate to take it off the programme.
 
 Editing is **not** gated on `session.create_open`. Creating and editing are
@@ -744,9 +744,17 @@ Three consequences worth knowing:
   front door refuses is refused by the other, because there is only one thing to
   refuse it.
 
-Nothing reads an export back. Doing so would need decisions this route does not
-have to make — a new slug, fresh ids, and what to do with authorship that names
-identities the target instance has never met.
+An export *is* read back, but not as a second format: `importDocument.ts`
+recognises one (`exportedAt`, or the ids only an export has) and translates it
+into the authoring document — ids to the names they stood for, minutes to
+`HH:MM`, `null` to an absent key — before the schema ever sees it. The export
+stays an archive keyed by ids, every export ever downloaded becomes importable,
+and there is one importer to keep right. The translation says what it cannot
+carry as the first warning: profiles, pitches, contributions and star counts
+are a record of an event being used, which is not what an import builds. The
+one decision it hands back is the slug — an export names the event it came
+from, and the importer refuses a taken one like any other. The round trip is
+pinned in `tests/importExport.test.ts`: export, import, export, compare.
 
 ### Linked sessions
 
@@ -919,6 +927,30 @@ server sends a code plus details, never prose the client renders), and
 `lib/plural.ts` picks a plural form via `Intl.PluralRules` instead of appending
 an "s". Both are enforced by source-text tests. This is not i18n — there is no
 translation layer and none is planned — it is keeping the option open.
+
+### Where a failure goes
+
+One rule, by what the person can do about it, and it is the rule the code has
+followed since the forms overhaul rather than a new one:
+
+- **A failure they can fix by changing what they typed renders where they
+  typed it, with their text intact.** In a dialog that is `FormError` in the
+  footer, beside the button they pressed — never at the top of a form they have
+  scrolled away from. On a page it is `FieldError` under the control (the
+  profile's field-at-a-time editors, the gate). The form stays open holding
+  the message until the next attempt clears it.
+- **A failure they cannot fix from the form goes to the toast:** the network,
+  a row someone else changed first (`stale`), an unexpected status. A form
+  cannot resolve those, so it must not hold them.
+
+Both paths get their sentence from `errorText`; the split is only *where* it
+lands. The one deliberate exception is the admin tab's add-rows (`InlineCreate`
+and the room and break rows): a failed add is a toast even when it is the
+person's own typo, because the open row has no line under it to put a message
+on, the box keeps the text so the fix is a word away, and the row is used a
+handful of times an event. The same class of failure must not be a toast in
+one section and inline in another; if a new screen wants a third path, this is
+the paragraph to change first.
 
 ## Security
 

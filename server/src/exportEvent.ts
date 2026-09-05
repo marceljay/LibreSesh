@@ -18,6 +18,7 @@ import {
   tagIdsBySession,
 } from './mappers.js';
 import { trackWindowsFor } from './trackHours.js';
+import { EXPORT_PARTS, type ExportPart } from './shared/exportParts.js';
 import type { EventExport } from './shared/types.js';
 
 /**
@@ -32,22 +33,19 @@ import type { EventExport } from './shared/types.js';
  *
  * Soft-deleted rows are left out too: this is the event as it stands, not its
  * undo history, which lives in Manage Event → Trash.
+ *
+ * `parts` is what the organiser ticked: the frame — settings, rooms, tracks,
+ * tags, formats, breaks — is always written, and each of the four parts in
+ * `EXPORT_PARTS` is written only if asked for. A part left out is *absent*
+ * from the file rather than empty, so a reader can tell "none" from "not
+ * exported"; the queries for it are not run at all.
  */
-export function exportEvent(db: Db, event: EventRow): EventExport {
+export function exportEvent(
+  db: Db,
+  event: EventRow,
+  parts: ReadonlySet<ExportPart> = new Set(EXPORT_PARTS),
+): EventExport {
   const eventId = event.id;
-  const names = new NameResolver(db, eventId);
-  const speakers = speakerNames(db, eventId);
-  const sessionSpeakers = speakersBySession(
-    db,
-    db
-      .prepare<[number], { id: number }>(
-        'SELECT id FROM sessions WHERE event_id = ? AND deleted_at IS NULL',
-      )
-      .all(eventId)
-      .map((r) => r.id),
-  );
-  const speakerName = (id: number | null): string =>
-    id === null ? '' : (speakers.get(id) ?? '');
 
   const rooms = db
     .prepare<[number], RoomRow>(
@@ -78,72 +76,11 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       'SELECT * FROM session_formats WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
     )
     .all(eventId);
-  const people = db
-    .prepare<[number], PersonRow>(
-      'SELECT * FROM people WHERE event_id = ? AND deleted_at IS NULL ORDER BY name',
-    )
-    .all(eventId);
-  const sessions = db
-    .prepare<[number], SessionRow>(
-      'SELECT * FROM sessions WHERE event_id = ? AND deleted_at IS NULL ORDER BY starts_at, id',
-    )
-    .all(eventId);
-  const proposals = db
-    .prepare<[number], ProposalRow>(
-      'SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL ORDER BY created_at, id',
-    )
-    .all(eventId);
-  const contributions = db
-    .prepare<[number], ContributionRow>(
-      `SELECT c.* FROM contributions c JOIN sessions s ON s.id = c.session_id
-        WHERE s.event_id = ? AND c.deleted_at IS NULL AND s.deleted_at IS NULL
-        ORDER BY c.session_id, c.created_at, c.id`,
-    )
-    .all(eventId);
+  // Authorship survives as a display name, so the resolver is only needed by
+  // the parts that carry one.
+  const names = new NameResolver(db, eventId);
 
-  const sessionTags = tagIdsBySession(
-    db,
-    sessions.map((s) => s.id),
-  );
-  const proposalTags = new Map<number, number[]>();
-  for (const row of db
-    .prepare<[number], { proposal_id: number; tag_id: number }>(
-      `SELECT pt.proposal_id, pt.tag_id FROM proposal_tags pt
-         JOIN proposals p ON p.id = pt.proposal_id
-        WHERE p.event_id = ?`,
-    )
-    .all(eventId)) {
-    const list = proposalTags.get(row.proposal_id);
-    if (list) list.push(row.tag_id);
-    else proposalTags.set(row.proposal_id, [row.tag_id]);
-  }
-
-  // Aggregates only. How many people starred a session is part of the record
-  // an organiser wants; which of them did is not theirs to export.
-  const starCounts = new Map(
-    db
-      .prepare<[number], { session_id: number; n: number }>(
-        `SELECT st.session_id AS session_id, COUNT(*) AS n
-           FROM stars st JOIN sessions s ON s.id = st.session_id
-          WHERE s.event_id = ? AND s.deleted_at IS NULL
-          GROUP BY st.session_id`,
-      )
-      .all(eventId)
-      .map((r) => [r.session_id, r.n] as const),
-  );
-  const interestCounts = new Map(
-    db
-      .prepare<[number], { proposal_id: number; n: number }>(
-        `SELECT pi.proposal_id AS proposal_id, COUNT(*) AS n
-           FROM proposal_interest pi JOIN proposals p ON p.id = pi.proposal_id
-          WHERE p.event_id = ? AND p.deleted_at IS NULL
-          GROUP BY pi.proposal_id`,
-      )
-      .all(eventId)
-      .map((r) => [r.proposal_id, r.n] as const),
-  );
-
-  return {
+  const dump: EventExport = {
     format: 'libresesh.event',
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -189,7 +126,15 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       endMin: b.end_min,
       date: b.date,
     })),
-    people: people.map((p) => ({
+  };
+
+  if (parts.has('people')) {
+    const people = db
+      .prepare<[number], PersonRow>(
+        'SELECT * FROM people WHERE event_id = ? AND deleted_at IS NULL ORDER BY name',
+      )
+      .all(eventId);
+    dump.people = people.map((p) => ({
       id: p.id,
       name: p.name,
       bio: p.bio,
@@ -197,8 +142,37 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       claimed: p.identity_id !== null,
       createdAt: p.created_at,
       updatedAt: p.updated_at,
-    })),
-    sessions: sessions.map((s) => ({
+    }));
+  }
+
+  if (parts.has('sessions')) {
+    const sessions = db
+      .prepare<[number], SessionRow>(
+        'SELECT * FROM sessions WHERE event_id = ? AND deleted_at IS NULL ORDER BY starts_at, id',
+      )
+      .all(eventId);
+    const sessionSpeakers = speakersBySession(
+      db,
+      sessions.map((s) => s.id),
+    );
+    const sessionTags = tagIdsBySession(
+      db,
+      sessions.map((s) => s.id),
+    );
+    // Aggregates only. How many people starred a session is part of the record
+    // an organiser wants; which of them did is not theirs to export.
+    const starCounts = new Map(
+      db
+        .prepare<[number], { session_id: number; n: number }>(
+          `SELECT st.session_id AS session_id, COUNT(*) AS n
+             FROM stars st JOIN sessions s ON s.id = st.session_id
+            WHERE s.event_id = ? AND s.deleted_at IS NULL
+            GROUP BY st.session_id`,
+        )
+        .all(eventId)
+        .map((r) => [r.session_id, r.n] as const),
+    );
+    dump.sessions = sessions.map((s) => ({
       id: s.id,
       roomId: s.room_id,
       trackId: s.track_id,
@@ -217,8 +191,42 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       createdAt: s.created_at,
       updatedAt: s.updated_at,
       starCount: starCounts.get(s.id) ?? 0,
-    })),
-    proposals: proposals.map((p) => ({
+    }));
+  }
+
+  if (parts.has('proposals')) {
+    const proposals = db
+      .prepare<[number], ProposalRow>(
+        'SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL ORDER BY created_at, id',
+      )
+      .all(eventId);
+    const proposalTags = new Map<number, number[]>();
+    for (const row of db
+      .prepare<[number], { proposal_id: number; tag_id: number }>(
+        `SELECT pt.proposal_id, pt.tag_id FROM proposal_tags pt
+           JOIN proposals p ON p.id = pt.proposal_id
+          WHERE p.event_id = ?`,
+      )
+      .all(eventId)) {
+      const list = proposalTags.get(row.proposal_id);
+      if (list) list.push(row.tag_id);
+      else proposalTags.set(row.proposal_id, [row.tag_id]);
+    }
+    const interestCounts = new Map(
+      db
+        .prepare<[number], { proposal_id: number; n: number }>(
+          `SELECT pi.proposal_id AS proposal_id, COUNT(*) AS n
+             FROM proposal_interest pi JOIN proposals p ON p.id = pi.proposal_id
+            WHERE p.event_id = ? AND p.deleted_at IS NULL
+            GROUP BY pi.proposal_id`,
+        )
+        .all(eventId)
+        .map((r) => [r.proposal_id, r.n] as const),
+    );
+    const speakers = speakerNames(db, eventId);
+    const speakerName = (id: number | null): string =>
+      id === null ? '' : (speakers.get(id) ?? '');
+    dump.proposals = proposals.map((p) => ({
       id: p.id,
       title: p.title,
       description: p.description,
@@ -230,8 +238,18 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       createdAt: p.created_at,
       updatedAt: p.updated_at,
       interestCount: interestCounts.get(p.id) ?? 0,
-    })),
-    contributions: contributions.map((c) => ({
+    }));
+  }
+
+  if (parts.has('contributions')) {
+    const contributions = db
+      .prepare<[number], ContributionRow>(
+        `SELECT c.* FROM contributions c JOIN sessions s ON s.id = c.session_id
+          WHERE s.event_id = ? AND c.deleted_at IS NULL AND s.deleted_at IS NULL
+          ORDER BY c.session_id, c.created_at, c.id`,
+      )
+      .all(eventId);
+    dump.contributions = contributions.map((c) => ({
       id: c.id,
       sessionId: c.session_id,
       kind: c.kind,
@@ -240,6 +258,8 @@ export function exportEvent(db: Db, event: EventRow): EventExport {
       createdByName: names.get(c.created_by),
       createdAt: c.created_at,
       hidden: c.hidden === 1,
-    })),
-  };
+    }));
+  }
+
+  return dump;
 }

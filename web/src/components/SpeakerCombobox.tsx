@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PersonDto } from '@shared/types';
 import { ControlShell, TextInput } from './ui';
+import { useListbox } from './useListbox';
 
 /**
  * One name the form will submit: a number for somebody already on the roster,
@@ -18,7 +19,7 @@ const normalize = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
  * never the silent result of free text — that silent default is exactly what
  * bred the "A. Lovelace" / "Ada Lovelace" twins.
  *
- * The chips are in billing order, which is the order they were added: the
+ * The chips are in credit order, which is the order they were added: the
  * first name is the one a cramped grid block truncates to. To reorder, remove
  * and add again — a drag handle for a list that is almost always one or two
  * names long would cost more than it is worth.
@@ -49,7 +50,6 @@ export function SpeakerCombobox({
   // null = not searching. The input is always empty otherwise: what has been
   // chosen lives in the chips, not in the field.
   const [query, setQuery] = useState<string | null>(null);
-  const [active, setActive] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
 
   const open = query !== null;
@@ -100,8 +100,7 @@ export function SpeakerCombobox({
       ? (query ?? '').trim().replace(/\s+/g, ' ')
       : null;
   const rowCount = matches.length + (creatable ? 1 : 0);
-
-  useEffect(() => setActive(0), [query]);
+  const room = max === undefined || value.length < max;
 
   // A press outside abandons the search; the chips are already committed.
   useEffect(() => {
@@ -127,6 +126,16 @@ export function SpeakerCombobox({
     // keystroke away: the input keeps focus, and typing reopens the list.
     setQuery(null);
   };
+
+  const listOpen = open && rowCount > 0 && room;
+  const list = useListbox({
+    open: listOpen,
+    count: rowCount,
+    resetOn: query,
+    onPick: add,
+    onEscape: () => setQuery(null),
+  });
+  const active = list.active;
 
   return (
     <div className="relative" ref={wrap}>
@@ -166,32 +175,23 @@ export function SpeakerCombobox({
           </span>
         ))}
 
-        {(max === undefined || value.length < max) && (
+        {room && (
         <TextInput
           value={query ?? ''}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setQuery(query ?? '')}
           onKeyDown={(e) => {
+            // Closed, Enter is the dialog's: it saves the session. Open, every
+            // key below is the list's first.
             if (!open) return;
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-              e.preventDefault();
-              if (rowCount > 0)
-                setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + rowCount) % rowCount);
-            } else if (e.key === 'Enter') {
-              e.preventDefault();
-              if (rowCount > 0) add(active);
-            } else if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
+            if (list.onKeyDown(e)) return;
+            if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
               // The chip-field convention: backspace on an empty field takes the
               // last one off, so a mistyped name is one key away from gone.
               onChange(value.slice(0, -1));
-            } else if (e.key === 'Escape') {
-              e.stopPropagation();
-              setQuery(null);
             }
           }}
-          role="combobox"
-          aria-expanded={open}
-          aria-autocomplete="list"
+          {...list.comboboxProps}
           maxLength={120}
           placeholder={
             onlySelf
@@ -204,17 +204,16 @@ export function SpeakerCombobox({
         )}
       </ControlShell>
 
-      {open && rowCount > 0 && (max === undefined || value.length < max) && (
+      {listOpen && (
         <ul
-          role="listbox"
+          {...list.listboxProps}
           className="absolute z-40 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           {matches.map((person, i) => (
             <li key={person.id}>
               <button
                 type="button"
-                role="option"
-                aria-selected={i === active}
+                {...list.optionProps(i)}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(i)}
                 className={`flex w-full items-baseline gap-1.5 px-3 py-2 text-start text-xs font-medium text-stone-700 dark:text-stone-200 ${
@@ -239,8 +238,7 @@ export function SpeakerCombobox({
             <li>
               <button
                 type="button"
-                role="option"
-                aria-selected={active === matches.length}
+                {...list.optionProps(matches.length)}
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => add(matches.length)}
                 className={`block w-full px-3 py-2 text-start text-xs font-medium text-blue-700 dark:text-blue-400 ${

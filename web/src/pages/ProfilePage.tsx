@@ -270,6 +270,7 @@ export function ProfilePage() {
                       value={draftName}
                       onChange={(e) => setDraftName(e.target.value)}
                       aria-label="Full name"
+                      enterKeyHint="done"
                       maxLength={120}
                       className="text-lg font-semibold"
                       autoFocus
@@ -446,6 +447,7 @@ export function ProfilePage() {
                       value={draftDisplayName}
                       onChange={(e) => setDraftDisplayName(e.target.value)}
                       aria-label="Username"
+                      enterKeyHint="done"
                       maxLength={40}
                       autoFocus
                     />

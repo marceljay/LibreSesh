@@ -27,6 +27,7 @@ import type {
   ViewMode,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
+import type { ExportPart } from '@shared/exportParts';
 
 /** Error carrying the server's machine-readable code, so callers can react to
  *  `stale`, `overlap` or `rate_limited` specifically. */
@@ -354,8 +355,12 @@ export const api = {
    *  admin-only, the other half of the profile roster. */
 
   /** The per-event JSON export is a plain authenticated GET, so the link in
-   *  Manage Event downloads it directly — no fetch, no blob, no wrapper. */
-  exportUrl: (slug: string) => `/api/e/${encode(slug)}/export.json`,
+   *  Manage Event downloads it directly — no fetch, no blob, no wrapper.
+   *  `parts` is what to include besides the frame; omit it for everything. */
+  exportUrl: (slug: string, parts?: readonly ExportPart[]) =>
+    `/api/e/${encode(slug)}/export.json${
+      parts === undefined ? '' : `?include=${parts.join(',')}`
+    }`,
 
   /**
    * Encrypted whole-instance backup. Outside `request` deliberately: the
@@ -408,9 +413,9 @@ export interface SessionWrite {
   title: string;
   description?: string;
   /**
-   * Everyone giving it, in billing order: a number for somebody already on the
+   * Everyone giving it, in credit order: a number for somebody already on the
    * roster, a name for somebody new — a name that matches nobody creates a
-   * person. Omit to leave the billing alone; `[]` clears it.
+   * person. Omit to leave the credits alone; `[]` clears it.
    */
   speakers?: (number | string)[];
   /** Watch-along links, http(s). `[]` clears them. */

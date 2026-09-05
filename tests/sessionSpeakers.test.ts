@@ -43,7 +43,7 @@ describe('a session bills everyone giving it', () => {
       .expect(201);
   };
 
-  it('keeps the billing order it was given', async () => {
+  it('keeps the credit order it was given', async () => {
     const res = await makeSession(['Ada Lovelace', 'Grace Hopper', 'Radia Perlman']);
     expect(res.body.speakers.map((p: { name: string }) => p.name)).toEqual([
       'Ada Lovelace',
@@ -83,7 +83,7 @@ describe('a session bills everyone giving it', () => {
     expect(again.body.speakers.map((p: { id: number }) => p.id)).toEqual([adaId]);
   });
 
-  it('replaces the whole billing on a PATCH, and clears it on an empty list', async () => {
+  it('replaces the whole credit list on a PATCH, and clears it on an empty list', async () => {
     const res = await makeSession(['Ada Lovelace', 'Grace Hopper']);
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
 
@@ -100,7 +100,7 @@ describe('a session bills everyone giving it', () => {
     expect(cleared.body.speakers).toEqual([]);
   });
 
-  it('leaves the billing alone when the patch says nothing about it', async () => {
+  it('leaves the credits alone when the patch says nothing about it', async () => {
     const res = await makeSession(['Ada Lovelace', 'Grace Hopper']);
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
     const patched = await admin
@@ -136,7 +136,7 @@ describe('a session bills everyone giving it', () => {
 });
 
 /**
- * The right to edit follows the billing, not the first row of it. This is the
+ * The right to edit follows the credits, not the first row of it. This is the
  * half of the change that is not cosmetic: before it, the second name on a
  * panel could read their own session and nothing else.
  */
@@ -196,7 +196,7 @@ describe('every speaker on the bill may edit the session', () => {
  * name onto it, that person arrives at the gate as an ordinary attendee — the
  * role almost every speaker holds, since the speaker role is only handed out
  * by a code somebody has to remember to send — and could not touch their own
- * session. `assertMayMutate` wanted the billing *and* `atLeast('speaker')`.
+ * session. `assertMayMutate` wanted the credits *and* `atLeast('speaker')`.
  */
 describe('a speaker holding the attendee role owns their own session', () => {
   let harness: Harness;
@@ -204,7 +204,7 @@ describe('a speaker holding the attendee role owns their own session', () => {
   let roomId: number;
   let admin: Agent;
   let sessionId: number;
-  /** Signed in as Ada, who is billed on the official session, role `user`. */
+  /** Signed in as Ada, who is credited on the official session, role `user`. */
   let ada: Agent;
 
   beforeEach(async () => {
@@ -268,7 +268,7 @@ describe('a speaker holding the attendee role owns their own session', () => {
       .expect(403);
   });
 
-  it('still cannot delete it: being billed is not a mandate to remove it', async () => {
+  it('still cannot delete it: being credited is not a mandate to remove it', async () => {
     await ada.delete(`/api/e/testconf/sessions/${sessionId}`).expect(403);
   });
 

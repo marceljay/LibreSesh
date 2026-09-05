@@ -3,13 +3,13 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## In Progress
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **997**, lint clean, build clean.
+nothing local is unsaved. Suite at **1046**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -23,6 +23,13 @@ nothing local is unsaved. Suite at **997**, lint clean, build clean.
   out of the footer into a block that names the instance password, the board
   preview framed as a browser window, GitHub's mark on the source link).
   All code-complete and queued for your eyes as R19–R25.
+
+- **Export ↔ import** (2026-09-04, from your backlog line *Import Export fix,
+  also make it possible to select what should be exported*). Two commits: the
+  importer now reads an export back — translated at the door in
+  `server/src/importDocument.ts`, with the round trip pinned in
+  `tests/importExport.test.ts` — and Manage Event → Backup has four checkboxes
+  (`?include=` on the route) for what an export carries. Queued as R26.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -96,10 +103,24 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — **R19–R25 are today's checklist pass** and are the ones I have
-never seen rendered; R1–R2 are the forms overhaul and the grid-block fix, R3–R5
-the mentions, linked-sessions and clash work. Each takes a minute.
+Freshest first — **R26 is the export/import work and R19–R25 are today's
+checklist pass**, all of them ones I have never seen rendered; R1–R2 are the
+forms overhaul and the grid-block fix, R3–R5 the mentions, linked-sessions and
+clash work. Each takes a minute.
 
+0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
+   four checkboxes above the download button. *Pass:* unticking **Sessions**
+   greys out **Contributions** with a note saying why; the download link
+   carries `?include=…` for what is ticked (hover it); the file has no key for
+   a part left out. Then open **Import a schedule**: **Choose a JSON file** (or
+   drop it on the box) shows the name and size; the summary says *An export
+   made <date>*; **Check it** lists the counts and, if people/pitches were in
+   the file, a first warning naming what is not carried; leave **Address**
+   blank and Import is refused naming that field; fill it in and the rehearsal
+   is withdrawn until you check again; **Import** lands the programme. Compare
+   the two events' grids side by side — speakers, tags, streams, breaks, track
+   hours. While there: the Backup tab's amber warning now runs to feeds, codes
+   and names — check it still reads as one paragraph on a phone.
 1. **R19 · The “everyone should be here” band** (the item you sent twice — I
    found two faults, so this is the one to look at first). On a day with a
    floor-holding session, the amber band across the grid. *Pass:* its label sits
@@ -231,6 +252,18 @@ the mentions, linked-sessions and clash work. Each takes a minute.
 25. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
+26. **R26 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
+    the eight leftovers from `_planning/forms-overhaul-review.md`). At the
+    gate: your browser or password manager **offers to save** the event
+    password on entry and fills it next visit; Enter enters from the name box
+    as well as the password box, and Enter with no name says *Pick a username
+    to enter*; the link phrase is **not** offered for saving. In Manage Event:
+    Enter adds a room from the **capacity** box, a break from any of its
+    boxes, and the unlock box and the QR check both submit on Enter; adding a
+    track with a screen reader on announces *… added*. The **?** beside
+    Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
+    arrowing through the list reads the row you land on. On a phone, the
+    Enter key reads *Go* at the gate and *Search* in the search box.
 
 ### Decisions I need from you
 
@@ -251,7 +284,8 @@ the mentions, linked-sessions and clash work. Each takes a minute.
 
 *Resolved and removed:* **push `dev`** (it is pushed — `origin/dev` matches, and
 its reflog shows a push after each commit) and **start forms Phase 2** (phases
-0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration).
+0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
+they left behind landed 2026-09-05 as R26).
 
 ## Blockers
 
@@ -284,7 +318,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   (event-wide filters and the "Search everywhere" hand-off) shipped
   2026-09-04. `@ada` resolves in a comment and a speaker's name opens a
   profile, so the app knows who people are, but typing a name into the
-  search box searches the *billing* on sessions: it finds their sessions
+  search box searches the *credits* on sessions: it finds their sessions
   and not them. What is left, in order:
 
   - **`scorePerson` and the merge rule.** Username 60 exact / 45
@@ -399,41 +433,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   meant to be shared. Decide which way round, because the inverted form is
   the one that stays safe as new working files appear.
 
-- **An event this app exported cannot be imported back.** Found 2026-09-02
-  restoring a production event onto a fresh staging box: the export downloads,
-  the import rejects it. The first error reads `breaks.0.start: Required`, but
-  that is one of **103** — every one of the 96 sessions fails too, and the real
-  answer is that these are two different formats wearing one name.
-
-  `exportEvent.ts` writes a dump keyed by database id: `startMin`/`endMin`
-  integers on breaks and tracks, `roomId`/`trackId`/`tagIds` on sessions,
-  `date: null` where there is no date. `eventImportSchema` takes the authoring
-  document: `start`/`end` as `HH:MM`, rooms/tracks/tags **by name**, and an
-  absent key rather than a null. It is also `.strict()` at the top level, so
-  the export's `people`, `proposals`, `contributions` and `exportedAt` are
-  rejected outright rather than ignored.
-
-  What makes this a bug and not a documented limitation is the importer's own
-  first field: `format: z.literal('libresesh.event').optional()`, commented
-  "Present on a document this app produced; ignored, but not rejected". It
-  says it recognises our export and then refuses it. There is no round-trip
-  test in the suite, which is why nobody noticed.
-
-  One piece of luck sizes the fix: `importSessionSchema` already accepts
-  `startsAt`/`endsAt` as ISO instants, so no timezone conversion is involved —
-  the mapping is id → name, minutes → `HH:MM`, null → absent, plus tolerating
-  the export-only top-level keys. A converter proving that is in
-  `_planning/` (it turned the Valley export into a document the schema
-  accepts, verified against `eventImportSchema` itself), but it belongs in the
-  app, not in a script an organiser has to be handed.
-
-  Decide where it goes: the importer accepting both shapes, or export learning
-  to emit the authoring document. Whichever, the missing test is the round
-  trip — export an event, import it, and compare. Note also what the export
-  cannot carry back either way: `people` profiles, `contributions` and every
-  `starCount`. If restoring an instance is the real goal, the encrypted
-  whole-database backup is the tool; this path is for moving one event.
-
 - **The drop still flickers, and the fix so far only made it smaller.**
   Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
@@ -513,13 +512,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   document would be cheap; `start_min`/`end_min` on the `tracks` table is the
   bigger version and changes what a track means in the session form, the grid
   and the filters — worth doing only to make the app _enforce_ track hours.
-
-- **Nothing imports an event _export_.** `POST /events/import` builds an event
-  from a JSON schedule, but does not read `GET /export.json` back: an export is
-  a record of ids, instants and authorship belonging to identities the target
-  instance has never seen, and reading one back wants a new slug, fresh ids and
-  a decision about those names. So the encrypted whole-DB backup is still the
-  only restore path.
 
 - **Compact button overrides do nothing.** `SecondaryButton className="py-1"`
   and the `py-1.5` variants in DetailSheet, ProfilePage, ProposalBoard and
@@ -754,26 +746,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ### Forms
 
-_A group, because the first item is one instance of a pattern and the rest of
-the site's forms are the others. Add to it rather than scattering form work
-through the priorities._
-
-- **"Expect someone" should be a button, not a field standing open.** The
-  People tab ends in a permanently-open **Expect someone** text field with its
-  own hint paragraph, which costs the bottom of the tab a form-sized block for
-  something an organiser does a handful of times an event — and it reads as
-  something waiting to be filled in rather than an action they can take.
-
-  Make it an inline create affordance: a button labelled **Add new
-  Guest/Speaker**, which on click reveals the name field (focused) with its
-  hint, and collapses again on save or cancel. The affordance is the button;
-  the field is the consequence of pressing it. Keeps the tab's foot to one
-  line at rest, and says what pressing it does — which "Expect someone" over
-  an empty box does not.
-
-  Nothing about what it creates changes: an unclaimed profile the person
-  claims at the gate or with a speaker code. The hint text is worth keeping,
-  moved into the revealed state.
+_A group, so form work is not scattered through the priorities._
 
 - **The same pass over every other form on the site.** This is the first of
   them, not the only one — sessions, rooms, tracks, tags, formats, breaks and
@@ -787,7 +760,7 @@ through the priorities._
   Both were made deliberately and flagged; neither is a bug, and either could
   reasonably be reversed once the screens have been used.
 
-  - **A credited `viewer` may edit the session they are billed on.**
+  - **A credited `viewer` may edit the session they are credited on.**
     `assertMayMutate` lost its role floor entirely, so being on the bill is the
     whole test. That is the literal reading of "a speaker owns their own
     session, whatever role they hold", and a viewer only gets there because an

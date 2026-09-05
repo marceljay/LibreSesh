@@ -288,6 +288,16 @@ describe('InlineCreate is a button that becomes its field', () => {
     expect(ic).toContain('if (!saved) return;');
     expect(ic).toMatch(/setValue\(''\);\s*box\.current\?\.focus\(\);/);
   });
+
+  it('announces a save, and only a save', () => {
+    // The box clears on success, which to a screen reader is what a failure
+    // looks like too; the row that appeared is elsewhere on the page. Failure
+    // is the toast's to announce — saying it here as well reads it twice.
+    expect(ic).toContain('aria-live="polite"');
+    expect(ic).toContain('setAnnounced(`${name} added`);');
+    const failure = ic.slice(ic.indexOf('if (!saved) return;') - 200, ic.indexOf('if (!saved) return;'));
+    expect(failure).not.toContain('setAnnounced');
+  });
 });
 
 describe('every search box looks like a search box', () => {
@@ -330,5 +340,17 @@ describe('every search box looks like a search box', () => {
       )
       .map((path) => path.slice(WEB_SRC.length + 1));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('HelpButton is a target a finger can hit', () => {
+  it('is 24px square, the WCAG 2.2 minimum', () => {
+    // SC 2.5.8 Target Size (Minimum) is AA and asks for 24×24 CSS px unless the
+    // target is 24px clear of its neighbours; it sits in a chip row with a 6px
+    // gap, so the size has to carry it. It was h-5 w-5 (20px) — Phase 0
+    // finding 5, the one nobody picked up.
+    const hb = ui.slice(ui.indexOf('export function HelpButton'), ui.indexOf('export function HelpNote'));
+    expect(hb).toMatch(/\bh-6 w-6\b/);
+    expect(hb).not.toMatch(/\bh-5 w-5\b/);
   });
 });

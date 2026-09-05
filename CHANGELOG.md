@@ -6,6 +6,24 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Import from a file, and give the event a new address.** The import page
+  took a paste, with a file link in small print. Now there is a **Choose a JSON
+  file** button, the box takes a dropped file, and the name and size of what
+  was loaded are shown. Under the box an **Address** field overrides the
+  document's `slug` — the edit every restored export needs, since its own
+  address is taken on the instance it came from — without opening the file.
+  Changing the address withdraws a rehearsal the same way editing the document
+  does, so what you approve is always what you send.
+
+- **Choose what an export carries.** The event export was all or nothing — a
+  speaker list for a website, a programme to move elsewhere and a co-organiser's
+  copy all came with every profile, pitch and comment. Manage Event → Backup now
+  has four checkboxes: **Sessions**, **People**, **Pitches**, **Contributions**.
+  The event's settings, rooms, tracks, tags, formats and breaks are always in
+  the file; a part left out is absent from it rather than empty, so a reader can
+  tell "none" from "not exported". From the command line it is
+  `?include=sessions,people` on `export.json`; a plain GET is still everything.
+
 - **A repeat is one line in the audit log, not fourteen.** Placing a session
   across a fortnight wrote fourteen entries, and an edit applied to a series
   wrote one per occurrence — enough to bury the rest of the morning's history,
@@ -125,6 +143,64 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A phone's keyboard says what Enter will do.** At the gate the key reads
+  *Go*, in the two search boxes *Search*, and when editing a name on a
+  profile *Done* — rather than a return arrow that could mean anything. Only
+  a label: the key did the right thing already, it just did not say so.
+
+- **Adding a track, tag, format or expected person is announced.** The
+  add-row stays open and clears itself after a save so the next one can be
+  typed, which to a screen reader is indistinguishable from a save that was
+  thrown away; the new row appears further up the page, where nothing is
+  reading. A polite announcement now says *Lightning talks added*. A failed
+  save is not announced twice: the message that reports it already is.
+
+- **The "?" beside a session's placement and its hold-the-floor switch is
+  big enough to tap.** It was 20 px across, under the 24 px that WCAG 2.2 sets
+  as the floor for a touch target, and it sits in a row of chips with no
+  room around it to make up the difference. Now 24 px; the glyph is the same
+  size, so it still reads as a note rather than a button.
+
+- **A screen reader hears which row the arrow keys are on.** The speaker
+  field, the schedule search and the *Find a setting* box each showed a list
+  under the box and let the arrows move a highlight through it, but only
+  sighted people could tell where the highlight was: the box never named the
+  row it was on. It does now, the way the ARIA combobox pattern asks, and
+  the three lists share one keyboard handler instead of three that had
+  quietly drifted apart at the ends of the list.
+
+- **A password manager can save and fill the event password.** The gate's
+  password box was a lone field with no form around it and no hint about
+  what it was, so browsers and password managers never offered to remember
+  it — every visit meant finding the password again. The password and the
+  username are one real login form now, marked as such, so the manager
+  offers to save on first entry and fills on the next. Enter works from
+  either box, and arriving with the name empty says *Pick a username to
+  enter* instead of doing nothing. The device-link phrase stays out of the
+  manager: it is a one-time code, not a password to keep.
+
+- **Enter submits an add-row from any field in it.** The new-room, new-break,
+  invite-check and unlock rows were inputs and a button with no form around
+  them, so Enter did whatever each field's own key handler said: it added the
+  room from its name but not from its capacity, and made the QR from the
+  password box but nowhere else. Every one of those rows is a real form now,
+  with a real submit button — so Enter works from every field, a phone's
+  keyboard labels the key, and a screen reader calls the button what it is.
+  The browser's own validation bubbles are switched off on every form,
+  including dialogs, so the app's sentence is the only one you see.
+- **An event's own export imports back.** The importer's first field said it
+  recognised `libresesh.event` and then refused every export carrying it — 103
+  errors on a 96-session programme, starting with `breaks.0.start: Required`.
+  The export and the import document were two formats under one name: ids and
+  minutes on one side, room names and `HH:MM` on the other. An export is now
+  translated at the door — ids to the names they stood for, minutes to `HH:MM`,
+  `null` to an absent key — and imported as the programme it describes, so every
+  export ever downloaded works, not only new ones. Give it a new address. The
+  programme comes across whole (sessions now carry their `livestreams` through
+  an import too); profiles, pitches, contributions and star counts do not, and
+  the dry run's first warning says so. The round trip — export, import, export,
+  compare — is a test now, which is what was missing.
+
 - **The “everyone should be here” band sits straight.** The amber band a
   floor-holding session draws across the grid had its label pinned to the
   top-right corner, where it read as a caption for whichever block it landed on,
@@ -194,7 +270,7 @@ All notable changes to this project are documented here.
   session was read-only to them. Three separate rules had to agree before it
   worked, and none of them did:
 
-  - the right to edit demanded the billing **and** the speaker role. Being
+  - the right to edit demanded the credits **and** the speaker role. Being
     credited is the qualification now, whatever role the person holds, for one
     of five co-hosts as much as for the only name, and on an official session
     as much as an open one — the official one is precisely the session an
@@ -211,9 +287,17 @@ All notable changes to this project are documented here.
   What has not changed: a speaker still cannot move an official session or
   delete it. The form now says so above the fields and disables them, rather
   than refusing after Save. The Delete button is no longer offered to someone
-  who is billed on a session but did not create it.
+  who is credited on a session but did not create it.
 
 ### Changed
+
+- **The whole-database backup says what it really holds.** The warning named
+  the sign-in tokens and the code hashes. It now also names the calendar-feed
+  tokens, which work against the live server as they are; the speaker-code
+  hashes, which crack offline in minutes; and every name, bio, comment and
+  who-starred-what on the instance — and it says to restore only onto a box at
+  the same address with the same cookie secret, or everyone comes back a
+  stranger.
 
 - **The landing page stops looking like a toolbar and stops making offers it
   cannot keep.** Four things were wrong with the front door, and all four were
@@ -634,7 +718,7 @@ All notable changes to this project are documented here.
   The session form's speaker field is now a chip field that takes as many
   people as are giving it, matching names against the roster and creating the
   ones it does not find, exactly as one speaker always did. Order is the
-  billing: the first name is the one a cramped grid block truncates to. A pitch
+  credits: the first name is the one a cramped grid block truncates to. A pitch
   still names one person, through the same control. Everything downstream
   follows the whole list — the profile page, the merge tool, the ICS feed,
   search ranking, the export document, and the importer, which takes

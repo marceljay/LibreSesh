@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { explainJsonError, parseDoc, summarise } from '../web/src/lib/importDoc.js';
+import { explainJsonError, parseDoc, summarise, withSlug } from '../web/src/lib/importDoc.js';
 
 /** The template the import docs point at, which the server suite also dry-runs. */
 const EXAMPLE = 'docs/examples/schedule-import.example.json';
@@ -41,6 +41,26 @@ describe('parsing a pasted schedule', () => {
       sessions: 0,
       speakers: 0,
     });
+  });
+
+  it('notices an export the app made, and does not mistake a typed document for one', () => {
+    expect(summarise({ exportedAt: '2026-09-02T10:00:00.000Z', event: {} }).exportedAt).toBe(
+      '2026-09-02T10:00:00.000Z',
+    );
+    expect(summarise({ event: { name: 'Photo Conf' } }).exportedAt).toBeNull();
+  });
+
+  it('replaces the address only when one is given', () => {
+    const doc = { event: { name: 'Photo Conf', slug: 'photoconf' }, rooms: [] };
+    expect(withSlug(doc, '')).toBe(doc);
+    expect(withSlug(doc, '   ')).toBe(doc);
+    expect(withSlug(doc, ' photoconf-2 ')).toEqual({
+      event: { name: 'Photo Conf', slug: 'photoconf-2' },
+      rooms: [],
+    });
+    // A document with no `event` at all still gets one, so the server's
+    // message is about the fields it lacks rather than about the slug.
+    expect(withSlug({}, 'x')).toEqual({ event: { slug: 'x' } });
   });
 
   it('gives a date range only when both ends are readable', () => {

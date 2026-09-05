@@ -72,11 +72,11 @@ describe('per-event JSON export', () => {
     expect(dump.rooms.map((r) => r.name)).toEqual(['Main hall']);
     expect(dump.tags.map((t) => t.name)).toEqual(['Deep dive']);
     expect(dump.sessions).toHaveLength(1);
-    expect(dump.sessions[0]?.title).toBe('Opening');
-    expect(dump.sessions[0]?.tagIds).toEqual([tagId]);
-    expect(dump.sessions[0]?.speaker).toBe('Ada');
-    expect(dump.proposals.map((p) => p.title)).toEqual(['A pitch']);
-    expect(dump.people.map((p) => p.name)).toContain('Ada');
+    expect(dump.sessions![0]?.title).toBe('Opening');
+    expect(dump.sessions![0]?.tagIds).toEqual([tagId]);
+    expect(dump.sessions![0]?.speaker).toBe('Ada');
+    expect(dump.proposals!.map((p) => p.title)).toEqual(['A pitch']);
+    expect(dump.people!.map((p) => p.name)).toContain('Ada');
   });
 
   it("carries a track's context, so an export can rebuild what it said", async () => {
@@ -109,8 +109,8 @@ describe('per-event JSON export', () => {
 
     const dump = await fetchExport(admin);
     expect(dump.contributions).toHaveLength(1);
-    expect(dump.contributions[0]?.body).toBe('A note from the room');
-    expect(dump.contributions[0]?.createdByName).toBeTruthy();
+    expect(dump.contributions![0]?.body).toBe('A note from the room');
+    expect(dump.contributions![0]?.createdByName).toBeTruthy();
   });
 
   it('leaves deleted rows out', async () => {
@@ -146,8 +146,81 @@ describe('per-event JSON export', () => {
     await user.put(`/api/e/testconf/sessions/${sessionId}/star`).expect(204);
 
     const dump = await fetchExport(admin);
-    expect(dump.sessions[0]?.starCount).toBe(1);
+    expect(dump.sessions![0]?.starCount).toBe(1);
     expect(JSON.stringify(dump)).not.toContain('identityId');
+  });
+
+  describe('choosing what goes in', () => {
+    beforeEach(async () => {
+      const created = await admin
+        .post('/api/e/testconf/sessions')
+        .send({
+          roomId,
+          title: 'Talk',
+          speakers: ['Ada'],
+          startsAt: at(DAY_ONE, 9 * 60),
+          endsAt: at(DAY_ONE, 10 * 60),
+        })
+        .expect(201);
+      await admin
+        .post(`/api/e/testconf/sessions/${(created.body as { id: number }).id}/contributions`)
+        .send({ kind: 'note', body: 'A note' })
+        .expect(201);
+      await admin.post('/api/e/testconf/proposals').send({ title: 'A pitch' }).expect(201);
+    });
+
+    it('is everything unless asked otherwise', async () => {
+      const dump = await fetchExport(admin);
+      expect(Object.keys(dump)).toEqual(
+        expect.arrayContaining(['sessions', 'people', 'proposals', 'contributions']),
+      );
+    });
+
+    it('leaves a part out entirely — absent, not empty', async () => {
+      const res = await admin.get('/api/e/testconf/export.json?include=people').expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      expect(dump.people!.map((p) => p.name)).toContain('Ada');
+      expect('sessions' in dump).toBe(false);
+      expect('proposals' in dump).toBe(false);
+      expect('contributions' in dump).toBe(false);
+      // The frame is not a choice.
+      expect(dump.rooms.map((r) => r.name)).toEqual(['Main hall']);
+      expect(dump.event.slug).toBe('testconf');
+    });
+
+    it('takes a list, in any order, with room for a stray space', async () => {
+      const res = await admin
+        .get('/api/e/testconf/export.json?include=contributions,%20sessions')
+        .expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      expect(dump.sessions).toHaveLength(1);
+      expect(dump.contributions).toHaveLength(1);
+      expect('people' in dump).toBe(false);
+    });
+
+    it('is the frame alone when asked for nothing else', async () => {
+      const res = await admin.get('/api/e/testconf/export.json?include=').expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      expect(Object.keys(dump).sort()).toEqual(
+        ['breaks', 'event', 'exportedAt', 'format', 'formats', 'rooms', 'tags', 'tracks', 'version'],
+      );
+    });
+
+    it('refuses a part it does not have rather than quietly thinning the file', async () => {
+      await admin.get('/api/e/testconf/export.json?include=sessions,stars').expect(400);
+    });
+
+    it('imports back whatever was chosen', async () => {
+      const res = await admin.get('/api/e/testconf/export.json?include=sessions').expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      const importer = await actorWithRole(harness, 'testconf', 'viewer-pw');
+      const result = await importer
+        .post('/api/events/import?dryRun=1')
+        .set('X-Instance-Key', 'instance-pw')
+        .send({ ...dump, event: { ...dump.event, slug: 'testconf-copy' } })
+        .expect(200);
+      expect((result.body as { counts: { sessions: number } }).counts.sessions).toBe(1);
+    });
   });
 
   /**

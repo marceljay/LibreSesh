@@ -386,7 +386,7 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
     const insertSessionSpeaker = db.prepare(
       'INSERT INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
     );
-    /** Two different people, when the seed wants a session billed to a pair. */
+    /** Two different people, when the seed wants a session credited to a pair. */
     const twoSpeakers = (): (number | null)[] => {
       const first = pick(speakerChoices);
       const rest = speakerChoices.filter((id) => id !== null && id !== first);
@@ -428,8 +428,8 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
           sessionIds.push(id);
           // A seeded event needs a pair on the bill somewhere: two speakers is
           // the case the demo is there to show off, and to trip over.
-          const billing = titleIndex % 5 === 3 ? twoSpeakers() : [pick(speakerChoices)];
-          billing
+          const credits = titleIndex % 5 === 3 ? twoSpeakers() : [pick(speakerChoices)];
+          credits
             .filter((personId): personId is number => personId !== null)
             .forEach((personId, order) => insertSessionSpeaker.run(id, personId, order));
           titleIndex++;

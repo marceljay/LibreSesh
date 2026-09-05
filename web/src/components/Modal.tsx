@@ -90,6 +90,10 @@ export function Modal({
               className="flex min-h-0 flex-1 flex-col"
               {...(onSubmit
                 ? {
+                    // No native bubbles: a `required` on a field would raise the
+                    // browser's own message a beat before the app's sentence in
+                    // the footer. The handler validates; see `InlineForm`.
+                    noValidate: true,
                     onSubmit: (e: React.FormEvent) => {
                       e.preventDefault();
                       onSubmit();
@@ -123,6 +127,12 @@ export function Modal({
                 </Dialog.Close>
               </div>
 
+              {/* The footer is a flex sibling *below* this scroll region, never an
+                  overlay on it, so a field Tab scrolls into view here cannot end
+                  up behind the footer (WCAG 2.2 SC 2.4.11, Focus Not Obscured).
+                  Phase 0 could only call that "plausible"; it holds by
+                  construction, and tests/modalPortal.test.ts pins the shape —
+                  a `sticky` or `absolute` footer would break it silently. */}
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
                 {children}
               </div>

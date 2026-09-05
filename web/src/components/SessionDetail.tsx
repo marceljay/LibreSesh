@@ -61,7 +61,7 @@ export interface SessionDetailProps {
   timezone: string;
   canEdit: boolean;
   /** Deleting is narrower than editing: a co-speaker may rewrite a session
-   *  they are billed on, but not take it off the programme. */
+   *  they are credited on, but not take it off the programme. */
   canDelete: boolean;
   archived: boolean;
   /** Whether this session is on the current identity's personal agenda. */

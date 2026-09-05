@@ -29,6 +29,10 @@ export interface DocSummary {
   sessions: number;
   /** Distinct speaker names — the profiles an import would look for or make. */
   speakers: number;
+  /** When this is an export the app made rather than a typed document: the
+   *  `exportedAt` stamp. The server translates one at the door; saying so
+   *  here is what tells the person pasting it that it was recognised. */
+  exportedAt: string | null;
 }
 
 export type ParseResult =
@@ -95,6 +99,7 @@ export function summarise(doc: unknown): DocSummary {
     breaks: len(root.breaks),
     sessions: len(root.sessions),
     speakers: speakers.size,
+    exportedAt: str(root.exportedAt),
   };
 }
 
@@ -112,4 +117,19 @@ export function parseDoc(text: string): ParseResult {
     return { ok: false, error: 'This is valid JSON, but not an object with an `event` in it.' };
   }
   return { ok: true, doc, summary: summarise(doc) };
+}
+
+/**
+ * The document with its address replaced — what the page sends when the
+ * Address field is filled in. Blank means "as written", so an untouched field
+ * changes nothing; the server still validates whatever ends up in `slug`.
+ * This is the one edit a restore always needs: an export names the event it
+ * came from, and that address is taken on the instance it came from.
+ */
+export function withSlug(doc: unknown, slug: string): unknown {
+  const wanted = slug.trim();
+  if (wanted === '') return doc;
+  const root = (doc ?? {}) as Record<string, unknown>;
+  const event = (root.event ?? {}) as Record<string, unknown>;
+  return { ...root, event: { ...event, slug: wanted } };
 }

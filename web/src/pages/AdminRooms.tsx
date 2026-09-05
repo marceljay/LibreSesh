@@ -12,6 +12,7 @@ import {
   FormRow,
   FormStack,
   IconButton,
+  InlineForm,
   NumberField,
   PrimaryButton,
   SecondaryButton,
@@ -317,7 +318,7 @@ export function AdminRooms({
           alignment, so nothing here carries a nudged margin — which is why the
           capacity field has no hint: a hint would make it taller than the name
           and lift the buttons off the baseline. */}
-      <div>
+      <InlineForm onSubmit={() => void add()}>
         <FormRow>
           <div className="min-w-40 flex-1">
             <Field label="New room">
@@ -325,7 +326,6 @@ export function AdminRooms({
                 <TextInput
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && void add()}
                   maxLength={80}
                 />
               </ControlShell>
@@ -338,7 +338,6 @@ export function AdminRooms({
               spec={capacityField}
               value={capacity}
               onChange={setCapacity}
-              onKeyDown={(e) => e.key === "Enter" && void add()}
               className="w-20"
               autoFocus
             />
@@ -349,7 +348,7 @@ export function AdminRooms({
           )}
 
           <PrimaryButton
-            onClick={() => void add()}
+            type="submit"
             disabled={!name.trim() || parsedCapacity.error !== null || busy}
           >
             Add room
@@ -365,7 +364,7 @@ export function AdminRooms({
             label="Attendees may book this room"
           />
         </div>
-      </div>
+      </InlineForm>
     </Section>
   );
 }

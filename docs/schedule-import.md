@@ -23,10 +23,12 @@ hand, because it makes an event rather than editing one.
 ### In the browser
 
 **`/import`** is the same route with a screen in front of it, and is the way in
-if you have a schedule rather than a terminal. Paste the document or pick the
-file, press **Check it**, and read what would land; **Import** unlocks once that
-rehearsal succeeds and locks again the moment you edit the document, so what you
-approve is always what you send.
+if you have a schedule rather than a terminal. Choose the `.json` file, drop it
+on the box, or paste the document; give the event a different **Address** if
+the document's own is taken (an export's always is, on the instance it came
+from); press **Check it** and read what would land. **Import** unlocks once
+that rehearsal succeeds and locks again the moment you edit the document or the
+address, so what you approve is always what you send.
 
 ### From the command line
 
@@ -199,7 +201,8 @@ an open session can be a workshop, and an official one can be a jam.
 | `format` | | The name of a declared format, or `null` |
 | `description` | | Markdown, up to 5000 characters |
 | `speaker` | | Free text. Matches an existing profile in this event, or creates an unclaimed one |
-| `speakers` | | The same, as a list, for a session given by more than one person — in billing order. Use either spelling; a row with both is billed to the list |
+| `speakers` | | The same, as a list, for a session given by more than one person — in credit order. Use either spelling; a row with both is credited to the list |
+| `livestreams` | | Where it is streamed: `[{ "label": "Main camera", "url": "https://…" }]`, up to 6. Rarely on a printed programme; here so an export reads back whole |
 | `type` | | `official` (default) or `open` |
 | `blocksOpenBooking` | | `true` holds the floor: while this session runs, attendees can add nothing anywhere in the event. Official sessions only. Default `false` |
 | `date`, `start`, `end` | ✓ | Local date and wall-clock times — see below |
@@ -351,14 +354,40 @@ makes the printed times mean anything, so get it right before anything else.
 And a session with no `speaker` is fine — an empty string is better than a
 guess, since a wrong name creates a profile someone then has to merge away.
 
+## Importing an export
+
+The file Manage Event → Backup downloads (`export.json`) is accepted as well,
+by the same route and the same screen. It is not the document above — an
+export is a record keyed by ids, with minutes where this document has `HH:MM`
+— so it is *translated* at the door into the document above and then imported
+exactly as if you had typed it. Nothing about the export changes: one made a
+year ago imports the same way.
+
+Two things to know:
+
+- **Give it a new address.** An export names the event it came from, and a
+  slug that is taken — including on the same instance — is refused with a
+  `409`. On `/import` that is the **Address** field; from the command line,
+  edit `event.slug`. It is the only edit a restore needs.
+- **The programme comes across; the record of it being used does not.** Rooms,
+  tracks (with their hours), tags, formats, breaks and every session — title,
+  description, speakers, streams, tags, type and whether it held the floor —
+  all land. What an import has no field for is left behind and said so in the
+  first `warning`: **profiles** (speakers are credited by name and get a fresh
+  unclaimed profile each, without bio or links), **pitches**, **contributions**
+  and every **star count**. If those matter, the encrypted whole-database backup
+  is the restore path — this one moves a programme.
+
+If the export is being taken *for* an import, tick only **Sessions** in
+Manage Event → Backup (or `?include=sessions`): the file then carries exactly
+what will land, and the dry run has nothing to warn about.
+
+An export that has been edited by hand and left a session pointing at a room
+it no longer lists is refused naming the row, the way an undeclared room name
+is.
+
 ## What it deliberately does not do
 
-- **It does not read `export.json` back.** An export is a record of ids,
-  instants and authorship belonging to identities the target instance has never
-  seen; importing one wants a new slug, fresh ids and a decision about those
-  names. The encrypted whole-database backup remains the restore path. See
-  ARCHITECTURE.md §Importing a schedule, and why it is not the export read
-  backwards.
 - **It only creates events, never updates one.** There is no way to add a day
   to an event that already exists, or to re-run a corrected document over the
   top of a previous import. Delete the event and import again.

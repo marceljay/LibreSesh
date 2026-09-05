@@ -133,7 +133,7 @@ export interface SessionRow {
   series_id: string | null;
 }
 
-/** Who is giving a session. Ordered, because the order is the billing. */
+/** Who is giving a session. Ordered, because the order is the credit order. */
 export interface SessionSpeakerRow {
   session_id: number;
   person_id: number;

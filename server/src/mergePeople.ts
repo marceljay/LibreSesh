@@ -7,7 +7,7 @@ import type { Broker } from './sse.js';
 import type { PersonDto } from './shared/types.js';
 
 export interface MergeResult {
-  /** Sessions whose billing changed, so the schedule can be told. */
+  /** Sessions whose credits changed, so the schedule can be told. */
   movedSessions: number[];
   rekeyed: { sessionIds: number[]; proposalIds: number[] };
 }
@@ -43,7 +43,7 @@ export function mergePeople(
   let rekeyed = { sessionIds: [] as number[], proposalIds: [] as number[] };
 
   db.transaction(() => {
-    // A session billed to both halves of a merge must not end up billed to
+    // A session credited to both halves of a merge must not end up credited to
     // the survivor twice — which the primary key would refuse anyway, taking
     // the whole merge down with it. Drop the duplicate, then move what is
     // left.
