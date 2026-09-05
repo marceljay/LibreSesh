@@ -41,6 +41,29 @@ All notable changes to this project are documented here.
   interchangeable labels. The colour swatches in Manage Event stay fully
   coloured — that is where you judge a colour, so it has to be the real one.
 
+- **The time fields are the app's own: type it, or pick a quarter hour.** A
+  session's start, a break's from and to, a track's hours and the day's own
+  start and end were the browser's clock widget: segmented digits with the
+  operating system's blue highlight, a clock glyph that could only be dimmed
+  or inverted, and a popup that could not be themed at all — the one control
+  left on the page that looked like the browser rather than the app. Each is
+  now a box in the app's own field, with a chevron beside it that opens the
+  same list control as Room and Day. The box takes what you would actually
+  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
+  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
+  quarter hours, for when a glance beats typing. Both are capped to the
+  event's day: the list offers only those hours, and a time typed outside
+  them lands on the nearer edge — the two fields that set the day's hours
+  are the only ones left open. Something that is not a time is marked while
+  it sits in the box and put back when you leave. A time saved off the grid
+  still shows and re-saves as it was.
+
+- **Help lives in the profile menu now.** The header's **?** held two items —
+  the tour and About — and cost a permanent control for a question asked
+  twice a visit. Both sit at the foot of the profile menu, in a group of
+  their own below Theme, because they are about the app rather than about
+  you. The slot they leave is where the bell goes.
+
 ### Fixed
 
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
@@ -61,24 +84,22 @@ All notable changes to this project are documented here.
   chosen in another tab of the same site applies here too. An explicit
   *Dark* or *Light* still wins over the system.
 
-### Changed
+- **The event name gets three more characters on a phone.** The name is the
+  only thing in the header that truncates, so every pixel the row spent on
+  padding and gaps came off the title. Below the `sm` breakpoint the header
+  gives back 18px — the page padding, the gaps beside the name, and the gap
+  between the bell and the profile chip — about three characters at that
+  size. All three header rows move together so the logo stays in step with
+  the filter row under it; nothing changes on a wider screen.
 
-- **The time fields are the app's own: type it, or pick a quarter hour.** A
-  session's start, a break's from and to, a track's hours and the day's own
-  start and end were the browser's clock widget: segmented digits with the
-  operating system's blue highlight, a clock glyph that could only be dimmed
-  or inverted, and a popup that could not be themed at all — the one control
-  left on the page that looked like the browser rather than the app. Each is
-  now a box in the app's own field, with a chevron beside it that opens the
-  same list control as Room and Day. The box takes what you would actually
-  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
-  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
-  quarter hours, for when a glance beats typing. Both are capped to the
-  event's day: the list offers only those hours, and a time typed outside
-  them lands on the nearer edge — the two fields that set the day's hours
-  are the only ones left open. Something that is not a time is marked while
-  it sits in the box and put back when you leave. A time saved off the grid
-  still shows and re-saves as it was.
+- **A demo visitor is asked for a name before being offered a role.** The
+  demo gate's three role buttons are disabled until a name is typed, and the
+  name box was drawn *below* them — so the gate opened on three dead controls
+  with nothing saying why. Through an invite link it was worse: the box was
+  not drawn at all, which disabled the buttons for good and left no way in.
+  The box now comes first, on every path in. The buttons stay disabled until
+  there is a name, deliberately: entering without one is what fills a roster
+  with generated names.
 
 ## [0.3.0] — 2026-09-05
 

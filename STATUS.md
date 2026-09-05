@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1106**, lint clean, build clean.
+nothing local is unsaved. Suite at **1146**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -26,20 +26,11 @@ nothing local is unsaved. Suite at **1106**, lint clean, build clean.
   an **eye beside the event password** at the gate that shows what you
   typed (the `PasswordInput` primitive in `ui.tsx`, used only there so far —
   the instance-password boxes on New event, Import and the admin pages are
-  still bare), filed under R26.
-
-- **Export ↔ import** (2026-09-04, from your backlog line *Import Export fix,
-  also make it possible to select what should be exported*). Two commits: the
-  importer now reads an export back — translated at the door in
-  `server/src/importDocument.ts`, with the round trip pinned in
-  `tests/importExport.test.ts` — and Manage Event → Backup has four checkboxes
-  (`?include=` on the route) for what an export carries. Queued as R26.
-
-- **The comment box's `@` menu** (2026-09-05). Typing `@` did nothing until the
-  whole username was spelled right; it now opens a filtered list of the event's
-  people and inserts the name it resolved. Code-complete, 27 tests, queued as
-  R27 — the last item in the browser list, not the first, because it is the
-  only one there that is not part of the checklist pass.
+  still bare), filed under R28. Three more from today, all filed under
+  **R30**: tags wear their colour as a pale wash instead of filling with it,
+  with the format moved out of that row to sit beside the title; the header
+  gives the event name back about three characters on a phone; and the demo
+  gate asks for a name *before* offering the roles.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -48,10 +39,15 @@ documented in ARCHITECTURE §Form controls, and what survives of either is the
 **Forms** backlog group below. Linked sessions, the everyone-is-a-person spec,
 the breaks rework and session formats are likewise code-complete and logged
 (migrations 014–017); all that is left of them is the browser pass in
-**Awaiting your review**. Everything collected since 0.2.3 (2026-09-02) is now
-cut as **0.3.0** in the CHANGELOG; `[Unreleased]` is empty again. Only v0.1.0
-and v0.2.0 carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling
-before the next cut.
+**Awaiting your review**. The export/import work and the `@` menu are the same:
+both in CHANGELOG `[0.3.0]`, both waiting only as R26 and R27. Everything
+collected since 0.2.3 (2026-09-02) was cut as **0.3.0**; `[Unreleased]` has
+filled again since — the bell (migration 020), the time fields and their day
+cap, the eye, the calmer tags, help folded into the profile menu, and the
+drag-hold, system-theme, phone-header and demo-gate fixes — all on `dev`,
+merged to `main` up to the bell (PR #50) and untagged. Only v0.1.0 and v0.2.0
+carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling before the
+next cut.
 
 The 2026-08-29 UI-overhaul/permissions/pitches plan was **retired on
 2026-09-04**: of its 28 open boxes, 25 had shipped without being ticked (every
@@ -62,29 +58,31 @@ here:
 
 - **Whole-app UI sweep.** The primitives landed, the admin page is done, and
   as of 2026-08-31 every modal is on the `Modal` primitive (`fb5c759`).
-  **Recounted against the tree on 2026-09-04: 49 bare `underline` usages**, up
-  from 38 on 2026-09-03 — the Base UI migration and the pages added since wrote
-  more of them, which is exactly why this is recounted rather than carried
-  forward. (Before that it claimed 21 three times running, because it was
-  counted against a fixed list of files instead of the tree, so it could not
-  move.) **The method, so the next count is comparable:**
+  **Recounted against the tree on 2026-09-05: 51 bare `underline` usages**, up
+  from 49 on 2026-09-04 and 38 on 2026-09-03 — the bell, the landing page and
+  the split-out admin tabs each brought one or two, which is exactly why this
+  is recounted rather than carried forward. (Before that it claimed 21 three
+  times running, because it was counted against a fixed list of files instead
+  of the tree, so it could not move.) **The method, so the next count is comparable:**
   `grep -roE '(^|[^-])underline' --include='*.tsx' web/src` — which counts
   `hover:underline` and skips `no-underline` — then drop `components/ui.tsx`
   (8, the primitives themselves) and the 3 `[&_a]:underline` in prose wrappers
   (links inside rendered markdown keep their underline deliberately). Today's
-  spread: ProfilePage 7, ProposalBoard 6, SessionDetail 5, AdminPage 5,
-  SessionModal 4, SchedulePage 4, ImportPage 3, AgendaPage 3, SearchPage 2,
-  NewEventPage 2, MentionText 2, FilterMenu 2, EventListPage 2, Tour 1, Gate 1.
+  spread (54 before the 3 prose wrappers come off): ProfilePage 7,
+  ProposalBoard 6, SessionDetail 5, AdminPage 5, SessionModal 4,
+  SchedulePage 4, LandingPage 3, AgendaPage 3, SearchPage 2, NewEventPage 2,
+  ImportPage 2, MentionText 2, FilterMenu 2, EventListPage 2, AdminBackup 1,
+  AdminAudit 1, NotificationBell 1, Tour 1, Gate 1.
   Count the tree, not the files this entry happens to name.
 
 - **ARCHITECTURE.md concurrency paragraph.** §Realtime documents broadcast and
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
 
-- **The two files that keep growing.** `SchedulePage.tsx` is **2,018 lines**
-  and `AdminPage.tsx` **2,657** (2026-09-04). The retired plan flagged
-  SchedulePage at 989 on 2026-08-29 and this entry said 1,957 and 2,577 a day
-  ago — both grew again in the checklist pass above, which is the argument for
+- **The two files that keep growing.** `SchedulePage.tsx` is **2,022 lines**
+  and `AdminPage.tsx` **2,665** (2026-09-05). The retired plan flagged
+  SchedulePage at 989 on 2026-08-29 and this entry said 2,018 and 2,657 a day
+  ago — both grew again with the bell and the header, which is the argument for
   the entry rather than any one line count. Nothing is broken by it: it is a
   reading cost, paid every time either file is opened, and it compounds. The
   natural seams are already visible: SchedulePage holds every handler the
@@ -115,11 +113,13 @@ that is where these break.
 
 ### Look at these (browser)
 
-Freshest first — **R26 is the export/import work and R19–R25 are today's
-checklist pass**, all of them ones I have never seen rendered; R1–R2 are the
-forms overhaul and the grid-block fix, R3–R5 the mentions, linked-sessions and
-clash work. **R27, the `@` menu, is at the foot of the list** — newest of all,
-but it belongs beside R3 rather than in the checklist run. Each takes a minute.
+Freshest first — **R26 is the export/import work and R19–R25 are the
+2026-09-04 checklist pass**, all of them ones I have never seen rendered; R1–R2
+are the forms overhaul and the grid-block fix, R3–R5 the mentions,
+linked-sessions and clash work. **R27–R30 are at the foot of the list** —
+newest of all: the `@` menu, the forms close-out (it used to share R26's
+number; it is **R28** now, so a verdict cannot land on the wrong item), the
+bell, and the 2026-09-05 small pass. Each takes a minute.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -265,7 +265,14 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
 25. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
-26. **R26 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
+26. **R27 · The `@` menu in the comment box.** Open a session and type `@` in
+    the comment field. *Pass:* a list of the event's people appears above the
+    field and narrows as you type; ↑/↓ moves the highlight, Enter *or* Tab
+    inserts the name with a space after it, Escape closes only the menu (not
+    the session panel). Typing a surname finds the person; typing prose past a
+    stray `@` closes the menu and backspacing reopens it; `a@b.com` opens
+    nothing. On a phone, tapping a name inserts it and the keyboard stays up.
+27. **R28 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
     the eight leftovers from `_planning/forms-overhaul-review.md`). At the
     gate: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
@@ -289,13 +296,28 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
     from your 2026-09-05 notes: in **Arrange**, a dropped block stays put and
     never flashes back to its old slot before landing; and with the theme on
     *System*, flipping the OS to dark re-themes the page at once, menu closed.
-27. **R27 · The `@` menu in the comment box.** Open a session and type `@` in
-    the comment field. *Pass:* a list of the event's people appears above the
-    field and narrows as you type; ↑/↓ moves the highlight, Enter *or* Tab
-    inserts the name with a space after it, Escape closes only the menu (not
-    the session panel). Typing a surname finds the person; typing prose past a
-    stray `@` closes the menu and backspacing reopens it; `a@b.com` opens
-    nothing. On a phone, tapping a name inserts it and the keyboard stays up.
+28. **R29 · The bell, and where help went.** In the header, where the **?**
+    was, a bell. *Pass:* with a second person's tab open, mention them in a
+    comment — the bell in their header gains a count without a reload;
+    opening the panel lists the mention and clears the count (opening *is*
+    the read; there is no button); the entry opens the session. Move a
+    session they speak at or have starred and the panel says so; edit only
+    its title and it stays quiet. Your own actions never notify you.
+    **Settings** in the panel shows the five switches, per event; turn one
+    off and that kind stops arriving. The bell wears the header's ink, not a
+    blue of its own — check **both themes**. Then the profile menu: **Tour**
+    and **About** are its last group, below Theme — the **?** is gone.
+29. **R30 · The 2026-09-05 small pass** — three items, one look each.
+    **Tags:** on a session with several tags, each chip is a pale wash with
+    its hue on the edge, not a filled block; the eight palette colours still
+    tell apart in **both themes**; the **format** sits beside the title with
+    a rule in its colour and no fill; the swatches in Manage Event →
+    Programme are still fully coloured. **Phone header:** narrow the window —
+    the event name shows about three more characters than before and the
+    logo stays in step with the filter row under it. **Demo gate:** open a
+    demo event logged out — the name box sits *above* the three role
+    buttons and typing a name is what enables them; try it through an
+    invite link too, where the box used to be missing altogether.
 
 ### Decisions I need from you
 
@@ -427,41 +449,17 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentioning a person: the delivery half.** Resolution is **done**: the
-  first cut landed 2026-09-04 (a comment's author links to their profile,
-  `@username` in a body links, via the shared tokenizer in
-  `shared/mentions.ts` + `MentionText.tsx`), and the `@` autocomplete landed
-  2026-09-05 (`MentionTextArea.tsx`, `findMentionQuery`/`matchMentionNames`),
-  so a mention is now picked rather than spelled. Both are in CHANGELOG
-  `[0.3.0]`. What is not done is *delivery*: a mention links, it does not
-  land anywhere that survives a closed tab. Full design in
-  `_planning/specs/mentions-and-notifications.md`.
-
-  What is left is everything that makes a mention arrive. There is no
-  notification concept at all: `sse.ts` is an in-process broker per event slug
-  that carries schedule changes to open tabs — the right transport, not the
-  storage. That wants a `notifications` table (recipient, event, source,
-  read-at), a header panel with an unread count, and answers to the questions
-  such a table raises: what else creates one besides a mention (being added as
-  a speaker, a starred session moving, a pitch of yours scheduled), whether
-  anything leaves by mail (nothing does today, and adding it changes what this
-  project stores about people), and pruning (`pruneAudit` is the precedent).
-  When delivery lands the parse moves server-side (the tokenizer is written to
-  run there too), so the stored mention and the rendered link cannot disagree.
-
-  Two edges specific to this app, both the reason to design before building.
-  **Merging**: identities merge (`mergePeople.ts`) and profiles archive
-  (migration 013), so notifications must follow a person through a merge the
-  way authorship does, or an organiser tidying duplicates silently deletes
-  someone's inbox. **Unclaimed profiles**: an organiser can type a speaker's
-  name onto a session before that person arrives, so a mention can be addressed
-  to a profile with no identity behind it — it should wait and be delivered on
-  adoption (`adoptProfile` in `people.ts`), not be dropped. (The first cut
-  resolves by username only, so an unclaimed profile is not yet a mention
-  target; that arrives with delivery.) Extending mentions from comments to
-  descriptions, bios and pitches — which render through `renderMarkdown`, and
-  whose composers do not yet have the `@` menu — is a separate step queued
-  behind this.
+- **Mentions beyond comments.** Delivery landed 2026-09-05 — the bell,
+  `server/src/notifications.ts`, migration 020, CHANGELOG `[Unreleased]`,
+  R29 — and settled the questions this item used to carry (recipient is the
+  identity, so a merge cannot orphan an inbox; 30/90-day retention; nothing
+  by mail): `_planning/specs/mentions-and-notifications.md` §Settled. What is
+  left is reach. Descriptions, bios and pitches render through
+  `renderMarkdown` and their composers have no `@` menu, so a mention there
+  neither links nor lands. And resolution is still by username only, so a
+  mention of an unclaimed profile — a name typed onto a session before that
+  person arrives — has no inbox to wait in; deliver on adoption
+  (`adoptProfile` in `people.ts`) when this is picked up.
 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** Noticed 2026-09-02 when a `git add -A` swept
@@ -484,32 +482,13 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   meant to be shared. Decide which way round, because the inverted form is
   the one that stays safe as new working files appear.
 
-- **The drop still flickers, and the fix so far only made it smaller.**
-  Reported 2026-08-31, after the two fixes in CHANGELOG `[0.3.0]` landed
-  (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
-  visible pop, "just maybe a bit less glitchy". What is already ruled out is
-  the double-application — the drop hold is absolute now, so the server's echo
-  of our own write cannot move the block a second time. What is left is
-  unidentified, and it needs eyes on a real browser: neither dev container nor
-  the test suite has a DOM, so `drawnAt` and `overlay` are tested as pure
-  functions and the actual paint is not.
-
-  Leading suspect for the grid, not yet confirmed: **lane re-layout.**
-  `drawnAt` overrides a block's `startMin`, `durMin` and `columnIndex`, but not
-  its lane — `laneLayout` recomputes from `placed`, which follows the echoed
-  row, so `lane.lane` and `lane.lanes` can change while the block is still
-  held, moving its `left` and `width` sideways mid-hold. That would be exactly
-  one horizontal pop at echo time. If confirmed, the fix is the same shape as
-  the last one: lay the grid out from the drawn positions rather than the raw
-  rows, so a held block lanes against where it is drawn.
-
-  Second suspect, cheaper to test: nothing on the block transitions position —
-  the class list carries `transition-shadow` only — so every correction, however
-  small and however correct, arrives as an instant jump. A short transform
-  transition on `top`/`left` would make a legitimate re-layout read as movement
-  instead of a glitch, and would also mask the tail of whatever the real cause
-  turns out to be. Worth doing on its own merits; not a substitute for finding
-  the cause.
+- **The permissions matrix still flicks on a switch.** Reported 2026-08-31
+  together with the grid's drop flicker. The grid half is **found and fixed**
+  (2026-09-05, `91a497e`, CHANGELOG `[Unreleased]` → Fixed, R28): the hold
+  was never handed the save to wait for, so it let go on the next tick — the
+  lane re-layout this entry used to suspect was not it. The matrix half is
+  untouched and still needs eyes on a real browser: neither the container nor
+  the suite has a DOM, so the paint itself is untested.
 
   For the permissions matrix there is no remaining suspect on file. The
   optimistic overlay does move the switch on click, so if it still flicks, the
