@@ -74,3 +74,80 @@ export function tokenizeMentions(
   flush();
   return segments;
 }
+
+/** The longest a username can be (`displayNameSchema = trimmed(40)`), and so
+ *  the furthest back from the caret an unfinished mention can start. */
+export const MAX_MENTION_QUERY = 40;
+
+/** An `@…` the caret is sitting inside: where the `@` is, and what has been
+ *  typed after it so far. */
+export interface MentionQuery {
+  /** Index of the `@` in the text. */
+  start: number;
+  /** Everything between the `@` and the caret, verbatim — it may hold spaces,
+   *  because a username may ("Ada Lovelace"). */
+  query: string;
+}
+
+/**
+ * The mention being typed at `caret`, if any — the composer's half of the
+ * tokenizer. It answers "is the caret inside an `@…`", never "is that a real
+ * name": `matchMentionNames` decides that, so the two questions stay separable
+ * and the menu can close by simply running out of candidates.
+ *
+ * The `@` must sit at a word boundary, the same rule `tokenizeMentions` uses,
+ * so typing an email address never opens a menu. A newline ends the search: a
+ * name cannot span lines, and without this a stray `@` keeps a whole paragraph
+ * under suspicion.
+ */
+export function findMentionQuery(text: string, caret: number): MentionQuery | null {
+  const limit = Math.max(0, caret - (MAX_MENTION_QUERY + 1));
+  for (let i = caret - 1; i >= limit; i--) {
+    const ch = text[i];
+    if (ch === '\n') return null;
+    if (ch === '@') {
+      // `a@b.com` is an email local part, not the start of a mention.
+      if (isWordChar(text[i - 1])) return null;
+      return { start: i, query: text.slice(i + 1, caret) };
+    }
+  }
+  return null;
+}
+
+/**
+ * The usernames worth offering for `query`, best first: names that start with
+ * what was typed, then names where it starts a later word ("@lovelace" finds
+ * "Ada Lovelace"). Matching mid-word is deliberately not offered — it makes the
+ * menu jumpy and the hit unexplainable.
+ *
+ * An empty query returns the head of the directory, so a bare `@` is a way to
+ * browse. A query that opens with whitespace returns nothing, which is what
+ * closes the menu when someone types `@` and moves on.
+ */
+export function matchMentionNames(
+  query: string,
+  knownNames: Iterable<string>,
+  limit = 6,
+): string[] {
+  if (/^\s/.test(query)) return [];
+  const q = query.toLowerCase();
+  const prefix: string[] = [];
+  const wordStart: string[] = [];
+
+  for (const name of knownNames) {
+    const lower = name.toLowerCase();
+    if (lower.startsWith(q)) prefix.push(name);
+    else if (q.length > 0 && startsAWordIn(lower, q)) wordStart.push(name);
+  }
+
+  const byName = (a: string, b: string) => a.localeCompare(b);
+  return [...prefix.sort(byName), ...wordStart.sort(byName)].slice(0, limit);
+}
+
+/** Does `q` occur in `haystack` at the start of a word? Both are lowercase. */
+function startsAWordIn(haystack: string, q: string): boolean {
+  for (let i = haystack.indexOf(q); i !== -1; i = haystack.indexOf(q, i + 1)) {
+    if (!isWordChar(haystack[i - 1])) return true;
+  }
+  return false;
+}

@@ -16,8 +16,9 @@ import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { MentionText, PersonLink, personByUsername } from './MentionText';
+import { MentionTextArea } from './MentionTextArea';
 import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
-import { ControlShell, IconButton, PrimaryButton, SecondaryButton, TextArea, TextInput } from './ui';
+import { ControlShell, IconButton, PrimaryButton, SecondaryButton, TextInput } from './ui';
 
 const KIND_LABEL: Record<ContributionKind, string> = {
   question: 'Questions',
@@ -470,14 +471,20 @@ export function SessionDetail({
           </button>
         ))}
       </div>
-      <TextArea
+      <MentionTextArea
+        people={people}
         value={body}
-        onChange={(e) => setBody(e.target.value)}
+        onValueChange={setBody}
         rows={page ? 4 : 2}
         maxLength={2000}
         placeholder={kind === 'link' ? 'Link label' : `Add a ${kind}…`}
         className="resize-none"
       />
+      {people.some((p) => p.username !== null) && (
+        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+          Type <span className="font-medium">@</span> to mention someone.
+        </p>
+      )}
       {kind === 'link' && (
         <ControlShell className="mt-1.5">
           <TextInput
