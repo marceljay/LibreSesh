@@ -134,6 +134,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A screen reader hears which row the arrow keys are on.** The speaker
+  field, the schedule search and the *Find a setting* box each showed a list
+  under the box and let the arrows move a highlight through it, but only
+  sighted people could tell where the highlight was: the box never named the
+  row it was on. It does now, the way the ARIA combobox pattern asks, and
+  the three lists share one keyboard handler instead of three that had
+  quietly drifted apart at the ends of the list.
+
 - **A password manager can save and fill the event password.** The gate's
   password box was a lone field with no form around it and no hint about
   what it was, so browsers and password managers never offered to remember

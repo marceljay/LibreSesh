@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { findSettings, tabLabel, type AdminSetting } from '../lib/adminSearch';
 import { SearchIcon } from '../components/icons';
 import { popoverPanelClass, usePopover } from '../components/Popover';
 import { bareFieldFocusRing } from '../components/ui';
+import { useListbox } from '../components/useListbox';
 
 /**
  * Find a setting by name, wherever it lives.
@@ -21,11 +22,9 @@ import { bareFieldFocusRing } from '../components/ui';
 export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => void }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
 
   const hits = useMemo(() => findSettings(query), [query]);
-  useEffect(() => setActive(0), [query]);
 
   const typed = query.trim() !== '';
   const showPanel = open && typed;
@@ -44,6 +43,21 @@ export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => voi
     onPick(setting);
   };
 
+  const list = useListbox({
+    open: showPanel,
+    count: hits.length,
+    resetOn: query,
+    onPick: (i) => {
+      const hit = hits[i];
+      if (hit) pick(hit);
+    },
+    onEscape: () => {
+      if (open) setOpen(false);
+      else setQuery('');
+    },
+  });
+  const active = list.active;
+
   return (
     <div ref={refs.setReference} className="relative w-full sm:ms-auto sm:w-56">
       <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
@@ -57,25 +71,10 @@ export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => voi
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            if (hits.length === 0) return;
-            e.preventDefault();
-            setOpen(true);
-            setActive((a) => (a + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length);
-          } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const hit = hits[active];
-            if (hit) pick(hit);
-          } else if (e.key === 'Escape') {
-            e.stopPropagation();
-            if (open) setOpen(false);
-            else setQuery('');
-          }
+          if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && hits.length > 0) setOpen(true);
+          list.onKeyDown(e);
         }}
-        role="combobox"
-        aria-expanded={showPanel}
-        aria-controls="admin-search-results"
-        aria-autocomplete="list"
+        {...list.comboboxProps}
         aria-label="Find a setting"
         placeholder="Find a setting…"
         className={`w-full rounded-lg border border-stone-500 bg-stone-50 py-1.5 ps-8 pe-3 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-950 ${bareFieldFocusRing}`}
@@ -86,8 +85,7 @@ export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => voi
           ref={refs.setFloating}
           style={floatingStyles}
           {...getFloatingProps()}
-          id="admin-search-results"
-          role="listbox"
+          {...list.listboxProps}
           className={`${popoverPanelClass} w-[20rem] p-1`}
         >
           {hits.length === 0 ? (
@@ -97,7 +95,7 @@ export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => voi
           ) : (
             <ul>
               {hits.map((setting, i) => (
-                <li key={setting.id} role="option" aria-selected={i === active}>
+                <li key={setting.id} {...list.optionProps(i)}>
                   <button
                     type="button"
                     onPointerDown={(e) => e.preventDefault()}
