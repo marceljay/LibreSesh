@@ -1,5 +1,4 @@
-import { readableInk } from '@shared/tagColors';
-
+import { TagChip } from '../components/ui';
 /**
  * The board, as the landing page shows it.
  *
@@ -108,13 +107,9 @@ function Card({ slot }: { slot: Slot }) {
       {(slot.tags?.length || slot.open) && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {slot.tags?.map((tag) => (
-            <span
-              key={tag.name}
-              className="rounded-full px-2 py-0.5 text-xs font-medium"
-              style={{ background: tag.color, color: readableInk(tag.color) }}
-            >
+            <TagChip key={tag.name} color={tag.color}>
               {tag.name}
-            </span>
+            </TagChip>
           ))}
           {slot.open && (
             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">

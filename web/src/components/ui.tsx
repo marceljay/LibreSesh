@@ -20,6 +20,7 @@ import {
   sanitizeNumberInput,
   type NumberFieldSpec,
 } from '../lib/numberField';
+import { HideIcon, UnhideIcon } from './icons';
 
 /*
  * Inline controls all stand 38px tall — `2.375rem` — so a field, a select and a
@@ -335,6 +336,44 @@ export function ControlAdornment({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * A `TextInput` for a secret, with an eye beside it that shows the characters
+ * — the thing every login has, and the one an event password most needs: it
+ * is typed once, from a slide or a whisper, into a box that only shows dots.
+ *
+ * The eye follows the login convention rather than the icon's own gloss: an
+ * open eye on the masked box (press to show), a struck one on the revealed
+ * box (press to hide). It is a `type="button"`, so it never submits the form
+ * it sits in, and it swallows its own mousedown so the caret stays in the box
+ * and typing carries on after the press. Everything else — `name`,
+ * `autoComplete`, `enterKeyHint`, `autoFocus` — passes straight through, so a
+ * password manager sees the same field it did.
+ */
+export const PasswordInput = forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>
+>(function PasswordInput(props, ref) {
+  const [shown, setShown] = useState(false);
+  return (
+    <>
+      <TextInput ref={ref} type={shown ? 'text' : 'password'} {...props} />
+      <ControlAdornment>
+        <button
+          type="button"
+          aria-label={shown ? 'Hide password' : 'Show password'}
+          aria-pressed={shown}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setShown((s) => !s)}
+          disabled={props.disabled}
+          className="-me-1 flex h-6 w-6 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+        >
+          {shown ? <UnhideIcon /> : <HideIcon />}
+        </button>
+      </ControlAdornment>
+    </>
+  );
+});
+
 /** Vertically stacked form controls, evenly spaced. */
 export function FormStack({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`flex flex-col gap-3 ${className}`}>{children}</div>;
@@ -535,6 +574,64 @@ export function RoleBadge({ role, userLabel }: { role: Role; userLabel?: string 
   return (
     <span className={`${roleTagShape} ${roleTagColor[role]} capitalize`}>
       {roleWord(role, userLabel)}
+    </span>
+  );
+}
+
+/** A stored colour is free text (an organiser may type one), so anything that
+ *  is not a hex literal must not reach `color-mix` — an invalid argument
+ *  invalidates the whole declaration and takes the chip's shape with it. */
+const isHex = (value: string): boolean => /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6,8})$/i.test(value.trim());
+
+/**
+ * A tag as it appears on the schedule: its colour as a pale wash and a
+ * hue-carrying edge, with neutral ink.
+ *
+ * The palette is bright on purpose — Okabe–Ito, chosen so two tags stay
+ * distinct to the common forms of colour blindness — but a *filled* chip
+ * spends that brightness on a surface, and a session with four tags became
+ * four saturated blocks shouting over the title they belong to. The hue is
+ * what has to survive, not the saturation: it does, in the border and the
+ * wash, and the same eight colours are still eight distinguishable things.
+ *
+ * Neutral ink rather than `readableInk`: the wash sits on the page's own
+ * background, so the text is reading against that and not against the tag's
+ * colour. That also means a colour someone typed in cannot produce an
+ * unreadable chip, which was the whole reason `readableInk` had to exist for
+ * the filled version.
+ */
+export function TagChip({ color, children }: { color: string; children: ReactNode }) {
+  const tint = isHex(color)
+    ? {
+        backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+        borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
+      }
+    : undefined;
+  return (
+    <span
+      style={tint}
+      className="inline-flex items-center rounded-full border border-stone-300 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-600 dark:text-stone-200"
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * A session's format, beside its title. Not a chip: a format is what the
+ * session *is*, where a tag is something it is about, and drawing both as
+ * coloured pills in one row made them read as one list of interchangeable
+ * labels. No fill at all, and the colour only as a rule down the leading
+ * edge — enough to tell two formats apart, not enough to compete with the
+ * title it is annotating.
+ */
+export function FormatLabel({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span
+      style={isHex(color) ? { borderColor: color } : undefined}
+      className="inline-flex items-center border-s-2 border-stone-400 ps-1.5 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400"
+    >
+      {children}
     </span>
   );
 }

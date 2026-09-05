@@ -4,14 +4,21 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { can } from '@shared/capabilities';
 import type { BundleDto, ProposalDto } from '@shared/types';
 import { dateRange } from '@shared/time';
-import { readableInk } from '@shared/tagColors';
 import { ApiError, api, type PlaceWrite, type ProposalWrite } from '../lib/api';
 import { dayLabel, todayInZone } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { useMe } from '../lib/useMe';
 import { PlaceProposalModal } from './PlaceProposalModal';
 import { ProposalModal } from './ProposalModal';
-import { EmptyState, PrimaryButton, SecondaryButton, Spinner, useConfirm, useToast } from './ui';
+import {
+  EmptyState,
+  PrimaryButton,
+  SecondaryButton,
+  Spinner,
+  TagChip,
+  useConfirm,
+  useToast,
+} from './ui';
 
 type Status = 'loading' | 'gate' | 'error' | 'ready';
 
@@ -397,13 +404,9 @@ function ProposalCard({
             const tag = tags.find((t) => t.id === id);
             if (!tag) return null;
             return (
-              <span
-                key={id}
-                className="rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{ background: tag.color, color: readableInk(tag.color) }}
-              >
+              <TagChip key={id} color={tag.color}>
                 {tag.name}
-              </span>
+              </TagChip>
             );
           })}
         </div>

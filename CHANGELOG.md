@@ -19,6 +19,28 @@ All notable changes to this project are documented here.
   one comment, and an edit that only changed the title — a session has to
   actually move. Notifications keep for 30 days once read and 90 unread.
 
+- **An eye beside the event password.** The gate's password box showed dots
+  and nothing else, so a password read off a slide or heard across a room
+  was typed blind and, when refused, retyped blind. The box now has an eye
+  at its end: press it and the characters show, press again and they hide.
+  It never submits the form, the caret stays where it was, and the browser
+  still recognises the field as the login it was — saving and filling the
+  password works as before.
+
+### Changed
+
+- **Tags are calmer, and a format no longer looks like one.** A session with
+  four tags was four saturated blocks shouting over the title they belonged
+  to. Every tag now wears its colour as a pale wash with the hue on its edge,
+  instead of filling the chip with it — which changes every tag ever created,
+  in every event, with nothing to migrate and no colour to re-pick. The eight
+  palette colours are unchanged and still tell each other apart. The format
+  moves out of that row and sits beside the title with no fill at all, just a
+  rule in its own colour: a format is what a session *is*, a tag is what it is
+  about, and two coloured pills side by side read as one list of
+  interchangeable labels. The colour swatches in Manage Event stay fully
+  coloured — that is where you judge a colour, so it has to be the real one.
+
 ### Fixed
 
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
