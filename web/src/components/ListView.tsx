@@ -1,9 +1,9 @@
 import { plural } from '../lib/plural';
 import { useMemo } from 'react';
 import type { BreakDto, RoomDto, SessionDto, TagDto } from '@shared/types';
-import { readableInk } from '@shared/tagColors';
 import { fmtMin, place, speakerLine } from '../lib/format';
 import { StarTally } from './StarTally';
+import { TagChip } from './ui';
 
 export interface ListViewProps {
   rooms: RoomDto[];
@@ -160,13 +160,9 @@ export function ListView({
                       const tag = tagById.get(id);
                       if (!tag) return null;
                       return (
-                        <span
-                          key={id}
-                          className="rounded-full px-2 py-0.5 text-xs font-medium"
-                          style={{ background: tag.color, color: readableInk(tag.color) }}
-                        >
+                        <TagChip key={id} color={tag.color}>
                           {tag.name}
-                        </span>
+                        </TagChip>
                       );
                     })}
                     {/* See Calendar: the programme is what gets marked, and

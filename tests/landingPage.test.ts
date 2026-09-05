@@ -123,11 +123,15 @@ describe('the board preview is markup, not a screenshot', () => {
     expect(preview).toContain('anyone can claim this');
   });
 
-  it('draws its tag colours from the shared palette', () => {
-    // Not hand-picked hex: the Okabe-Ito palette is what the tag picker uses,
-    // and `readableInk` is what keeps the label legible on it.
-    expect(preview).toContain("from '@shared/tagColors'");
-    expect(preview).toContain('readableInk');
+  it('draws its tags with the same chip the schedule uses', () => {
+    // Not hand-picked hex, and not a chip of its own: the preview has to keep
+    // looking like the app, so it renders `TagChip` — which carries the
+    // stored colour as a wash and an edge rather than a fill. `readableInk`
+    // went with the fill: neutral ink on the page's own background needs no
+    // per-colour decision.
+    expect(preview).toContain('TagChip');
+    expect(preview).toContain('color={tag.color}');
+    expect(preview).not.toContain('readableInk');
   });
 });
 

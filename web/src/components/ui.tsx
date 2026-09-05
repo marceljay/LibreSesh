@@ -539,6 +539,64 @@ export function RoleBadge({ role, userLabel }: { role: Role; userLabel?: string 
   );
 }
 
+/** A stored colour is free text (an organiser may type one), so anything that
+ *  is not a hex literal must not reach `color-mix` — an invalid argument
+ *  invalidates the whole declaration and takes the chip's shape with it. */
+const isHex = (value: string): boolean => /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6,8})$/i.test(value.trim());
+
+/**
+ * A tag as it appears on the schedule: its colour as a pale wash and a
+ * hue-carrying edge, with neutral ink.
+ *
+ * The palette is bright on purpose — Okabe–Ito, chosen so two tags stay
+ * distinct to the common forms of colour blindness — but a *filled* chip
+ * spends that brightness on a surface, and a session with four tags became
+ * four saturated blocks shouting over the title they belong to. The hue is
+ * what has to survive, not the saturation: it does, in the border and the
+ * wash, and the same eight colours are still eight distinguishable things.
+ *
+ * Neutral ink rather than `readableInk`: the wash sits on the page's own
+ * background, so the text is reading against that and not against the tag's
+ * colour. That also means a colour someone typed in cannot produce an
+ * unreadable chip, which was the whole reason `readableInk` had to exist for
+ * the filled version.
+ */
+export function TagChip({ color, children }: { color: string; children: ReactNode }) {
+  const tint = isHex(color)
+    ? {
+        backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`,
+        borderColor: `color-mix(in srgb, ${color} 45%, transparent)`,
+      }
+    : undefined;
+  return (
+    <span
+      style={tint}
+      className="inline-flex items-center rounded-full border border-stone-300 px-2 py-0.5 text-xs font-medium text-stone-700 dark:border-stone-600 dark:text-stone-200"
+    >
+      {children}
+    </span>
+  );
+}
+
+/**
+ * A session's format, beside its title. Not a chip: a format is what the
+ * session *is*, where a tag is something it is about, and drawing both as
+ * coloured pills in one row made them read as one list of interchangeable
+ * labels. No fill at all, and the colour only as a rule down the leading
+ * edge — enough to tell two formats apart, not enough to compete with the
+ * title it is annotating.
+ */
+export function FormatLabel({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span
+      style={isHex(color) ? { borderColor: color } : undefined}
+      className="inline-flex items-center border-s-2 border-stone-400 ps-1.5 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400"
+    >
+      {children}
+    </span>
+  );
+}
+
 export function Chip({
   active,
   onClick,
