@@ -80,6 +80,9 @@ In Docker the build stage passes `--ignore-scripts=false`, so this is handled.
 | ------------------------ | ------------------------------------------------- |
 | `npm run dev`            | API + Vite dev server together                    |
 | `npm run dev:demo`       | The same, with a role picker on the seeded demos  |
+| `npm run dev:fresh`      | Stop this checkout's dev servers first, then `dev`|
+| `npm run dev:demo:fresh` | The same, then `dev:demo`                         |
+| `npm run dev:kill`       | Just stop them                                    |
 | `npm run build`          | Compiles the server and builds `web/dist`         |
 | `npm start`              | Runs the built server (serves `web/dist` too)     |
 | `npm run seed`           | Recreates the two-day demo event                  |
