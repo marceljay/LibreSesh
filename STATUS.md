@@ -39,13 +39,15 @@ nothing local is unsaved. Suite at **1074**, lint clean, build clean.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
-`[Unreleased]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
+`[0.3.0]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
 documented in ARCHITECTURE §Form controls, and what survives of either is the
 **Forms** backlog group below. Linked sessions, the everyone-is-a-person spec,
 the breaks rework and session formats are likewise code-complete and logged
 (migrations 014–017); all that is left of them is the browser pass in
-**Awaiting your review**. 0.2.0 was tagged 2026-08-30; everything since is under
-CHANGELOG `[Unreleased]`.
+**Awaiting your review**. Everything collected since 0.2.3 (2026-09-02) is now
+cut as **0.3.0** in the CHANGELOG; `[Unreleased]` is empty again. Only v0.1.0
+and v0.2.0 carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling
+before the next cut.
 
 The 2026-08-29 UI-overhaul/permissions/pitches plan was **retired on
 2026-09-04**: of its 28 open boxes, 25 had shipped without being ticked (every
@@ -386,7 +388,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   `shared/mentions.ts` + `MentionText.tsx`), and the `@` autocomplete landed
   2026-09-05 (`MentionTextArea.tsx`, `findMentionQuery`/`matchMentionNames`),
   so a mention is now picked rather than spelled. Both are in CHANGELOG
-  `[Unreleased]`. What is not done is *delivery*: a mention links, it does not
+  `[0.3.0]`. What is not done is *delivery*: a mention links, it does not
   land anywhere that survives a closed tab. Full design in
   `_planning/specs/mentions-and-notifications.md`.
 
@@ -438,7 +440,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   the one that stays safe as new working files appear.
 
 - **The drop still flickers, and the fix so far only made it smaller.**
-  Reported 2026-08-31, after the two fixes in CHANGELOG `[Unreleased]` landed
+  Reported 2026-08-31, after the two fixes in CHANGELOG `[0.3.0]` landed
   (`461e7ab`, `9b95de7`): a dragged block and a permission switch still show a
   visible pop, "just maybe a bit less glitchy". What is already ruled out is
   the double-application — the drop hold is absolute now, so the server's echo
@@ -1017,7 +1019,7 @@ against the code on 2026-08-30:
   to the letter — there is no mail, upload or i18n anywhere in the tree.
 - **Per-room QR codes** — a code on a door that opens that room's schedule.
   Still out. Note that the tree now _has_ a QR encoder, added 2026-09-01 for
-  invite codes (CHANGELOG `[Unreleased]`, ARCHITECTURE §Invite QR codes), so
+  invite codes (CHANGELOG `[0.3.0]`, ARCHITECTURE §Invite QR codes), so
   what keeps this out is the decision and no longer the absence of the means.
 
 ## Voting: pitches yes, programme no

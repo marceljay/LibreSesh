@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.0] — 2026-09-05
+
 ### Added
 
 - **Import from a file, and give the event a new address.** The import page
