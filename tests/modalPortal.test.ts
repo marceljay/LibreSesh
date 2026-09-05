@@ -66,6 +66,24 @@ describe('a dialog escapes whatever opened it', () => {
     expect(schedule).toMatch(/<header className="[^"]*backdrop-blur/);
   });
 
+  it('never hides a focused field behind the footer', () => {
+    // SC 2.4.11 Focus Not Obscured (AA). The body is the only scroll region and
+    // the footer is a flex sibling *after* it — `shrink-0`, not sticky, absolute
+    // or fixed — so the body's own scroll-into-view keeps a focused field in
+    // the clear. Phase 0 flagged this as plausible and unproven; the layout
+    // makes it impossible, and this is what keeps the layout.
+    const body = modal.indexOf('overflow-y-auto');
+    const footer = modal.indexOf('{footer && (');
+    expect(body).toBeGreaterThan(-1);
+    expect(footer).toBeGreaterThan(body);
+    const footerDiv = modal.slice(footer, modal.indexOf('</div>', footer));
+    expect(footerDiv).toContain('shrink-0');
+    expect(footerDiv).not.toMatch(/\b(?:sticky|absolute|fixed)\b/);
+    // And the body is the *only* scroll region, so nothing inside it scrolls
+    // under a sibling of its own.
+    expect(modal.match(/overflow-y-auto/g)?.length).toBe(1);
+  });
+
   it('is the only dialog in the app, so nothing else has to know', () => {
     // Every dialog goes through `Modal`; a second hand-rolled `fixed inset-0`
     // overlay would have the same bug and none of the fix.
