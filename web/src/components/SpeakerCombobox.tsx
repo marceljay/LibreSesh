@@ -18,7 +18,7 @@ const normalize = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
  * never the silent result of free text — that silent default is exactly what
  * bred the "A. Lovelace" / "Ada Lovelace" twins.
  *
- * The chips are in billing order, which is the order they were added: the
+ * The chips are in credit order, which is the order they were added: the
  * first name is the one a cramped grid block truncates to. To reorder, remove
  * and add again — a drag handle for a list that is almost always one or two
  * names long would cost more than it is worth.

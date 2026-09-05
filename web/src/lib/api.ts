@@ -413,9 +413,9 @@ export interface SessionWrite {
   title: string;
   description?: string;
   /**
-   * Everyone giving it, in billing order: a number for somebody already on the
+   * Everyone giving it, in credit order: a number for somebody already on the
    * roster, a name for somebody new — a name that matches nobody creates a
-   * person. Omit to leave the billing alone; `[]` clears it.
+   * person. Omit to leave the credits alone; `[]` clears it.
    */
   speakers?: (number | string)[];
   /** Watch-along links, http(s). `[]` clears them. */

@@ -9,9 +9,9 @@ and **the username is required at the gate** (no more `attendee_x7f2k`);
 offered as speakers** (revised 2026-09-02 after the first cut hid them
 entirely, which was wrong).
 
-Wording note: earlier drafts said "billing" for who a session is credited
-to. That is stage jargon (whose name is on the poster) borrowed from the
-code comments, not money. This draft says **credited** throughout.
+Wording note: who a session is credited to is **credited** throughout —
+not the stage-jargon word for whose name is on the poster, which earlier
+drafts and the code comments used.
 
 ## What was reported
 

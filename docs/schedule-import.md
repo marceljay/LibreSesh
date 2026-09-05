@@ -199,7 +199,7 @@ an open session can be a workshop, and an official one can be a jam.
 | `format` | | The name of a declared format, or `null` |
 | `description` | | Markdown, up to 5000 characters |
 | `speaker` | | Free text. Matches an existing profile in this event, or creates an unclaimed one |
-| `speakers` | | The same, as a list, for a session given by more than one person — in billing order. Use either spelling; a row with both is billed to the list |
+| `speakers` | | The same, as a list, for a session given by more than one person — in credit order. Use either spelling; a row with both is credited to the list |
 | `livestreams` | | Where it is streamed: `[{ "label": "Main camera", "url": "https://…" }]`, up to 6. Rarely on a printed programme; here so an export reads back whole |
 | `type` | | `official` (default) or `open` |
 | `blocksOpenBooking` | | `true` holds the floor: while this session runs, attendees can add nothing anywhere in the event. Official sessions only. Default `false` |
@@ -370,7 +370,7 @@ Two things to know:
   tracks (with their hours), tags, formats, breaks and every session — title,
   description, speakers, streams, tags, type and whether it held the floor —
   all land. What an import has no field for is left behind and said so in the
-  first `warning`: **profiles** (speakers are billed by name and get a fresh
+  first `warning`: **profiles** (speakers are credited by name and get a fresh
   unclaimed profile each, without bio or links), **pitches**, **contributions**
   and every **star count**. If those matter, the encrypted whole-database backup
   is the restore path — this one moves a programme.

@@ -105,13 +105,13 @@ export function resolveSpeaker(
 }
 
 /**
- * Everyone a session credits, as person ids in billing order.
+ * Everyone a session credits, as person ids in credit order.
  *
  * An entry is either a person id — someone the form picked out of the roster —
  * or a name typed in for someone who is not on it yet, which
  * `resolveSpeaker`'s rules then match or create. Order is kept and duplicates
  * are dropped: the same person twice on one session is a slip of the form, not
- * a billing.
+ * a credit list.
  */
 export function resolveSpeakers(
   db: Db,
@@ -130,7 +130,7 @@ export function resolveSpeakers(
   return out;
 }
 
-/** Replace who a session credits. The rows are the billing, so they are
+/** Replace who a session credits. The rows are the credit order, so they are
  *  rewritten wholesale rather than diffed — the order is part of the value. */
 export function setSessionSpeakers(db: Db, sessionId: number, personIds: number[]): void {
   db.prepare('DELETE FROM session_speakers WHERE session_id = ?').run(sessionId);

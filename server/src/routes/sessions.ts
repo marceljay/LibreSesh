@@ -98,7 +98,7 @@ export function sessionRoutes(ctx: Ctx): Router {
    * ordinary case — would otherwise stop a speaker fixing a typo in the talk
    * an organiser scheduled for them. Who may change what is decided per
    * session by `assertMayMutate`, which consults `session.edit_own` and the
-   * billing.
+   * credits.
    */
   const userEdit = [requireWritable, limit(ctx.limiter, 'session')];
 
@@ -291,7 +291,7 @@ export function sessionRoutes(ctx: Ctx): Router {
             ).lastInsertRowid,
           );
           setTags(ctx, newId, tagIds);
-          // Each repeat is its own session from the moment it exists, billing
+          // Each repeat is its own session from the moment it exists, credits
           // included — the same people, written once per row.
           setSessionSpeakers(ctx.db, newId, speakerIds);
           return newId;
@@ -458,7 +458,7 @@ export function sessionRoutes(ctx: Ctx): Router {
     };
 
     const outcome = ctx.db.transaction((): { touched: number[]; considered: number } => {
-      // Resolve the billing once — it can mint people — and reuse it for every
+      // Resolve the credits once — it can mint people — and reuse it for every
       // session the edit touches, so a name typed once lands the same everywhere.
       const speakerIds =
         body.speakers !== undefined
@@ -486,7 +486,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           existing.id,
         );
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
-      // Absent means "leave the billing alone"; an empty array means "nobody",
+      // Absent means "leave the credits alone"; an empty array means "nobody",
       // which is a thing an organiser is allowed to say.
       if (speakerIds !== null) setSessionSpeakers(ctx.db, existing.id, speakerIds);
 

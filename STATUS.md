@@ -288,7 +288,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   (event-wide filters and the "Search everywhere" hand-off) shipped
   2026-09-04. `@ada` resolves in a comment and a speaker's name opens a
   profile, so the app knows who people are, but typing a name into the
-  search box searches the *billing* on sessions: it finds their sessions
+  search box searches the *credits* on sessions: it finds their sessions
   and not them. What is left, in order:
 
   - **`scorePerson` and the merge rule.** Username 60 exact / 45
@@ -749,7 +749,7 @@ through the priorities._
   Both were made deliberately and flagged; neither is a bug, and either could
   reasonably be reversed once the screens have been used.
 
-  - **A credited `viewer` may edit the session they are billed on.**
+  - **A credited `viewer` may edit the session they are credited on.**
     `assertMayMutate` lost its role floor entirely, so being on the bill is the
     whole test. That is the literal reading of "a speaker owns their own
     session, whatever role they hold", and a viewer only gets there because an

@@ -161,9 +161,9 @@ const importSessionSchema = z
     description: optionalTrimmed(5000).optional(),
     /** Free text, matched to an existing profile or given a new unclaimed one. */
     speaker: optionalTrimmed(120).optional(),
-    /** The same, for a session given by more than one person, in billing
+    /** The same, for a session given by more than one person, in credit
      *  order. `speaker` remains the one-name spelling; a document may use
-     *  either, and a document that uses both is billed to the list. */
+     *  either, and a document that uses both is credited to the list. */
     speakers: z.array(trimmed(120)).max(12).optional(),
     /** Where it is streamed, one link per feed. Rarely on a printed
      *  programme; carried so an export reads back whole. */
@@ -635,8 +635,8 @@ export function importEvent(
       // `speakers` is the list; `speaker` is the one-name spelling every
       // document written before this used, and still the common case. Either
       // is accepted, neither is required, and both together is the list.
-      const billed = session.speakers ?? (session.speaker ? [session.speaker] : []);
-      const speakerIds = resolveSpeakers(db, eventId, billed);
+      const credited = session.speakers ?? (session.speaker ? [session.speaker] : []);
+      const speakerIds = resolveSpeakers(db, eventId, credited);
       const sessionType = session.type ?? 'official';
       if (session.blocksOpenBooking && sessionType !== 'official') {
         throw badRequest(`${errorLabel}: only an official session can hold the floor`);

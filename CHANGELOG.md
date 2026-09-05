@@ -216,7 +216,7 @@ All notable changes to this project are documented here.
   session was read-only to them. Three separate rules had to agree before it
   worked, and none of them did:
 
-  - the right to edit demanded the billing **and** the speaker role. Being
+  - the right to edit demanded the credits **and** the speaker role. Being
     credited is the qualification now, whatever role the person holds, for one
     of five co-hosts as much as for the only name, and on an official session
     as much as an open one — the official one is precisely the session an
@@ -233,7 +233,7 @@ All notable changes to this project are documented here.
   What has not changed: a speaker still cannot move an official session or
   delete it. The form now says so above the fields and disables them, rather
   than refusing after Save. The Delete button is no longer offered to someone
-  who is billed on a session but did not create it.
+  who is credited on a session but did not create it.
 
 ### Changed
 
@@ -656,7 +656,7 @@ All notable changes to this project are documented here.
   The session form's speaker field is now a chip field that takes as many
   people as are giving it, matching names against the roster and creating the
   ones it does not find, exactly as one speaker always did. Order is the
-  billing: the first name is the one a cramped grid block truncates to. A pitch
+  credits: the first name is the one a cramped grid block truncates to. A pitch
   still names one person, through the same control. Everything downstream
   follows the whole list — the profile page, the merge tool, the ICS feed,
   search ranking, the export document, and the importer, which takes

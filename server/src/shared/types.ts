@@ -280,7 +280,7 @@ export interface SessionDto {
   title: string;
   description: string;
   /**
-   * Everyone giving this session, in billing order — the first name is the one
+   * Everyone giving this session, in credit order — the first name is the one
    * a cramped block truncates to. Empty when nobody is credited.
    */
   speakers: PersonRef[];
@@ -492,7 +492,7 @@ export interface EventExport {
     type: SessionType;
     title: string;
     description: string;
-    /** Everyone giving it, in billing order. `speaker` is the first of them,
+    /** Everyone giving it, in credit order. `speaker` is the first of them,
      *  kept because a document is read by people as often as by programs and
      *  most sessions have exactly one. */
     speakers: string[];

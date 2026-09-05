@@ -294,7 +294,7 @@ function applyChange(state: State, change: ChangeEvent): State {
           ...bundle,
           people: bundle.people.filter((p) => p.id !== id),
           // The server takes the person off every bill; mirror that so a stale
-          // name never lingers on the grid. The rest of the billing stays —
+          // name never lingers on the grid. The rest of the credits stay —
           // one speaker leaving a panel does not un-bill the others.
           sessions: bundle.sessions.map((s) =>
             s.speakers.some((p) => p.id === id)
