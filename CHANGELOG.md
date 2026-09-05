@@ -134,6 +134,11 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A phone's keyboard says what Enter will do.** At the gate the key reads
+  *Go*, in the two search boxes *Search*, and when editing a name on a
+  profile *Done* — rather than a return arrow that could mean anything. Only
+  a label: the key did the right thing already, it just did not say so.
+
 - **Adding a track, tag, format or expected person is announced.** The
   add-row stays open and clears itself after a save so the next one can be
   typed, which to a screen reader is indistinguishable from a save that was

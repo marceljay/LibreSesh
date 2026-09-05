@@ -117,3 +117,28 @@ describe('the gate is a login a password manager can see', () => {
     expect(gate).toContain("setError('Pick a username to enter');");
   });
 });
+
+describe("a phone's keyboard labels the Enter key for what it does", () => {
+  // `enterKeyHint` only relabels the key — the form or handler still has to
+  // exist (forms strategy, Phase 4). So it goes only where Enter has one clear
+  // meaning: Go at the gate, Search in a search box, Done on a single-line
+  // inline edit. Never on a multi-line field, where Enter is a newline.
+  it.each([
+    ['components', 'Gate.tsx', 'go', 3],
+    ['components', 'SearchBox.tsx', 'search', 1],
+    ['pages', 'AdminSearch.tsx', 'search', 1],
+    ['pages', 'ProfilePage.tsx', 'done', 2],
+  ] as const)('%s/%s says %s', (dir, file, hint, times) => {
+    const src = read(dir, file);
+    expect(src.match(new RegExp(`enterKeyHint="${hint}"`, 'g'))?.length ?? 0).toBe(times);
+  });
+
+  it('never labels a textarea, where Enter is a newline', () => {
+    for (const path of tsxFiles(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      for (const el of src.match(/<TextArea\b[\s\S]*?\/>/g) ?? []) {
+        expect(el, path).not.toContain('enterKeyHint');
+      }
+    }
+  });
+});

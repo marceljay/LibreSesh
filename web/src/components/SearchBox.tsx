@@ -236,6 +236,7 @@ export function SearchBox({
         }}
         {...list.comboboxProps}
         aria-label="Search sessions"
+        enterKeyHint="search"
         placeholder="Search…"
         /* Sized for what it holds rather than for the placeholder it used to
            spell out: a query is a word or two, and the field grows on focus

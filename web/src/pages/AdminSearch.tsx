@@ -76,6 +76,7 @@ export function AdminSearch({ onPick }: { onPick: (setting: AdminSetting) => voi
         }}
         {...list.comboboxProps}
         aria-label="Find a setting"
+        enterKeyHint="search"
         placeholder="Find a setting…"
         className={`w-full rounded-lg border border-stone-500 bg-stone-50 py-1.5 ps-8 pe-3 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-950 ${bareFieldFocusRing}`}
       />
