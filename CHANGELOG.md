@@ -134,6 +134,13 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Adding a track, tag, format or expected person is announced.** The
+  add-row stays open and clears itself after a save so the next one can be
+  typed, which to a screen reader is indistinguishable from a save that was
+  thrown away; the new row appears further up the page, where nothing is
+  reading. A polite announcement now says *Lightning talks added*. A failed
+  save is not announced twice: the message that reports it already is.
+
 - **The "?" beside a session's placement and its hold-the-floor switch is
   big enough to tap.** It was 20 px across, under the 24 px that WCAG 2.2 sets
   as the floor for a touch target, and it sits in a row of chips with no

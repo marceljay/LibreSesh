@@ -288,6 +288,16 @@ describe('InlineCreate is a button that becomes its field', () => {
     expect(ic).toContain('if (!saved) return;');
     expect(ic).toMatch(/setValue\(''\);\s*box\.current\?\.focus\(\);/);
   });
+
+  it('announces a save, and only a save', () => {
+    // The box clears on success, which to a screen reader is what a failure
+    // looks like too; the row that appeared is elsewhere on the page. Failure
+    // is the toast's to announce — saying it here as well reads it twice.
+    expect(ic).toContain('aria-live="polite"');
+    expect(ic).toContain('setAnnounced(`${name} added`);');
+    const failure = ic.slice(ic.indexOf('if (!saved) return;') - 200, ic.indexOf('if (!saved) return;'));
+    expect(failure).not.toContain('setAnnounced');
+  });
 });
 
 describe('every search box looks like a search box', () => {

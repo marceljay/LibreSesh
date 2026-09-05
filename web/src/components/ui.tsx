@@ -634,6 +634,12 @@ export const SecondaryButton = forwardRef<
  *
  * `onSubmit` answers whether it saved. It never throws: these handlers report
  * failure as a toast, and the box needs to know only whether to clear.
+ *
+ * A save is announced — "Lightning talks added" — through a polite live
+ * region, because the box stays open and clears: to a screen reader a cleared
+ * box and a failed save look the same, and the new row appears somewhere
+ * else on the page where nothing is reading. Failure is *not* announced here;
+ * the toast that reports it already is, and would be read twice.
  */
 export function InlineCreate({
   action,
@@ -669,6 +675,7 @@ export function InlineCreate({
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
+  const [announced, setAnnounced] = useState('');
   const opener = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLInputElement>(null);
   /** Set only when *this* closed the form, so focus goes back to the button
@@ -696,6 +703,7 @@ export function InlineCreate({
     // Failure is already a toast; keeping the text means the fix is a word,
     // not typing the whole thing again.
     if (!saved) return;
+    setAnnounced(`${name} added`);
     setValue('');
     box.current?.focus();
   };
@@ -739,6 +747,11 @@ export function InlineCreate({
       </FormRow>
       {hint && <p className={`mt-1 ${hintClass}`}>{hint}</p>}
       {children}
+      {/* Rendered from the moment the row opens, empty: a live region only
+          announces changes to a node that was already there. */}
+      <p className="sr-only" aria-live="polite">
+        {announced}
+      </p>
     </InlineForm>
   );
 }
