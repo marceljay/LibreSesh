@@ -293,8 +293,15 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               Demo event
             </p>
             <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
-              Pick a role to look around. Nothing here is private.
+              Pick a name, then a role to look around. Nothing here is private.
             </p>
+            {/* Above the roles, and not behind `!invite`. The buttons are
+                disabled until there is a name, so with the field below them
+                the gate opened on three dead controls and no stated reason —
+                and under an invite to a demo event the field was not rendered
+                at all, which disabled them for good. A role is what you pick
+                *with* a name, so the name comes first. */}
+            <div className="mb-4">{nameField}</div>
             <div className="flex flex-col gap-2">
               {roles.map((r) => (
                 <SecondaryButton
@@ -321,9 +328,6 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
               >
                 Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
               </button>
-            )}
-            {!invite && (
-              <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">{nameField}</div>
             )}
           </>
         ) : (
