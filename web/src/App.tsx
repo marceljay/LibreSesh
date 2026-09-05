@@ -2,6 +2,7 @@ import { type ComponentType, lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ConfirmProvider, Spinner, ToastProvider } from './components/ui';
 import { MeProvider } from './lib/useMe';
+import { useFollowSystemTheme } from './lib/useTheme';
 
 /**
  * Every route is a separate chunk. The app used to ship as one file, so a
@@ -30,6 +31,8 @@ const ProfilePage = named(() => import('./pages/ProfilePage'), 'ProfilePage');
 const AdminPage = named(() => import('./pages/AdminPage'), 'AdminPage');
 
 export function App() {
+  // Always mounted, so a sunset (or another tab's toggle) reaches every page.
+  useFollowSystemTheme();
   return (
     <BrowserRouter>
       <MeProvider>

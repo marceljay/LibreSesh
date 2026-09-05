@@ -34,7 +34,6 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SessionDetail } from "../components/SessionDetail";
 import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
 import { Gate } from "../components/Gate";
-import { HelpMenu } from "../components/HelpMenu";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -44,6 +43,7 @@ import {
 } from "../components/icons";
 import { ListView } from "../components/ListView";
 import { Logo } from "../components/Logo";
+import { NotificationBell } from "../components/NotificationBell";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { Rail } from "../components/Rail";
 import { SearchBox } from "../components/SearchBox";
@@ -1190,11 +1190,10 @@ export function SchedulePage() {
                   header had five controls competing for the width left over after
                   the event name. */}
               <div className="ms-auto flex items-center justify-end gap-2">
-                <HelpMenu
+                <NotificationBell slug={slug} ping={data.notificationPing} />
+                <ProfileMenu
                   onTour={() => setTourOpen(true)}
                   demo={me?.demoMode === true}
-                />
-                <ProfileMenu
                   onCalendar={setCalendar}
                   displayName={bundle.displayName}
                   slug={slug}
@@ -1648,9 +1647,7 @@ export function SchedulePage() {
               nextDay={nextDay}
               onGoToDay={goToDay}
               onOpen={openSession}
-              onMove={(s, startMin, durMin, roomId) =>
-                void moveSession(s, startMin, durMin, roomId)
-              }
+              onMove={moveSession}
             />
           </div>
         ) : (

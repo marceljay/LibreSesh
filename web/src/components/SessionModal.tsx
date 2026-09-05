@@ -35,6 +35,7 @@ import {
 } from '@shared/sessionLimits';
 import { RemoveIcon } from './icons';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
+import { TimeField } from './TimeField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Chip,
@@ -614,16 +615,16 @@ export function SessionModal({
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Start" hint="In 5-minute steps.">
-              <ControlShell disabled={!canMove}>
-                <TextInput
-                  type="time"
-                  step={300}
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  disabled={!canMove}
-                />
-              </ControlShell>
+            <Field label="Start" hint="Type it, or pick a quarter hour.">
+              <TimeField
+                aria-label="Start"
+                className="w-full"
+                value={start}
+                onChange={setStart}
+                min={dayStartMin}
+                max={dayEndMin}
+                disabled={!canMove}
+              />
             </Field>
             {/* A list plus a way past it. The list used to stop at three
                 hours, which quietly said no session runs longer — and a

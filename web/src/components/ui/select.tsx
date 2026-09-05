@@ -48,11 +48,26 @@ export function SelectContent({
   className,
   children,
   sideOffset = 4,
+  anchor,
+  alignItemWithTrigger,
   ...props
-}: React.ComponentProps<typeof BaseSelect.Popup> & { sideOffset?: number }) {
+}: React.ComponentProps<typeof BaseSelect.Popup> & {
+  sideOffset?: number;
+  /** Position against something other than the trigger — a whole field, when
+   *  the trigger is only the chevron at its end (`TimeField`). */
+  anchor?: React.ComponentProps<typeof BaseSelect.Positioner>['anchor'];
+  /** Base UI's default lays the selected item over the trigger, like a native
+   *  select. `false` drops the list below the anchor, like a menu. */
+  alignItemWithTrigger?: boolean;
+}) {
   return (
     <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={sideOffset} className="z-50 outline-hidden">
+      <BaseSelect.Positioner
+        sideOffset={sideOffset}
+        anchor={anchor}
+        alignItemWithTrigger={alignItemWithTrigger}
+        className="z-50 outline-hidden"
+      >
         <BaseSelect.Popup
           className={cn(
             'max-h-[min(24rem,var(--available-height))] min-w-[var(--anchor-width)] overflow-y-auto rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg',

@@ -114,11 +114,11 @@
     cursor: pointer;
   }
 
-  /* Native date/time inputs draw their picker glyph in the OS's own colour — a
-     dark clock/calendar that all but vanishes on a dark field. Give it a
-     consistent hit area and invert it in dark mode so the symbol you click to
-     open the picker stays visible. (The picker popup itself is the OS's, like a
-     native <select>'s menu — not ours to theme.) */
+  /* Native date inputs draw their picker glyph in the OS's own colour — a dark
+     calendar that all but vanishes on a dark field. Give it a consistent hit
+     area and invert it in dark mode so the symbol you click to open the picker
+     stays visible. (The picker popup itself is the OS's — not ours to theme.
+     Time is no longer native: see components/TimeSelect.tsx.) */
   input::-webkit-calendar-picker-indicator {
     cursor: pointer;
     opacity: 0.55;

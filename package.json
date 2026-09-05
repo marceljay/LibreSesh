@@ -11,7 +11,10 @@
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:demo": "DEMO_MODE=1 npm run dev",
-    "dev:api": "PORT=3001 tsx watch server/src/index.ts",
+    "dev:kill": "tsx scripts/killDev.ts",
+    "dev:fresh": "npm run dev:kill && npm run dev",
+    "dev:demo:fresh": "npm run dev:kill && npm run dev:demo",
+    "dev:api": "PORT=3001 tsx watch --env-file-if-exists=.env server/src/index.ts",
     "dev:web": "vite --config web/vite.config.ts",
     "build": "npm run build:server && npm run build:web",
     "build:server": "tsc -p server/tsconfig.json",

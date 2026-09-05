@@ -25,6 +25,10 @@ interface State {
   contributions: Record<number, ContributionDto[]>;
   error: string | null;
   connected: boolean;
+  /** Bumped by every `notification.ping`. A counter rather than a payload:
+   *  the frame carries nothing, so the bell refetches its own inbox over an
+   *  authenticated request instead of being told what is in it. */
+  notificationPing: number;
 }
 
 type Action =
@@ -43,6 +47,7 @@ const initial: State = {
   contributions: {},
   error: null,
   connected: false,
+  notificationPing: 0,
 };
 
 const upsert = <T extends { id: number }>(list: T[], item: T): T[] => {
@@ -125,6 +130,11 @@ const bumpCount = (counts: Record<number, number>, sessionId: number, by: number
 /** Apply one SSE change to the in-memory bundle. Every case is keyed by id, so
  *  replaying the same event twice is harmless. */
 function applyChange(state: State, change: ChangeEvent): State {
+  // Before the bundle guard: a ping says nothing about the schedule, so it
+  // has nothing to merge and no reason to wait for a bundle.
+  if (change.type === 'notification.ping') {
+    return { ...state, notificationPing: state.notificationPing + 1 };
+  }
   const bundle = state.bundle;
   if (!bundle) return state;
   const isAdmin = bundle.role === 'admin';

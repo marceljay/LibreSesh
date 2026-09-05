@@ -4,7 +4,59 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- **A mention lands somewhere now.** Writing `@ada` in a comment linked to Ada
+  and told her nothing; the way she found out was the hallway. There is a bell
+  in the header — where the **?** used to be — with the things addressed to
+  you: mentions, a session you speak at moving or being cancelled, one you
+  starred moving, your pitch getting a slot, and a new pitch for organisers.
+  Each of the five is a switch you own, under **Settings** in the panel; they
+  are yours and per event. Opening the panel is the read, so there is no
+  second button for it. Nothing is sent by email.
+
+  What it stays quiet about is the point: your own actions, a name repeated in
+  one comment, and an edit that only changed the title — a session has to
+  actually move. Notifications keep for 30 days once read and 90 unread.
+
+### Fixed
+
+- **A dragged session no longer flashes back to its old slot.** In Arrange,
+  dropping a block was meant to hold it where it landed until the server
+  answered; instead it snapped back for the whole round trip — about half a
+  second — and then jumped forward when the save came back. The hold was
+  built correctly on 2026-08-30 but never actually received the save to wait
+  for: the page handed the grid a handler that discarded it, so the hold let
+  go on the very next tick. It waits now, and the type of the handler makes
+  the mistake uncompilable. Nothing about syncing changed; the server and the
+  live stream were never the cause.
+
+- **The page follows the system theme without being asked.** With the theme
+  set to *System*, the operating system switching to dark at sunset left the
+  page light until you opened the profile menu — the thing listening for the
+  switch lived inside that menu's toggle, and so only existed while the menu
+  was open. It listens from the app itself now, on every page, and a theme
+  chosen in another tab of the same site applies here too. An explicit
+  *Dark* or *Light* still wins over the system.
+
+### Changed
+
+- **The time fields are the app's own: type it, or pick a quarter hour.** A
+  session's start, a break's from and to, a track's hours and the day's own
+  start and end were the browser's clock widget: segmented digits with the
+  operating system's blue highlight, a clock glyph that could only be dimmed
+  or inverted, and a popup that could not be themed at all — the one control
+  left on the page that looked like the browser rather than the app. Each is
+  now a box in the app's own field, with a chevron beside it that opens the
+  same list control as Room and Day. The box takes what you would actually
+  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
+  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
+  quarter hours, for when a glance beats typing. Both are capped to the
+  event's day: the list offers only those hours, and a time typed outside
+  them lands on the nearer edge — the two fields that set the day's hours
+  are the only ones left open. Something that is not a time is marked while
+  it sits in the box and put back when you leave. A time saved off the grid
+  still shows and re-saves as it was.
 
 ## [0.3.0] — 2026-09-05
 

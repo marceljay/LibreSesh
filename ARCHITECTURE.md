@@ -862,6 +862,46 @@ will cut streams; the shipped `Caddyfile` sets 300s.
 Stars and proposal interest are **not** broadcast: they are private per
 identity, and a broadcast would leak who is going to what.
 
+`Broker.publishTo` is the same channel narrowed to one person's streams, for
+the same reason: a notification is addressed to somebody, and putting "Ada
+mentioned you" on a channel every reader of the schedule is subscribed to tells
+the room who was mentioned and when. The frame it sends
+(`notification.ping`) is deliberately **contentless** — the client refetches
+its own inbox over an authenticated request — so a stream attributed to the
+wrong identity leaks a nudge and nothing else.
+
+## Notifications
+
+The transport above is the wrong storage: an in-process broker cannot promise
+that a mention survives a closed tab. So `notifications` is the truth and the
+ping is only a nudge (`server/src/notifications.ts`, migration 020).
+
+The recipient is an **identity**, never a name. Names are per event and change,
+and a merge rewrites authorship (`mergePeople.ts`) — pointing at the identity is
+what lets an inbox follow a person through both instead of being orphaned by a
+rename.
+
+Five kinds, each a switch its holder owns: `mention`, `session_changed` (a
+session you speak at moved or was cancelled), `starred_changed`, and the two
+pitch kinds. Preferences are stored as **mutes** — one row per kind switched
+*off* — so the table stays empty for everyone who never opens the panel and a
+kind added later is on by default with no backfill.
+
+Three silences are deliberate and each has a test: nothing is written to the
+person who caused it, a repeated `@name` in one comment writes one row, and an
+edit that is not a *move* (`isAMove`: start, end or room) tells the starrers
+nothing — announcing a fixed typo to a roomful of people is how a bell gets
+switched off for good.
+
+The mention parse runs server-side over `shared/mentions.ts`, the same
+tokenizer the comment renders through, so what was stored and what is drawn
+cannot disagree. Titles are frozen at write time: an edited comment must not
+rewrite a line that already reached someone.
+
+Retention is 30 days once read, 90 unread, swept on write like `pruneAudit`
+rather than by a scheduler. Nothing leaves by mail, deliberately — see
+`_planning/specs/mentions-and-notifications.md`.
+
 ## Frontend
 
 Vite + React + Tailwind, no state library. `useEventData` holds the bundle in a

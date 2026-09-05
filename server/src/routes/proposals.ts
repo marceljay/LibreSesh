@@ -6,6 +6,7 @@ import type { Role } from '../shared/types.js';
 import type { ProposalRow } from '../db.js';
 import { conflict, forbidden, notFound } from '../errors.js';
 import { NameResolver } from '../eventIdentity.js';
+import { notify, organiserIdentities } from '../notifications.js';
 import {
   loadSessionDto,
   speakerNames,
@@ -140,6 +141,24 @@ export function proposalRoutes(ctx: Ctx): Router {
         entityId: id,
       });
       ctx.broker.publish(req.event.slug, 'proposal.created', dto);
+
+      // The one kind addressed to a role rather than a person: organisers are
+      // who acts on a pitch, and a board nobody looks at is the reason pitches
+      // go unplaced. `notify` drops the one addressed to the pitcher when the
+      // pitcher is an organiser.
+      for (const identityId of organiserIdentities(ctx.db, req.event.id)) {
+        const nid = notify(ctx.db, {
+          eventId: req.event.id,
+          identityId,
+          kind: 'pitch_posted',
+          subjectType: 'proposal',
+          subjectId: id,
+          title: `New pitch: ${dto.title}`,
+          actorId: req.identity.id,
+        });
+        if (nid !== null) ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {});
+      }
+
       res.status(201).json(dto);
     },
   );
@@ -326,6 +345,21 @@ export function proposalRoutes(ctx: Ctx): Router {
         'proposal.updated',
         dtoFor(load(req.event.id, row.id), req.identity.id),
       );
+      // To the pitcher, not the room: everyone else finds out by the session
+      // appearing on the grid, which the broadcast above already did.
+      const placed = notify(ctx.db, {
+        eventId: req.event.id,
+        identityId: row.created_by,
+        kind: 'pitch_scheduled',
+        subjectType: 'session',
+        subjectId: sessionId,
+        title: `Your pitch “${row.title}” was scheduled`,
+        actorId: req.identity.id,
+      });
+      if (placed !== null) {
+        ctx.broker.publishTo(req.event.slug, row.created_by, 'notification.ping', {});
+      }
+
       res.status(201).json({ session, proposalId: row.id });
     },
   );
