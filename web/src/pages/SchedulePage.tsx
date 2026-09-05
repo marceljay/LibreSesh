@@ -34,7 +34,6 @@ import { DetailSheet } from "../components/DetailSheet";
 import { SessionDetail } from "../components/SessionDetail";
 import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
 import { Gate } from "../components/Gate";
-import { HelpMenu } from "../components/HelpMenu";
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -1190,11 +1189,9 @@ export function SchedulePage() {
                   header had five controls competing for the width left over after
                   the event name. */}
               <div className="ms-auto flex items-center justify-end gap-2">
-                <HelpMenu
+                <ProfileMenu
                   onTour={() => setTourOpen(true)}
                   demo={me?.demoMode === true}
-                />
-                <ProfileMenu
                   onCalendar={setCalendar}
                   displayName={bundle.displayName}
                   slug={slug}
