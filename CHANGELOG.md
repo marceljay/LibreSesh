@@ -170,6 +170,16 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A dragged session no longer flashes back to its old slot.** In Arrange,
+  dropping a block was meant to hold it where it landed until the server
+  answered; instead it snapped back for the whole round trip — about half a
+  second — and then jumped forward when the save came back. The hold was
+  built correctly on 2026-08-30 but never actually received the save to wait
+  for: the page handed the grid a handler that discarded it, so the hold let
+  go on the very next tick. It waits now, and the type of the handler makes
+  the mistake uncompilable. Nothing about syncing changed; the server and the
+  live stream were never the cause.
+
 - **A phone's keyboard says what Enter will do.** At the gate the key reads
   *Go*, in the two search boxes *Search*, and when editing a name on a
   profile *Done* — rather than a return arrow that could mean anything. Only
