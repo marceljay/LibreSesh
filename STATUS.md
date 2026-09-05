@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1013**, lint clean, build clean.
+nothing local is unsaved. Suite at **1046**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -248,6 +248,18 @@ clash work. Each takes a minute.
 25. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
+26. **R26 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
+    the eight leftovers from `_planning/forms-overhaul-review.md`). At the
+    gate: your browser or password manager **offers to save** the event
+    password on entry and fills it next visit; Enter enters from the name box
+    as well as the password box, and Enter with no name says *Pick a username
+    to enter*; the link phrase is **not** offered for saving. In Manage Event:
+    Enter adds a room from the **capacity** box, a break from any of its
+    boxes, and the unlock box and the QR check both submit on Enter; adding a
+    track with a screen reader on announces *… added*. The **?** beside
+    Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
+    arrowing through the list reads the row you land on. On a phone, the
+    Enter key reads *Go* at the gate and *Search* in the search box.
 
 ### Decisions I need from you
 
@@ -268,7 +280,8 @@ clash work. Each takes a minute.
 
 *Resolved and removed:* **push `dev`** (it is pushed — `origin/dev` matches, and
 its reflog shows a push after each commit) and **start forms Phase 2** (phases
-0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration).
+0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
+they left behind landed 2026-09-05 as R26).
 
 ## Blockers
 
@@ -716,45 +729,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ### Forms
 
-_A group, so form work is not scattered through the priorities. The first
-item is the overhaul's residue; the rest are the sweeps that follow it._
-
-- **What the forms overhaul left behind.** Reviewed 2026-09-04 in
-  `_planning/forms-overhaul-review.md`: the overhaul is complete as an
-  undertaking, but Phase 4 of `_planning/forms_overhaul_strategy.md` was the
-  phase the Base UI pivot ran over, and two Phase 0 findings were never picked
-  up. None of this is regressible work — it is the residue, queued here so the
-  migration plan's "complete" is true. In the order worth doing them:
-
-  - [ ] **Put the gate's password field in a real `<form>`** with
-        `name="password"` and `autoComplete="current-password"`. Password
-        managers still cannot reliably save or fill it. Most user-visible item.
-  - [ ] **An `InlineForm` primitive** (`<form noValidate onSubmit>`) for the
-        loose-controls sections, retiring the seven hand-rolled Enter-to-submit
-        handlers that remain on real forms: Gate (two), AdminInvite,
-        AdminBreaks, AdminRooms (two), AdminPermissions. Add `noValidate` to
-        `Modal`'s form at the same time — moot today (no field carries
-        `required` or `pattern`) but the first one added will race the app's
-        own message.
-  - [ ] **Write the failure-path rule into ARCHITECTURE §The component layer.**
-        The code already follows one — a modal's rejected save is a `FormError`
-        in the footer beside the button; a loose admin row's failure is a toast
-        through `errorText` — but nothing states it, which is what Phase 6
-        asked for.
-  - [ ] **`aria-controls` and `aria-activedescendant` on the three comboboxes**
-        (`SpeakerCombobox`, `SearchBox`, `AdminSearch`), and one shared
-        Arrow/Enter/Escape listbox behaviour instead of three copies. A screen
-        reader hears the box open but not which row the arrows are on.
-  - [ ] **`HelpButton` to 24 px.** Still `h-5 w-5` (20 px); WCAG 2.2 SC 2.5.8
-        wants 24 unless the spacing exception applies — check its call sites.
-  - [ ] **Test keyboard focus behind the sticky modal footer** (SC 2.4.11,
-        AA). "Plausible, not proven" in Phase 0; a live Tab through a tall
-        Add-session form is all it needs, then a `scroll-padding-bottom` if it
-        fails.
-  - [ ] **`enterKeyHint` / `inputMode`** where they help — three sites today;
-        `enterKeyHint="done"` on the single-field inline edits at least.
-  - [ ] **A polite live region on `InlineCreate`** announcing "*name* added".
-        Errors stay out of it — the error node is already `role="alert"`.
+_A group, so form work is not scattered through the priorities._
 
 - **The same pass over every other form on the site.** This is the first of
   them, not the only one — sessions, rooms, tracks, tags, formats, breaks and

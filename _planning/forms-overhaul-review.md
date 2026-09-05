@@ -211,3 +211,17 @@ computed — the computed test should have been the first commit, not the last.
 Recommended close-out, small: one `STATUS.md` edit that drops the shipped
 *Expect someone* entry and adds the list above as a single *Forms* item, with
 the gate password form first.
+
+## Postscript, 2026-09-05
+
+The eight items under *What did not land* landed the next day on
+`docs/forms-overhaul-close-out`, one commit each, in the order listed:
+`InlineForm` and the admin rows, the gate as a login form, the shared
+`useListbox` hook with `aria-activedescendant`, `HelpButton` at 24 px, the
+live region on `InlineCreate`, `enterKeyHint` where Enter has one meaning, the
+failure-path rule in ARCHITECTURE §Where a failure goes, and the sticky-footer
+question. That last one was answered by inspection rather than a live Tab: the
+footer is a flex sibling *below* the only scroll region, not an overlay on it,
+so a focused field cannot be behind it; `tests/modalPortal.test.ts` now pins
+that shape. The two documentation drifts were fixed with the same branch.
+Suite at 1046, lint and build clean, entry chunk unchanged at 61 kB gz.
