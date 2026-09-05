@@ -1148,7 +1148,12 @@ export function SchedulePage() {
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
         <div ref={foldedBar} className={foldRow}>
           <div className={foldInner}>
-            <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+            {/* Tighter below `sm`. The event name is the only thing here that
+                truncates, so every pixel the padding and the gaps give back is
+                a pixel of title — about three characters between them, which
+                is the difference between reading a name and guessing it. The
+                desktop spacing is unchanged: there is nothing to win there. */}
+            <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
               <Link
                 to="/"
                 className="flex shrink-0 items-center"
@@ -1189,7 +1194,7 @@ export function SchedulePage() {
                   action row, where it belongs beside Add session. On a phone this
                   header had five controls competing for the width left over after
                   the event name. */}
-              <div className="ms-auto flex items-center justify-end gap-2">
+              <div className="ms-auto flex items-center justify-end gap-1.5 sm:gap-2">
                 <NotificationBell slug={slug} ping={data.notificationPing} />
                 <ProfileMenu
                   onTour={() => setTourOpen(true)}
@@ -1262,7 +1267,7 @@ export function SchedulePage() {
               )}
 
               <div
-                className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 pb-3"
+                className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4"
               >
                 <div
                   data-tour="days"
@@ -1389,7 +1394,7 @@ export function SchedulePage() {
               screen (the panel). Whatever the panel is currently doing shows
               up beside it as chips you can take off one at a time. */}
           <div
-            className={`mx-auto max-w-6xl px-4 pb-3 transition-[padding] duration-700 ease-in-out motion-reduce:transition-none ${
+            className={`mx-auto max-w-6xl px-3 pb-3 transition-[padding] duration-700 ease-in-out motion-reduce:transition-none sm:px-4 ${
               folded ? "pt-2" : "pt-0"
             }`}
           >
