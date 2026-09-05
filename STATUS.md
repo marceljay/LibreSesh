@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1054**, lint clean, build clean.
+nothing local is unsaved. Suite at **1088**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

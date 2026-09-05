@@ -4,6 +4,26 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A dragged session no longer flashes back to its old slot.** In Arrange,
+  dropping a block was meant to hold it where it landed until the server
+  answered; instead it snapped back for the whole round trip — about half a
+  second — and then jumped forward when the save came back. The hold was
+  built correctly on 2026-08-30 but never actually received the save to wait
+  for: the page handed the grid a handler that discarded it, so the hold let
+  go on the very next tick. It waits now, and the type of the handler makes
+  the mistake uncompilable. Nothing about syncing changed; the server and the
+  live stream were never the cause.
+
+- **The page follows the system theme without being asked.** With the theme
+  set to *System*, the operating system switching to dark at sunset left the
+  page light until you opened the profile menu — the thing listening for the
+  switch lived inside that menu's toggle, and so only existed while the menu
+  was open. It listens from the app itself now, on every page, and a theme
+  chosen in another tab of the same site applies here too. An explicit
+  *Dark* or *Light* still wins over the system.
+
 ### Changed
 
 - **The time fields are the app's own, like every other dropdown.** A
@@ -169,24 +189,6 @@ All notable changes to this project are documented here.
   ever being asked.
 
 ### Fixed
-
-- **The page follows the system theme without being asked.** With the theme
-  set to *System*, the operating system switching to dark at sunset left the
-  page light until you opened the profile menu — the thing listening for the
-  switch lived inside that menu's toggle, and so only existed while the menu
-  was open. It listens from the app itself now, on every page, and a theme
-  chosen in another tab of the same site applies here too. An explicit
-  *Dark* or *Light* still wins over the system.
-
-- **A dragged session no longer flashes back to its old slot.** In Arrange,
-  dropping a block was meant to hold it where it landed until the server
-  answered; instead it snapped back for the whole round trip — about half a
-  second — and then jumped forward when the save came back. The hold was
-  built correctly on 2026-08-30 but never actually received the save to wait
-  for: the page handed the grid a handler that discarded it, so the hold let
-  go on the very next tick. It waits now, and the type of the handler makes
-  the mistake uncompilable. Nothing about syncing changed; the server and the
-  live stream were never the cause.
 
 - **A phone's keyboard says what Enter will do.** At the gate the key reads
   *Go*, in the two search boxes *Search*, and when editing a name on a
