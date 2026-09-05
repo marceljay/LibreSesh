@@ -86,9 +86,34 @@ describe('no field submits on its own Enter any more', () => {
     // not this pattern — it does not `void` a save.
     const SUBMIT_ON_ENTER = /e\.key === ["']Enter["'] && void /;
     const offenders = tsxFiles(WEB_SRC)
-      .filter((path) => !path.endsWith('Gate.tsx')) // converted next; see the gate test
       .filter((path) => SUBMIT_ON_ENTER.test(readFileSync(path, 'utf8')))
       .map((path) => path.slice(WEB_SRC.length + 1));
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('the gate is a login a password manager can see', () => {
+  const gate = read('components', 'Gate.tsx');
+
+  it('puts the password and the name in one form', () => {
+    // A manager only recognises a login when the password field and the
+    // username field share a <form>; the gate had neither, so the event
+    // password could not be saved or filled. Phase 0 finding 8.
+    expect(gate).toContain('<InlineForm onSubmit={() => void submit()}>');
+    expect(gate).toMatch(/type="password"\s+name="password"\s+autoComplete="current-password"/);
+    expect(gate).toMatch(/name="username"\s+autoComplete="username"/);
+  });
+
+  it('keeps the link phrase out of the manager, in a form of its own', () => {
+    // A one-time phrase is not a password to remember. And it must not nest
+    // inside the entry form, which HTML forbids and browsers silently flatten.
+    expect(gate).toContain('<InlineForm onSubmit={() => void link()}>');
+    const phrase = gate.slice(gate.indexOf('value={phrase}'), gate.indexOf('placeholder="house-dog-erratic"'));
+    expect(gate.slice(gate.indexOf('value={phrase}'))).toContain('autoComplete="off"');
+    expect(phrase).not.toContain("e.key === 'Enter'");
+  });
+
+  it('says so when Enter arrives with no name, since the browser no longer will', () => {
+    expect(gate).toContain("setError('Pick a username to enter');");
   });
 });

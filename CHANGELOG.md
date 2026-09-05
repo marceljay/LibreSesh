@@ -134,6 +134,16 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A password manager can save and fill the event password.** The gate's
+  password box was a lone field with no form around it and no hint about
+  what it was, so browsers and password managers never offered to remember
+  it — every visit meant finding the password again. The password and the
+  username are one real login form now, marked as such, so the manager
+  offers to save on first entry and fills on the next. Enter works from
+  either box, and arriving with the name empty says *Pick a username to
+  enter* instead of doing nothing. The device-link phrase stays out of the
+  manager: it is a one-time code, not a password to keep.
+
 - **Enter submits an add-row from any field in it.** The new-room, new-break,
   invite-check and unlock rows were inputs and a button with no form around
   them, so Enter did whatever each field's own key handler said: it added the
