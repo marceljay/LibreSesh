@@ -928,6 +928,30 @@ server sends a code plus details, never prose the client renders), and
 an "s". Both are enforced by source-text tests. This is not i18n — there is no
 translation layer and none is planned — it is keeping the option open.
 
+### Where a failure goes
+
+One rule, by what the person can do about it, and it is the rule the code has
+followed since the forms overhaul rather than a new one:
+
+- **A failure they can fix by changing what they typed renders where they
+  typed it, with their text intact.** In a dialog that is `FormError` in the
+  footer, beside the button they pressed — never at the top of a form they have
+  scrolled away from. On a page it is `FieldError` under the control (the
+  profile's field-at-a-time editors, the gate). The form stays open holding
+  the message until the next attempt clears it.
+- **A failure they cannot fix from the form goes to the toast:** the network,
+  a row someone else changed first (`stale`), an unexpected status. A form
+  cannot resolve those, so it must not hold them.
+
+Both paths get their sentence from `errorText`; the split is only *where* it
+lands. The one deliberate exception is the admin tab's add-rows (`InlineCreate`
+and the room and break rows): a failed add is a toast even when it is the
+person's own typo, because the open row has no line under it to put a message
+on, the box keeps the text so the fix is a word away, and the row is used a
+handful of times an event. The same class of failure must not be a toast in
+one section and inline in another; if a new screen wants a third path, this is
+the paragraph to change first.
+
 ## Security
 
 ### Threat model
