@@ -36,9 +36,12 @@ All notable changes to this project are documented here.
   same list control as Room and Day. The box takes what you would actually
   type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
   grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
-  quarter hours, for when a glance beats typing. Something that is not a
-  time is marked while it sits in the box and put back when you leave. A
-  time saved off the grid still shows and re-saves as it was.
+  quarter hours, for when a glance beats typing. Both are capped to the
+  event's day: the list offers only those hours, and a time typed outside
+  them lands on the nearer edge — the two fields that set the day's hours
+  are the only ones left open. Something that is not a time is marked while
+  it sits in the box and put back when you leave. A time saved off the grid
+  still shows and re-saves as it was.
 
 ## [0.3.0] — 2026-09-05
 

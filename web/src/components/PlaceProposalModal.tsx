@@ -32,6 +32,7 @@ export interface PlaceProposalModalProps {
   dayLabels: Record<string, string>;
   defaultDay: string;
   dayStartMin: number;
+  dayEndMin: number;
   saving: boolean;
   onCancel: () => void;
   onPlace: (body: PlaceWrite) => void;
@@ -47,6 +48,7 @@ export function PlaceProposalModal({
   dayLabels,
   defaultDay,
   dayStartMin,
+  dayEndMin,
   saving,
   onCancel,
   onPlace,
@@ -121,7 +123,14 @@ export function PlaceProposalModal({
           </Select>
         </Field>
         <Field label="Start" hint="Type it, or pick a quarter hour.">
-          <TimeField aria-label="Start" className="w-full" value={start} onChange={setStart} />
+          <TimeField
+            aria-label="Start"
+            className="w-full"
+            value={start}
+            onChange={setStart}
+            min={dayStartMin}
+            max={dayEndMin}
+          />
         </Field>
         {/* Same list and same escape hatch as the session form: a pitch being
             placed is a session, and two dialogs that disagree about how long

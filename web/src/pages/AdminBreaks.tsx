@@ -89,6 +89,9 @@ export interface AdminBreaksProps {
   breaks: BreakDto[];
   /** Every date the event runs, for the day picker. */
   days: string[];
+  /** The event's day: a break is drawn inside it, so it is picked inside it. */
+  dayStartMin: number;
+  dayEndMin: number;
   onCreate: (draft: BreakWrite) => Promise<boolean>;
   onPatch: (item: BreakDto, draft: BreakWrite) => Promise<boolean>;
   onDelete: (item: BreakDto) => Promise<boolean>;
@@ -103,7 +106,15 @@ export interface AdminBreaksProps {
  * everything and cannot be clicked; this page is the only place they are
  * edited.
  */
-export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: AdminBreaksProps) {
+export function AdminBreaks({
+  breaks,
+  days,
+  dayStartMin,
+  dayEndMin,
+  onCreate,
+  onPatch,
+  onDelete,
+}: AdminBreaksProps) {
   const [draft, setDraft] = useState<Draft>({
     label: '',
     start: '12:00',
@@ -178,6 +189,8 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
                 aria-label="From"
                 value={draft.start}
                 onChange={(v) => setDraft({ ...draft, start: v })}
+                min={dayStartMin}
+                max={dayEndMin}
               />
             </Field>
             <Field label="To">
@@ -185,6 +198,8 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
                 aria-label="To"
                 value={draft.end}
                 onChange={(v) => setDraft({ ...draft, end: v })}
+                min={dayStartMin}
+                max={dayEndMin}
               />
             </Field>
             <Field label="Day">
@@ -205,6 +220,8 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
         <BreakEditor
           item={editing}
           days={days}
+          dayStartMin={dayStartMin}
+          dayEndMin={dayEndMin}
           onPatch={onPatch}
           onDelete={onDelete}
           onClose={() => setEditing(null)}
@@ -217,12 +234,16 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
 function BreakEditor({
   item,
   days,
+  dayStartMin,
+  dayEndMin,
   onPatch,
   onDelete,
   onClose,
 }: {
   item: BreakDto;
   days: string[];
+  dayStartMin: number;
+  dayEndMin: number;
   onPatch: (item: BreakDto, draft: BreakWrite) => Promise<boolean>;
   onDelete: (item: BreakDto) => Promise<boolean>;
   onClose: () => void;
@@ -291,6 +312,8 @@ function BreakEditor({
                 aria-label="From"
                 value={draft.start}
                 onChange={(v) => setDraft({ ...draft, start: v })}
+                min={dayStartMin}
+                max={dayEndMin}
               />
           </Field>
           <Field label="To">
@@ -298,6 +321,8 @@ function BreakEditor({
                 aria-label="To"
                 value={draft.end}
                 onChange={(v) => setDraft({ ...draft, end: v })}
+                min={dayStartMin}
+                max={dayEndMin}
               />
           </Field>
           <div className="min-w-40 flex-1">

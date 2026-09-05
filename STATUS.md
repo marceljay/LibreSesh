@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1100**, lint clean, build clean.
+nothing local is unsaved. Suite at **1102**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -277,7 +277,8 @@ but it belongs beside R3 rather than in the checklist run. Each takes a minute.
     is now a box plus a chevron: type `930` or `2pm` and tab away — it reads
     09:30 / 14:00; type `noon` — the box goes red and reverts on blur; ↑/↓
     move five minutes; the chevron opens quarter hours dropped *below* the
-    field, in both themes. Enter in the box settles the time and does **not**
+    field, in both themes, and **only the event's hours** — type `7` on a
+    nine o'clock day and it lands on 09:00 (Day starts/ends stay open). Enter in the box settles the time and does **not**
     save the dialog; a second Enter does. Two
     from your 2026-09-05 notes: in **Arrange**, a dropped block stays put and
     never flashes back to its old slot before landing; and with the theme on

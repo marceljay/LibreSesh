@@ -98,3 +98,31 @@ describe("no time field is the browser's", () => {
     expect(src).toMatch(/e\.key === 'Enter'[\s\S]{0,60}e\.preventDefault\(\);\s*commit\(\);/);
   });
 });
+
+describe("the field is capped to the event's day", () => {
+  const field = readFileSync(join(WEB_SRC, 'components', 'TimeField.tsx'), 'utf8');
+
+  it('offers only the window, and lands a typed or nudged time on its edge', () => {
+    expect(field).toContain('timeChoices({ from: min, to: max, step: LIST_STEP, beyond: null, current: value })');
+    expect(field).toContain('const next = capped(minutesOf(parsed));');
+    expect(field).toContain('onChange(capped(minutesOf(base) + delta));');
+  });
+
+  it('is capped everywhere except the two fields that define the day', () => {
+    const uncapped: string[] = [];
+    for (const path of tsxFiles(WEB_SRC)) {
+      const src = readFileSync(path, 'utf8');
+      for (const el of src.match(/<TimeField\b[\s\S]*?\/>/g) ?? []) {
+        const label = /aria-label="([^"]+)"/.exec(el)?.[1] ?? '?';
+        if (/Day (?:starts|ends)/.test(label)) {
+          expect(el, label).not.toContain('min=');
+          continue;
+        }
+        if (!el.includes('min={dayStartMin}') || !el.includes('max={dayEndMin}')) {
+          uncapped.push(`${path.slice(WEB_SRC.length + 1)}: ${label}`);
+        }
+      }
+    }
+    expect(uncapped).toEqual([]);
+  });
+});
