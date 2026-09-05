@@ -12,7 +12,7 @@
 -- the free-text column from before profiles existed, stays exactly as it was:
 -- it is a historical record and nothing reads it for display.
 --
--- `sort_order` because the order is the billing: the first name is the one a
+-- `sort_order` because the order is the credit order: the first name is the one a
 -- long list is truncated to, and "Ada and Grace" is not the same poster as
 -- "Grace and Ada". The primary key stops the same person being added twice —
 -- an ordinary UNIQUE would too, but the pair is the identity of the row.

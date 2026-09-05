@@ -128,11 +128,11 @@ export function calendarRoutes(ctx: Ctx): Router {
       // "Speakers" once there are two of them, joined the way a poster would:
       // a calendar entry is read at a glance, in a notification.
       const credited = (speakers.get(s.id) ?? []).map((p) => p.name);
-      const billing =
+      const credits =
         credited.length === 0
           ? undefined
           : `${credited.length === 1 ? 'Speaker' : 'Speakers'}: ${credited.join(', ')}`;
-      const description = [billing, s.description]
+      const description = [credits, s.description]
         .filter(Boolean)
         .join('\n\n');
       return {

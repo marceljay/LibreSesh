@@ -19,7 +19,7 @@ export interface Viewer {
   permissions: Partial<PermissionMatrix>;
 }
 
-/** Whether the viewer is billed on the session under one of their profiles. */
+/** Whether the viewer is credited on the session under one of their profiles. */
 export const speaksOn = (session: SessionDto, v: Viewer): boolean =>
   session.speakers.some((p) => v.myPersonIds.has(p.id));
 
@@ -42,7 +42,7 @@ export function canEditSession(session: SessionDto, v: Viewer): boolean {
 }
 
 /** Deleting is the creator's and the organiser's, never a co-speaker's: being
- *  billed on a session is not a mandate to remove it from the programme. */
+ *  credited on a session is not a mandate to remove it from the programme. */
 export function canDeleteSession(session: SessionDto, v: Viewer): boolean {
   return (
     v.role === 'admin' ||

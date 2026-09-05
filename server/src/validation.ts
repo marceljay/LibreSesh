@@ -333,10 +333,10 @@ export const sessionSchema = z.object({
   title: trimmed(120),
   description: optionalTrimmed(5000).optional(),
   /**
-   * Everyone giving the session, in billing order. A number is somebody
+   * Everyone giving the session, in credit order. A number is somebody
    * already on the roster; a string is a name typed for somebody who is not,
    * which is matched or created the way one speaker always was. Absent leaves
-   * the billing alone on a PATCH; `[]` clears it.
+   * the credits alone on a PATCH; `[]` clears it.
    */
   speakers: z
     .array(z.union([z.number().int().positive(), trimmed(120)]))

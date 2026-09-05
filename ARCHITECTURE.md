@@ -152,7 +152,7 @@ conflated is worth keeping in view:
    request carried, because the session form posts the whole session on every
    save and a presence check reads an untouched field as a move.
 3. **May they delete it?** The creator and the organisers. `assertMayMutate` is
-   called without `speaksHere` on the delete route: being billed on a session
+   called without `speaksHere` on the delete route: being credited on a session
    is a claim on its words, not a mandate to take it off the programme.
 
 Editing is **not** gated on `session.create_open`. Creating and editing are

@@ -24,7 +24,7 @@ patch. Every other filter has the same problem and no patch.
 [mentions-and-notifications.md](mentions-and-notifications.md)) and a speaker's
 name on a session opens their profile, so the app knows who people are — but the
 only way to reach a profile is to find something they are already on. Typing a
-name into the search box searches the *billing* on sessions, which finds their
+name into the search box searches the *credits* on sessions, which finds their
 sessions and not them.
 
 ## The line: search finds things, filters narrow things
@@ -50,18 +50,18 @@ tag control in the app a few pixels from the first.
 
 | Entity | Fields | Where it goes |
 | --- | --- | --- |
-| Session | title, speakers' billed names, description | the session sheet, on its day |
+| Session | title, speakers' credited names, description | the session sheet, on its day |
 | Person | username, name, bio (page only) | `/e/:slug/p/:id` |
 
 A person's **username** is what the room calls them and is unique per event
 (migration 009), so it is an address in a way a name is not. A person's **name**
-is what their sessions are billed as. A **bio** is about them in general rather
+is what their sessions are credited as. A **bio** is about them in general rather
 than about the programme, which is why it is worth searching and worth ranking
 below everything else.
 
 Not searched, deliberately: **room and track names** (lenses — the filter panel
 names them all, and there are a dozen of them, not a thousand); **a session's
-`createdByName`** (who posted it is provenance, not a way in — the billing is
+`createdByName`** (who posted it is provenance, not a way in — the credits are
 the speaker list); **comment bodies** (a search that returns a sentence from a
 thread needs a result row that is a comment, which is a third entity and a
 larger change than this).

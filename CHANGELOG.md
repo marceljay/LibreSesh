@@ -6,6 +6,15 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Import from a file, and give the event a new address.** The import page
+  took a paste, with a file link in small print. Now there is a **Choose a JSON
+  file** button, the box takes a dropped file, and the name and size of what
+  was loaded are shown. Under the box an **Address** field overrides the
+  document's `slug` — the edit every restored export needs, since its own
+  address is taken on the instance it came from — without opening the file.
+  Changing the address withdraws a rehearsal the same way editing the document
+  does, so what you approve is always what you send.
+
 - **Choose what an export carries.** The event export was all or nothing — a
   speaker list for a website, a programme to move elsewhere and a co-organiser's
   copy all came with every profile, pitch and comment. Manage Event → Backup now
@@ -186,7 +195,7 @@ All notable changes to this project are documented here.
   minutes on one side, room names and `HH:MM` on the other. An export is now
   translated at the door — ids to the names they stood for, minutes to `HH:MM`,
   `null` to an absent key — and imported as the programme it describes, so every
-  export ever downloaded works, not only new ones. Change `event.slug` first. The
+  export ever downloaded works, not only new ones. Give it a new address. The
   programme comes across whole (sessions now carry their `livestreams` through
   an import too); profiles, pitches, contributions and star counts do not, and
   the dry run's first warning says so. The round trip — export, import, export,
@@ -261,7 +270,7 @@ All notable changes to this project are documented here.
   session was read-only to them. Three separate rules had to agree before it
   worked, and none of them did:
 
-  - the right to edit demanded the billing **and** the speaker role. Being
+  - the right to edit demanded the credits **and** the speaker role. Being
     credited is the qualification now, whatever role the person holds, for one
     of five co-hosts as much as for the only name, and on an official session
     as much as an open one — the official one is precisely the session an
@@ -278,9 +287,17 @@ All notable changes to this project are documented here.
   What has not changed: a speaker still cannot move an official session or
   delete it. The form now says so above the fields and disables them, rather
   than refusing after Save. The Delete button is no longer offered to someone
-  who is billed on a session but did not create it.
+  who is credited on a session but did not create it.
 
 ### Changed
+
+- **The whole-database backup says what it really holds.** The warning named
+  the sign-in tokens and the code hashes. It now also names the calendar-feed
+  tokens, which work against the live server as they are; the speaker-code
+  hashes, which crack offline in minutes; and every name, bio, comment and
+  who-starred-what on the instance — and it says to restore only onto a box at
+  the same address with the same cookie secret, or everyone comes back a
+  stranger.
 
 - **The landing page stops looking like a toolbar and stops making offers it
   cannot keep.** Four things were wrong with the front door, and all four were
@@ -701,7 +718,7 @@ All notable changes to this project are documented here.
   The session form's speaker field is now a chip field that takes as many
   people as are giving it, matching names against the roster and creating the
   ones it does not find, exactly as one speaker always did. Order is the
-  billing: the first name is the one a cramped grid block truncates to. A pitch
+  credits: the first name is the one a cramped grid block truncates to. A pitch
   still names one person, through the same control. Everything downstream
   follows the whole list — the profile page, the merge tool, the ICS feed,
   search ranking, the export document, and the importer, which takes

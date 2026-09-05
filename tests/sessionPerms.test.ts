@@ -63,7 +63,7 @@ describe('session permissions (client)', () => {
 
   it('lets a credited speaker edit an official session but not move it', () => {
     const s = session({ type: 'official', createdBy: 999, speakers: [{ id: 55, name: 'Ada' }] });
-    const speaker = viewer('user', 100, [55]); // billed under profile 55
+    const speaker = viewer('user', 100, [55]); // credited under profile 55
     expect(canEditSession(s, speaker)).toBe(true);
     expect(canMoveSession(s, 'user')).toBe(false); // an official slot stays the organisers'
   });
@@ -71,7 +71,7 @@ describe('session permissions (client)', () => {
   it('does not let a co-speaker delete a session they do not own', () => {
     const s = session({ type: 'official', createdBy: 999, speakers: [{ id: 55, name: 'Ada' }] });
     const speaker = viewer('user', 100, [55]);
-    expect(canDeleteSession(s, speaker)).toBe(false); // billed, but not the owner
+    expect(canDeleteSession(s, speaker)).toBe(false); // credited, but not the owner
   });
 
   it('keeps an attendee out of their own session once it is official', () => {

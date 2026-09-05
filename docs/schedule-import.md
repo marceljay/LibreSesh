@@ -23,10 +23,12 @@ hand, because it makes an event rather than editing one.
 ### In the browser
 
 **`/import`** is the same route with a screen in front of it, and is the way in
-if you have a schedule rather than a terminal. Paste the document or pick the
-file, press **Check it**, and read what would land; **Import** unlocks once that
-rehearsal succeeds and locks again the moment you edit the document, so what you
-approve is always what you send.
+if you have a schedule rather than a terminal. Choose the `.json` file, drop it
+on the box, or paste the document; give the event a different **Address** if
+the document's own is taken (an export's always is, on the instance it came
+from); press **Check it** and read what would land. **Import** unlocks once
+that rehearsal succeeds and locks again the moment you edit the document or the
+address, so what you approve is always what you send.
 
 ### From the command line
 
@@ -199,7 +201,7 @@ an open session can be a workshop, and an official one can be a jam.
 | `format` | | The name of a declared format, or `null` |
 | `description` | | Markdown, up to 5000 characters |
 | `speaker` | | Free text. Matches an existing profile in this event, or creates an unclaimed one |
-| `speakers` | | The same, as a list, for a session given by more than one person — in billing order. Use either spelling; a row with both is billed to the list |
+| `speakers` | | The same, as a list, for a session given by more than one person — in credit order. Use either spelling; a row with both is credited to the list |
 | `livestreams` | | Where it is streamed: `[{ "label": "Main camera", "url": "https://…" }]`, up to 6. Rarely on a printed programme; here so an export reads back whole |
 | `type` | | `official` (default) or `open` |
 | `blocksOpenBooking` | | `true` holds the floor: while this session runs, attendees can add nothing anywhere in the event. Official sessions only. Default `false` |
@@ -363,14 +365,15 @@ year ago imports the same way.
 
 Two things to know:
 
-- **Change `event.slug` first.** An export names the event it came from, and a
+- **Give it a new address.** An export names the event it came from, and a
   slug that is taken — including on the same instance — is refused with a
-  `409`. That is the only edit a restore needs.
+  `409`. On `/import` that is the **Address** field; from the command line,
+  edit `event.slug`. It is the only edit a restore needs.
 - **The programme comes across; the record of it being used does not.** Rooms,
   tracks (with their hours), tags, formats, breaks and every session — title,
   description, speakers, streams, tags, type and whether it held the floor —
   all land. What an import has no field for is left behind and said so in the
-  first `warning`: **profiles** (speakers are billed by name and get a fresh
+  first `warning`: **profiles** (speakers are credited by name and get a fresh
   unclaimed profile each, without bio or links), **pitches**, **contributions**
   and every **star count**. If those matter, the encrypted whole-database backup
   is the restore path — this one moves a programme.

@@ -252,7 +252,7 @@ export function fromExport(body: unknown): { doc: unknown; warnings: string[] } 
   const people = src.people?.length ?? 0;
   if (people > 0) {
     left.push(
-      `${plural(people, 'profile', 'profiles')} (speakers are billed by name and get a fresh ` +
+      `${plural(people, 'profile', 'profiles')} (speakers are credited by name and get a fresh ` +
         'unclaimed profile each, without bio or links)',
     );
   }
