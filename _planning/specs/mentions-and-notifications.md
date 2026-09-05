@@ -1,7 +1,8 @@
 # Mentioning a person, and somewhere for a mention to land
 
-**Status:** first cut in progress (2026-09-04). Clickable authors and `@username`
-links ship now; notifications are the second half and are **not** built yet.
+**Status:** resolution done (first cut 2026-09-04, the `@` menu 2026-09-05).
+Clickable authors, `@username` links and an autocomplete in the comment box all
+ship; notifications are the second half and are **not** built yet.
 
 ## Why
 
@@ -154,6 +155,36 @@ nothing about emoji or symbols.
 Recommendation: **A now, C later, skip B** — free-form respects both the app's
 ethos and the emoji names already in prod; the autocomplete is the durable fix
 for typed-name ambiguity and lands with notifications, not before.
+
+**C landed early, 2026-09-05** (`MentionTextArea`, comments only), because "I
+type `@` and nothing happens" is the first thing anyone does. It did not need
+the form-overhaul work after all — it wraps `TextArea` rather than replacing it
+— and it does not change the grammar: it only makes the free-form name of (A)
+something you pick rather than spell. So the case-collision question below is
+*softened*, not closed: a picked mention is unambiguous at the point of writing,
+but a hand-typed `@ada` still resolves to whichever of "Ada"/"ada" is found
+first, and delivery cannot rely on everyone using the menu.
+
+### How the picker avoids being flaky (the three decisions)
+
+- **Anchored to the field, not the caret.** Following the caret inside a
+  textarea means mirroring its text into a hidden div to measure where the caret
+  landed; that mirror drifts with wrapping, fonts, zoom and scroll. The menu
+  sits above the composer instead. Nothing measures text.
+- **Open is derived, not toggled.** Each keystroke recomputes the query from the
+  caret (`findMentionQuery`) and the candidates from the query
+  (`matchMentionNames`); the menu is open exactly when candidates exist. Typing
+  prose past a stray `@` closes it by running out of matches, and backspacing
+  reopens it with no state to resync. The only remembered state is an Escape,
+  held against that `@`'s offset so a different `@` is unaffected.
+- **Only input opens it.** Clicking or arrowing into an existing `@ada` does
+  not, because a menu appearing over text already written is the surprise this
+  would be resented for.
+
+Both new functions live in `shared/mentions.ts` beside the tokenizer, and share
+its boundary rule, so the composer and the renderer cannot disagree about where
+a mention starts. The insertion writes the directory's casing plus a trailing
+space — precisely what `tokenizeMentions` needs to read it back.
 
 ## Cross-references
 

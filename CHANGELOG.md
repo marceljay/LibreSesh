@@ -69,6 +69,16 @@ All notable changes to this project are documented here.
   means *has not ended yet*, across dates. And the results page no longer drops
   your filters when you re-run the query.
 
+- **An `@` menu in the comment box — pick a person instead of spelling them.**
+  Typing `@` did nothing until the whole name was right, which asked people to
+  know a username by heart and punished a typo with plain text. Now `@` opens a
+  list of the event's people, filtered as you type; ↑/↓ moves, Enter or Tab
+  picks, Escape dismisses that one menu, and a tap works on a phone. What it
+  inserts is the directory's own spelling plus the space the parser needs, so a
+  mention picked from the menu cannot fail to link. A surname finds the person
+  ("@lovelace" → Ada Lovelace), a two-word name stays reachable after the space,
+  and an email address still opens nothing.
+
 - **Mentioning a person, first cut — names you can click, and `@username` that
   links.** A name in a comment used to be plain text, so the way to point at a
   co-host was to describe them. Now a comment's author links to their profile,

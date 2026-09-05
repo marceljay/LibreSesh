@@ -9,7 +9,7 @@ Last updated: 2026-09-05
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1046**, lint clean, build clean.
+nothing local is unsaved. Suite at **1074**, lint clean, build clean.
 
 - **UI pass from your checklist** (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -30,6 +30,12 @@ nothing local is unsaved. Suite at **1046**, lint clean, build clean.
   `server/src/importDocument.ts`, with the round trip pinned in
   `tests/importExport.test.ts` — and Manage Event → Backup has four checkboxes
   (`?include=` on the route) for what an export carries. Queued as R26.
+
+- **The comment box's `@` menu** (2026-09-05). Typing `@` did nothing until the
+  whole username was spelled right; it now opens a filtered list of the event's
+  people and inserts the name it resolved. Code-complete, 27 tests, queued as
+  R27 — the last item in the browser list, not the first, because it is the
+  only one there that is not part of the checklist pass.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -106,7 +112,8 @@ that is where these break.
 Freshest first — **R26 is the export/import work and R19–R25 are today's
 checklist pass**, all of them ones I have never seen rendered; R1–R2 are the
 forms overhaul and the grid-block fix, R3–R5 the mentions, linked-sessions and
-clash work. Each takes a minute.
+clash work. **R27, the `@` menu, is at the foot of the list** — newest of all,
+but it belongs beside R3 rather than in the checklist run. Each takes a minute.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -264,6 +271,13 @@ clash work. Each takes a minute.
     Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
     arrowing through the list reads the row you land on. On a phone, the
     Enter key reads *Go* at the gate and *Search* in the search box.
+27. **R27 · The `@` menu in the comment box.** Open a session and type `@` in
+    the comment field. *Pass:* a list of the event's people appears above the
+    field and narrows as you type; ↑/↓ moves the highlight, Enter *or* Tab
+    inserts the name with a space after it, Escape closes only the menu (not
+    the session panel). Typing a surname finds the person; typing prose past a
+    stray `@` closes the menu and backspacing reopens it; `a@b.com` opens
+    nothing. On a phone, tapping a name inserts it and the keyboard stays up.
 
 ### Decisions I need from you
 
@@ -366,12 +380,14 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentioning a person: the delivery half.** The **first cut landed
-  2026-09-04** (CHANGELOG `[Unreleased]`) — a comment's author links to their
-  profile, and `@username` in a comment body links too, via a shared tokenizer
-  (`shared/mentions.ts`, `web/src/components/MentionText.tsx`). It resolves but
-  does not yet *deliver*: a mention links, it does not land anywhere that
-  survives a closed tab. Full design in
+- **Mentioning a person: the delivery half.** Resolution is **done**: the
+  first cut landed 2026-09-04 (a comment's author links to their profile,
+  `@username` in a body links, via the shared tokenizer in
+  `shared/mentions.ts` + `MentionText.tsx`), and the `@` autocomplete landed
+  2026-09-05 (`MentionTextArea.tsx`, `findMentionQuery`/`matchMentionNames`),
+  so a mention is now picked rather than spelled. Both are in CHANGELOG
+  `[Unreleased]`. What is not done is *delivery*: a mention links, it does not
+  land anywhere that survives a closed tab. Full design in
   `_planning/specs/mentions-and-notifications.md`.
 
   What is left is everything that makes a mention arrive. There is no
@@ -396,8 +412,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   adoption (`adoptProfile` in `people.ts`), not be dropped. (The first cut
   resolves by username only, so an unclaimed profile is not yet a mention
   target; that arrives with delivery.) Extending mentions from comments to
-  descriptions, bios and pitches — which render through `renderMarkdown` — is a
-  separate step queued behind this.
+  descriptions, bios and pitches — which render through `renderMarkdown`, and
+  whose composers do not yet have the `@` menu — is a separate step queued
+  behind this.
 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** Noticed 2026-09-02 when a `git add -A` swept
