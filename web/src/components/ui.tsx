@@ -20,6 +20,7 @@ import {
   sanitizeNumberInput,
   type NumberFieldSpec,
 } from '../lib/numberField';
+import { HideIcon, UnhideIcon } from './icons';
 
 /*
  * Inline controls all stand 38px tall — `2.375rem` — so a field, a select and a
@@ -334,6 +335,44 @@ export function ControlAdornment({ children }: { children: ReactNode }) {
     </span>
   );
 }
+
+/**
+ * A `TextInput` for a secret, with an eye beside it that shows the characters
+ * — the thing every login has, and the one an event password most needs: it
+ * is typed once, from a slide or a whisper, into a box that only shows dots.
+ *
+ * The eye follows the login convention rather than the icon's own gloss: an
+ * open eye on the masked box (press to show), a struck one on the revealed
+ * box (press to hide). It is a `type="button"`, so it never submits the form
+ * it sits in, and it swallows its own mousedown so the caret stays in the box
+ * and typing carries on after the press. Everything else — `name`,
+ * `autoComplete`, `enterKeyHint`, `autoFocus` — passes straight through, so a
+ * password manager sees the same field it did.
+ */
+export const PasswordInput = forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>
+>(function PasswordInput(props, ref) {
+  const [shown, setShown] = useState(false);
+  return (
+    <>
+      <TextInput ref={ref} type={shown ? 'text' : 'password'} {...props} />
+      <ControlAdornment>
+        <button
+          type="button"
+          aria-label={shown ? 'Hide password' : 'Show password'}
+          aria-pressed={shown}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setShown((s) => !s)}
+          disabled={props.disabled}
+          className="-me-1 flex h-6 w-6 items-center justify-center rounded-md text-stone-500 hover:bg-stone-200 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-50 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+        >
+          {shown ? <UnhideIcon /> : <HideIcon />}
+        </button>
+      </ControlAdornment>
+    </>
+  );
+});
 
 /** Vertically stacked form controls, evenly spaced. */
 export function FormStack({ children, className = '' }: { children: ReactNode; className?: string }) {

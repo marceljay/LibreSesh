@@ -19,6 +19,14 @@ All notable changes to this project are documented here.
   one comment, and an edit that only changed the title — a session has to
   actually move. Notifications keep for 30 days once read and 90 unread.
 
+- **An eye beside the event password.** The gate's password box showed dots
+  and nothing else, so a password read off a slide or heard across a room
+  was typed blind and, when refused, retyped blind. The box now has an eye
+  at its end: press it and the characters show, press again and they hide.
+  It never submits the form, the caret stays where it was, and the browser
+  still recognises the field as the login it was — saving and filling the
+  password works as before.
+
 ### Changed
 
 - **Tags are calmer, and a format no longer looks like one.** A session with
