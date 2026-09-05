@@ -23,10 +23,12 @@ hand, because it makes an event rather than editing one.
 ### In the browser
 
 **`/import`** is the same route with a screen in front of it, and is the way in
-if you have a schedule rather than a terminal. Paste the document or pick the
-file, press **Check it**, and read what would land; **Import** unlocks once that
-rehearsal succeeds and locks again the moment you edit the document, so what you
-approve is always what you send.
+if you have a schedule rather than a terminal. Choose the `.json` file, drop it
+on the box, or paste the document; give the event a different **Address** if
+the document's own is taken (an export's always is, on the instance it came
+from); press **Check it** and read what would land. **Import** unlocks once
+that rehearsal succeeds and locks again the moment you edit the document or the
+address, so what you approve is always what you send.
 
 ### From the command line
 
@@ -363,9 +365,10 @@ year ago imports the same way.
 
 Two things to know:
 
-- **Change `event.slug` first.** An export names the event it came from, and a
+- **Give it a new address.** An export names the event it came from, and a
   slug that is taken — including on the same instance — is refused with a
-  `409`. That is the only edit a restore needs.
+  `409`. On `/import` that is the **Address** field; from the command line,
+  edit `event.slug`. It is the only edit a restore needs.
 - **The programme comes across; the record of it being used does not.** Rooms,
   tracks (with their hours), tags, formats, breaks and every session — title,
   description, speakers, streams, tags, type and whether it held the floor —

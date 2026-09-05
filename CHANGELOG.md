@@ -6,6 +6,15 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **Import from a file, and give the event a new address.** The import page
+  took a paste, with a file link in small print. Now there is a **Choose a JSON
+  file** button, the box takes a dropped file, and the name and size of what
+  was loaded are shown. Under the box an **Address** field overrides the
+  document's `slug` — the edit every restored export needs, since its own
+  address is taken on the instance it came from — without opening the file.
+  Changing the address withdraws a rehearsal the same way editing the document
+  does, so what you approve is always what you send.
+
 - **Choose what an export carries.** The event export was all or nothing — a
   speaker list for a website, a programme to move elsewhere and a co-organiser's
   copy all came with every profile, pitch and comment. Manage Event → Backup now
@@ -141,7 +150,7 @@ All notable changes to this project are documented here.
   minutes on one side, room names and `HH:MM` on the other. An export is now
   translated at the door — ids to the names they stood for, minutes to `HH:MM`,
   `null` to an absent key — and imported as the programme it describes, so every
-  export ever downloaded works, not only new ones. Change `event.slug` first. The
+  export ever downloaded works, not only new ones. Give it a new address. The
   programme comes across whole (sessions now carry their `livestreams` through
   an import too); profiles, pitches, contributions and star counts do not, and
   the dry run's first warning says so. The round trip — export, import, export,

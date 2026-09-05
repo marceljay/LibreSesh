@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
 import { api, ApiError } from '../lib/api';
-import { parseDoc, type DocSummary } from '../lib/importDoc';
+import { parseDoc, withSlug, type DocSummary } from '../lib/importDoc';
 import {
   ControlShell,
   Field,
@@ -65,10 +65,20 @@ export function ImportPage() {
 
   const [instanceKey, setInstanceKey] = useState('');
   const [text, setText] = useState('');
+  /** The file the text came from, when it came from one — for the label only. */
+  const [fileName, setFileName] = useState<string | null>(null);
+  /** A new address for the event. Blank sends the document's own. */
+  const [slug, setSlug] = useState('');
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'check' | 'import' | null>(null);
-  /** The dry run, and the exact text it was run against. */
-  const [checked, setChecked] = useState<{ text: string; result: ImportResult } | null>(null);
+  /** The dry run, and exactly what it was run against: the text and the
+   *  address, since either one changes what would be sent. */
+  const [checked, setChecked] = useState<{
+    text: string;
+    slug: string;
+    result: ImportResult;
+  } | null>(null);
   const [done, setDone] = useState<{ slug: string; generated: GeneratedPasswords } | null>(null);
 
   const parsed = parseDoc(text);
@@ -78,7 +88,8 @@ export function ImportPage() {
   const bytes = byteLength(text);
   const oversize = bytes > MAX_BYTES;
   /** A result only describes the box while the box still says what it said. */
-  const rehearsal = checked && checked.text === text ? checked.result : null;
+  const rehearsal =
+    checked && checked.text === text && checked.slug === slug ? checked.result : null;
 
   const readFile = (file: File | undefined) => {
     if (!file) return;
@@ -91,6 +102,7 @@ export function ImportPage() {
     }
     void file.text().then((contents) => {
       setText(contents);
+      setFileName(file.name);
       setError(null);
       setChecked(null);
     });
@@ -101,9 +113,9 @@ export function ImportPage() {
     setBusy(dryRun ? 'check' : 'import');
     setError(null);
     try {
-      const result = await api.importEvent(instanceKey, parsed.doc, { dryRun });
+      const result = await api.importEvent(instanceKey, withSlug(parsed.doc, slug), { dryRun });
       if (dryRun) {
-        setChecked({ text, result });
+        setChecked({ text, slug, result });
         setBusy(null);
         return;
       }
@@ -122,7 +134,7 @@ export function ImportPage() {
       // not the general one with a clause bolted on — see i18n readiness.
       const message =
         err instanceof ApiError && err.code === 'slug_taken'
-          ? 'That address is already taken. Change "slug" in the document to something free.'
+          ? 'That address is already taken. Give the event a new one in the Address field.'
           : errorText(err);
       setError(message);
       setBusy(null);
@@ -192,17 +204,23 @@ export function ImportPage() {
         </Field>
 
         <div className="mt-4">
-          <div className="mb-1.5 flex items-baseline justify-between gap-3">
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs font-medium text-stone-600 dark:text-stone-300">
               The document
             </span>
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              className={`${linkClass} text-xs underline`}
-            >
-              Choose a file…
-            </button>
+            <span className="flex items-center gap-3">
+              {fileName && (
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  {fileName} · {asKb(bytes)}
+                </span>
+              )}
+              <SecondaryButton
+                onClick={() => fileInput.current?.click()}
+                disabled={busy !== null}
+              >
+                {fileName ? 'Choose another file…' : 'Choose a JSON file…'}
+              </SecondaryButton>
+            </span>
             {/* eslint-disable-next-line no-restricted-syntax -- hidden file input, not a text field */}
             <input
               ref={fileInput}
@@ -216,17 +234,36 @@ export function ImportPage() {
               }}
             />
           </div>
-          <TextArea
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              setError(null);
+          {/* The box takes a dropped file as readily as the button takes a
+              picked one; the paste path stays for a document typed elsewhere. */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
             }}
-            spellCheck={false}
-            rows={14}
-            placeholder={'{\n  "event": { "name": "…", "slug": "…" },\n  "rooms": [ … ]\n}'}
-            className="resize-y font-mono text-xs leading-relaxed"
-          />
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              readFile(e.dataTransfer.files?.[0]);
+            }}
+            className={dragging ? 'rounded-lg ring-2 ring-amber-400' : ''}
+          >
+            <TextArea
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setFileName(null);
+                setError(null);
+              }}
+              spellCheck={false}
+              rows={14}
+              placeholder={
+                'Drop a .json file here, choose one above, or paste:\n{\n  "event": { "name": "…", "slug": "…" },\n  "rooms": [ … ]\n}'
+              }
+              className="resize-y font-mono text-xs leading-relaxed"
+            />
+          </div>
           {text.trim() !== '' && !parsed.ok && (
             <p className="mt-2 text-xs text-red-600 dark:text-red-400">{parsed.error}</p>
           )}
@@ -235,7 +272,32 @@ export function ImportPage() {
               This document is {asKb(bytes)}, and this server accepts {asKb(MAX_BYTES)}.
             </p>
           )}
-          {summary && <Summary summary={summary} />}
+          {summary && <Summary summary={summary} slug={slug.trim() || null} />}
+        </div>
+
+        <div className="mt-4">
+          <Field
+            label="Address"
+            hint={
+              summary?.slug
+                ? `Optional. The document says /e/${summary.slug}; fill this in to use a different address — an export's own is always taken on the instance it came from.`
+                : 'Optional. Overrides the "slug" in the document. Letters, digits and dashes.'
+            }
+          >
+            <ControlShell>
+              <TextInput
+                value={slug}
+                onChange={(e) => {
+                  setSlug(e.target.value);
+                  setError(null);
+                }}
+                placeholder={summary?.slug ?? 'valley-2026'}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </ControlShell>
+          </Field>
         </div>
 
         {error && <FormError className="mt-4">{error}</FormError>}
@@ -274,8 +336,10 @@ export function ImportPage() {
   );
 }
 
-/** What is in the box, read locally. Not a verdict — that is the dry run's. */
-function Summary({ summary }: { summary: DocSummary }) {
+/** What is in the box, read locally. Not a verdict — that is the dry run's.
+ *  `slug` is the Address field when it is filled in, which wins. */
+function Summary({ summary, slug }: { summary: DocSummary; slug: string | null }) {
+  const address = slug ?? summary.slug;
   const parts = [
     plural(summary.rooms, NOUNS.rooms),
     plural(summary.tracks, NOUNS.tracks),
@@ -289,7 +353,7 @@ function Summary({ summary }: { summary: DocSummary }) {
       <span className="font-medium text-stone-700 dark:text-stone-200">
         {summary.name ?? 'Untitled'}
       </span>
-      {summary.slug && <span className="font-mono"> /e/{summary.slug}</span>}
+      {address && <span className="font-mono"> /e/{address}</span>}
       {summary.dates && (
         <span>
           {' · '}

@@ -108,6 +108,7 @@ is a template to copy; the test suite dry-runs it, so it cannot go stale.
 
 An event's own `export.json` is not written in this form — it is a record of
 ids — but the importer reads one anyway: it is translated at the door and
-imported as the programme it describes. Change `event.slug` first; profiles,
+imported as the programme it describes. Give it a new address — the **Address**
+field on `/import` — since its own is taken; profiles,
 pitches, contributions and star counts stay behind, and the first warning says
 so. See [schedule-import.md §Importing an export](schedule-import.md#importing-an-export).
