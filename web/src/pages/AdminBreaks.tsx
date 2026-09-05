@@ -1,4 +1,5 @@
 import { Modal } from '../components/Modal';
+import { TimeField } from '../components/TimeField';
 import { useState } from 'react';
 import type { BreakDto } from '@shared/types';
 import type { BreakWrite } from '../lib/api';
@@ -173,24 +174,18 @@ export function AdminBreaks({ breaks, days, onCreate, onPatch, onDelete }: Admin
               </Field>
             </div>
             <Field label="From">
-              <ControlShell>
-                <TextInput
-                  type="time"
-                  step={300}
-                  value={draft.start}
-                  onChange={(e) => setDraft({ ...draft, start: e.target.value })}
-                />
-              </ControlShell>
+              <TimeField
+                aria-label="From"
+                value={draft.start}
+                onChange={(v) => setDraft({ ...draft, start: v })}
+              />
             </Field>
             <Field label="To">
-              <ControlShell>
-                <TextInput
-                  type="time"
-                  step={300}
-                  value={draft.end}
-                  onChange={(e) => setDraft({ ...draft, end: e.target.value })}
-                />
-              </ControlShell>
+              <TimeField
+                aria-label="To"
+                value={draft.end}
+                onChange={(v) => setDraft({ ...draft, end: v })}
+              />
             </Field>
             <Field label="Day">
               <DayPicker
@@ -292,24 +287,18 @@ function BreakEditor({
         </Field>
         <FormRow>
           <Field label="From">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
+            <TimeField
+                aria-label="From"
                 value={draft.start}
-                onChange={(e) => setDraft({ ...draft, start: e.target.value })}
+                onChange={(v) => setDraft({ ...draft, start: v })}
               />
-            </ControlShell>
           </Field>
           <Field label="To">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
+            <TimeField
+                aria-label="To"
                 value={draft.end}
-                onChange={(e) => setDraft({ ...draft, end: e.target.value })}
+                onChange={(v) => setDraft({ ...draft, end: v })}
               />
-            </ControlShell>
           </Field>
           <div className="min-w-40 flex-1">
             <Field label="Day">

@@ -321,13 +321,17 @@ export interface CalendarProps {
   canEdit: (session: SessionDto) => boolean;
   onOpen: (id: number) => void;
   /** Resolves when the move has been saved (or rejected) — the block is held
-   *  at the drop position until then. */
+   *  at the drop position until then. `Promise<void>`, not `void | Promise`:
+   *  a caller that wrapped its handler in `void …` satisfied the looser type
+   *  and released the hold on the next microtask, so every drop flashed back
+   *  to its old slot for a whole round trip. The type is what stops that
+   *  coming back. */
   onMove: (
     session: SessionDto,
     startMin: number,
     durMin: number,
     roomId: number,
-  ) => void | Promise<void>;
+  ) => Promise<void>;
 }
 
 export function Calendar({
@@ -485,10 +489,10 @@ export function Calendar({
        * still snaps back — just at the moment we learn it failed, which is the
        * only moment that means anything.
        */
-      const settle = (held: DragTarget, result: void | Promise<void>) => {
+      const settle = (held: DragTarget, result: Promise<void>) => {
         setDrag(held);
         pending.current = session.id;
-        void Promise.resolve(result).finally(() => {
+        void result.finally(() => {
           pending.current = null;
           setDrag((d) => (d?.id === session.id ? null : d));
         });

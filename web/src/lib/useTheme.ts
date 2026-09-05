@@ -43,18 +43,43 @@ export interface ThemeControl {
   setTheme: (theme: Theme) => void;
 }
 
-/** Theme choice with persistence; follows the OS while set to `'system'`. */
+/**
+ * Keeps the page following the OS (and the other tabs) for as long as the app
+ * is open. Mount it **once, at the root**.
+ *
+ * This used to live inside `useTheme`, which only the toggle calls — and the
+ * toggle sits in the profile menu, which is only mounted while the menu is
+ * open. So the listener that noticed an OS switch existed for the few seconds
+ * a menu was on screen: the OS went dark at sunset and the page stayed light
+ * until somebody clicked their name. The listener has to belong to something
+ * that is always mounted, and the only such thing is the app.
+ *
+ * It reads the stored choice at the moment of the change rather than
+ * capturing it, so an explicit "dark" chosen after this mounted is honoured —
+ * the OS flipping to light must not override a person who asked for dark.
+ */
+export function useFollowSystemTheme(): void {
+  useEffect(() => {
+    const sync = (): void => applyTheme(readStored());
+    sync();
+    const mq = window.matchMedia(MEDIA_QUERY);
+    mq.addEventListener('change', sync);
+    // A choice made in another tab of the same site.
+    window.addEventListener('storage', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, []);
+}
+
+/** Theme choice with persistence. Following the OS while set to `'system'` is
+ *  `useFollowSystemTheme`'s job, at the root; this only applies a choice. */
 export function useTheme(): ThemeControl {
   const [theme, setThemeState] = useState<Theme>(readStored);
 
   useEffect(() => {
     applyTheme(theme);
-    if (theme !== 'system') return;
-    // Pick up a mid-session OS switch while tracking the system preference.
-    const mq = window.matchMedia(MEDIA_QUERY);
-    const onChange = (): void => applyTheme('system');
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
   }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {

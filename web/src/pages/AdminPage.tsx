@@ -41,6 +41,7 @@ import { ColumnsIcon, MoreIcon, SearchIcon } from '../components/icons';
 import { PersonStatusBadge } from '../components/PersonLine';
 import { popoverPanelClass, usePopover } from '../components/Popover';
 import { RoleControl } from '../components/RoleControl';
+import { TimeField } from '../components/TimeField';
 
 /**
  * The People table's columns, shared by the header and every row so the two
@@ -1838,14 +1839,10 @@ export function AdminPage() {
                   </ControlShell>
                 </Field>
                 <Field label="Day starts">
-                  <ControlShell>
-                    <TextInput type="time" step={300} value={dayStart} onChange={(e) => setDayStart(e.target.value)} />
-                  </ControlShell>
+                  <TimeField aria-label="Day starts" className="w-full" value={dayStart} onChange={setDayStart} />
                 </Field>
                 <Field label="Day ends">
-                  <ControlShell>
-                    <TextInput type="time" step={300} value={dayEnd} onChange={(e) => setDayEnd(e.target.value)} />
-                  </ControlShell>
+                  <TimeField aria-label="Day ends" className="w-full" value={dayEnd} onChange={setDayEnd} />
                 </Field>
               </FormGrid>
             </SettingAnchor>
@@ -2418,24 +2415,10 @@ function TrackHoursFields({
     <div className="space-y-3 rounded-lg border border-stone-200 p-3 dark:border-stone-700">
       <FormRow>
         <Field label="From">
-          <ControlShell>
-            <TextInput
-              type="time"
-              step={300}
-              value={start}
-              onChange={(e) => onStart(e.target.value)}
-            />
-          </ControlShell>
+          <TimeField aria-label="From" value={start} onChange={onStart} />
         </Field>
         <Field label="To" hint={minutesOf(end) > minutesOf(start) ? undefined : 'Must be later.'}>
-          <ControlShell>
-            <TextInput
-              type="time"
-              step={300}
-              value={end}
-              onChange={(e) => onEnd(e.target.value)}
-            />
-          </ControlShell>
+          <TimeField aria-label="To" value={end} onChange={onEnd} />
         </Field>
       </FormRow>
 
@@ -2478,24 +2461,10 @@ function TrackHoursFields({
             </Select>
           </Field>
           <Field label="From">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </ControlShell>
+            <TimeField aria-label="From" value={from} onChange={setFrom} />
           </Field>
           <Field label="To">
-            <ControlShell>
-              <TextInput
-                type="time"
-                step={300}
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
-            </ControlShell>
+            <TimeField aria-label="To" value={to} onChange={setTo} />
           </Field>
           <SecondaryButton onClick={addDay} disabled={!day || minutesOf(to) <= minutesOf(from)}>
             Add day

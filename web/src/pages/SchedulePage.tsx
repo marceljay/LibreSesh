@@ -1648,9 +1648,7 @@ export function SchedulePage() {
               nextDay={nextDay}
               onGoToDay={goToDay}
               onOpen={openSession}
-              onMove={(s, startMin, durMin, roomId) =>
-                void moveSession(s, startMin, durMin, roomId)
-              }
+              onMove={moveSession}
             />
           </div>
         ) : (
