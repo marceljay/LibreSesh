@@ -2,9 +2,9 @@
 
 **Written 2026-09-05** against `dev` at `52fc390`. Suite 1146, lint clean.
 
-**Phase 0 and Phase 1 are done (2026-09-06).** Audit went 10 → 7; every
-advisory that reached production is gone. What is left is the three below, all
-needing a major. Baselines are in `_planning/deps/`.
+**Phases 0–2 are done (2026-09-06).** Audit went **10 → 2**: the critical, the
+high and everything that reached production are gone. The two left are the
+react-router pair, which needs Phase 4. Baselines in `_planning/deps/`.
 
 ## The numbers
 
@@ -131,10 +131,29 @@ Each phase is its own commit, and each ends green on `npm run lint && npm test`.
   is not specific to Phase 5 — **it applies to every phase that installs
   anything**, and it should be the step immediately after any install.
 
-### Phase 2 — dev-only majors (clears critical + high + esbuild)
-- `vite` 5→8 and `vitest` 2→5 **together** — vitest depends on vite, and
-  splitting them means a peer conflict for one commit.
-- `@vitejs/plugin-react` 4→6 in the same commit if v6 is what vite 8 wants.
+### Phase 2 — dev-only majors (clears critical + high + esbuild) ✅ done 2026-09-06
+
+**Corrected before execution: went to vite 6.4.3 and vitest 3.2.7, not 8 and 5.**
+Checking `engines` before installing changed the answer, and the original
+target would have quietly broken the production build:
+
+- **`vitest` 5 requires `^22.12 || ^24 || >=26` — it drops Node 20 entirely.**
+  `deploy/Dockerfile` builds *and* runs on `node:20-slim`, and `engines` says
+  `>=20`. Taking vitest 5 makes the repo untestable on the Node the product is
+  built with, while package.json still claims otherwise.
+- **`vite` 8 needs `^20.19 || >=22.12`** — survivable on node:20-slim, but only
+  just, and pointless on its own.
+- **The advisories never needed those majors.** The fix ranges are
+  `vite <=6.4.2` and `vitest <3.2.6`. So **vite 6.4.3 + vitest 3.2.7** clears
+  all four dev advisories — and both keep `^18 || ^20 || >=22`, so Node 20 is
+  still supported and nothing about the build image has to change.
+- `@vitejs/plugin-react` **stays at 4.7.0**: its peer range is already
+  `^4.2 || ^5 || ^6 || ^7`, so it takes vite 6 unchanged. v5 and v6 would have
+  forced Node 20.19+ for no gain.
+- Result: **7 → 2**, esbuild pulled forward to 0.28.2 as a transitive. Lint,
+  build and 1146 tests green.
+- **vite 7/8 and vitest 4/5 are deferred to after Phase 6.** They are a Node
+  decision wearing a dependency's clothes, and should be taken with it.
 - Risk is real but contained: it can break the build or the test runner, and
   both fail loudly and immediately. Nothing reaches production.
 - Watch: vite 6 changed the default `build.target`; check `web/dist` still
