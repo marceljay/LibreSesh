@@ -1,0 +1,191 @@
+{
+  "@types/better-sqlite3": {
+    "current": "7.6.13",
+    "wanted": "7.6.13",
+    "latest": "9.6.0",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@types/better-sqlite3"
+  },
+  "@types/express": {
+    "current": "4.17.25",
+    "wanted": "4.17.25",
+    "latest": "5.0.6",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@types/express"
+  },
+  "@types/node": {
+    "current": "20.19.43",
+    "wanted": "20.19.43",
+    "latest": "26.4.1",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@types/node"
+  },
+  "@types/react": {
+    "current": "18.3.31",
+    "wanted": "18.3.31",
+    "latest": "19.2.18",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@types/react"
+  },
+  "@types/react-dom": {
+    "current": "18.3.7",
+    "wanted": "18.3.7",
+    "latest": "19.2.7",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@types/react-dom"
+  },
+  "@typescript-eslint/eslint-plugin": {
+    "current": "8.68.0",
+    "wanted": "8.69.0",
+    "latest": "8.69.0",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@typescript-eslint/eslint-plugin"
+  },
+  "@typescript-eslint/parser": {
+    "current": "8.68.0",
+    "wanted": "8.69.0",
+    "latest": "8.69.0",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@typescript-eslint/parser"
+  },
+  "@vitejs/plugin-react": {
+    "current": "4.7.0",
+    "wanted": "4.7.0",
+    "latest": "6.1.1",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/@vitejs/plugin-react"
+  },
+  "autoprefixer": {
+    "current": "10.5.4",
+    "wanted": "10.5.5",
+    "latest": "10.5.5",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/autoprefixer"
+  },
+  "bcryptjs": {
+    "current": "2.4.3",
+    "wanted": "2.4.3",
+    "latest": "3.0.3",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/bcryptjs"
+  },
+  "better-sqlite3": {
+    "current": "11.10.0",
+    "wanted": "11.10.0",
+    "latest": "13.0.3",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/better-sqlite3"
+  },
+  "concurrently": {
+    "current": "9.2.4",
+    "wanted": "9.2.4",
+    "latest": "10.0.5",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/concurrently"
+  },
+  "eslint": {
+    "current": "8.57.1",
+    "wanted": "8.57.1",
+    "latest": "10.10.0",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/eslint"
+  },
+  "eslint-plugin-react-hooks": {
+    "current": "4.6.2",
+    "wanted": "4.6.2",
+    "latest": "7.1.1",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/eslint-plugin-react-hooks"
+  },
+  "express": {
+    "current": "4.22.2",
+    "wanted": "4.22.2",
+    "latest": "5.2.1",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/express"
+  },
+  "marked": {
+    "current": "14.1.4",
+    "wanted": "14.1.4",
+    "latest": "18.0.11",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/marked"
+  },
+  "node-gyp": {
+    "current": "12.4.0",
+    "wanted": "12.4.0",
+    "latest": "13.0.2",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/node-gyp"
+  },
+  "postcss": {
+    "current": "8.5.26",
+    "wanted": "8.5.28",
+    "latest": "8.5.28",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/postcss"
+  },
+  "qrcode-generator": {
+    "current": "1.5.0",
+    "wanted": "1.5.0",
+    "latest": "2.0.4",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/qrcode-generator"
+  },
+  "react": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.2.8",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/react"
+  },
+  "react-dom": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.2.8",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/react-dom"
+  },
+  "react-router-dom": {
+    "current": "6.30.6",
+    "wanted": "6.30.6",
+    "latest": "7.18.3",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/react-router-dom"
+  },
+  "tsx": {
+    "current": "4.23.12",
+    "wanted": "4.23.13",
+    "latest": "4.23.13",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/tsx"
+  },
+  "typescript": {
+    "current": "5.9.3",
+    "wanted": "5.9.3",
+    "latest": "7.0.2",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/typescript"
+  },
+  "vite": {
+    "current": "5.4.21",
+    "wanted": "5.4.21",
+    "latest": "8.2.2",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/vite"
+  },
+  "vitest": {
+    "current": "2.1.9",
+    "wanted": "2.1.9",
+    "latest": "5.0.0",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/vitest"
+  },
+  "zod": {
+    "current": "3.25.76",
+    "wanted": "3.25.76",
+    "latest": "4.5.4",
+    "dependent": "workspace",
+    "location": "/workspace/node_modules/zod"
+  }
+}
