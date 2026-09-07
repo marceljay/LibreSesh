@@ -227,6 +227,36 @@ export function ColumnsIcon({ className }: { className?: string }) {
   );
 }
 
+/** A laptop with a phone beside it — the same person on another device.
+ *
+ *  Marks device linking wherever it is offered: the door on the gate and the
+ *  phrase that opens it. Two devices rather than a chain link, because the
+ *  chain reads as "hyperlink" and the thing being linked is hardware. */
+export function DevicesIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="1.25" y="3.25" width="8.75" height="6.5" rx="1.25" />
+      <path d="M0.75 12h8.5" />
+      <rect x="11" y="5.75" width="4.25" height="8.25" rx="1.25" />
+      <path d="M13.125 12.25v.05" />
+    </Icon>
+  );
+}
+
+/** A microphone — a speaker, and the code that lets one in.
+ *
+ *  A speaker code is a credential, but a key or a padlock would say
+ *  "password", which is the thing a speaker code is instead of. The mic says
+ *  who the door is for. */
+export function SpeakerIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <rect x="5.75" y="1.5" width="4.5" height="7.5" rx="2.25" />
+      <path d="M3.5 7.25a4.5 4.5 0 0 0 9 0M8 11.75v2.5M5.75 14.25h4.5" />
+    </Icon>
+  );
+}
+
 /** GitHub's Octicat mark, at its own 16×16.
  *
  *  Not one of the `Icon` glyphs above: those are 1.6-stroke line drawings this

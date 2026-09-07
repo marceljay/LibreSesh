@@ -7,7 +7,7 @@ import { dayLabel, fmtMin, place, todayInZone } from '../lib/format';
 import { buildSpeakerLinkUrl, readLinkBase } from '../lib/inviteLink';
 import { renderMarkdown } from '../lib/markdown';
 import { useEventData } from '../lib/useEventData';
-import { EditIcon } from '../components/icons';
+import { EditIcon, SpeakerIcon } from '../components/icons';
 import { QrCode } from '../components/QrCode';
 import { personByUsername } from '../components/MentionText';
 import { MentionTextArea } from '../components/MentionTextArea';
@@ -867,7 +867,8 @@ function SpeakerAccess({
   return (
     <div className="mt-4 border-t border-stone-100 pt-3 dark:border-stone-800">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+          <SpeakerIcon className="h-3.5 w-3.5" />
           Speaker access
         </span>
         {state === 'pending' && (

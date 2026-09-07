@@ -6,6 +6,7 @@ import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
 import { takeInvite } from '../lib/inviteLink';
 import { useMe } from '../lib/useMe';
+import { DevicesIcon, SpeakerIcon } from './icons';
 import { Logo } from './Logo';
 import {
   ControlShell,
@@ -538,15 +539,16 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
               <button
                 type="button"
                 onClick={() => openLink('speaker')}
-                className={`text-xs font-semibold ${linkClass}`}
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold ${linkClass}`}
               >
-                I have a speaker code
+                <SpeakerIcon className="h-3.5 w-3.5" />I have a speaker code
               </button>
               <button
                 type="button"
                 onClick={() => openLink('device')}
-                className="text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                className="inline-flex items-center gap-1.5 text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
               >
+                <DevicesIcon className="h-3.5 w-3.5" />
                 I’m already here on another device
               </button>
             </div>
