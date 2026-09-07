@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildInviteUrl, normalizeBaseUrl, parseInvite } from '../web/src/lib/inviteLink.js';
+import {
+  buildInviteUrl,
+  buildSpeakerLinkUrl,
+  normalizeBaseUrl,
+  parseInvite,
+  parseSpeakerLink,
+} from '../web/src/lib/inviteLink.js';
 
 /** Pure and DOM-free, like `format.ts` — the gate hands it a string. */
 describe('invite links', () => {
@@ -48,5 +54,37 @@ describe('invite links', () => {
     // wrong caption and never a grant.
     expect(parseInvite('#k=p&r=superuser')).toEqual({ password: 'p', role: undefined });
     expect(parseInvite('#k=p')).toEqual({ password: 'p', role: undefined });
+  });
+});
+
+/**
+ * A speaker link is an invite that carries a speaker code instead of a
+ * password: same fragment, same reasons, one different key.
+ */
+describe('speaker links', () => {
+  it('puts the code in the fragment under its own key', () => {
+    const url = buildSpeakerLinkUrl({
+      baseUrl: 'https://schedule.example.org/',
+      slug: 'democonf',
+      phrase: 'pine-otter-lantern-bell',
+    });
+    expect(url).toBe('https://schedule.example.org/e/democonf#c=pine-otter-lantern-bell');
+    expect(url).not.toContain('?');
+    expect(parseSpeakerLink(new URL(url).hash)).toEqual({ phrase: 'pine-otter-lantern-bell' });
+  });
+
+  it('is not mistaken for a password invite, and vice versa', () => {
+    // The gate reads one and the speaker-link hook the other; a code must not
+    // land in the password box, and a password must not be sent to /me/link.
+    expect(parseInvite('#c=pine-otter-lantern-bell')).toBeUndefined();
+    expect(parseSpeakerLink('#k=let-me-in&r=user')).toBeUndefined();
+  });
+
+  it('ignores a fragment that is not one', () => {
+    expect(parseSpeakerLink('')).toBeUndefined();
+    expect(parseSpeakerLink('#')).toBeUndefined();
+    expect(parseSpeakerLink('#section-3')).toBeUndefined();
+    expect(parseSpeakerLink('#c=')).toBeUndefined();
+    expect(parseSpeakerLink('#c=%20')).toBeUndefined();
   });
 });
