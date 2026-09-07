@@ -9,8 +9,20 @@ import { tokenizeMentions } from '@shared/mentions';
  */
 const escapeHtml = (raw: string): string =>
   raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-/** Inside a double-quoted attribute the quote itself has to go too. */
-const escapeAttr = (raw: string): string => escapeHtml(raw).replace(/"/g, '&quot;');
+
+/**
+ * For text that lands *inside* an attribute rather than between tags, which in
+ * this renderer means a link's href and its title.
+ *
+ * Quotes matter there and nowhere else, and they are not optional: marked 14
+ * escaped a title's quotes on our behalf, marked 18 does not, and the
+ * difference between those two is a `title` attribute an author can close.
+ * `[x](https://ok 'a" onmouseover="alert(1)')` was a working handler in the
+ * bio of anyone who wrote it. Escaping here rather than trusting the parser is
+ * the point — this must not depend on which version is installed.
+ */
+const escapeAttr = (raw: string): string =>
+  escapeHtml(raw).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** The same rule the link fields are held to, so a link written in a bio and
  *  a link typed into a field cannot disagree about what is allowed. Relative
@@ -23,8 +35,8 @@ renderer.link = ({ href, title, tokens }) => {
   const text = renderer.parser.parseInline(tokens);
   const safe = safeHref(href);
   if (!safe) return text;
-  const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-  return `<a href="${escapeHtml(safe)}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+  const titleAttr = title ? ` title="${escapeAttr(title)}"` : '';
+  return `<a href="${escapeAttr(safe)}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
 };
 renderer.image = ({ text }) => escapeHtml(text);
 

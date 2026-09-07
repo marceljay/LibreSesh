@@ -39,6 +39,15 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A link title in a description could run code.** Markdown lets a link carry
+  a title — `[text](https://example.org 'the title')` — and the title went into
+  the page without its quote characters escaped. A title containing one could
+  close the attribute early and add an event handler of its own, so anyone who
+  could write a session description, a pitch or a profile bio could run script
+  in the browser of everyone who read it. Reachable only after the markdown
+  parser was updated — the previous version happened to escape titles itself —
+  and now escaped where it is written, rather than left to the parser.
+
 - **The list has the now line too.** In List view the only trace of the
   current time was a "next / now" pill on one row's clock — no line and no
   time — so switching from the grid on the day of the event lost the one mark
