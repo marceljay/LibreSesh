@@ -54,6 +54,10 @@ describe('a failure becomes a sentence on the client', () => {
       // importDoc parses a document in the browser; that Error is ours, not the
       // API's, and its message is the parser's own explanation.
       .filter((path) => !path.endsWith(join('lib', 'importDoc.ts')))
+      // staleChunk reads the message the *browser* throws when a dynamic
+      // import fails, to decide whether to reload. It classifies; it never
+      // renders, and the string never came from the API.
+      .filter((path) => !path.endsWith(join('lib', 'staleChunk.ts')))
       .filter((path) => /\b(?:err|error)\.message\b/.test(readFileSync(path, 'utf8')))
       .map((path) => path.slice(WEB_SRC.length + 1));
     expect(offenders).toEqual([]);

@@ -103,6 +103,16 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A blank page after navigating now fixes itself.** Every route loads as its
+  own chunk, and nothing caught a chunk that failed to arrive: React tore the
+  whole app down and left an empty page that only a manual refresh brought
+  back. The usual cause is not a fault at all — publishing a new version
+  changes the file names, so a tab someone left open all morning asks for one
+  that no longer exists the next time they tap through. The app now recognises
+  that and reloads itself once, silently. If the reload does not help, it says
+  so with a Reload button instead of reloading again, because a page that keeps
+  reloading is worse than one that stops and explains.
+
 - **A pitch notification opens the pitch board.** Tapping one in the bell sent
   you to the front door instead: it navigated to `/e/<event>/pitches` while the
   board has always lived at `/e/<event>/proposals`, so the catch-all route
