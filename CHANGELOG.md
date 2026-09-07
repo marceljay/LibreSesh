@@ -29,15 +29,21 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
-- **The time box takes digits, and only digits.** 0.3.6 had it type the colon
-  after two digits of hour, and stop there: letters still went in, a fifth
-  digit and an eighth went in, and a `9` sat alone waiting for a second digit
-  that no hour beginning with nine can have. The box is now masked as it is
-  typed. Only digits get in, four at most; the colon is typed for you after
-  the hour; `9` is `09:` at once, `93` is `09:3` on its way to `09:30`, and
-  `12345678` stops at `12:34`. A paste of `9.30` or `14h30` lands as `09:30`
-  and `14:30`. Backspace is left alone, colon included. `2pm` is no longer a
-  way to type fourteen — the clock is twenty-four hours, and the box says so.
+- **The time box knows its hour from its minutes.** 0.3.6 typed the colon
+  after two digits and left the rest to the browser; the fix that followed
+  only filtered what went in — digits, four at most. Neither knew where the
+  caret was, so a `0` typed into `12:30` became `10:23` and the next three
+  keys fell off the end: the report was `0725` "turning into 07:23". The box
+  is now the segmented widget it replaced, without the look. A click selects
+  the hour or the minutes under it, and what you type replaces that segment;
+  a finished hour hands the caret to the minutes; digits typed at the end of
+  a full time start its minutes over, so `11:10` and then `0000` is `11:00`,
+  not `11:10` with a `0` left over. Typing into an empty box reads left to
+  right as before — `0`, `07:`, `07:2`, `07:25`, and `9` is `09:` at once.
+  Backspace over the colon takes the hour digit with it. Up and Down step the
+  hour or the minutes, whichever the caret is in. And Enter, which the last
+  two versions swallowed on every press, settles the time and then saves the
+  form, as it does from every other field.
 
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what

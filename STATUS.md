@@ -144,8 +144,11 @@ boxes — an off-list session is one whose duration is not a preset, a typed
 despite its *ok*; the open ones are filed as **Fixes from your review** at
 the top of the backlog. R25 is fixed (the preview's address bar was widening
 the page's one column; it is pinned to the screen now) and back on the list
-below for a second look on the phone. Verdicts live in the sheet's own store,
-so ticking there is enough — nothing needs pasting back.
+below for a second look on the phone. R35 came back *bad* the same evening —
+`0725` typed into a filled box came out wrong, four zeros left a stray digit,
+Enter did nothing; that was the third go at the time box — and is rebuilt on
+`fix/time-box-caret`, back on the list below. Verdicts live in the sheet's
+own store, so ticking there is enough — nothing needs pasting back.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -300,15 +303,25 @@ so ticking there is enough — nothing needs pasting back.
     **profile → Bio**: the same menu; on the profile the name links; the
     named person's entry reads *ada mentioned you in their bio* and opens
     that profile.
-24. **R35 · The time box is masked.** Any time field: type `0` `8` — the
-    box reads `08:` and the next digits are minutes; type `9` `3` `0` — it
-    reads `09:30`; type `9` alone — it reads `09:` at once. Type letters:
-    nothing appears. Type eight digits: the box stops at `12:34`. Backspace
-    over the colon: it does not come back. Paste `9.30`: it lands as
-    `09:30`. On a **phone**, the numeric keyboard can type a whole time.
-    `2pm` is gone — digits only. (Branch `fix/time-mask`, worktree
-    `.claude/worktrees/time-mask`, after your 2026-09-07 report that 0.3.6's
-    colon-only version let letters and eight digits through.)
+24. **R35 · The time box knows its hour from its minutes.** Any time field.
+    *Empty:* type `0` `7` `2` `5` — the box reads `0`, `07:`, `07:2`,
+    `07:25` and nothing else. *Already filled:* click on the hour — it
+    highlights; type `0` `9` — the box reads `09:` with the old minutes still
+    there, now highlighted; type `2` `5` — `09:25`. Click on the minutes and
+    type `4` `5` — only the minutes change. Click at the very end of a full
+    time and type `0` `0` `0` `0` — the minutes read `00`, nothing left over.
+    Backspace over the colon takes the hour digit with it. Up/Down with the
+    caret in the hour steps the hour; in the minutes, five minutes. **Enter**
+    settles the time and saves the dialog, as from any other field. On a
+    **phone**: tap the hour or the minutes and the numeric keyboard types
+    over it. (Branch `fix/time-box-caret`, after your 2026-09-07 report:
+    `0725` "sometimes turning into 07:23", four zeros after `11:10` leaving a
+    stray `0`, Enter doing nothing. The first was the old mask seeing five
+    digits go into four places whenever you typed into a time that was
+    already there. The fix is a box that knows which segment the caret is in
+    — `lib/timeBox.ts`, typed into key by key in `tests/timeBox.test.ts`, in
+    a real DOM in `tests/timeField.test.tsx`, and driven through the
+    container's headless Chromium before it was committed.)
 
 25. **R36 · The gate has a way out.** Open an event link logged out, so the
     password card shows. *Pass:* above the card, the LibreSesh mark on the

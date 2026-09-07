@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+} from 'react';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { ChevronDown } from 'lucide-react';
 import { fmtMin, minutesOf } from '../lib/format';
-import { maskTime, parseTime, timeChoices } from '../lib/timeChoices';
+import { editTime, segmentAt, segmentSpan, type Span } from '../lib/timeBox';
+import { parseTime, timeChoices } from '../lib/timeChoices';
 import { ControlShell, TextInput } from './ui';
 import { SelectContent, SelectItem } from './ui/select';
 
@@ -10,7 +18,8 @@ const DAY = 24 * 60;
 /** The dropdown's grid. Coarser than the 5-minute grid the calendar keeps,
  *  because a list is for the common case and the box is for the rest. */
 const LIST_STEP = 15;
-/** What an arrow key moves the box by: the calendar's own grid. */
+/** What an arrow key moves the minutes by: the calendar's own grid. In the
+ *  hour segment it moves the hour. */
 const ARROW_STEP = 5;
 
 /**
@@ -27,18 +36,28 @@ const ARROW_STEP = 5;
  * quarter-hours for when a glance beats typing. Picking fills the box; typing
  * wins over the list.
  *
- * The box is masked (`maskTime`): only digits get in, four at most, and the
- * colon is typed for you after the hour, so `0830` reads `08:30` as it is
- * typed and the caret is on the minutes after `08:` — what the segmented
- * widget did, and what a phone's numeric keyboard, with no colon key, needs.
+ * The box behaves like the segmented widget it replaced, without looking like
+ * it: hours and minutes either side of a colon that is typed for you, so
+ * `0830` reads `08:30` as it is typed and a phone's numeric keyboard, with no
+ * colon key, can type a whole time. A click selects the segment under it, so
+ * typing into a time that is already there replaces its hour or its minutes
+ * rather than wedging digits into the middle; a finished hour hands the caret
+ * to the minutes. Up and Down step whichever segment the caret is in. The
+ * model is `editTime` in `lib/timeBox.ts`, where the cases are spelled out.
+ *
+ * Each keystroke is read after the browser has applied it — what the box
+ * showed, what it shows now, where the caret went — and replayed onto the
+ * segments, then the caret is put where the model says. Reading the result
+ * rather than intercepting the key is what makes it work the same for a
+ * keyboard, a phone's, a paste and an autocorrect.
  *
  * The box commits on blur and on Enter, not on every keystroke: committing
  * `1` as `01:00` while someone is halfway through `14:30` would rewrite the
- * box under their fingers. Enter is swallowed so the dialog around it does
- * not save on the same press that settled the time — the second Enter does.
- * Something that is not a time reads as invalid while it is in the box and is
- * put back to the last good value on blur, so the field can never hand its
- * caller a value it cannot use.
+ * box under their fingers. Enter settles the time and then goes on to the
+ * form around it, as it does from every other field — the settled value is
+ * flushed before the form sees the submit. Something that is not a time reads
+ * as invalid while it is in the box and is put back to the last good value on
+ * blur, so the field can never hand its caller a value it cannot use.
  *
  * `min`/`max` cap it to the event's day: the list offers only that window,
  * and a typed or nudged time outside it lands on the nearer edge rather than
@@ -68,10 +87,34 @@ export function TimeField({
   'aria-label'?: string;
 }) {
   const [text, setText] = useState(value);
+  // Where the caret goes once the text above is in the DOM. A fresh object
+  // each edit, so the effect below runs even when the text did not change
+  // (an overtyped digit that was already there, a letter that was refused).
+  const [caret, setCaret] = useState<Span | null>(null);
   // The list, an arrow key or the caller changed it: show that. Typing is
   // local until it commits, so this never fires mid-word.
   useEffect(() => setText(value), [value]);
+  const input = useRef<HTMLInputElement>(null);
   const anchor = useRef<HTMLDivElement>(null);
+  // The selection as it was before the browser applied the edit now in the
+  // box. Read on keydown and, for edits with no key — a paste from a menu, a
+  // phone keyboard, autocorrect — on `beforeinput`, which React has no
+  // handler for.
+  const before = useRef<Span | null>(null);
+
+  useLayoutEffect(() => {
+    if (caret) input.current?.setSelectionRange(caret.start, caret.end);
+  }, [caret]);
+
+  useEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    const remember = () => {
+      before.current = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 };
+    };
+    el.addEventListener('beforeinput', remember);
+    return () => el.removeEventListener('beforeinput', remember);
+  }, []);
 
   const invalid = text.trim() !== '' && parseTime(text) === null;
   const choices = timeChoices({
@@ -95,25 +138,42 @@ export function TimeField({
     if (next !== value) onChange(next);
   };
 
-  const nudge = (delta: number) => {
+  /** Up or Down: the hour if the caret is in the hour, else five minutes.
+   *  The segment stays selected, so the next press moves it again. */
+  const nudge = (direction: 1 | -1) => {
+    const pos = input.current?.selectionStart ?? text.length;
+    const segment = segmentAt(text, pos);
     const base = parseTime(text) ?? value;
-    onChange(capped(minutesOf(base) + delta));
+    const next = capped(minutesOf(base) + direction * (segment === 'hours' ? 60 : ARROW_STEP));
+    setText(next);
+    setCaret(segmentSpan(next, segment === 'hours' ? 0 : next.length));
+    if (next !== value) onChange(next);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const el = e.currentTarget;
+    before.current = { start: el.selectionStart ?? 0, end: el.selectionEnd ?? 0 };
     if (e.key === 'Enter') {
-      e.preventDefault();
       commit();
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
-      nudge(e.key === 'ArrowUp' ? ARROW_STEP : -ARROW_STEP);
+      nudge(e.key === 'ArrowUp' ? 1 : -1);
     }
+  };
+
+  /** A click lands on a segment and selects it. A drag chose its own. */
+  const onMouseUp = (e: MouseEvent<HTMLInputElement>) => {
+    const el = e.currentTarget;
+    if (el.selectionStart !== el.selectionEnd) return;
+    const span = segmentSpan(el.value, el.selectionStart ?? 0);
+    if (span.end > span.start) el.setSelectionRange(span.start, span.end);
   };
 
   return (
     <div ref={anchor} className={`relative ${className}`}>
       <ControlShell invalid={invalid} disabled={disabled} className="pe-1.5">
         <TextInput
+          ref={input}
           aria-label={ariaLabel}
           aria-invalid={invalid || undefined}
           inputMode="numeric"
@@ -122,9 +182,21 @@ export function TimeField({
           className="tabular-nums"
           value={text}
           disabled={disabled}
-          onChange={(e) => setText(maskTime(text, e.target.value))}
+          onChange={(e) => {
+            const el = e.target;
+            const next = editTime(
+              text,
+              before.current,
+              el.value,
+              el.selectionStart ?? el.value.length,
+            );
+            before.current = null;
+            setText(next.text);
+            setCaret({ start: next.start, end: next.end });
+          }}
           onBlur={commit}
           onKeyDown={onKeyDown}
+          onMouseUp={onMouseUp}
         />
         <BaseSelect.Root
           value={value}
