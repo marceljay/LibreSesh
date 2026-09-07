@@ -250,7 +250,26 @@ STATUS.md.
 ### Phase 5 — server majors, best-covered first
 One per commit, in this order, because that is descending test coverage and
 ascending consequence:
-1. `zod` 3→4 — heavy supertest coverage; a break shows up as a failing test.
+1. `zod` 3→4 ✅ **done 2026-09-07.** Type-checked and 1154 tests passed with no
+   source change; the two deprecated APIs (`z.ZodIssueCode.custom`,
+   `z.ZodTypeAny`) were replaced anyway with the string form the rest of the
+   file already used, and `z.ZodType`. `z.record` was already on the two-argument
+   form v4 requires, and `result.error.issues` was already the v4 spelling.
+
+   **What the suite could not see: every built-in message was reworded.**
+   `Required` → `Invalid input: expected string, received undefined`;
+   `String must contain at least 3 character(s)` → `Too small: expected string
+   to have >=3 characters`; `Invalid enum value. Expected 'a' | 'b', received
+   'c'` → `Invalid option: expected one of "a"|"b"`. Captured by running the
+   same probe against both versions rather than trusting the changelog.
+
+   That is safe **here specifically**, and worth writing down as the reason:
+   `parse()` throws `badRequest(…)`, whose `code` is `validation`, and the
+   client renders by code — `errorText` never touches `err.message` (i18n
+   readiness rule 2, enforced by `errorText.test.ts`). So zod's English reaches
+   logs and anyone reading the API directly, never a person using the app. A
+   codebase that rendered the server's string would have had a user-visible
+   copy change here with a green suite.
 2. `express` 4→5 — router and middleware changes; the suite drives every route.
 3. `marked` 14→18 — re-read `shared/links.ts` against the new output before
    trusting `links.test.ts`.
