@@ -4,7 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **The front door fits a phone.** On a phone the landing page came up wider
+  than the screen: its right edge was cut off and you zoomed out to see the
+  whole of it. The board preview's address bar was the cause — a line that
+  never wraps, sitting in a column that grew to hold it. The column is now
+  held to the width the screen has, and the address bar shortens itself with
+  an ellipsis the way it always could.
 
 ## [0.3.5] — 2026-09-07
 
