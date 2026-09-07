@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { maskTime, parseTime, timeChoices } from '../web/src/lib/timeChoices';
+import { parseTime, timeChoices } from '../web/src/lib/timeChoices';
 
 /**
  * The time field is the app's own — a box you type into with a list of
@@ -29,9 +29,21 @@ describe('parseTime: what the box accepts', () => {
   });
 
   it('refuses what is not a time', () => {
-    // `930` and `2pm` are refused here because the mask never lets them
+    // `930` and `2pm` are refused here because the box never lets them
     // reach this far: `930` has become `09:30` and the `pm` never got in.
-    for (const bad of ['', 'noon', '25:00', '9:60', '930', '12:3', '9:30:00', '2pm', '9.30']) {
+    // `:30` is what deleting the hour from under a minute leaves.
+    for (const bad of [
+      '',
+      'noon',
+      '25:00',
+      '9:60',
+      '930',
+      '12:3',
+      '9:30:00',
+      '2pm',
+      '9.30',
+      ':30',
+    ]) {
       expect(parseTime(bad), bad).toBeNull();
     }
   });
@@ -94,8 +106,10 @@ describe("no time field is the browser's", () => {
     // Typing commits on blur and Enter, never per keystroke — see the comment.
     expect(src).toContain('onBlur={commit}');
     expect(src).not.toMatch(/onChange=\{\(e\) => \{?\s*commit/);
-    // Enter settles the time; it must not also save the dialog around it.
-    expect(src).toMatch(/e\.key === 'Enter'[\s\S]{0,60}e\.preventDefault\(\);\s*commit\(\);/);
+    // Enter settles the time and goes on to the form, like every other field:
+    // the key is not swallowed.
+    expect(src).toMatch(/e\.key === 'Enter'\) \{\s*commit\(\);\s*\}/);
+    expect(src).not.toMatch(/'Enter'[\s\S]{0,80}preventDefault/);
   });
 });
 
@@ -109,7 +123,7 @@ describe("the field is capped to the event's day", () => {
       /timeChoices\(\{\s*from: min,\s*to: max,\s*step: LIST_STEP,\s*beyond: null,\s*current: value,?\s*\}\)/,
     );
     expect(field).toContain('const next = capped(minutesOf(parsed));');
-    expect(field).toContain('onChange(capped(minutesOf(base) + delta));');
+    expect(field).toMatch(/const next = capped\(minutesOf\(base\) \+ direction \*/);
   });
 
   it('is capped everywhere except the two fields that define the day', () => {
@@ -128,71 +142,5 @@ describe("the field is capped to the event's day", () => {
       }
     }
     expect(uncapped).toEqual([]);
-  });
-});
-
-/**
- * "After writing 08 it should jump to the minutes" (2026-09-07), and then:
- * "you can enter even letters into the time field, or 8 digits, it never
- * jumps to minutes". A box with no segments has nothing to jump to, so it is
- * masked instead: digits only, four at most, the colon typed for you. Typed
- * one key at a time here, the way the box sees it.
- */
-function type(keys: string, from = ''): string {
-  let text = from;
-  for (const key of keys) text = maskTime(text, text + key);
-  return text;
-}
-
-describe('maskTime: what the box shows as you type', () => {
-  it('types the colon after the hour, so the next digits are the minutes', () => {
-    expect(type('0')).toBe('0');
-    expect(type('08')).toBe('08:');
-    expect(type('083')).toBe('08:3');
-    expect(type('0830')).toBe('08:30');
-    expect(type('2359')).toBe('23:59');
-  });
-
-  it('knows an hour that cannot go on, and pads it', () => {
-    expect(type('9')).toBe('09:');
-    expect(type('93')).toBe('09:3');
-    expect(type('930')).toBe('09:30');
-    expect(type('24')).toBe('02:4');
-    expect(type('245')).toBe('02:45');
-    expect(type('1')).toBe('1'); // 1 or 2 could still be the first of two
-    expect(type('2')).toBe('2');
-  });
-
-  it('stops at four digits', () => {
-    expect(type('12345678')).toBe('12:34');
-    expect(type('08300')).toBe('08:30');
-  });
-
-  it('lets no letter in, and no second colon', () => {
-    expect(type('a')).toBe('');
-    expect(type('2pm')).toBe('2');
-    expect(type('08:a')).toBe('08:');
-    expect(type('08::')).toBe('08:');
-    expect(type('x9x3x0x')).toBe('09:30');
-  });
-
-  it('takes a paste through the same door', () => {
-    expect(maskTime('', '9.30')).toBe('09:30');
-    expect(maskTime('', '14h30')).toBe('14:30');
-    expect(maskTime('', '9:30')).toBe('09:30');
-  });
-
-  it('leaves a deletion alone, colon included', () => {
-    expect(maskTime('08:30', '08:3')).toBe('08:3');
-    expect(maskTime('08:3', '08:')).toBe('08:');
-    expect(maskTime('08:', '08')).toBe('08'); // the colon is not put straight back
-    expect(maskTime('08', '0')).toBe('0');
-    expect(maskTime('0', '')).toBe('');
-    expect(maskTime('08:30', '0830')).toBe('0830'); // the colon itself removed
-  });
-
-  it('lets typing carry on after a deletion', () => {
-    expect(type('30', '08:')).toBe('08:30');
-    expect(type('5', '08')).toBe('08:5');
   });
 });
