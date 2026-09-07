@@ -42,11 +42,14 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
   shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
 
-- **Branch `chore/react-19`** (2026-09-07, off `561c9ac`): the DOM smoke
-  suite, then React 19, then Chromium in the dev container — one commit each.
-  Local `dev` had been left pointing at `main`'s merge commit (`35d08b5`)
-  rather than at `origin/dev`, so the work went on a branch; land it with
-  `git branch -f dev origin/dev` then `git merge chore/react-19` on `dev`.
+- **Branch `chore/react-19`** (2026-09-07, off `561c9ac`, `origin/dev`
+  merged in at `2a84e69`): the DOM smoke suite, React 19, and
+  `npm run browser-pass` — the built app driven through the container's
+  Chromium, fourteen steps on desktop and phone, console and network clean
+  under React 19 with the time-mask fix in. Local `dev` had been left
+  pointing at `main`'s merge commit (`35d08b5`) rather than at `origin/dev`,
+  so the work went on a branch; land it with `git branch -f dev origin/dev`
+  then `git merge chore/react-19` on `dev`.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -618,11 +621,12 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     that mounts every route against the real server and fails on any
     console.error. Two type edits, no runtime change, 1249 green. Still
     wants a browser pass over the R-items below for what jsdom cannot show
-    (layout, drag, the time box). Debian's `chromium` was added to the apt
-    list in `.devcontainer/Dockerfile` on this machine — `.devcontainer/` is
-    gitignored, so it travels with the host, not the repo. After the next
-    container **rebuild**, a Playwright pass can drive `/usr/bin/chromium`
-    against `npm run dev`; the download route is closed by the firewall.
+    (layout, drag, the time box) — and that pass exists now:
+    `npm run browser-pass` (`scripts/browserPass.ts`) boots the built app
+    and drives it through `/usr/bin/chromium`, which is in the dev container
+    image since the 2026-09-07 rebuild (`.devcontainer/` is gitignored, so
+    that line travels with the host, not the repo). First run under React 19:
+    fourteen steps green, console and network clean. Drag is still unpassed.
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3

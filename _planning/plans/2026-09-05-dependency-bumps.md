@@ -254,9 +254,11 @@ no `defaultProps`, no string refs, no `react-dom/test-utils`. Two type edits:
 `RefObject<T>` prop that now has to admit `null`, because `useRef<T>(null)`
 returns `RefObject<T | null>`. Lint, build and 1249 tests green.
 
-What jsdom still cannot show — layout, drag, the time box's masking — waits on
-a browser pass; Chromium is in the dev container image for it from this round
-(`.devcontainer/Dockerfile`), on the next rebuild.
+What jsdom cannot show — layout, the time box's masking, the theme following
+the system — got its pass the same day, once the container was rebuilt with
+Debian's Chromium: `npm run browser-pass` boots the built app and drives it
+through the browser, fourteen steps on desktop and phone viewports, and fails
+on any console error, page error or failed request. Clean under React 19.
 
 ### Phase 5 — server majors, best-covered first
 One per commit, in this order, because that is descending test coverage and
