@@ -467,7 +467,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   twin and `export-to-import.py` into a commit; they were taken back out
   before it was pushed, but nothing stops it happening again. `.gitignore`
   covers only `_planning/transcripts-backup/` and
-  `_planning/deployment-guide.md`, so every other working file there is
+  `docs/hosting.md`, so every other working file there is
   fair game — and this one is a real event's export, carrying real
   attendees' names, in a repo whose upstream is public
   (`Valley-of-the-Commons/LibreSesh`).
@@ -706,7 +706,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   entrypoint's _root_ branch and the `gosu` install have never executed — the
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
-  VPS deploy as their test. Railway notes: `_planning/deployment-guide.md` §10.
+  VPS deploy as their test. Railway notes: `docs/hosting.md` §10.
 - **No component test coverage, and no error boundary.** 703 tests as of
   2026-09-01, and the web-side ones cover pure functions or assert on source
   text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a

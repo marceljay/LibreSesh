@@ -251,7 +251,7 @@ Changed together, because a partial move is the state we were already in:
   `^20.19.0 || ^22.13.0 || >=24`, so 22.13 is the real floor on the 22 line, and
   it also satisfies vitest 5's `^22.12`.
 - `@types/node` 20.17.6 → **22.20.1**, so the types describe the runtime again.
-- `_planning/deployment-guide.md`: the base-image line operators match their
+- `docs/hosting.md`: the base-image line operators match their
   distro against, and the systemd section's "install Node 20".
 
 **better-sqlite3 on Node 22 was verified, not assumed.** 11.10.0 compiles and

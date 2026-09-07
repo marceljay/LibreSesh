@@ -139,7 +139,7 @@ web/               Vite React app
 scripts/           seed.ts, create-event.ts, decrypt-backup.ts
 assets/            brand source SVGs
 tests/             Vitest suites
-docs/              guides (identity, using, managing, deploy, import)
+docs/              guides (identity, using, managing, deploy, hosting, import)
 deploy/            Dockerfile, compose, Caddyfile, systemd unit, backup script
 design/mockup.jsx  approved UI reference — never imported
 ARCHITECTURE.md    how it fits together, and the threat model
@@ -156,6 +156,7 @@ STATUS.md          current work and the backlog
 | [docs/managing.md](docs/managing.md) | Manage Event tabs, renaming, audit, JSON import |
 | [docs/schedule-import.md](docs/schedule-import.md) | Import field reference (already in the repo) |
 | [docs/deploy.md](docs/deploy.md) | Config, Docker, Railway, systemd, backups, upgrades |
+| [docs/hosting.md](docs/hosting.md) | Picking and sizing a VPS, hardening, day-2 operations, troubleshooting |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Internals and threat model |
 | [STATUS.md](STATUS.md) / [CHANGELOG.md](CHANGELOG.md) | Backlog and shipped work |
 
@@ -173,7 +174,8 @@ docker compose up --build
 
 `COOKIE_SECRET` and `INSTANCE_ADMIN_PASSWORD` are required in production.
 The rest — Railway volumes, systemd, backups, rotating the cookie secret,
-upgrades — is in [docs/deploy.md](docs/deploy.md).
+upgrades — is in [docs/deploy.md](docs/deploy.md). Choosing and hardening the
+box it runs on: [docs/hosting.md](docs/hosting.md).
 
 How the pieces fit, and the threat model:
 [ARCHITECTURE.md](ARCHITECTURE.md). Start with **§What a cookie is, exactly**

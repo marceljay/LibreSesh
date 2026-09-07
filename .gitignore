@@ -33,5 +33,3 @@ deploy/data/
 *.db-wal
 *.db-shm
 
-# Private hosting notes — not for the public repo
-_planning/deployment-guide.md
