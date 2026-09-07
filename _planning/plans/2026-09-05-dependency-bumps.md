@@ -229,13 +229,47 @@ ascending consequence:
 5. `better-sqlite3` 11→13 — `npm run rebuild:native`, then boot the server for
    real, not just the suite.
 
-### Phase 6 — align Node
-`deploy/Dockerfile` builds and runs on **node:20-slim**; the dev container is
-**node:22-bookworm**; `engines` says `>=20`; `@types/node` is on 20.x. So dev
-and production are a major apart and the types describe production, not the
-machine the code is written on. Decide one: move production to 22, or hold the
-dev container at 20. Then bump `@types/node` to match — and only then, since
-`@types/node` 26 would describe neither.
+### Phase 6 — align Node ✅ done 2026-09-07 (the alignment; vite/vitest still open)
+
+Production moved to **Node 22**. `deploy/Dockerfile` was on `node:20-slim` in
+both stages while `.devcontainer/Dockerfile` had been on `node:22-bookworm`
+since it was written — with a comment on the very line saying *"Node 20 is
+end-of-life — do not stay on it."* The decision had been made and only ever
+applied to the machine the code is written on.
+
+That made this a security fix, not housekeeping: **Node 20 reached end-of-life
+in April 2026**, so the production runtime had been unpatched for five months —
+a larger exposure than any advisory left in `npm audit`.
+
+Changed together, because a partial move is the state we were already in:
+
+- `deploy/Dockerfile`, both stages → `node:22-bookworm-slim`. Distro pinned,
+  not just the major, for the same reason the dev container pins it: a floating
+  `node:22-slim` can move to a newer Debian and change what the `apt-get` line
+  can install.
+- `engines` `>=20` → **`>=22.13`**. Not `>=22.12`: eslint 10 requires
+  `^20.19.0 || ^22.13.0 || >=24`, so 22.13 is the real floor on the 22 line, and
+  it also satisfies vitest 5's `^22.12`.
+- `@types/node` 20.17.6 → **22.20.1**, so the types describe the runtime again.
+- `_planning/deployment-guide.md`: the base-image line operators match their
+  distro against, and the systemd section's "install Node 20".
+
+**better-sqlite3 on Node 22 was verified, not assumed.** 11.10.0 compiles and
+runs on ABI 127 — that is what `npm run rebuild:native` has been producing in
+this container all along, and what the 1146 tests run against. Prebuild
+availability only affects build speed; the build stage already installs
+`python3 make g++` for the compile path.
+
+Correction to the Phase 2 note: taking vitest 5 would *not* have made the
+product untestable. vitest is a devDependency that never runs in production,
+and the dev container was already on 22.23. What would have happened is an
+`EBADENGINE` warning from `npm ci` in the Docker build (`engine-strict` is not
+set, so it warns rather than fails). The conclusion — decide Node first — held;
+the reason was thinner than it was written.
+
+**Still open:** vite 6 → 7/8 and vitest 3 → 4/5, now unblocked. They are a
+straight bump with no advisory behind them, so they wait their turn behind
+Phase 4.
 
 ## Not doing, and why
 - **`@types/express` 5 / `@types/react` 19 ahead of their runtimes.** Types

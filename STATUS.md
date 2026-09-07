@@ -584,12 +584,10 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
     without its binding (553 tests fail with "Could not locate the bindings
     file" until you do).
-  - **Phase 6 — align Node first**, then revisit vite 7/8 and vitest 4/5.
-    They are blocked on a decision, not a bug: vitest 5 requires
-    `^22.12 || ^24 || >=26` and would drop Node 20, while `deploy/Dockerfile`
-    builds *and* runs on `node:20-slim` and `engines` says `>=20`. Note that
-    eslint 10 has already tightened the real floor to **20.19** — `node:20-slim`
-    satisfies it today, but `engines: >=20` now overstates what installs.
+  - **Phase 6 — vite 6 → 7/8 and vitest 3 → 4/5.** The Node alignment they were
+    blocked on is done: production is on `node:22-bookworm-slim`, `engines` is
+    `>=22.13` and `@types/node` is 22.x. No advisory is behind either bump now,
+    so they can wait behind Phase 4.
 - **Cloning still demands all three passwords.** Creating an event lets you
   leave any of them blank — a four-word phrase is generated and shown once on
   a confirmation screen — but `POST /events/:slug/clone` kept the old

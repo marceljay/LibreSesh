@@ -1,6 +1,11 @@
 # Multi-stage build. Debian base, NOT Alpine: better-sqlite3 ships glibc
 # prebuilds, and musl would force a native compile (SPEC §10.4).
-FROM node:20-slim AS build
+#
+# Pin the distro, not just the Node major — `node:22-slim` alone can move to a
+# newer Debian release and change what the apt-get below can install. Node 20
+# reached end-of-life in April 2026; this image and the dev container are on
+# the same major deliberately, so the types describe the machine that runs it.
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
@@ -36,7 +41,7 @@ RUN npm run build
 RUN npm prune --omit=dev --ignore-scripts=false
 
 
-FROM node:20-slim AS runtime
+FROM node:22-bookworm-slim AS runtime
 
 ENV NODE_ENV=production
 ENV DATABASE_PATH=/data/app.db

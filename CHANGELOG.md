@@ -64,6 +64,20 @@ All notable changes to this project are documented here.
   their own below Theme, because they are about the app rather than about
   you. The slot they leave is where the bell goes.
 
+- **The server image runs Node 22.** `deploy/Dockerfile` built and ran on
+  `node:20-slim`, a runtime that reached end of life in April 2026 and has
+  taken no security patches since — while the development container had been
+  on Node 22 the whole time, with a comment on the line saying not to stay on
+  20. Both build and runtime stages are now `node:22-bookworm-slim`, with the
+  Debian release pinned rather than floating, so an image rebuild cannot
+  quietly change what the build stage can install. `engines` says `>=22.13`
+  and the Node type definitions match the runtime again.
+
+  **If you deploy this, rebuild the image** — the base changed, and a host
+  distro picked to match the old `node:20-slim` should be checked against
+  Debian 12 / Ubuntu 24.04. `better-sqlite3` compiles and runs on Node 22;
+  nothing in the database or its file format changes.
+
 - **The linter moved to ESLint 10 and flat config.** `.eslintrc.cjs` was on
   ESLint 8, a version that stopped getting fixes; the config file format it
   used is gone in 9. `eslint.config.js` replaces it, with every house rule
