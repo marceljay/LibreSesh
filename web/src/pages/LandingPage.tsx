@@ -75,7 +75,20 @@ export function LandingPage() {
         </div>
       </header>
 
-      <div className="grid flex-1 items-start gap-8 lg:grid-cols-2 lg:gap-x-14">
+      {/* `grid-cols-1` is not a no-op. A grid with no template gets one `auto`
+          column, and an auto track is at least as wide as the widest thing in
+          it that cannot break. The preview's address bar cannot: `truncate`
+          is `white-space: nowrap`, and its `min-w-0` only lets the *flex row*
+          squeeze it — the row's own minimum size still counts the whole URL.
+          On a phone that made the column some 400px wide, the page with it,
+          and the right edge sat past the screen: you zoomed out to see it.
+          `html { overflow-x: clip }` should have hidden the excess and did
+          not on the phone this was seen on. `grid-cols-1` is
+          `minmax(0, 1fr)`, the same as `lg:grid-cols-2` per column — the
+          track is the width that is there, and the rows inside already know
+          how to take the squeeze (the address truncates, the cards truncate,
+          the buttons wrap). */}
+      <div className="grid flex-1 grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-x-14">
         <div className="flex flex-col gap-6">
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
             {/* The one flash of brand colour on the page, on the two words that

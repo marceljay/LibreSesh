@@ -229,6 +229,32 @@ describe('the source link wears the mark', () => {
   });
 });
 
+describe('the page fits a phone', () => {
+  it('pins the single column to the width that is there', () => {
+    // No template means one `auto` column, and an auto track grows to the
+    // widest unbreakable thing in it. The preview's address bar is `truncate`
+    // (nowrap) — its `min-w-0` lets the flex row squeeze it but the row's own
+    // minimum still counts the whole URL — so the column, and the page, ended
+    // up wider than the phone. `grid-cols-1` is `minmax(0, 1fr)`: the track is
+    // the width there is, and the rows inside truncate or wrap as they already
+    // know how to. The same fault and fix as the schedule header's fold row.
+    const grid = /className="grid[^"]*lg:grid-cols-2[^"]*"/.exec(landing)?.[0] ?? '';
+    expect(grid).not.toBe('');
+    expect(grid).toMatch(/\bgrid-cols-(1|\[minmax\(0,1fr\)\])\b/);
+  });
+
+  it('lets the address bar give way instead of the frame', () => {
+    // The truncating item has to be the shrinkable one, or the fix above
+    // only moves the overflow from the page to the frame.
+    const address = /<span className="[^"]*truncate[^"]*"[^>]*>\s*example\.libresesh\.org/.exec(
+      preview,
+    )?.[0];
+    expect(address).toBeDefined();
+    expect(address).toContain('min-w-0');
+    expect(address).toContain('flex-1');
+  });
+});
+
 describe('the preview is framed as a picture, not offered as a board', () => {
   it('puts it in a browser window', () => {
     // It is built from the app's own classes, so its cards and its star look
