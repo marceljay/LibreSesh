@@ -7,6 +7,13 @@ Commit policy: atomic — one commit per feature or improvement
 Commit messages: subject + body. The body says what was wrong, why this is
 the fix and not another, and what the diff cannot show. Exempt: typos,
 formatting, version bumps.
+The body never continues the subject line. It opens with its own sentence and
+reads whole on its own — `git log --oneline`, GitHub's list view and every
+blame pane show the subject with no body attached, so a body that grammatically
+depends on it is a fragment everywhere the subject is read alone.
+No `Claude-Session:` trailer, ever — the link is dead to anyone but the machine
+that made it, and it does not belong in a public history. `Co-Authored-By:`
+stays.
 Testing policy: tests-with-features
 
 ## Commands
