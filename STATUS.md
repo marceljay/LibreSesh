@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-05
+Last updated: 2026-09-07
 
 ## In Progress
 
@@ -569,20 +569,27 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   v1 non-goal (SPEC §Non-goals — no CRDT), but a small outbox that retries
   queued writes on reconnect would cover the hallway-wifi case without one.
 
-- **Dependency bumps — all need major upgrades, none currently exploitable here.**
-  Assessed 2026-08-28:
-  - `vitest` 2.x, _critical_ — only reachable when the Vitest **UI server** is
-    listening. We never run `vitest --ui`. Fix is vitest@4 (breaking).
-  - `vite` 5.x, _high_ — `server.fs.deny` bypass **on Windows**. Dev-only, and
-    this project builds on Linux. Fix is vite@8 (breaking).
-  - `esbuild` (via Vite), _moderate_ — any website can call the dev server and
-    read the response. Worth knowing because our dev server binds `0.0.0.0`
-    for the container; does not affect production, which serves static files.
-  - `react-router-dom` 6.x, _moderate_ — the one advisory that ships. Open
-    redirect via a backslash in `<Link>`/`useNavigate`; the companion SSR
-    `deserializeErrors` issue does not apply (no SSR). Every navigation we
-    build is prefixed with a literal `/e/`, so a path cannot start `//` or
-    `\\`. Fix is react-router-dom@7 (breaking).
+- **Dependency bumps — phases 0–3 done, 4–6 open.** Plan and reasoning in
+  `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
+  the vitest critical, the vite high and the esbuild/qs moderates are cleared,
+  by the versions that actually fix them rather than by `latest`. What is left:
+  - **Phase 4 — `react-router-dom` 6 → 7**, the last 2 moderates and the only
+    advisory that ships to a browser. Open redirect via a backslash in
+    `<Link>`/`useNavigate`; the companion SSR `deserializeErrors` issue does
+    not apply (no SSR). Every navigation we build is prefixed with a literal
+    `/e/`, so a path cannot start `//` or `\\` — which is why this waited.
+    React 18 → 19 follows in the same phase.
+  - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
+    better-sqlite3. Each one needs `npm run rebuild:native` after, because
+    `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
+    without its binding (553 tests fail with "Could not locate the bindings
+    file" until you do).
+  - **Phase 6 — align Node first**, then revisit vite 7/8 and vitest 4/5.
+    They are blocked on a decision, not a bug: vitest 5 requires
+    `^22.12 || ^24 || >=26` and would drop Node 20, while `deploy/Dockerfile`
+    builds *and* runs on `node:20-slim` and `engines` says `>=20`. Note that
+    eslint 10 has already tightened the real floor to **20.19** — `node:20-slim`
+    satisfies it today, but `engines: >=20` now overstates what installs.
 - **Cloning still demands all three passwords.** Creating an event lets you
   leave any of them blank — a four-word phrase is generated and shown once on
   a confirmation screen — but `POST /events/:slug/clone` kept the old
@@ -731,6 +738,18 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   has been guessing at their event all afternoon. Raising the capacity is not
   the fix and would only hurt the typo case; bcrypt already makes each guess
   cost something, which is why this is a real backlog item and not a fire.
+
+- **27 React Compiler findings, surfaced by eslint-plugin-react-hooks 7.**
+  The flat-config migration brought fourteen new rules with it. Eleven pass and
+  are on. Three are switched off in `eslint.config.js`, named, because they flag
+  existing code: `react-hooks/refs` (13 sites — reading a ref during render),
+  `react-hooks/set-state-in-effect` (13 — `setState` called synchronously in an
+  effect, which costs a second render pass), and
+  `react-hooks/preserve-manual-memoization` (1, `ProfilePage.tsx:111`). The
+  clusters are worth reading together rather than file by file: the `refs` ones
+  are mostly popover/listbox measurement, the `set-state-in-effect` ones mostly
+  "derive state from props" that wants to be computed during render instead.
+  Each rule turned back on is its own commit.
 
 ## Medium Priority
 

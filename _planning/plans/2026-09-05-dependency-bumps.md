@@ -159,14 +159,51 @@ target would have quietly broken the production build:
 - Watch: vite 6 changed the default `build.target`; check `web/dist` still
   loads in the oldest browser we care about.
 
-### Phase 3 — lint tooling
-- `eslint` 8→10 with `eslint-plugin-react-hooks` 4→7. This is the **flat config
-  migration**: the repo is still on `.eslintrc.cjs`, so this replaces the config
-  file, not just a version. The custom `no-restricted-syntax` rule that bans
-  physical `left/right` Tailwind utilities has to survive it — it caught a real
-  bug earlier today, so it is not decoration.
-- No runtime surface at all. Do it before the risky ones so the linter is
-  modern while reviewing them.
+### Phase 3 — lint tooling ✅ done 2026-09-07
+
+`eslint` 8.57.1 → **10.10.0**, `eslint-plugin-react-hooks` 4.6.2 → **7.1.1**,
+`@typescript-eslint/*` 8.14 → **8.69** (that is where eslint 10 entered its peer
+range), plus `@eslint/js` as a new devDependency. `.eslintrc.cjs` deleted,
+`eslint.config.js` written.
+
+**Checked before installing, again.** eslint 10 needs
+`^20.19.0 || ^22.13.0 || >=24`. `node:20-slim` resolves above 20.19 today, so
+the Dockerfile is fine — but `engines: >=20` now overstates what installs, and
+that goes in the Phase 6 pot rather than being quietly widened here.
+`typescript-eslint` v9 does not exist; v8.69 already lists `eslint ^10`.
+
+**Decisions:**
+
+- **Kept `@typescript-eslint/eslint-plugin` + `parser` as direct deps** rather
+  than swapping to the `typescript-eslint` meta-package. The meta-package is the
+  docs' path, but it is a dependency change dressed as a migration; `flat/recommended`
+  off the plugin gets the same config with no churn.
+- **No `globals` package.** The old config's `env: { browser, node }` was already
+  doing nothing: `@typescript-eslint`'s `eslint-recommended` turns `no-undef` off
+  for TS, and after the migration every linted file is TS.
+- **`files: ['**/*.{ts,tsx}']` is load-bearing.** Flat config only walks
+  `.js/.mjs/.cjs` unless a pattern says otherwise. Without that entry the whole
+  codebase silently stops being linted, and lint still exits 0 — the one
+  migration failure that looks like success. Guarded by counting: **256 files
+  before, 257 after** (the new `eslint.config.js` is the extra one).
+- **`.claude/` had to be ignored explicitly.** Three git worktrees live there.
+  eslintrc skipped them for free by ignoring dot-directories; flat config
+  dropped that default and would have linted three other branches.
+- **The custom rules were verified by probe, not by assumption.** Two throwaway
+  files, one in `web/src` and one in `web/src/components/ui/`, confirmed the
+  logical-property ban, the `<input>`/`<textarea>`/`<select>` bans, and that the
+  `ui/` exemption still narrows to the class-level rules only. Deleted after.
+
+**react-hooks 7 brings fourteen new React Compiler rules.** Eleven pass on this
+codebase and stay on, so they guard what gets written next. Three flag existing
+code — `refs` (13 sites), `set-state-in-effect` (13), and
+`preserve-manual-memoization` (1) — and are switched **off in the config, by
+name, with a pointer to STATUS.md**. Fixing 27 call sites is a code change, and
+this phase was scoped to say "no runtime surface at all"; hiding them behind a
+plugin default would have been the other way to get there, and worse.
+
+Lint clean, build clean, **1146 tests**. `npm audit` unchanged at 2 moderates —
+this phase was never about the audit.
 
 ### Phase 4 — browser-facing, one at a time, browser pass each
 - `react-router-dom` 6→7 first, alone: it clears the last two advisories that

@@ -64,6 +64,21 @@ All notable changes to this project are documented here.
   their own below Theme, because they are about the app rather than about
   you. The slot they leave is where the bell goes.
 
+- **The linter moved to ESLint 10 and flat config.** `.eslintrc.cjs` was on
+  ESLint 8, a version that stopped getting fixes; the config file format it
+  used is gone in 9. `eslint.config.js` replaces it, with every house rule
+  carried across intact — the ban on physical `left/right` Tailwind utilities
+  that keeps RTL one `dir` attribute away, the raw `<input>`/`<textarea>`/
+  `<select>` bans, and the narrower exemption that lets `ui.tsx` and
+  `ui/` use the elements the primitives are built from. Verified by probe
+  rather than by hope: the same 256 source files are linted, still clean.
+
+  `eslint-plugin-react-hooks` came forward 4 → 7, which brings the React
+  Compiler's own rules. Eleven of the fourteen new ones pass and are on from
+  now on. Three find real things in existing components — reading a ref during
+  render, and setting state synchronously inside an effect — and are off by
+  name in the config with the work written down, rather than off by silence.
+
 ### Fixed
 
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
