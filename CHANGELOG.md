@@ -4,7 +4,25 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- **The audit log links to what it names.** A line said *ada deleted session
+  “Opening keynote”* and left you to find both. Now the name opens Ada's
+  profile, and the title opens the session — or **Trash**, when that is
+  where it went, which is the reason an organiser is reading the log in the
+  first place. A note opens the session it was left on; a pitch opens the
+  board; a room, tag, track or format opens the Programme tab; an archived
+  person opens the People tab. A thing the server can no longer find stays
+  plain text rather than becoming a link to nothing.
+
+### Fixed
+
+- **The gate has a way off it.** The page that asks for an event's password
+  was a card alone on a blank page: no logo, no link, nothing to say what
+  site this was or where the other events were. Someone holding the wrong
+  link, or the wrong password, had nowhere to go but the address bar. It now
+  wears the same small header as every other page — the mark goes home, and
+  **All events** is one link away.
 
 ## [0.3.6] — 2026-09-07
 

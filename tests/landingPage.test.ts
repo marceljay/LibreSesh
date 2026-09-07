@@ -42,16 +42,17 @@ describe('the root is a landing page, not the event list', () => {
 
 describe('the logo goes home, and the list keeps its own way back', () => {
   it('sends every logo to `/`, under one label', () => {
-    // Four of them: the schedule, the agenda, search, and the list itself.
-    // They used to mean "all events"; they mean "home" now, and the label has
-    // to move with the target or it describes the old destination.
+    // Five of them: the schedule, the agenda, search, the list itself, and
+    // the gate (2026-09-07, the one page that had none). They used to mean
+    // "all events"; they mean "home" now, and the label has to move with the
+    // target or it describes the old destination.
     const logos = tsxFiles(WEB_SRC).flatMap((file) => {
       const source = readFileSync(file, 'utf8');
       return [...source.matchAll(/<Link[\s\S]{0,200}?aria-label="LibreSesh home"/g)].map(
         (match) => ({ file, to: /to="([^"]+)"/.exec(match[0])?.[1] }),
       );
     });
-    expect(logos).toHaveLength(4);
+    expect(logos).toHaveLength(5);
     expect(logos.every((logo) => logo.to === '/')).toBe(true);
   });
 
@@ -64,12 +65,12 @@ describe('the logo goes home, and the list keeps its own way back', () => {
 
   it('keeps the "back to the list" links pointing at the list', () => {
     // These are not the logo: they are the way back to where you came from,
-    // and they were correct before the logo moved. Six of them, counting the
-    // landing page's own call to action.
+    // and they were correct before the logo moved. Seven of them, counting
+    // the landing page's own call to action and the gate's "All events".
     const backLinks = tsxFiles(WEB_SRC).flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(/to="\/events"/g)].map(() => file),
     );
-    expect(backLinks).toHaveLength(6);
+    expect(backLinks).toHaveLength(7);
   });
 
   it('keeps the list one click from `/`', () => {

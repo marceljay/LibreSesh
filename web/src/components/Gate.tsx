@@ -1,10 +1,12 @@
 import { plural } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
 import { takeInvite } from '../lib/inviteLink';
 import { useMe } from '../lib/useMe';
+import { Logo } from './Logo';
 import {
   ControlShell,
   Field,
@@ -284,7 +286,23 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   const nameMissing = name.trim() === '';
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
+      {/* The gate is the whole page, and it used to be a card with no way off
+          it: no logo, no link, nothing to say what site this was or where the
+          other events are. Someone with the wrong link, or the wrong password,
+          was stuck. The same small header every other page has, above the
+          card: the mark goes home, and the list of events is one link away. */}
+      <header className="mb-4 flex w-full max-w-sm items-center justify-between">
+        <Link to="/" className="flex items-center" aria-label="LibreSesh home">
+          <Logo variant="oneline" className="h-6 w-auto" />
+        </Link>
+        <Link
+          to="/events"
+          className="text-xs font-medium text-stone-500 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          All events
+        </Link>
+      </header>
       <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 shadow-xs">
         <div className="mb-1 flex items-center gap-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-sm font-bold text-white">

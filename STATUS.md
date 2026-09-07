@@ -37,17 +37,17 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   fixes are the top backlog group.
 
 - **Branch `fix/review-round-2`** (2026-09-07, worktree
-  `.claude/worktrees/review-fixes`, off `cce7f94` = 0.3.5): the five things
-  you sent in chat, one commit each, all in CHANGELOG `[Unreleased]` and
-  queued for your eyes as **R31–R35** — the now line in List view, the theme
-  catching up when the page comes back on screen, *Leave without saving?* on
-  the Settings tab, `@` mentions in a session description and in a bio
-  (composer, link and bell), and the time box typing its own colon. **Not merged to `dev`**:
-  another session is landing a dependency round there (zod 4 at `0341e1f`,
-  the lockfile still moving), so the merge waits until that settles —
-  `git merge fix/review-round-2` on `dev`, then delete the worktree. The suite
-  was green on the branch (1169 → 1188) before the shared `node_modules` was
-  rebuilt under it; run it once more after the merge.
+  `.claude/worktrees/review-fixes`). Seven of its nine commits are **merged
+  and shipped**: PR #55 landed on `dev` and went out as **0.3.6** — the now
+  line in List view, the theme catching up when the page comes back on
+  screen, *Leave without saving?* on the Settings tab, `@` mentions in a
+  session description and in a bio, the time box typing its own colon.
+  Still queued for your eyes as **R31–R35** all the same: shipped is not
+  seen. Two commits remain on the branch, rebased onto 0.3.6 and pushed —
+  the gate wearing the logo and a link to the other events (**R36**), and
+  the audit log linking to the people and things it names (**R37**) — both
+  in CHANGELOG `[Unreleased]`, waiting on a second PR. When it merges,
+  delete the worktree.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -133,7 +133,7 @@ that is where these break.
 Freshest first. **R26 is the export/import work**, R21–R22 what is left of
 the 2026-09-04 checklist pass, R1–R2 the forms overhaul and the grid-block
 fix, R5–R6 linking and clashes, R7–R18 the older sweep, **R27** the `@` menu,
-**R28** the forms close-out, and **R31–R35 the five things you sent in chat
+**R28** the forms close-out, and **R31–R37 the things you sent in chat
 on 2026-09-07**, on `fix/review-round-2` until it is merged. Each takes a
 minute.
 
@@ -306,6 +306,22 @@ so ticking there is enough — nothing needs pasting back.
     it reads `09:30`. Backspace over the colon: it does not come back.
     On a **phone**, the numeric keyboard can now type a whole time. `2pm`
     still works; `12` then `pm` reads 12:00 on blur.
+
+25. **R36 · The gate has a way out.** Open an event link logged out, so the
+    password card shows. *Pass:* above the card, the LibreSesh mark on the
+    left and **All events** on the right; the mark opens `/`, the link opens
+    `/events`; in **both themes** and on a **phone** the header fits the
+    card's width.
+
+26. **R37 · The audit log links.** Manage Event → Audit, on an event with
+    some history. *Pass:* an actor's name opens their profile; a session's
+    title opens the session, and a deleted session's title opens **Trash**
+    (hover: *Open in Trash*); a deleted note also opens Trash, a live one
+    the session it sits on; a pitch opens the board; a room or tag opens the
+    Programme tab. Links are quiet at rest (a faint underline) and plain
+    under the pointer. Open a folded batch (*Show all N*): each member's
+    title links too. A line about something the server can no longer find
+    stays plain text.
 
 ### Decisions I need from you
 
