@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 
 import { ChevronLeftIcon, ChevronRightIcon } from './icons';
 
@@ -67,7 +67,7 @@ export function Rail({
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' });
   };
 
-  const arrow = (side: 'back' | 'on'): JSX.Element => {
+  const arrow = (side: 'back' | 'on'): ReactElement => {
     const Chevron = side === 'back' ? ChevronLeftIcon : ChevronRightIcon;
     return (
       <button

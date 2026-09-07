@@ -240,12 +240,23 @@ browser pass.
 Peers are `react >=18`, so **React 19 is not required by this** — the two stay
 separate commits as planned.
 
-**Still open: `react` + `react-dom` 18 → 19** with `@types/react`/`-dom` 19.
-Peers are already clear (`@base-ui/react` takes `^17 || ^18 || ^19`,
-`lucide-react` `^19`, `@floating-ui/react` `>=17`). The risk is not the peers —
-it is that **the suite cannot see this**: no DOM, no component tests, behaviour
-pinned by source-text assertions. Wants a full manual pass over the R-items in
-STATUS.md.
+**`react` + `react-dom` 18 → 19 ✅ done 2026-09-07**, with `@types/react`/`-dom`
+19. The stated risk was that the suite could not see it, so the suite was
+taught to first: `tests/routes.test.tsx` mounts every route under jsdom, with
+`fetch` pointed at a supertest agent so the page talks to the real Express app,
+and fails on any `console.error` — where React reports a bad ref, a missing
+key or an update outside `act()`. Fourteen cases green on 18, then green on 19
+with no console output, on the first run.
+
+The migration surface was as small as the audit said: `createRoot` already,
+no `defaultProps`, no string refs, no `react-dom/test-utils`. Two type edits:
+`JSX.Element` (the global namespace is gone in @types/react 19) and one
+`RefObject<T>` prop that now has to admit `null`, because `useRef<T>(null)`
+returns `RefObject<T | null>`. Lint, build and 1249 tests green.
+
+What jsdom still cannot show — layout, drag, the time box's masking — waits on
+a browser pass; Chromium is in the dev container image for it from this round
+(`.devcontainer/Dockerfile`), on the next rebuild.
 
 ### Phase 5 — server majors, best-covered first
 One per commit, in this order, because that is descending test coverage and

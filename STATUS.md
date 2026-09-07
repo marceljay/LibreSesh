@@ -609,14 +609,12 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
   the vitest critical, the vite high and the esbuild/qs moderates are cleared,
   by the versions that actually fix them rather than by `latest`. What is left:
-  - **Phase 4 — `react` + `react-dom` 18 → 19** with `@types/react`/`-dom` 19.
-    react-router-dom 7 landed on its own and took the audit to **0**, so
-    nothing is forcing this one. Peers are clear (`@base-ui/react` takes
-    `^17 || ^18 || ^19`, `lucide-react` `^19`, `@floating-ui/react` `>=17`);
-    the suite can see it now: `tests/routes.test.tsx` mounts every route
-    under jsdom against the real server and fails on any console.error.
-    Still wants a browser pass over the R-items below for what jsdom cannot
-    show (layout, drag, the time box).
+  - **Phase 4 — `react` + `react-dom` 18 → 19 ✅ done 2026-09-07** on
+    `chore/react-19`, behind a DOM smoke suite (`tests/routes.test.tsx`)
+    that mounts every route against the real server and fails on any
+    console.error. Two type edits, no runtime change, 1249 green. Still
+    wants a browser pass over the R-items below for what jsdom cannot show
+    (layout, drag, the time box).
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
