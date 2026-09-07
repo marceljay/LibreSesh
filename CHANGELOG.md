@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **Leaving Settings with unsaved edits asks first.** Manage Event → Settings
+  is the one form on the page with a Save button, and switching tab, picking a
+  search result on another tab or going back to the schedule dropped whatever
+  was typed there without a word. Each of those now asks *Leave without
+  saving?* — leaving puts the form back to what is saved, staying leaves it
+  as typed for you to press Save. A reload or a closed tab gets the browser's
+  own warning. The browser's Back button is the one door not covered.
+
 ### Fixed
 
 - **The list has the now line too.** In List view the only trace of the
