@@ -614,7 +614,11 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     that mounts every route against the real server and fails on any
     console.error. Two type edits, no runtime change, 1249 green. Still
     wants a browser pass over the R-items below for what jsdom cannot show
-    (layout, drag, the time box).
+    (layout, drag, the time box). Debian's `chromium` was added to the apt
+    list in `.devcontainer/Dockerfile` on this machine — `.devcontainer/` is
+    gitignored, so it travels with the host, not the repo. After the next
+    container **rebuild**, a Playwright pass can drive `/usr/bin/chromium`
+    against `npm run dev`; the download route is closed by the firewall.
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
