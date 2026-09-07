@@ -143,7 +143,8 @@ tests/             Vitest suites
 docs/              guides (identity, using, managing, deploy, hosting, import)
 deploy/            Dockerfile, compose, Caddyfile, systemd unit, backup script
 design/mockup.jsx  approved UI reference — never imported
-ARCHITECTURE.md    how it fits together, and the threat model
+ARCHITECTURE.md    how it fits together
+SECURITY.md        threat model, accepted risks, and every code and link you can hand out
 CHANGELOG.md       what has shipped
 STATUS.md          current work and the backlog
 ```
@@ -158,7 +159,8 @@ STATUS.md          current work and the backlog
 | [docs/schedule-import.md](docs/schedule-import.md) | Import field reference (already in the repo) |
 | [docs/deploy.md](docs/deploy.md) | Config, Docker, Railway, systemd, backups, upgrades |
 | [docs/hosting.md](docs/hosting.md) | Picking and sizing a VPS, hardening, day-2 operations, troubleshooting |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Internals and threat model |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Internals |
+| [SECURITY.md](SECURITY.md) | Threat model, accepted risks, codes and links |
 | [STATUS.md](STATUS.md) / [CHANGELOG.md](CHANGELOG.md) | Backlog and shipped work |
 
 ## Deploy
@@ -178,9 +180,9 @@ The rest — Railway volumes, systemd, backups, rotating the cookie secret,
 upgrades — is in [docs/deploy.md](docs/deploy.md). Choosing and hardening the
 box it runs on: [docs/hosting.md](docs/hosting.md).
 
-How the pieces fit, and the threat model:
-[ARCHITECTURE.md](ARCHITECTURE.md). Start with **§What a cookie is, exactly**
-if you are touching identity or `COOKIE_SECRET`.
+How the pieces fit: [ARCHITECTURE.md](ARCHITECTURE.md). Start with **§What a
+cookie is, exactly** if you are touching identity or `COOKIE_SECRET`. The
+threat model and what every code and link grants: [SECURITY.md](SECURITY.md).
 
 ## License
 

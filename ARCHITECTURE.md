@@ -1,8 +1,8 @@
 # Architecture
 
 How LibreSesh is put together, and — just as important — what it deliberately
-does not do. If you are changing something load-bearing, read the
-[Security](#security) section first; several choices that look like gaps are
+does not do. If you are changing something load-bearing, read
+[SECURITY.md](SECURITY.md) first; several choices that look like gaps are
 deliberate, and a few that look harmless are not.
 
 ## The shape of it
@@ -1013,98 +1013,11 @@ the paragraph to change first.
 
 ## Security
 
-### Threat model
-
-This is a **public-ish, low-stakes, high-trust** system: a conference schedule
-that a room full of strangers can edit. The assets worth protecting are the
-integrity of the programme and the privacy of who is attending what. It is
-explicitly *not* built to withstand a targeted attacker with time.
-
-**In scope:**
-
-| Threat | Mitigation |
-| --- | --- |
-| Guessing an event password | bcrypt (cost 10); 5 attempts per 15 min per identity **and** per IP, `Retry-After` on the 6th |
-| Guessing a link phrase | Same 5-per-15-min budget as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
-| Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |
-| Spam / flooding | Token buckets per identity and per IP on every write class; server-enforced max lengths |
-| XSS via session or profile text | HTML escaped before markdown parsing; URL scheme allowlist; no `dangerouslySetInnerHTML` on unescaped input |
-| Open redirect | Every client navigation is prefixed with a literal `/e/` |
-| Reading a schedule you were not given | Viewing requires the viewer password; there is no public event view |
-| Leaking one person's agenda | Stars and interest are never broadcast and never attributed in any payload; only aggregate counts are exposed |
-| A leaked calendar URL | The token grants only what its owner's role already allows, and only for that one event; revoking the role kills the feed |
-| A leaked `COOKIE_SECRET` | Little on its own — a forged signature still needs a real 131-bit token, and an unknown one just mints an anonymous identity. Kept out of the database's volume so a copied DB and the secret do not leak together |
-| A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget. If one leaks open anyway: identity tokens need `COOKIE_SECRET` as well before they sign anyone in, but `ics_token`s work against the live server as they are, and speaker-code hashes (~37 bits) crack offline — revoke roles and codes |
-
-**Out of scope, accepted:**
-
-- **Shared passwords cannot be revoked per person.** Anyone who learns the admin
-  password is an admin until it is changed. Rotating it (admin settings) is the
-  only remedy, and it does not evict existing role grants — those are rows in
-  `roles`, deliberately, so a rotation does not sign the whole room out mid-event.
-- **Identity is a cookie, not a person.** Clearing cookies makes you a new
-  attendee. A device-link phrase carries one identity onto a second device, but
-  that is continuity, not authentication: whoever types a live phrase becomes
-  that person, role included. Impersonation by display name is trivial and not
-  defended against. Do not build anything that treats a display name as an
-  identity.
-- **The database file is the room key.** `identities.token` and `ics_token`
-  are stored in clear, so anyone who can read the SQLite file can become any
-  attendee (link phrases are hashed only because they transit screens and
-  shoulders, not because the DB is distrusted). Accepted deliberately: the
-  instance host is trusted, full stop. If that ever stops being true, hash the
-  tokens at rest (they are random, so a plain SHA-256 lookup works) rather
-  than bolting auth onto the trust boundary.
-- **The running server can act as any user, and nothing done in the browser
-  changes that.** Considered and declined (2026-09-05). Hashing the token
-  client-side before sending it only makes the hash the bearer credential: the
-  server still sees, and can replay, whatever the client presents, so it buys
-  nothing against the host — and the token is random and instance-specific, so
-  there is no reused secret to shield. What *would* work is asymmetric
-  challenge–response — a per-device private key, i.e. WebAuthn/passkeys — and
-  it buys exactly one thing: the host cannot act as you **while you are away**.
-  It cannot stop a host that serves the JavaScript from acting as you while you
-  are on the page, so "the owner can't eavesdrop" is not on offer to any web
-  app. Against that one gain: a key prompt at the gate (the highest-stakes
-  screen, on a phone, at a door), per-device enrolment instead of link phrases,
-  a calendar feed that cannot sign and stays a bearer token regardless, and
-  giving up the `httpOnly` cookie for a key XSS can reach. Not worth it for a
-  schedule. If a deployment ever needs it, the identity model — one row, many
-  devices — can carry a public key per device without redesign. The cheaper
-  layer that *does* pay for itself is hashing tokens at rest (previous point),
-  which makes a copy of the database useless as a credential; do that first.
-- **No CSRF tokens.** Cookies are `SameSite=Lax`, which covers the cross-site
-  form-post case for the state-changing verbs used here. Any future `GET` that
-  mutates state would break that assumption.
-- **A determined attacker with a valid password can ruin the schedule.** The
-  audit log and restore endpoints are the recovery path, not prevention.
-
-### Things that will bite you
-
-- **`.npmrc` sets `ignore-scripts=true`.** `better-sqlite3` will not build on
-  `npm install`. Use `npm run rebuild:native`, or `--ignore-scripts=false` in
-  Docker. This is a supply-chain gate; do not remove it to "fix" the build.
-- **`COOKIE_SECRET` must be set and stable in production.** Elsewhere an
-  unconfigured one is generated once and kept in `.cookie-secret` beside the
-  database, because a key that changes per boot invalidates every identity —
-  and the failure is worse than it sounds: the visitor comes back a stranger
-  *and* cannot reclaim their own display name, which the identity they lost
-  still holds. If neither reading nor writing that file works, the boot log
-  says the next restart will sign everyone out.
-- **`TRUST_PROXY=1` behind a reverse proxy**, or every request appears to come
-  from the proxy and the per-IP rate limit becomes a single shared bucket.
-- **The instance password gates event creation** and the whole-database
-  backup, and is compared in constant time. It is not a user account; it is a
-  deploy-level secret.
-- **A whole-database backup is a credential, not a document.** It is the file
-  the point above calls the room key, so the download encrypts it and the UI
-  says so in as many words. The per-event JSON export is the opposite by
-  construction — `exportEvent` builds a shape that has nowhere to put a hash or
-  a token, rather than filtering secrets out of DTOs, so a new secret column
-  cannot leak into it by being added. That asymmetry is deliberate: one file is
-  for sharing, the other is for a safe.
-- **Rate limits are in-process memory.** They reset on restart and do not span
-  instances — which is fine, because there is only ever one instance.
+The threat model, the risks accepted on purpose, and every code and link the
+app hands out — what each grants, how long it lives, what revoking it does and
+does not do — are in [SECURITY.md](SECURITY.md). It is its own file so that
+it can be read whole by someone who is not here to learn the internals; the
+sections above are the mechanisms it refers to.
 
 ## Testing
 

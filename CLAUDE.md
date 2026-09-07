@@ -29,7 +29,10 @@ Testing policy: tests-with-features
 
 See `ARCHITECTURE.md`. Read **§What a cookie is, exactly** before touching
 anything to do with identity, sign-in or `COOKIE_SECRET` — it is the concept
-the rest hangs off, and the one most easily got wrong.
+the rest hangs off, and the one most easily got wrong. The threat model, the
+accepted risks and every code or link the app hands out live in `SECURITY.md`;
+a change to what a credential grants, how long it lives or how it is revoked
+updates that file in the same commit.
 
 ## Releases and versions
 
