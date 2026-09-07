@@ -25,6 +25,15 @@ All notable changes to this project are documented here.
   as typed for you to press Save. A reload or a closed tab gets the browser's
   own warning. The browser's Back button is the one door not covered.
 
+### Changed
+
+- **The time box types the colon for you.** After two digits of hour the box
+  reads `08:` and the next digits are the minutes — which is what "jump to the
+  minutes" means in a box with no segments, and what a phone's numeric
+  keyboard, which has no colon key, needs to type a whole time. Two digits
+  that cannot be an hour, `93`, were the start of `9:30` and are split as
+  such. A backspace that removes the colon is respected; nothing is put back.
+
 ### Fixed
 
 - **The list has the now line too.** In List view the only trace of the

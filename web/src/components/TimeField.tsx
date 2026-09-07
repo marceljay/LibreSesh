@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Select as BaseSelect } from '@base-ui/react/select';
 import { ChevronDown } from 'lucide-react';
 import { fmtMin, minutesOf } from '../lib/format';
-import { parseTime, timeChoices } from '../lib/timeChoices';
+import { completeHour, parseTime, timeChoices } from '../lib/timeChoices';
 import { ControlShell, TextInput } from './ui';
 import { SelectContent, SelectItem } from './ui/select';
 
@@ -26,6 +26,10 @@ const ARROW_STEP = 5;
  * settles it onto the five-minute grid when you leave it, and a chevron that
  * opens the quarter-hours for when a glance beats typing. Picking fills the
  * box; typing wins over the list.
+ *
+ * The one thing typed for you is the colon: after two digits of hour the box
+ * reads `08:` and the caret is on the minutes, which is what the segmented
+ * widget did and what a phone's numeric keyboard, with no colon key, needs.
  *
  * The box commits on blur and on Enter, not on every keystroke: committing
  * `1` as `01:00` while someone is halfway through `14:30` would rewrite the
@@ -117,7 +121,7 @@ export function TimeField({
           className="tabular-nums"
           value={text}
           disabled={disabled}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => setText(completeHour(text, e.target.value))}
           onBlur={commit}
           onKeyDown={onKeyDown}
         />
