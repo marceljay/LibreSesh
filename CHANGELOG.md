@@ -22,6 +22,10 @@ All notable changes to this project are documented here.
   console — where React reports a bad ref, a missing key or an update it did
   not expect. Until now nothing in the suite rendered a component, so a React
   or router upgrade could pass every test and still break the page.
+- **React moved to 19.** Taken after the suite could render, not before:
+  every route mounted clean under it on the first run, and the only edits
+  were two type annotations. Nothing you can see changes; it is the runtime
+  every library the app sits on has been testing against for a year.
 
 ### Fixed
 
