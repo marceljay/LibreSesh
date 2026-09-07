@@ -64,6 +64,14 @@ All notable changes to this project are documented here.
   their own below Theme, because they are about the app rather than about
   you. The slot they leave is where the bell goes.
 
+- **React Router 7, and the last advisory is gone.** Router 6 carried an open
+  redirect: a path beginning with a backslash in `<Link>` or `useNavigate`
+  could send a visitor off-site. Nothing in this app builds a path from
+  anything a visitor types — every one of them is an absolute `/e/…` composed
+  in code — so it was never reachable here, which is why it waited for a
+  version bump rather than a patch. `npm audit` now reports **0
+  vulnerabilities**, down from 10.
+
 - **The server image runs Node 22.** `deploy/Dockerfile` built and ran on
   `node:20-slim`, a runtime that reached end of life in April 2026 and has
   taken no security patches since — while the development container had been

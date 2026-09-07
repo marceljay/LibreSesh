@@ -573,12 +573,12 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
   the vitest critical, the vite high and the esbuild/qs moderates are cleared,
   by the versions that actually fix them rather than by `latest`. What is left:
-  - **Phase 4 — `react-router-dom` 6 → 7**, the last 2 moderates and the only
-    advisory that ships to a browser. Open redirect via a backslash in
-    `<Link>`/`useNavigate`; the companion SSR `deserializeErrors` issue does
-    not apply (no SSR). Every navigation we build is prefixed with a literal
-    `/e/`, so a path cannot start `//` or `\\` — which is why this waited.
-    React 18 → 19 follows in the same phase.
+  - **Phase 4 — `react` + `react-dom` 18 → 19** with `@types/react`/`-dom` 19.
+    react-router-dom 7 landed on its own and took the audit to **0**, so
+    nothing is forcing this one. Peers are clear (`@base-ui/react` takes
+    `^17 || ^18 || ^19`, `lucide-react` `^19`, `@floating-ui/react` `>=17`);
+    the risk is that the suite cannot see it — no DOM, no component tests —
+    so it needs a manual pass over the R-items below.
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3

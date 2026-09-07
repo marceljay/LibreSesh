@@ -206,16 +206,46 @@ Lint clean, build clean, **1146 tests**. `npm audit` unchanged at 2 moderates �
 this phase was never about the audit.
 
 ### Phase 4 — browser-facing, one at a time, browser pass each
-- `react-router-dom` 6→7 first, alone: it clears the last two advisories that
-  reach a browser, and v7's migration is well-trodden. Check every `<Link>`,
-  the slug canonicalisation redirect, and the invite-link hash handling —
-  `takeInvite` uses a raw `history.replaceState` the router never sees, which
-  is exactly the kind of thing a router major breaks quietly.
-- `react` + `react-dom` 18→19 with `@types/react`/`@types/react-dom` 19.
-  Peers are already clear: `@base-ui/react` accepts `^17 || ^18 || ^19`,
-  `lucide-react` accepts `^19`, `@floating-ui/react` wants `>=17`. The risk is
-  not the peers, it is that **the suite cannot see this** — full manual pass
-  over the R-items in STATUS.md.
+
+**`react-router-dom` 6.30.6 → 7.18.3 ✅ done 2026-09-07.** `npm audit` is now
+**0 vulnerabilities**, from 10 at the start of this plan. The open redirect via
+a backslash in `<Link>`/`useNavigate` was the last advisory that reached a
+browser.
+
+The migration surface turned out to be nil, and that was checked rather than
+hoped:
+
+- **No data router.** Hooks in use are `useLocation`, `useMatch`,
+  `useNavigate`, `useParams`, `useSearchParams` — no `useLoaderData`,
+  `useFetcher`, `useNavigation`, no loaders or actions. So
+  `v7_fetcherPersist`, `v7_normalizeFormMethod`, `v7_partialHydration` and
+  `v7_skipActionErrorRevalidation` have nothing to act on.
+- **Every path is absolute.** All 21 `navigate()` calls and all 25 `<Link to>`
+  targets start with `/`, including the indirect ones (`expandTo`, `sheetUrl`,
+  and the `back.to` carried in location state). The one splat route,
+  `path="*"`, holds an absolute `<Navigate to="/">`. So `v7_relativeSplatPath`,
+  the flag most likely to break a v6 app quietly, cannot bite.
+- **`takeInvite` was the named risk and is fine.** It reads
+  `window.location.hash` and calls `window.history.replaceState` directly, never
+  touching the router, and guards itself with `hasTaken`. v7 changes neither
+  `window.history` nor when a component first runs.
+- **Slug canonicalisation** builds an absolute path from `encodeURIComponent`
+  and calls `navigate(to, { replace: true })` — unchanged semantics.
+
+`v7_startTransition` is the one real behavioural change (router state updates
+wrap in `React.startTransition`). Nothing here reads router state synchronously
+after navigating, so it should be invisible; it is the item to watch in a
+browser pass.
+
+Peers are `react >=18`, so **React 19 is not required by this** — the two stay
+separate commits as planned.
+
+**Still open: `react` + `react-dom` 18 → 19** with `@types/react`/`-dom` 19.
+Peers are already clear (`@base-ui/react` takes `^17 || ^18 || ^19`,
+`lucide-react` `^19`, `@floating-ui/react` `>=17`). The risk is not the peers —
+it is that **the suite cannot see this**: no DOM, no component tests, behaviour
+pinned by source-text assertions. Wants a full manual pass over the R-items in
+STATUS.md.
 
 ### Phase 5 — server majors, best-covered first
 One per commit, in this order, because that is descending test coverage and
