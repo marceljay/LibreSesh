@@ -1,6 +1,6 @@
 import { pluralForm, type PluralForms } from '../lib/plural';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import type {
   ContributionDto,
   ContributionKind,
@@ -142,10 +142,31 @@ export function SessionDetail({
     day: 'numeric',
     month: 'short',
   });
+  // The same `@name` that links in a comment links here, through the same
+  // tokenizer; the markdown is rendered first and the mentions found in its
+  // prose, so one inside a code span or a link is left as written.
   const description = useMemo(
-    () => (session.description ? renderMarkdown(session.description) : ''),
-    [session.description],
+    () =>
+      session.description
+        ? renderMarkdown(session.description, {
+            usernames: people.map((p) => p.username).filter((u): u is string => u !== null),
+            hrefFor: (username) => {
+              const person = personByUsername(people, username);
+              return person ? `/e/${slug}/p/${person.id}` : null;
+            },
+          })
+        : '',
+    [session.description, people, slug],
   );
+  const navigate = useNavigate();
+  /** A mention link is app navigation, not a page load: the rendered HTML
+   *  cannot hold a router `Link`, so the click is caught on its way up. */
+  const followMention = (e: MouseEvent<HTMLDivElement>) => {
+    const link = (e.target as HTMLElement).closest('a[data-mention]');
+    if (!(link instanceof HTMLAnchorElement) || e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    navigate(link.getAttribute('href') ?? '');
+  };
 
   const canContribute = role !== 'viewer' && !archived;
 
@@ -274,6 +295,7 @@ export function SessionDetail({
       className={`prose-sm mb-4 leading-relaxed text-stone-700 dark:text-stone-300 [&_a]:text-blue-700 dark:[&_a]:text-blue-400 [&_a]:underline [&_code]:rounded-sm [&_code]:bg-stone-100 dark:[&_code]:bg-stone-800 [&_code]:px-1 [&_li]:ms-4 [&_li]:list-disc [&_p]:mb-2 ${
         page ? 'text-base' : 'text-sm'
       }`}
+      onClick={followMention}
       // Markdown is escaped before parsing, so no author markup survives.
       dangerouslySetInnerHTML={{ __html: description }}
     />

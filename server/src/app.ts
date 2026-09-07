@@ -102,7 +102,13 @@ export function createApp(db: Db, config: Config): App {
         },
       }),
     );
-    app.get('*', (_req, res) => {
+    // `'/{*splat}'` rather than `'*'`: Express 5 routes through path-to-regexp
+    // 8, where a wildcard must be named and a bare `*` throws at registration.
+    // The braces matter as much as the name — `'/*splat'` alone requires at
+    // least one segment and would 404 the home page. The name is never read;
+    // this hands every unmatched path the same index.html so the router in the
+    // browser can answer a deep link.
+    app.get('/{*splat}', (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(join(WEB_DIST, 'index.html'));
     });

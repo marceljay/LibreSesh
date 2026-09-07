@@ -393,6 +393,7 @@ import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminSearch } from './AdminSearch';
 import { ADMIN_TABS, type AdminSetting, type AdminTabId } from '../lib/adminSearch';
+import { settingsChanged } from '../lib/settingsDraft';
 import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
@@ -562,6 +563,96 @@ export function AdminPage() {
     [setSearchParams],
   );
 
+  /** The Settings form as the saved event has it — on first load, and again
+   *  when an organiser leaves the tab choosing to drop their edits. */
+  const loadSettingsFrom = useCallback((saved: NonNullable<typeof event>) => {
+    setName(saved.name);
+    setSlugField(saved.slug);
+    setStartDate(saved.startDate);
+    setEndDate(saved.endDate);
+    setDayStart(fmtMin(saved.dayStartMin));
+    setDayEnd(fmtMin(saved.dayEndMin));
+    setWeekRailFrom(String(saved.weekRailFrom));
+    setAuditKeep(String(saved.auditKeep));
+    setDefaultView(saved.defaultView);
+    setShowOfficialBadge(saved.showOfficialBadge);
+    setPitchesEnabled(saved.pitchesEnabled);
+    setUserRoleLabel(saved.userRoleLabel);
+    setViewerPassword('');
+    setUserPassword('');
+    setAdminPassword('');
+  }, []);
+
+  /**
+   * Edits on the Settings tab that no Save has sent. Everything else on this
+   * page saves as you go — a room, a break, a permission switch — and this is
+   * the one form with a Save button, so it is the one place leaving can lose
+   * something. Meaningful only once the form has been loaded for this event.
+   */
+  const settingsDirty =
+    event !== undefined &&
+    loadedForSlug === event.slug &&
+    settingsChanged(
+      {
+        name,
+        slug: slugField,
+        startDate,
+        endDate,
+        dayStart,
+        dayEnd,
+        weekRailFrom,
+        auditKeep,
+        defaultView,
+        showOfficialBadge,
+        pitchesEnabled,
+        userRoleLabel,
+        viewerPassword,
+        userPassword,
+        adminPassword,
+      },
+      event,
+    );
+
+  // A reload or a closed tab: the browser's own "leave site?" is the only
+  // thing that can still stop it, and it shows only while asked to.
+  useEffect(() => {
+    if (!settingsDirty) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [settingsDirty]);
+
+  /**
+   * Every way off the Settings tab goes through here: another tab, a search
+   * result on another tab, the way back to the schedule. With unsaved edits it
+   * asks, and leaving means dropping them — the form is put back to what is
+   * saved, so the question is not asked again over a form nobody is editing.
+   * The browser's own Back button is not covered: this app's router cannot
+   * intercept it.
+   */
+  const confirmLeaveSettings = useCallback(async (): Promise<boolean> => {
+    if (tab !== 'settings' || !settingsDirty || !event) return true;
+    const ok = await confirm({
+      title: 'Leave without saving?',
+      body: 'The settings you changed have not been saved. Leave, and they go back to what is saved; stay, and press Save settings first.',
+      confirmLabel: 'Leave without saving',
+    });
+    if (ok) loadSettingsFrom(event);
+    return ok;
+  }, [tab, settingsDirty, event, confirm, loadSettingsFrom]);
+
+  const switchTab = useCallback(
+    (next: TabId) => {
+      if (next === tab) return;
+      void confirmLeaveSettings().then((ok) => {
+        if (ok) setTab(next);
+      });
+    },
+    [tab, confirmLeaveSettings, setTab],
+  );
+
   /**
    * Open a setting the search box found: switch to its tab, scroll to it, and
    * ring it for a moment.
@@ -579,19 +670,22 @@ export function AdminPage() {
 
   const openSetting = useCallback(
     (setting: AdminSetting) => {
-      setTab(setting.tab);
-      const anchor = setting.anchor;
-      if (anchor === undefined) return;
-      // After paint: the tab it lives on has to be rendered before it can be
-      // scrolled to.
-      requestAnimationFrame(() => {
-        document
-          .getElementById(`setting-${anchor}`)
-          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setFlashed(anchor);
+      void confirmLeaveSettings().then((ok) => {
+        if (!ok) return;
+        setTab(setting.tab);
+        const anchor = setting.anchor;
+        if (anchor === undefined) return;
+        // After paint: the tab it lives on has to be rendered before it can be
+        // scrolled to.
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`setting-${anchor}`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setFlashed(anchor);
+        });
       });
     },
-    [setTab],
+    [setTab, confirmLeaveSettings],
   );
 
   const loadTrash = useCallback(async () => {
@@ -610,18 +704,7 @@ export function AdminPage() {
 
   if (event && loadedForSlug !== event.slug) {
     setLoadedForSlug(event.slug);
-    setName(event.name);
-    setSlugField(event.slug);
-    setStartDate(event.startDate);
-    setEndDate(event.endDate);
-    setDayStart(fmtMin(event.dayStartMin));
-    setDayEnd(fmtMin(event.dayEndMin));
-    setWeekRailFrom(String(event.weekRailFrom));
-    setAuditKeep(String(event.auditKeep));
-    setDefaultView(event.defaultView);
-    setShowOfficialBadge(event.showOfficialBadge);
-    setPitchesEnabled(event.pitchesEnabled);
-    setUserRoleLabel(event.userRoleLabel);
+    loadSettingsFrom(event);
     // Clear the duplicate form too, so it isn't pre-filled after a clone.
     setCloneName('');
     setCloneSlug('');
@@ -1188,7 +1271,11 @@ export function AdminPage() {
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => navigate(`/e/${slug}`)}
+          onClick={() =>
+            void confirmLeaveSettings().then((ok) => {
+              if (ok) navigate(`/e/${slug}`);
+            })
+          }
           className={`text-xs ${linkClass}`}
         >
           ← Schedule
@@ -1217,13 +1304,13 @@ export function AdminPage() {
             aria-selected={tab === t.id}
             aria-controls={`admin-panel-${t.id}`}
             tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => setTab(t.id)}
+            onClick={() => switchTab(t.id)}
             onKeyDown={(e) => {
               const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
               if (step === 0) return;
               e.preventDefault();
               const next = TABS[(i + step + TABS.length) % TABS.length]!;
-              setTab(next.id);
+              switchTab(next.id);
               document.getElementById(`admin-tab-${next.id}`)?.focus();
             }}
             className={`rounded-md px-3 py-1.5 text-xs font-medium ${

@@ -33,3 +33,6 @@ deploy/data/
 *.db-wal
 *.db-shm
 
+
+# Working notes not meant for the repo — PR bodies, one-off reports.
+_scratch/

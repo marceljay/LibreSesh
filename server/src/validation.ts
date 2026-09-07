@@ -81,7 +81,7 @@ export function distinctPasswordsRefinement(v: PasswordTrio, ctx: z.RefinementCt
   if (!clash) return;
   const [first, second] = clash;
   ctx.addIssue({
-    code: z.ZodIssueCode.custom,
+    code: 'custom',
     path: [second],
     message: `The ${ROLE_OF_FIELD[second]} and ${ROLE_OF_FIELD[first]} passwords must be different — a shared password grants whichever role is higher`,
   });
@@ -474,7 +474,7 @@ export const settingsSchema = z
   .superRefine(distinctPasswordsRefinement);
 
 /** Parse with a schema, converting a zod failure into a 400 with a readable message. */
-export function parse<T extends z.ZodTypeAny>(schema: T, value: unknown): z.infer<T> {
+export function parse<T extends z.ZodType>(schema: T, value: unknown): z.infer<T> {
   const result = schema.safeParse(value);
   if (!result.success) {
     const issue = result.error.issues[0];

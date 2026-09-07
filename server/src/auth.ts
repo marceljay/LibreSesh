@@ -15,6 +15,17 @@ export const atLeast = (role: Role, min: Role): boolean => RANK[role] >= RANK[mi
 
 export const hashPassword = (plain: string): string => bcrypt.hashSync(plain, BCRYPT_COST);
 
+/**
+ * The counterpart, so bcrypt is named in one module and nowhere else.
+ *
+ * Every event password on every existing instance is a stored hash that
+ * nothing re-hashes, so "can this still read a hash written by an older
+ * release?" is the only question a bcrypt upgrade has to answer — and it is
+ * answerable in one place because of this.
+ */
+export const verifyPassword = (plain: string, hash: string): boolean =>
+  bcrypt.compareSync(plain, hash);
+
 function constantTimeEquals(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
@@ -89,16 +100,31 @@ export function clearRole(db: Db, identityId: number, eventId: number): void {
  * Returns the granted role, or undefined on no match.
  */
 export function roleForPassword(event: EventRow, password: string): Role | undefined {
-  if (bcrypt.compareSync(password, event.admin_pw_hash)) return 'admin';
-  if (bcrypt.compareSync(password, event.user_pw_hash)) return 'user';
-  if (bcrypt.compareSync(password, event.viewer_pw_hash)) return 'viewer';
+  if (verifyPassword(password, event.admin_pw_hash)) return 'admin';
+  if (verifyPassword(password, event.user_pw_hash)) return 'user';
+  if (verifyPassword(password, event.viewer_pw_hash)) return 'viewer';
   return undefined;
 }
+
+/**
+ * One path segment, as a string.
+ *
+ * Express 5 routes through path-to-regexp 8, where a pattern can repeat a
+ * parameter, so `req.params.x` is typed `string | string[]`. None of ours
+ * repeat — every route is `:id` or `:slug`, one segment each — but the type is
+ * honest about what the router can express, so the narrowing has to be too.
+ * An array here would mean a route pattern changed underneath this; taking the
+ * first value keeps that a 404 rather than a crash.
+ */
+export const pathParam = (req: Request, name: string): string => {
+  const raw: string | string[] | undefined = req.params[name];
+  return (Array.isArray(raw) ? raw[0] : raw) ?? '';
+};
 
 /** Resolve `:slug` into `req.event`. */
 export function loadEvent(db: Db) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const event = getEventBySlug(db, req.params.slug ?? '');
+    const event = getEventBySlug(db, pathParam(req, 'slug'));
     if (!event) {
       next(notFound('No such event'));
       return;

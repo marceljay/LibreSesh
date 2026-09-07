@@ -55,7 +55,9 @@ export function timeChoices({
  * calendar and the server keep, never past 23:55.
  */
 export function parseTime(text: string): string | null {
-  const m = /^\s*(\d{1,2})(?:[:.h]?(\d{2}))?\s*(am|pm)?\s*$/i.exec(text);
+  // A separator with nothing after it (`08:`) is the box mid-word, after
+  // `completeHour` put the colon in: an hour, minutes to come.
+  const m = /^\s*(\d{1,2})(?:[:.h]?(\d{2})|[:.h])?\s*(am|pm)?\s*$/i.exec(text);
   if (!m) return null;
   let hours = Number(m[1]);
   const minutes = m[2] === undefined ? 0 : Number(m[2]);
@@ -67,4 +69,17 @@ export function parseTime(text: string): string | null {
   }
   if (hours > 23 || minutes > 59) return null;
   return fmtMin(Math.min(DAY - 5, snapMinute(hours * 60 + minutes)));
+}
+
+/**
+ * The colon, typed for you. After the second digit of an hour the box reads
+ * `08:` and the next digits are minutes — which is what "jump to the minutes"
+ * means in a box with no segments, and what a phone's numeric keyboard, which
+ * has no colon key, needs. Two digits that are not an hour (`93`) were the
+ * start of `9:30`, so they are split as such. Only on an insertion: a backspace
+ * that took the colon away must not put it straight back.
+ */
+export function completeHour(previous: string, typed: string): string {
+  if (typed.length <= previous.length || !/^\d{2}$/.test(typed)) return typed;
+  return Number(typed) <= 23 ? `${typed}:` : `0${typed[0]}:${typed[1]}`;
 }

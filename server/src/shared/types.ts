@@ -628,7 +628,7 @@ export interface NotificationDto {
   id: number;
   kind: NotificationKind;
   /** What it is about, so the panel can link to it. */
-  subjectType: 'session' | 'contribution' | 'proposal';
+  subjectType: 'session' | 'contribution' | 'proposal' | 'person';
   subjectId: number;
   /** Frozen when the row was written: a mention must still read correctly
    *  after the comment is edited or the session renamed. */

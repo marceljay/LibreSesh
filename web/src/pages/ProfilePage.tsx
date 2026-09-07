@@ -1,5 +1,5 @@
 import { errorText } from '../lib/errorText';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { PersonDetailDto, PersonDto, LabelledLink, Role } from '@shared/types';
 import { ApiError, api, type PersonWrite } from '../lib/api';
@@ -7,6 +7,8 @@ import { dayLabel, fmtMin, place, todayInZone } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { useEventData } from '../lib/useEventData';
 import { EditIcon } from '../components/icons';
+import { personByUsername } from '../components/MentionText';
+import { MentionTextArea } from '../components/MentionTextArea';
 import { MergeModal } from '../components/MergeModal';
 import { PersonStatusBadge } from '../components/PersonLine';
 import { RoleControl } from '../components/RoleControl';
@@ -18,7 +20,6 @@ import {
   PrimaryButton,
   SecondaryButton,
   Spinner,
-  TextArea,
   TextInput,
   useToast,
 } from '../components/ui';
@@ -107,7 +108,29 @@ export function ProfilePage() {
     return detail?.sessions ?? [];
   }, [bundle, detail, id]);
 
-  const bioHtml = useMemo(() => (person?.bio ? renderMarkdown(person.bio) : ''), [person?.bio]);
+  // A `@name` in a bio links the way it does in a comment or a description —
+  // found in the rendered prose, so one inside a code span stays as written.
+  const people = useMemo(() => bundle?.people ?? [], [bundle?.people]);
+  const bioHtml = useMemo(
+    () =>
+      person?.bio
+        ? renderMarkdown(person.bio, {
+            usernames: people.map((p) => p.username).filter((u): u is string => u !== null),
+            hrefFor: (username) => {
+              const named = personByUsername(people, username);
+              return named ? `/e/${slug}/p/${named.id}` : null;
+            },
+          })
+        : '',
+    [person?.bio, people, slug],
+  );
+  /** A mention link is app navigation, not a page load — see SessionDetail. */
+  const followMention = (e: MouseEvent<HTMLDivElement>) => {
+    const link = (e.target as HTMLElement).closest('a[data-mention]');
+    if (!(link instanceof HTMLAnchorElement) || e.metaKey || e.ctrlKey) return;
+    e.preventDefault();
+    navigate(link.getAttribute('href') ?? '');
+  };
 
   const isAdmin = bundle?.role === 'admin';
   /**
@@ -463,11 +486,16 @@ export function ProfilePage() {
               onEdit={() => edit('bio')}
               onClose={close}
               onSave={() => savePerson({ bio: draftBio.trim() })}
-              editHint="Markdown is supported."
+              editHint={
+                people.some((p) => p.username !== null)
+                  ? 'Markdown is supported. Type @ to mention someone.'
+                  : 'Markdown is supported.'
+              }
               editor={
-                <TextArea
+                <MentionTextArea
+                  people={people}
                   value={draftBio}
-                  onChange={(e) => setDraftBio(e.target.value)}
+                  onValueChange={setDraftBio}
                   aria-label="Bio"
                   rows={5}
                   maxLength={2000}
@@ -478,6 +506,7 @@ export function ProfilePage() {
             >
               <div
                 className={PROSE}
+                onClick={followMention}
                 // Markdown is escaped before parsing, so no author markup survives.
                 dangerouslySetInnerHTML={{ __html: bioHtml }}
               />
