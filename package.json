@@ -58,6 +58,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.3",
     "@types/bcryptjs": "2.4.6",
     "@types/better-sqlite3": "^9.6.0",
     "@types/cookie-parser": "^1.4.7",
@@ -72,6 +74,7 @@
     "concurrently": "^9.1.0",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "29.1.1",
     "node-gyp": "12.4.0",
     "postcss": "^8.4.49",
     "prettier": "^3.6.2",

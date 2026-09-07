@@ -36,18 +36,17 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   collection): eight items cleared, three bad, two faults on a fourth — the
   fixes are the top backlog group.
 
-- **Branch `fix/review-round-2`** (2026-09-07, worktree
-  `.claude/worktrees/review-fixes`). Seven of its nine commits are **merged
-  and shipped**: PR #55 landed on `dev` and went out as **0.3.6** — the now
-  line in List view, the theme catching up when the page comes back on
-  screen, *Leave without saving?* on the Settings tab, `@` mentions in a
-  session description and in a bio, the time box typing its own colon.
-  Still queued for your eyes as **R31–R35** all the same: shipped is not
-  seen. Two commits remain on the branch, rebased onto 0.3.6 and pushed —
-  the gate wearing the logo and a link to the other events (**R36**), and
-  the audit log linking to the people and things it names (**R37**) — both
-  in CHANGELOG `[Unreleased]`, waiting on a second PR. When it merges,
-  delete the worktree.
+- **Branch `fix/review-round-2`** is all shipped: seven commits in **0.3.6**
+  (PR #55), the last two — the gate wearing the logo and a link to the other
+  events (**R36**), the audit log linking to what it names (**R37**) — into
+  `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
+  shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
+
+- **Branch `chore/react-19`** (2026-09-07, off `561c9ac`): the DOM smoke
+  suite, then React 19, then Chromium in the dev container — one commit each.
+  Local `dev` had been left pointing at `main`'s merge commit (`35d08b5`)
+  rather than at `origin/dev`, so the work went on a branch; land it with
+  `git branch -f dev origin/dev` then `git merge chore/react-19` on `dev`.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -614,8 +613,10 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     react-router-dom 7 landed on its own and took the audit to **0**, so
     nothing is forcing this one. Peers are clear (`@base-ui/react` takes
     `^17 || ^18 || ^19`, `lucide-react` `^19`, `@floating-ui/react` `>=17`);
-    the risk is that the suite cannot see it — no DOM, no component tests —
-    so it needs a manual pass over the R-items below.
+    the suite can see it now: `tests/routes.test.tsx` mounts every route
+    under jsdom against the real server and fails on any console.error.
+    Still wants a browser pass over the R-items below for what jsdom cannot
+    show (layout, drag, the time box).
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
