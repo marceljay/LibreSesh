@@ -26,6 +26,7 @@ import {
 import { useEventData } from "../lib/useEventData";
 import { matchesLens } from "../lib/sessionLens";
 import { lensParams, useFilters } from "../lib/useFilters";
+import { plural } from "../lib/plural";
 import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
 import { UNTRACKED, trackNote } from "../lib/tracks";
 import { useMe } from "../lib/useMe";
@@ -1182,7 +1183,7 @@ export function SchedulePage() {
                   data-tour="live"
                   className="truncate text-xs text-stone-500 dark:text-stone-400"
                 >
-                  {days.length} day{days.length > 1 ? "s" : ""} ·{" "}
+                  {plural(days.length, { one: "day", other: "days" })} ·{" "}
                   {event.archived
                     ? "archived — read-only"
                     : data.connected
@@ -1701,9 +1702,7 @@ export function SchedulePage() {
           <section className="px-4 pb-24 pt-2 sm:px-0">
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
               {visibleSessions.length === 0
-                ? `${otherDayMatches.length} match${
-                    otherDayMatches.length > 1 ? "es" : ""
-                  } on other days`
+                ? `${plural(otherDayMatches.length, { one: "match", other: "matches" })} on other days`
                 : `${otherDayMatches.length} more on other days`}
             </h2>
             <ul className="space-y-2">

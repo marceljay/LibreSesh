@@ -61,7 +61,17 @@ describe('the old shape is gone from the client', () => {
   it("has no `n === 1 ? '' : 's'` left anywhere", () => {
     // The four shapes the sweep found: a bare suffix, a word pair, and either
     // of those written with the comparison the other way round.
-    const concatenated = /(===|!==|[<>]=?)\s*1\s*\?\s*'[^']*'\s*:\s*'[^']*'/;
+    // Quote-agnostic on purpose: the single-quoted version of this regex let
+    // three sites through simply because their files happened to be written in
+    // double quotes, and only the prettier sweep made them visible.
+    //
+    // Bounded to short strings on purpose too. The shape being banned is a
+    // suffix or a word pair ('', 's', 'es', 'seat'/'seats'). Choosing between
+    // two whole sentences on a count is a copy decision, not a grammatical
+    // one, and the test below says so explicitly — an unbounded match would
+    // flag those as well.
+    const q = String.raw`(?:'[^']{0,20}'|"[^"]{0,20}")`;
+    const concatenated = new RegExp(String.raw`(===|!==|[<>]=?)\s*1\s*\?\s*${q}\s*:\s*${q}`);
     const offenders = sources(WEB_SRC)
       // The module that replaces the shape quotes it in its own doc comment.
       .filter((path) => !path.endsWith(join('lib', 'plural.ts')))

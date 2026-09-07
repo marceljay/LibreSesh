@@ -4,6 +4,7 @@ import { ROOM_COLORS } from "@shared/roomColors";
 
 import { ColorPicker } from "../components/ColorPicker";
 import { capacityField, parseNumberField } from "../lib/numberField";
+import { plural } from "../lib/plural";
 import {
   ControlShell,
   DangerButton,
@@ -50,7 +51,7 @@ const parseCapacity = (raw: string) => parseNumberField(raw, capacityField);
 const capacityLabel = (capacity: number | null): string =>
   capacity === null
     ? "no capacity set"
-    : `${capacity} seat${capacity === 1 ? "" : "s"}`;
+    : plural(capacity, { one: "seat", other: "seats" });
 
 /**
  * One room. Collapsed it is a summary row; expanded it is a real form.
