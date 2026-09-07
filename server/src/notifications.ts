@@ -8,6 +8,7 @@
  * 90 unread; and nothing leaves by mail.
  */
 import type { Db } from './db.js';
+import { eventDisplayName } from './eventIdentity.js';
 import { tokenizeMentions } from './shared/mentions.js';
 import type { NotificationDto, NotificationKind } from './shared/types.js';
 
@@ -149,6 +150,53 @@ export function mentionedIdentities(db: Db, eventId: number, text: string): numb
     if (id !== undefined) ids.add(id);
   }
   return [...ids];
+}
+
+/** The first line or so of a description, for the panel: the session it
+ *  links to holds the rest. */
+const snippet = (text: string): string => (text.length > 200 ? `${text.slice(0, 199)}…` : text);
+
+/**
+ * A mention written into a session's description — on the session being made,
+ * or its description edited. Only the names that are new: an edit that keeps
+ * `@ada` where it was must not tell Ada again, so whoever `previous` already
+ * named is subtracted first. A comment's mention is parsed in its own route;
+ * this is the same parse for the other place a person can be named.
+ * Returns the identities told.
+ */
+export function notifyDescriptionMentions(
+  db: Db,
+  n: {
+    eventId: number;
+    sessionId: number;
+    sessionTitle: string;
+    actorId: number;
+    description: string;
+    previous?: string;
+  },
+  ping: (identityId: number) => void,
+): number[] {
+  const already = new Set(n.previous ? mentionedIdentities(db, n.eventId, n.previous) : []);
+  const actorName = eventDisplayName(db, n.eventId, n.actorId) ?? 'Someone';
+  const told: number[] = [];
+  for (const identityId of mentionedIdentities(db, n.eventId, n.description)) {
+    if (already.has(identityId)) continue;
+    const id = notify(db, {
+      eventId: n.eventId,
+      identityId,
+      kind: 'mention',
+      subjectType: 'session',
+      subjectId: n.sessionId,
+      title: `${actorName} mentioned you in “${n.sessionTitle}”`,
+      body: snippet(n.description),
+      actorId: n.actorId,
+    });
+    if (id !== null) {
+      ping(identityId);
+      told.push(identityId);
+    }
+  }
+  return told;
 }
 
 /** Who speaks at this session, as identity ids — only the claimed profiles,

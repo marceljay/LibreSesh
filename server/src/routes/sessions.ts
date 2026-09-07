@@ -8,7 +8,7 @@ import type { Role } from '../shared/types.js';
 import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
-import { isAMove, notifySessionAudience } from '../notifications.js';
+import { isAMove, notifyDescriptionMentions, notifySessionAudience } from '../notifications.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -167,6 +167,17 @@ export function sessionRoutes(ctx: Ctx): Router {
       entityId: id,
     });
     ctx.broker.publish(req.event.slug, 'session.created', dto);
+    notifyDescriptionMentions(
+      ctx.db,
+      {
+        eventId: req.event.id,
+        sessionId: id,
+        sessionTitle: dto.title,
+        actorId: req.identity.id,
+        description: body.description ?? '',
+      },
+      (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+    );
     res.status(201).json(dto);
   });
 
@@ -311,6 +322,22 @@ export function sessionRoutes(ctx: Ctx): Router {
         batch,
       });
       ctx.broker.publish(req.event.slug, 'session.created', dto);
+    }
+    // A name in the description is one mention, not one per day of the run:
+    // the first occurrence carries it, and the panel opens on that one.
+    const firstOfRun = dtos[0];
+    if (firstOfRun) {
+      notifyDescriptionMentions(
+        ctx.db,
+        {
+          eventId: req.event.id,
+          sessionId: firstOfRun.id,
+          sessionTitle: firstOfRun.title,
+          actorId: req.identity.id,
+          description: body.description ?? '',
+        },
+        (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+      );
     }
     res.status(201).json({ sessions: dtos });
   });
@@ -558,6 +585,24 @@ export function sessionRoutes(ctx: Ctx): Router {
       }
       return d;
     });
+
+    // Someone newly named in the description hears about it once, from the
+    // session that was edited — a series edit that carried the words to its
+    // siblings is still one act of naming them.
+    if (body.description !== undefined && body.description !== existing.description) {
+      notifyDescriptionMentions(
+        ctx.db,
+        {
+          eventId: req.event.id,
+          sessionId: existing.id,
+          sessionTitle: nextTitle,
+          actorId: req.identity.id,
+          description: body.description,
+          previous: existing.description,
+        },
+        (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+      );
+    }
 
     const dto = dtos[0];
     // A series edit reports how far it reached, so the form can say "applied to

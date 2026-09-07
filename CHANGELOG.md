@@ -6,6 +6,17 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **A mention in a session's description links, and lands.** `@ada` in a
+  comment linked to Ada and rang her bell; the same words in a session's
+  description were plain text, and the description box had no menu to pick
+  her from. The description box is now the same composer as the comment box —
+  type `@` and the event's people are offered — and on the session panel the
+  name links to her profile, as it does in a comment. She is told once, when
+  the session is made or when an edit first names her; an edit that keeps her
+  name where it was says nothing, a run of repeats counts as one mention, and
+  naming yourself never rings. A `@name` inside a code span or an existing
+  link stays as written. Bios and pitches are not yet covered.
+
 - **Leaving Settings with unsaved edits asks first.** Manage Event → Settings
   is the one form on the page with a Save button, and switching tab, picking a
   search result on another tab or going back to the schedule dropped whatever

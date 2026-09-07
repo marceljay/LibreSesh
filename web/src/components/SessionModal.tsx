@@ -35,6 +35,7 @@ import {
 } from '@shared/sessionLimits';
 import { RemoveIcon } from './icons';
 import { SpeakerCombobox, type SpeakerChoice } from './SpeakerCombobox';
+import { MentionTextArea } from './MentionTextArea';
 import { TimeField } from './TimeField';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
@@ -51,7 +52,6 @@ import {
   IconButton,
   PrimaryButton,
   SecondaryButton,
-  TextArea,
   TextInput,
   Toggle,
 } from './ui';
@@ -503,10 +503,21 @@ export function SessionModal({
               onlySelf={!isAdmin && !canCreditOthers}
             />
           </Field>
-          <Field label="Description" hint="Markdown is supported.">
-            <TextArea
+          <Field
+            label="Description"
+            hint={
+              people.some((p) => p.username !== null)
+                ? 'Markdown is supported. Type @ to mention someone.'
+                : 'Markdown is supported.'
+            }
+          >
+            {/* The same composer as the comment box: a name picked from the
+                menu links on the session and reaches its owner, exactly as a
+                comment's does. */}
+            <MentionTextArea
+              people={people}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onValueChange={setDescription}
               rows={4}
               maxLength={5000}
               className="resize-y"

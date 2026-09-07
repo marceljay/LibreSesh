@@ -89,6 +89,85 @@ describe('notifications', () => {
     });
   });
 
+  describe('a mention in a description', () => {
+    const patch = (body: Record<string, unknown>) =>
+      admin.patch(`/api/e/testconf/sessions/${sessionId}`).send({
+        roomId,
+        title: 'Talk',
+        startsAt: at(DAY_ONE, 600),
+        endsAt: at(DAY_ONE, 660),
+        ...body,
+      });
+
+    it('lands when the session is made, naming the session', async () => {
+      await admin
+        .post('/api/e/testconf/sessions')
+        .send({
+          roomId,
+          title: 'Panel',
+          description: 'Moderated by @ada',
+          startsAt: at(DAY_ONE, 700),
+          endsAt: at(DAY_ONE, 760),
+        })
+        .expect(201);
+
+      const mine = await inbox(ada);
+      expect(mine.body.items).toHaveLength(1);
+      expect(mine.body.items[0]).toMatchObject({
+        kind: 'mention',
+        subjectType: 'session',
+        title: 'organiser mentioned you in “Panel”',
+        body: 'Moderated by @ada',
+      });
+      expect((await inbox(grace)).body.items).toHaveLength(0);
+    });
+
+    it('lands once when an edit adds it, and not again while the edit keeps it', async () => {
+      await patch({ description: 'with @ada' }).expect(200);
+      expect((await inbox(ada)).body.items).toHaveLength(1);
+
+      // The same name, still there after a second edit: Ada was told already.
+      await patch({ description: 'with @ada, updated' }).expect(200);
+      expect((await inbox(ada)).body.items).toHaveLength(1);
+
+      // A new name in the same edit is new to its owner.
+      await patch({ description: 'with @ada and @grace' }).expect(200);
+      expect((await inbox(grace)).body.items).toHaveLength(1);
+      expect((await inbox(ada)).body.items).toHaveLength(1);
+    });
+
+    it('is written once for a run of repeats, not once per day', async () => {
+      await admin
+        .post('/api/e/testconf/sessions/repeat')
+        .send({
+          roomId,
+          title: 'Yoga',
+          description: 'led by @ada',
+          startsAt: at(DAY_ONE, 480),
+          endsAt: at(DAY_ONE, 540),
+          // Two days: the event's whole span, so the run is two sessions.
+          repeat: { until: '2026-06-02' },
+        })
+        .expect(201);
+      expect((await inbox(ada)).body.items).toHaveLength(1);
+    });
+
+    it('is not written for naming yourself', async () => {
+      const res = await ada
+        .post('/api/e/testconf/sessions')
+        .send({
+          roomId,
+          title: 'Mine',
+          description: 'by @ada',
+          startsAt: at(DAY_ONE, 800),
+          endsAt: at(DAY_ONE, 860),
+        })
+        .expect(201);
+      expect(res.body.id).toBeGreaterThan(0);
+      expect((await inbox(ada)).body.items).toHaveLength(0);
+    });
+  });
+
   describe('a session moving', () => {
     it('tells the people who starred it', async () => {
       await ada.put(`/api/e/testconf/sessions/${sessionId}/star`).expect(204);
