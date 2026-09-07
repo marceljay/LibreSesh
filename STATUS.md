@@ -418,10 +418,11 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     row still has room — a `flex-wrap`/`min-width` interaction on the title
     row (2026-09-05, tags change).
   - **R30b · No invite link for a speaker code.** Your words: *"Invite link
-    for speaker code or otherwise is missing."* Filed verbatim — it reads as:
-    the demo gate (or the invite flow) offers no link that carries a speaker
-    code, only the roles. **Ask before building:** whether this is the demo
-    gate, the People tab's invite QR, or both.
+    for speaker code or otherwise is missing."* **Done 2026-09-07** on
+    `feat/speaker-link`: the gate has an *I have a speaker code* door, and the
+    profile page shows the code as a link (`/e/:slug#c=<phrase>`) and a QR
+    that signs the opening device in as the speaker. ARCHITECTURE §One
+    person, many devices.
 
 - **Hash identity and calendar tokens at rest.** From your security question
   (2026-09-05): a copy of the database — a backup, a volume snapshot, a

@@ -536,6 +536,25 @@ both cases. That is what makes one speaker code work from any number of
 devices. Phrases are stored hashed; guesses share the password rate-limit
 budget.
 
+The gate offers the code its own door — **I have a speaker code** — beside
+the device-link one. Both post to `/me/link`; only the words differ, because a
+speaker holding four words from an email was told they are a speaker and
+nothing about devices, and would not click a sentence about linking one.
+
+**A speaker link is the code, made openable.** Beside the phrase the profile
+page shows `/e/:slug#c=<phrase>` as a link and a QR. It follows the invite QR
+exactly (§Invite QR codes): the code rides in the fragment so it reaches no
+access log, `takeSpeakerLink()` lifts it out of the address bar in `main.tsx`
+before anything renders, and `useSpeakerLink` redeems it on arrival — the
+device that opened it *is* the speaker, with nothing to type. One thing the
+invite never had to consider: redemption swaps the identity cookie, so a
+device that already holds a role in the event would be signed out of it — the
+usual case being the organiser who made the link and opens it to see that it
+works. That device is asked first; a stranger's device, which is what a
+speaker's own phone is, is simply let in. A code that fails to redeem lands on
+the gate with the speaker-code form open and the reason stated, never on a
+password box the speaker was never given.
+
 ### Archiving a profile, and why it is not deleting
 
 A `people` row has three states, not two: live, archived (`archived_at` set),
