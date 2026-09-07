@@ -16,7 +16,10 @@ import { describe, expect, it } from 'vitest';
  *   state live in `ControlShell`; the bare input in `TextInput`; the id, hint
  *   and error in `Field`. `NumberField` is the proof: it wires none of it now.
  */
-const ui = readFileSync(join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui.tsx'), 'utf8');
+const ui = readFileSync(
+  join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui.tsx'),
+  'utf8',
+);
 
 describe('Field owns the id and the label points at it', () => {
   it('generates an id when the call site gives none', () => {
@@ -45,7 +48,10 @@ describe('Field owns the id and the label points at it', () => {
 
 describe('ControlShell is the only field border', () => {
   it('owns border, a height floor, focus-within ring and invalid state', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
+    const shell = ui.slice(
+      ui.indexOf('export function ControlShell'),
+      ui.indexOf('export const TextInput'),
+    );
     expect(shell).toContain('min-h-[2.375rem]');
     expect(shell).toContain('flex-wrap'); // chips and adornments sit inside the border
     expect(shell).toContain('fieldFocusRing'); // the shared ring token, applied here
@@ -62,7 +68,10 @@ describe('ControlShell is the only field border', () => {
   });
 
   it('focuses its input when its own padding is clicked', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
+    const shell = ui.slice(
+      ui.indexOf('export function ControlShell'),
+      ui.indexOf('export const TextInput'),
+    );
     expect(shell).toContain('if (e.target !== ref.current) return;');
     expect(shell).toMatch(/querySelector<HTMLElement>\(\s*'input, textarea, select/);
   });
@@ -101,7 +110,10 @@ describe('TextInput is bare and wired from context', () => {
 });
 
 describe('TextArea owns its own border', () => {
-  const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export function ControlAdornment'));
+  const area = ui.slice(
+    ui.indexOf('export const TextArea'),
+    ui.indexOf('export function ControlAdornment'),
+  );
 
   it('is a multi-line field wired from context, unlike TextInput it is not shell-bound', () => {
     expect(area).toContain('<textarea');
@@ -133,7 +145,7 @@ describe('NumberField is the proof, rebuilt on the primitives', () => {
     expect(nf).toContain('error={shown ? numberFieldMessage(shown) : undefined}');
   });
 
-  it("keeps the running-text suffix beside the box, not inside a w-32 shell", () => {
+  it('keeps the running-text suffix beside the box, not inside a w-32 shell', () => {
     // The suffix here is a sentence, not a unit — it would wrap inside the box.
     expect(nf).toMatch(/<\/ControlShell>\s*\{suffix &&/);
   });
@@ -258,7 +270,10 @@ describe('a control and the button beside it are one line, the same height', () 
 });
 
 describe('InlineCreate is a button that becomes its field', () => {
-  const ic = ui.slice(ui.indexOf('export function InlineCreate'), ui.indexOf('export function DangerButton'));
+  const ic = ui.slice(
+    ui.indexOf('export function InlineCreate'),
+    ui.indexOf('export function DangerButton'),
+  );
 
   it('collapses to one button and opens into a row of the same height', () => {
     // The collapsed and open states must be the same height or the button
@@ -280,7 +295,9 @@ describe('InlineCreate is a button that becomes its field', () => {
   });
 
   it('cancels on Escape without letting a surrounding dialog also close', () => {
-    expect(ic).toMatch(/e\.key === 'Escape'[\s\S]{0,200}e\.stopPropagation\(\);[\s\S]{0,40}close\(\);/);
+    expect(ic).toMatch(
+      /e\.key === 'Escape'[\s\S]{0,200}e\.stopPropagation\(\);[\s\S]{0,40}close\(\);/,
+    );
   });
 
   it('stays open after a save, and keeps the text after a failure', () => {
@@ -295,7 +312,10 @@ describe('InlineCreate is a button that becomes its field', () => {
     // is the toast's to announce — saying it here as well reads it twice.
     expect(ic).toContain('aria-live="polite"');
     expect(ic).toContain('setAnnounced(`${name} added`);');
-    const failure = ic.slice(ic.indexOf('if (!saved) return;') - 200, ic.indexOf('if (!saved) return;'));
+    const failure = ic.slice(
+      ic.indexOf('if (!saved) return;') - 200,
+      ic.indexOf('if (!saved) return;'),
+    );
     expect(failure).not.toContain('setAnnounced');
   });
 });
@@ -349,7 +369,10 @@ describe('HelpButton is a target a finger can hit', () => {
     // target is 24px clear of its neighbours; it sits in a chip row with a 6px
     // gap, so the size has to carry it. It was h-5 w-5 (20px) — Phase 0
     // finding 5, the one nobody picked up.
-    const hb = ui.slice(ui.indexOf('export function HelpButton'), ui.indexOf('export function HelpNote'));
+    const hb = ui.slice(
+      ui.indexOf('export function HelpButton'),
+      ui.indexOf('export function HelpNote'),
+    );
     expect(hb).toMatch(/\bh-6 w-6\b/);
     expect(hb).not.toMatch(/\bh-5 w-5\b/);
   });

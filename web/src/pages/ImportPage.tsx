@@ -151,9 +151,9 @@ export function ImportPage() {
       <div className="mx-auto max-w-lg px-4 py-10">
         <h1 className="mb-1 text-lg font-semibold tracking-tight">Schedule imported</h1>
         <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
-          You are its admin already. These passwords were generated for the roles the
-          document left blank — <strong>write them down now</strong>. They are stored
-          hashed, so this screen is the only place they can be read.
+          You are its admin already. These passwords were generated for the roles the document left
+          blank — <strong>write them down now</strong>. They are stored hashed, so this screen is
+          the only place they can be read.
         </p>
         <dl className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
           {rows.map(([label, value]) =>
@@ -182,11 +182,11 @@ export function ImportPage() {
       </Link>
       <h1 className="mb-1 mt-3 text-lg font-semibold tracking-tight">Import a schedule</h1>
       <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
-        Builds a whole event — rooms, tracks, breaks and a full grid of sessions — from
-        one JSON document. The document is written the way a schedule is <em>printed</em>:
-        room names and wall-clock times, no ids. An export from another event's Manage
-        Event → Backup works here too — the programme comes across; profiles, pitches and
-        contributions stay behind. Nothing is written until you have checked it and said so.
+        Builds a whole event — rooms, tracks, breaks and a full grid of sessions — from one JSON
+        document. The document is written the way a schedule is <em>printed</em>: room names and
+        wall-clock times, no ids. An export from another event's Manage Event → Backup works here
+        too — the programme comes across; profiles, pitches and contributions stay behind. Nothing
+        is written until you have checked it and said so.
       </p>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
@@ -214,10 +214,7 @@ export function ImportPage() {
                   {fileName} · {asKb(bytes)}
                 </span>
               )}
-              <SecondaryButton
-                onClick={() => fileInput.current?.click()}
-                disabled={busy !== null}
-              >
+              <SecondaryButton onClick={() => fileInput.current?.click()} disabled={busy !== null}>
                 {fileName ? 'Choose another file…' : 'Choose a JSON file…'}
               </SecondaryButton>
             </span>
@@ -366,8 +363,8 @@ function Summary({ summary, slug }: { summary: DocSummary; slug: string | null }
       {summary.exportedAt && (
         <>
           <br />
-          An export made {summary.exportedAt.slice(0, 10)} — it will be read as the programme
-          it describes.
+          An export made {summary.exportedAt.slice(0, 10)} — it will be read as the programme it
+          describes.
         </>
       )}
     </div>

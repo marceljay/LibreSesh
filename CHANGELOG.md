@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.5] — 2026-09-07
+
 ### Added
 
 - **A mention lands somewhere now.** Writing `@ada` in a comment linked to Ada
@@ -41,7 +45,85 @@ All notable changes to this project are documented here.
   interchangeable labels. The colour swatches in Manage Event stay fully
   coloured — that is where you judge a colour, so it has to be the real one.
 
+- **The time fields are the app's own: type it, or pick a quarter hour.** A
+  session's start, a break's from and to, a track's hours and the day's own
+  start and end were the browser's clock widget: segmented digits with the
+  operating system's blue highlight, a clock glyph that could only be dimmed
+  or inverted, and a popup that could not be themed at all — the one control
+  left on the page that looked like the browser rather than the app. Each is
+  now a box in the app's own field, with a chevron beside it that opens the
+  same list control as Room and Day. The box takes what you would actually
+  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
+  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
+  quarter hours, for when a glance beats typing. Both are capped to the
+  event's day: the list offers only those hours, and a time typed outside
+  them lands on the nearer edge — the two fields that set the day's hours
+  are the only ones left open. Something that is not a time is marked while
+  it sits in the box and put back when you leave. A time saved off the grid
+  still shows and re-saves as it was.
+
+- **Help lives in the profile menu now.** The header's **?** held two items —
+  the tour and About — and cost a permanent control for a question asked
+  twice a visit. Both sit at the foot of the profile menu, in a group of
+  their own below Theme, because they are about the app rather than about
+  you. The slot they leave is where the bell goes.
+
+- **React Router 7, and the last advisory is gone.** Router 6 carried an open
+  redirect: a path beginning with a backslash in `<Link>` or `useNavigate`
+  could send a visitor off-site. Nothing in this app builds a path from
+  anything a visitor types — every one of them is an absolute `/e/…` composed
+  in code — so it was never reachable here, which is why it waited for a
+  version bump rather than a patch. `npm audit` now reports **0
+  vulnerabilities**, down from 10.
+
+- **The server image runs Node 22.** `deploy/Dockerfile` built and ran on
+  `node:20-slim`, a runtime that reached end of life in April 2026 and has
+  taken no security patches since — while the development container had been
+  on Node 22 the whole time, with a comment on the line saying not to stay on
+  20. Both build and runtime stages are now `node:22-bookworm-slim`, with the
+  Debian release pinned rather than floating, so an image rebuild cannot
+  quietly change what the build stage can install. `engines` says `>=22.13`
+  and the Node type definitions match the runtime again.
+
+  **If you deploy this, rebuild the image** — the base changed, and a host
+  distro picked to match the old `node:20-slim` should be checked against
+  Debian 12 / Ubuntu 24.04. `better-sqlite3` compiles and runs on Node 22;
+  nothing in the database or its file format changes.
+
+- **The linter moved to ESLint 10 and flat config.** `.eslintrc.cjs` was on
+  ESLint 8, a version that stopped getting fixes; the config file format it
+  used is gone in 9. `eslint.config.js` replaces it, with every house rule
+  carried across intact — the ban on physical `left/right` Tailwind utilities
+  that keeps RTL one `dir` attribute away, the raw `<input>`/`<textarea>`/
+  `<select>` bans, and the narrower exemption that lets `ui.tsx` and
+  `ui/` use the elements the primitives are built from. Verified by probe
+  rather than by hope: the same 256 source files are linted, still clean.
+
+  `eslint-plugin-react-hooks` came forward 4 → 7, which brings the React
+  Compiler's own rules. Eleven of the fourteen new ones pass and are on from
+  now on. Three find real things in existing components — reading a ref during
+  render, and setting state synchronously inside an effect — and are off by
+  name in the config with the work written down, rather than off by silence.
+
 ### Fixed
+
+- **A blank page after navigating now fixes itself.** Every route loads as its
+  own chunk, and nothing caught a chunk that failed to arrive: React tore the
+  whole app down and left an empty page that only a manual refresh brought
+  back. The usual cause is not a fault at all — publishing a new version
+  changes the file names, so a tab someone left open all morning asks for one
+  that no longer exists the next time they tap through. The app now recognises
+  that and reloads itself once, silently. If the reload does not help, it says
+  so with a Reload button instead of reloading again, because a page that keeps
+  reloading is worse than one that stops and explains.
+
+- **A pitch notification opens the pitch board.** Tapping one in the bell sent
+  you to the front door instead: it navigated to `/e/<event>/pitches` while the
+  board has always lived at `/e/<event>/proposals`, so the catch-all route
+  bounced you to the landing page with no error to explain it. The bell now
+  points at the route that exists, and a test walks every `/e/<event>/…` link
+  the app builds against the route table, so the next dead link fails the suite
+  rather than the visitor.
 
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
   dropping a block was meant to hold it where it landed until the server
@@ -61,24 +143,22 @@ All notable changes to this project are documented here.
   chosen in another tab of the same site applies here too. An explicit
   *Dark* or *Light* still wins over the system.
 
-### Changed
+- **The event name gets three more characters on a phone.** The name is the
+  only thing in the header that truncates, so every pixel the row spent on
+  padding and gaps came off the title. Below the `sm` breakpoint the header
+  gives back 18px — the page padding, the gaps beside the name, and the gap
+  between the bell and the profile chip — about three characters at that
+  size. All three header rows move together so the logo stays in step with
+  the filter row under it; nothing changes on a wider screen.
 
-- **The time fields are the app's own: type it, or pick a quarter hour.** A
-  session's start, a break's from and to, a track's hours and the day's own
-  start and end were the browser's clock widget: segmented digits with the
-  operating system's blue highlight, a clock glyph that could only be dimmed
-  or inverted, and a popup that could not be themed at all — the one control
-  left on the page that looked like the browser rather than the app. Each is
-  now a box in the app's own field, with a chevron beside it that opens the
-  same list control as Room and Day. The box takes what you would actually
-  type — `9`, `930`, `9:30`, `2pm` — and settles it onto the five-minute
-  grid when you leave it; ↑/↓ nudge by five minutes. The list is the day in
-  quarter hours, for when a glance beats typing. Both are capped to the
-  event's day: the list offers only those hours, and a time typed outside
-  them lands on the nearer edge — the two fields that set the day's hours
-  are the only ones left open. Something that is not a time is marked while
-  it sits in the box and put back when you leave. A time saved off the grid
-  still shows and re-saves as it was.
+- **A demo visitor is asked for a name before being offered a role.** The
+  demo gate's three role buttons are disabled until a name is typed, and the
+  name box was drawn *below* them — so the gate opened on three dead controls
+  with nothing saying why. Through an invite link it was worse: the box was
+  not drawn at all, which disabled the buttons for good and left no way in.
+  The box now comes first, on every path in. The buttons stay disabled until
+  there is a name, deliberately: entering without one is what fills a roster
+  with generated names.
 
 ## [0.3.0] — 2026-09-05
 

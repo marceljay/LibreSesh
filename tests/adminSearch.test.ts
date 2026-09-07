@@ -1,12 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  ADMIN_SETTINGS,
-  ADMIN_TABS,
-  findSettings,
-  tabLabel,
-} from '../web/src/lib/adminSearch.js';
+import { ADMIN_SETTINGS, ADMIN_TABS, findSettings, tabLabel } from '../web/src/lib/adminSearch.js';
 
 /**
  * Manage Event is seven tabs of unrelated jobs, so knowing what you want to
@@ -62,10 +57,7 @@ describe('findSettings', () => {
 });
 
 describe('the index and the page agree', () => {
-  const admin = readFileSync(
-    join(__dirname, '..', 'web', 'src', 'pages', 'AdminPage.tsx'),
-    'utf8',
-  );
+  const admin = readFileSync(join(__dirname, '..', 'web', 'src', 'pages', 'AdminPage.tsx'), 'utf8');
 
   it('every setting that claims an anchor has one in the page', () => {
     // A search that scrolls to nothing is worse than one that only opens the

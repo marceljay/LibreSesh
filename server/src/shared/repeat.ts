@@ -65,9 +65,7 @@ export interface Repeat {
 }
 
 export const describeRepeat = (repeat: Repeat): string =>
-  repeat.days && repeat.days.length < 7
-    ? `repeats ${repeat.days.join(', ')}`
-    : 'repeats every day';
+  repeat.days && repeat.days.length < 7 ? `repeats ${repeat.days.join(', ')}` : 'repeats every day';
 
 export interface RepeatLimits {
   /** The last day the run may reach: the event's own end date. */

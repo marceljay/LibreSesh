@@ -75,9 +75,7 @@ const byBreakTime = (breaks: BreakDto[]): BreakDto[] =>
     .slice()
     .sort(
       (a, b) =>
-        a.startMin - b.startMin ||
-        Number(a.date !== null) - Number(b.date !== null) ||
-        a.id - b.id,
+        a.startMin - b.startMin || Number(a.date !== null) - Number(b.date !== null) || a.id - b.id,
     );
 
 const byTagName = (tags: TagDto[]): TagDto[] =>
@@ -188,9 +186,7 @@ function applyChange(state: State, change: ChangeEvent): State {
       if (!loaded) return state;
       // Non-admins lose sight of a hidden contribution entirely.
       const next =
-        item.hidden && !isAdmin
-          ? loaded.filter((c) => c.id !== item.id)
-          : upsert(loaded, item);
+        item.hidden && !isAdmin ? loaded.filter((c) => c.id !== item.id) : upsert(loaded, item);
       return {
         ...state,
         contributions: { ...state.contributions, [item.sessionId]: next },
@@ -483,8 +479,7 @@ export function useEventData(slug: string): EventData {
   const apply = useCallback((change: ChangeEvent) => dispatch({ kind: 'change', change }), []);
 
   const setStarred = useCallback(
-    (sessionId: number, starred: boolean) =>
-      dispatch({ kind: 'setStarred', sessionId, starred }),
+    (sessionId: number, starred: boolean) => dispatch({ kind: 'setStarred', sessionId, starred }),
     [],
   );
 

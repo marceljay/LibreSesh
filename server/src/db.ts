@@ -248,7 +248,10 @@ export function migrate(db: Db, migrationsDir = MIGRATIONS_DIR): void {
   )`);
 
   const applied = new Set(
-    db.prepare<[], { name: string }>('SELECT name FROM migrations').all().map((r) => r.name),
+    db
+      .prepare<[], { name: string }>('SELECT name FROM migrations')
+      .all()
+      .map((r) => r.name),
   );
   const files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
@@ -281,7 +284,9 @@ export function migrate(db: Db, migrationsDir = MIGRATIONS_DIR): void {
         db.exec(sql);
         const broken = db.pragma('foreign_key_check') as unknown[];
         if (broken.length > 0) {
-          throw new Error(`Migration ${file} left ${broken.length} broken foreign key reference(s)`);
+          throw new Error(
+            `Migration ${file} left ${broken.length} broken foreign key reference(s)`,
+          );
         }
         record.run(file, new Date().toISOString());
       })();

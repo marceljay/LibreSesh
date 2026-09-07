@@ -48,7 +48,9 @@ describe('useListbox names the highlighted row to the input', () => {
   });
 
   it('puts the id on whichever element carries role="option"', () => {
-    expect(hook).toMatch(/optionProps: \(index: number\) => \(\{\s*id: optionId\(index\),\s*role: 'option'/);
+    expect(hook).toMatch(
+      /optionProps: \(index: number\) => \(\{\s*id: optionId\(index\),\s*role: 'option'/,
+    );
   });
 
   it('keeps Enter from the form and Escape from the dialog', () => {

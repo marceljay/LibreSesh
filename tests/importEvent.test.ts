@@ -133,10 +133,22 @@ describe('event import from JSON', () => {
   it('builds the event, its rooms, tracks, tags and sessions', async () => {
     const result = await post(document());
 
-    expect(result.counts).toEqual({ rooms: 2, tracks: 2, tags: 1, formats: 0, breaks: 0, sessions: 2, people: 1 });
+    expect(result.counts).toEqual({
+      rooms: 2,
+      tracks: 2,
+      tags: 1,
+      formats: 0,
+      breaks: 0,
+      sessions: 2,
+      people: 1,
+    });
     expect(result.warnings).toEqual([]);
 
-    const admin = await actorWithRole(harness, 'photoconf', result.generatedPasswords.adminPassword!);
+    const admin = await actorWithRole(
+      harness,
+      'photoconf',
+      result.generatedPasswords.adminPassword!,
+    );
     const bundle = (await admin.get('/api/e/photoconf/bundle').expect(200)).body as {
       rooms: { name: string; capacity: number | null }[];
       tracks: { name: string; description: string }[];
@@ -212,7 +224,12 @@ describe('event import from JSON', () => {
     const doc = document() as Record<string, unknown>;
     doc.breaks = [
       { label: 'Lunch', start: '12:00', end: '14:00' },
-      { label: 'Dinner', start: '19:00', end: '21:00', date: (doc.sessions as { date: string }[])[0]!.date },
+      {
+        label: 'Dinner',
+        start: '19:00',
+        end: '21:00',
+        date: (doc.sessions as { date: string }[])[0]!.date,
+      },
     ];
     const result = await post(doc as Parameters<typeof post>[0]);
     expect(result.counts.breaks).toBe(2);
@@ -277,7 +294,15 @@ describe('event import from JSON', () => {
 
       expect(result.dryRun).toBe(true);
       expect(result.eventId).toBeNull();
-      expect(result.counts).toEqual({ rooms: 2, tracks: 2, tags: 1, formats: 0, breaks: 0, sessions: 2, people: 1 });
+      expect(result.counts).toEqual({
+        rooms: 2,
+        tracks: 2,
+        tags: 1,
+        formats: 0,
+        breaks: 0,
+        sessions: 2,
+        people: 1,
+      });
 
       const events = (await agentFor(harness).get('/api/events').expect(200)).body as unknown[];
       expect(events).toHaveLength(0);
@@ -505,11 +530,17 @@ describe('event import from JSON', () => {
       const result = await post(doc);
       expect(result.counts.sessions).toBe(3);
 
-      const admin = await actorWithRole(harness, 'photoconf', result.generatedPasswords.adminPassword!);
+      const admin = await actorWithRole(
+        harness,
+        'photoconf',
+        result.generatedPasswords.adminPassword!,
+      );
       const bundle = (await admin.get('/api/e/photoconf/bundle').expect(200)).body as {
         sessions: { startsAt: string }[];
       };
-      const starts = bundle.sessions.map((s) => localMinuteOfDay(new Date(s.startsAt), TEST_TIMEZONE));
+      const starts = bundle.sessions.map((s) =>
+        localMinuteOfDay(new Date(s.startsAt), TEST_TIMEZONE),
+      );
       expect(starts).toEqual([840, 840, 840]);
     });
 
@@ -540,13 +571,16 @@ describe('event import from JSON', () => {
     });
 
     it('refuses to repeat a session written as instants', async () => {
-      const doc = weekly({ until: '2026-06-07' }, {
-        date: undefined,
-        start: undefined,
-        end: undefined,
-        startsAt: '2026-06-01T07:00:00.000Z',
-        endsAt: '2026-06-01T08:00:00.000Z',
-      });
+      const doc = weekly(
+        { until: '2026-06-07' },
+        {
+          date: undefined,
+          start: undefined,
+          end: undefined,
+          startsAt: '2026-06-01T07:00:00.000Z',
+          endsAt: '2026-06-01T08:00:00.000Z',
+        },
+      );
       expect(await failure(doc, 400)).toContain('repeat needs date/start/end');
     });
   });

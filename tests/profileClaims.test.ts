@@ -62,8 +62,7 @@ describe('asking for the profile an organiser left for you', () => {
   const mineIn = async (agent: Agent) => {
     const bundle = await agent.get('/api/e/testconf/bundle').expect(200);
     return bundle.body.people.find((p: { isMine: boolean }) => p.isMine) as
-      | { id: number; name: string }
-      | undefined;
+      { id: number; name: string } | undefined;
   };
 
   it('asks, and nothing moves until an organiser agrees', async () => {

@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  roomHasInfo,
-  roomNote,
-  seatsLabel,
-  type RoomFactsInput,
-} from '../web/src/lib/rooms.js';
+import { roomHasInfo, roomNote, seatsLabel, type RoomFactsInput } from '../web/src/lib/rooms.js';
 
 const room = (over: Partial<RoomFactsInput> = {}): RoomFactsInput => ({
   capacity: null,
@@ -40,7 +35,7 @@ describe('roomNote', () => {
     );
   });
 
-  it('is the directions alone — seats are seatsLabel\'s job', () => {
+  it("is the directions alone — seats are seatsLabel's job", () => {
     expect(roomNote(room({ capacity: 60 }))).toBe('');
   });
 });

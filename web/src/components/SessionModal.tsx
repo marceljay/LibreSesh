@@ -56,8 +56,6 @@ import {
   Toggle,
 } from './ui';
 
-
-
 /**
  * The two ways a session gets onto the schedule. The second used to be
  * labelled "open", which read as *open to join* — the opposite of a useful
@@ -163,9 +161,7 @@ export function SessionModal({
   // A session can be streamed more than once. Kept as a draft list with a
   // blank row at the end, the way the profile's links are edited: adding the
   // second one should not need a button pressed before there is a field.
-  const [livestreams, setLivestreams] = useState<LabelledLink[]>(
-    () => session?.livestreams ?? [],
-  );
+  const [livestreams, setLivestreams] = useState<LabelledLink[]>(() => session?.livestreams ?? []);
   const [roomId, setRoomId] = useState<number>(session?.roomId ?? allowedRooms[0]?.id ?? 0);
   const [day, setDay] = useState(existing?.date ?? defaultDay);
   const [start, setStart] = useState(fmtMin(existing?.startMin ?? Math.max(dayStartMin, 14 * 60)));
@@ -262,7 +258,9 @@ export function SessionModal({
     const [h, m] = start.split(':').map(Number);
     const startMin = Math.round(((h ?? 0) * 60 + (m ?? 0)) / 5) * 5;
     if (!isAdmin && (startMin < dayStartMin || startMin + durMin > dayEndMin)) {
-      setError(`A session you place must sit between ${fmtMin(dayStartMin)} and ${fmtMin(dayEndMin)}`);
+      setError(
+        `A session you place must sit between ${fmtMin(dayStartMin)} and ${fmtMin(dayEndMin)}`,
+      );
       return;
     }
     const streams = livestreams
@@ -280,24 +278,27 @@ export function SessionModal({
       setError(repeatProblem);
       return;
     }
-    onSave({
-      roomId,
-      type: isAdmin ? type : undefined,
-      ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
-      title: title.trim(),
-      speakers,
-      description: description.trim(),
-      livestreams: streams,
-      startsAt: zonedTimeToUtc(day, startMin, timezone).toISOString(),
-      endsAt: zonedTimeToUtc(day, startMin + durMin, timezone).toISOString(),
-      tagIds,
-      trackId,
-      formatId,
-    }, {
-      repeat,
-      ...(repeat && repeatLink ? { link: true } : {}),
-      ...(isLinked && applyScope !== 'one' ? { applyTo: applyScope } : {}),
-    });
+    onSave(
+      {
+        roomId,
+        type: isAdmin ? type : undefined,
+        ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
+        title: title.trim(),
+        speakers,
+        description: description.trim(),
+        livestreams: streams,
+        startsAt: zonedTimeToUtc(day, startMin, timezone).toISOString(),
+        endsAt: zonedTimeToUtc(day, startMin + durMin, timezone).toISOString(),
+        tagIds,
+        trackId,
+        formatId,
+      },
+      {
+        repeat,
+        ...(repeat && repeatLink ? { link: true } : {}),
+        ...(isLinked && applyScope !== 'one' ? { applyTo: applyScope } : {}),
+      },
+    );
   };
 
   const heading = session ? 'Edit session' : isAdmin ? 'Add session' : 'Propose a session';
@@ -353,8 +354,8 @@ export function SessionModal({
           {formats.length === 0 && isAdmin && (
             <Field label="Format">
               <p className={hintClass}>
-                This event defines none yet. Add them under Manage Event →
-                Programme and they appear here, at the top of this form.
+                This event defines none yet. Add them under Manage Event → Programme and they appear
+                here, at the top of this form.
               </p>
             </Field>
           )}
@@ -414,26 +415,26 @@ export function SessionModal({
                     <strong className="font-semibold text-stone-800 dark:text-stone-100">
                       Official
                     </strong>{' '}
-                    means the organisers put it on. Only they can add one, move it or delete
-                    it — though anyone named as a speaker can still edit what it says.
+                    means the organisers put it on. Only they can add one, move it or delete it —
+                    though anyone named as a speaker can still edit what it says.
                   </p>
                   <p>
                     <strong className="font-semibold text-stone-800 dark:text-stone-100">
                       Non-official
                     </strong>{' '}
-                    means an attendee put it on. Whoever created it keeps editing it, and it
-                    can only go in a room that anyone may book.
+                    means an attendee put it on. Whoever created it keeps editing it, and it can
+                    only go in a room that anyone may book.
                   </p>
                   <p>
                     Why “allow parallel sessions”: an official session can be marked{' '}
-                    <em>Everyone should be at this</em>, which stops attendees adding anything
-                    while it runs. A non-official one can never be marked that way, so
-                    something else can always run at the same time.
+                    <em>Everyone should be at this</em>, which stops attendees adding anything while
+                    it runs. A non-official one can never be marked that way, so something else can
+                    always run at the same time.
                   </p>
                   <p>
                     Worth knowing before you switch one: making somebody&rsquo;s non-official
-                    session official takes it out of their hands, unless they are named as a
-                    speaker on it.
+                    session official takes it out of their hands, unless they are named as a speaker
+                    on it.
                   </p>
                 </HelpNote>
               )}
@@ -457,9 +458,9 @@ export function SessionModal({
               {blockHelp && (
                 <HelpNote>
                   <p>
-                    While this session runs, attendees cannot add a session anywhere — not even
-                    in a room that allows booking. For a keynote or a closing plenary that is
-                    the point: there is nowhere else to be.
+                    While this session runs, attendees cannot add a session anywhere — not even in a
+                    room that allows booking. For a keynote or a closing plenary that is the point:
+                    there is nowhere else to be.
                   </p>
                   <p>
                     It holds only its own hours, so leave it off for registration, coffee and
@@ -475,9 +476,8 @@ export function SessionModal({
                     afterwards moves and cancels nobody.
                   </p>
                   <p>
-                    Lunch, dinner and coffee are not sessions at all — they are breaks, set
-                    up once in Manage Event → Programme and drawn quietly behind every day
-                    they apply to.
+                    Lunch, dinner and coffee are not sessions at all — they are breaks, set up once
+                    in Manage Event → Programme and drawn quietly behind every day they apply to.
                   </p>
                 </HelpNote>
               )}
@@ -542,8 +542,8 @@ export function SessionModal({
               organiser's. */}
           {!canMove && (
             <p className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
-              You are credited on this session, so you can edit what it says.
-              Moving it is the organisers&rsquo; — ask them if the slot is wrong.
+              You are credited on this session, so you can edit what it says. Moving it is the
+              organisers&rsquo; — ask them if the slot is wrong.
             </p>
           )}
           <FormGrid>
@@ -604,7 +604,9 @@ export function SessionModal({
             <Field label="Day">
               <Select value={day} onValueChange={(v) => v != null && setDay(v)} disabled={!canMove}>
                 <SelectTrigger aria-label="Day">
-                  <SelectValue>{(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}</SelectValue>
+                  <SelectValue>
+                    {(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {days.map((d) => (
@@ -770,9 +772,7 @@ export function SessionModal({
                       </button>
                     )}
                   </div>
-                  <p className={`mt-1 ${hintClass}`}>
-                    Apply your changes to
-                  </p>
+                  <p className={`mt-1 ${hintClass}`}>Apply your changes to</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <Chip active={applyScope === 'one'} onClick={() => setApplyScope('one')}>
                       This session only
@@ -855,7 +855,6 @@ export function SessionModal({
               )}
             </div>
           </Field>
-
         </FieldGroup>
       </div>
     </Modal>

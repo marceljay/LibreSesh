@@ -137,11 +137,7 @@ describe('competingIds', () => {
   });
 
   it('flags a session once even when it runs against two holds', () => {
-    const ids = competingIds([
-      hold(1, 1, 600, 660),
-      hold(2, 2, 650, 700),
-      placed(3, 3, 610, 690),
-    ]);
+    const ids = competingIds([hold(1, 1, 600, 660), hold(2, 2, 650, 700), placed(3, 3, 610, 690)]);
     expect(ids).toEqual(new Set([3]));
   });
 });

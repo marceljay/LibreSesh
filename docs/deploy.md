@@ -20,6 +20,10 @@ Add swap as a safety net and keep a few GB of disk free.
 
 Files that actually deploy the app live in [`deploy/`](../deploy/).
 
+This page is the reference: what every setting is and how to run the app
+once you have a machine. For choosing and sizing that machine, hardening
+it, and operating it afterwards, see [hosting.md](hosting.md).
+
 ## Configuration
 
 | Variable | Default | Notes |

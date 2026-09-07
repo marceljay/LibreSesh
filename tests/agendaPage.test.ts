@@ -28,7 +28,9 @@ describe('my agenda is the whole event, not a day of it', () => {
     // Every day, sorted by date first — the grouping into days happens after,
     // so nothing is filtered to the day on screen the way the grid is.
     expect(agenda).toContain('new Set(bundle.starredSessionIds)');
-    expect(agenda).toMatch(/a\.date < b\.date \? -1 : a\.date > b\.date \? 1 : a\.startMin - b\.startMin/);
+    expect(agenda).toMatch(
+      /a\.date < b\.date \? -1 : a\.date > b\.date \? 1 : a\.startMin - b\.startMin/,
+    );
     expect(agenda).not.toMatch(/filter\(\(p\) => p\.date === day\)/);
   });
 

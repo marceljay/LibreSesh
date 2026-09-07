@@ -23,7 +23,6 @@ import {
   TextInput,
 } from './ui';
 
-
 export interface PlaceProposalModalProps {
   proposal: ProposalDto;
   rooms: RoomDto[];
@@ -111,7 +110,9 @@ export function PlaceProposalModal({
         <Field label="Day">
           <Select value={day} onValueChange={(v) => v != null && setDay(v)}>
             <SelectTrigger aria-label="Day">
-              <SelectValue>{(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}</SelectValue>
+              <SelectValue>
+                {(v: string | null) => (v == null ? '' : (dayLabels[v] ?? v))}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {days.map((d) => (

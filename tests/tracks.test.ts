@@ -25,15 +25,13 @@ describe('tracks', () => {
   afterEach(() => harness.close());
 
   const newSession = (body: Record<string, unknown> = {}) =>
-    admin
-      .post('/api/e/testconf/sessions')
-      .send({
-        roomId,
-        title: 'Talk',
-        startsAt: at(DAY_ONE, 600),
-        endsAt: at(DAY_ONE, 660),
-        ...body,
-      });
+    admin.post('/api/e/testconf/sessions').send({
+      roomId,
+      title: 'Talk',
+      startsAt: at(DAY_ONE, 600),
+      endsAt: at(DAY_ONE, 660),
+      ...body,
+    });
 
   it('starts with none, so the schedule never offers to group by them', async () => {
     const res = await admin.get('/api/e/testconf/bundle').expect(200);
@@ -95,7 +93,10 @@ describe('tracks', () => {
   it('refuses a reorder that does not name every track exactly once', async () => {
     const a = await admin.post('/api/e/testconf/tracks').send({ name: 'A' }).expect(201);
     await admin.post('/api/e/testconf/tracks').send({ name: 'B' }).expect(201);
-    await admin.patch('/api/e/testconf/tracks').send({ ids: [a.body.id] }).expect(400);
+    await admin
+      .patch('/api/e/testconf/tracks')
+      .send({ ids: [a.body.id] })
+      .expect(400);
     await admin
       .patch('/api/e/testconf/tracks')
       .send({ ids: [a.body.id, a.body.id] })

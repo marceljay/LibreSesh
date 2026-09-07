@@ -145,7 +145,9 @@ export function auditRoutes(ctx: Ctx): Router {
 
     // The UID (public_id) for each actor on this page. Identity row ids never
     // leave the server; the random hex code is the number admins see.
-    const actorIds = [...new Set(page.flatMap((r) => (r.identity_id === null ? [] : [r.identity_id])))];
+    const actorIds = [
+      ...new Set(page.flatMap((r) => (r.identity_id === null ? [] : [r.identity_id]))),
+    ];
     const uids = new Map(
       actorIds.length === 0
         ? []

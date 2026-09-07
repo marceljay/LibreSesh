@@ -6,7 +6,9 @@ import {
   makeHarness,
   seedEvent,
   seedRoom,
-  type Harness, agentFor } from './helpers.js';
+  type Harness,
+  agentFor,
+} from './helpers.js';
 
 /**
  * A session can be given by more than one person.
@@ -179,7 +181,9 @@ describe('every speaker on the bill may edit the session', () => {
       .run('speaker', me.body.id, eventId);
     expect(
       harness.db
-        .prepare<[number], { identity_id: number | null }>('SELECT identity_id FROM people WHERE id = ?')
+        .prepare<[number], { identity_id: number | null }>(
+          'SELECT identity_id FROM people WHERE id = ?',
+        )
         .get(graceId)?.identity_id,
     ).toBe(me.body.id);
 
@@ -249,15 +253,13 @@ describe('a speaker holding the attendee role owns their own session', () => {
   it('may save the whole session back unchanged, which is what the form posts', async () => {
     // The form sends room, start and end every time, untouched. Judged on
     // presence rather than on change, this was refused as "moving" it.
-    const res = await ada
-      .patch(`/api/e/testconf/sessions/${sessionId}`)
-      .send({
-        roomId,
-        title: 'Panel',
-        description: 'A fuller description.',
-        startsAt: at(DAY_ONE, 600),
-        endsAt: at(DAY_ONE, 660),
-      });
+    const res = await ada.patch(`/api/e/testconf/sessions/${sessionId}`).send({
+      roomId,
+      title: 'Panel',
+      description: 'A fuller description.',
+      startsAt: at(DAY_ONE, 600),
+      endsAt: at(DAY_ONE, 660),
+    });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
   });
 

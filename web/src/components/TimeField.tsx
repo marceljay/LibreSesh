@@ -69,7 +69,13 @@ export function TimeField({
   const anchor = useRef<HTMLDivElement>(null);
 
   const invalid = text.trim() !== '' && parseTime(text) === null;
-  const choices = timeChoices({ from: min, to: max, step: LIST_STEP, beyond: null, current: value });
+  const choices = timeChoices({
+    from: min,
+    to: max,
+    step: LIST_STEP,
+    beyond: null,
+    current: value,
+  });
   const capped = (minute: number): string =>
     fmtMin(Math.min(Math.min(max, DAY - ARROW_STEP), Math.max(min, minute)));
 

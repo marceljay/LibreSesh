@@ -90,9 +90,8 @@ export function pruneAudit(db: Db, eventId: number): number {
     .get(eventId, keep)?.id;
   if (boundary === undefined) return 0;
 
-  return db
-    .prepare('DELETE FROM audit WHERE event_id = ? AND id <= ?')
-    .run(eventId, boundary).changes;
+  return db.prepare('DELETE FROM audit WHERE event_id = ? AND id <= ?').run(eventId, boundary)
+    .changes;
 }
 
 /** Test seam: the prune counters are per process, not per database. */

@@ -1,18 +1,18 @@
 import { errorText } from '../lib/errorText';
 import { Modal } from '../components/Modal';
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useMatch, useNavigate, useParams } from "react-router-dom";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 import type {
   ContributionDto,
   ContributionKind,
   RoomDto,
   SessionDto,
   TrackDto,
-} from "@shared/types";
+} from '@shared/types';
 import { can } from '@shared/capabilities';
-import { dateRange, zonedTimeToUtc } from "@shared/time";
-import { windowLabel, windowOn } from "@shared/trackHours";
-import { ApiError, api, type SessionWrite } from "../lib/api";
+import { dateRange, zonedTimeToUtc } from '@shared/time';
+import { windowLabel, windowOn } from '@shared/trackHours';
+import { ApiError, api, type SessionWrite } from '../lib/api';
 import {
   dayAfter,
   dayLabel,
@@ -22,43 +22,39 @@ import {
   place,
   speakerLine,
   todayInZone,
-} from "../lib/format";
-import { useEventData } from "../lib/useEventData";
-import { matchesLens } from "../lib/sessionLens";
-import { lensParams, useFilters } from "../lib/useFilters";
-import { roomHasInfo, roomNote, seatsLabel } from "../lib/rooms";
-import { UNTRACKED, trackNote } from "../lib/tracks";
-import { useMe } from "../lib/useMe";
-import { Calendar, PX_PER_MIN, timeClashPairs } from "../components/Calendar";
-import { DetailSheet } from "../components/DetailSheet";
-import { SessionDetail } from "../components/SessionDetail";
-import { ActiveFilters, FilterMenu } from "../components/FilterMenu";
-import { Gate } from "../components/Gate";
+} from '../lib/format';
+import { useEventData } from '../lib/useEventData';
+import { matchesLens } from '../lib/sessionLens';
+import { lensParams, useFilters } from '../lib/useFilters';
+import { plural } from '../lib/plural';
+import { roomHasInfo, roomNote, seatsLabel } from '../lib/rooms';
+import { UNTRACKED, trackNote } from '../lib/tracks';
+import { useMe } from '../lib/useMe';
+import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
+import { DetailSheet } from '../components/DetailSheet';
+import { SessionDetail } from '../components/SessionDetail';
+import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
+import { Gate } from '../components/Gate';
 import {
   CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   PitchIcon,
   SettingsIcon,
-} from "../components/icons";
-import { ListView } from "../components/ListView";
-import { Logo } from "../components/Logo";
-import { NotificationBell } from "../components/NotificationBell";
-import { ProfileMenu } from "../components/ProfileMenu";
-import { Rail } from "../components/Rail";
-import { SearchBox } from "../components/SearchBox";
-import type { SaveOpts } from "../components/SessionModal";
+} from '../components/icons';
+import { ListView } from '../components/ListView';
+import { Logo } from '../components/Logo';
+import { NotificationBell } from '../components/NotificationBell';
+import { ProfileMenu } from '../components/ProfileMenu';
+import { Rail } from '../components/Rail';
+import { SearchBox } from '../components/SearchBox';
+import type { SaveOpts } from '../components/SessionModal';
 const SessionModal = lazy(() =>
-  import("../components/SessionModal").then((m) => ({ default: m.SessionModal })),
+  import('../components/SessionModal').then((m) => ({ default: m.SessionModal })),
 );
-import { LinkSessionsModal } from "../components/LinkSessionsModal";
-import {
-  canDeleteSession,
-  canEditSession,
-  canMoveSession,
-  type Viewer,
-} from "../lib/sessionPerms";
-import { Tour, type TourStep } from "../components/Tour";
+import { LinkSessionsModal } from '../components/LinkSessionsModal';
+import { canDeleteSession, canEditSession, canMoveSession, type Viewer } from '../lib/sessionPerms';
+import { Tour, type TourStep } from '../components/Tour';
 import {
   ControlShell,
   EmptyState,
@@ -71,7 +67,6 @@ import {
 } from '../components/ui';
 
 const NOW_TICK_MS = 30_000;
-
 
 /**
  * Everything about a room, in one place: the organiser's directions first,
@@ -130,8 +125,8 @@ function TrackInfo({
           {ownDay && <p>Today keeps its own window — other days differ.</p>}
           {!ownDay && track.windows.length > 0 && (
             <p>
-              Other days differ:{" "}
-              {track.windows.map((w) => `${w.date} ${windowLabel(w)}`).join(", ")}.
+              Other days differ:{' '}
+              {track.windows.map((w) => `${w.date} ${windowLabel(w)}`).join(', ')}.
             </p>
           )}
         </>
@@ -154,7 +149,7 @@ const TOP_BUTTON_AT = 160;
 const DAY_LEAD_IN = 16;
 
 export function SchedulePage() {
-  const { slug = "", sessionId } = useParams();
+  const { slug = '', sessionId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
@@ -164,9 +159,7 @@ export function SchedulePage() {
 
   const [tourOpen, setTourOpen] = useState(false);
   const [arrange, setArrange] = useState(false);
-  const [calendar, setCalendar] = useState<"download" | "subscribe" | null>(
-    null,
-  );
+  const [calendar, setCalendar] = useState<'download' | 'subscribe' | null>(null);
   const [clashDismissed, setClashDismissed] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
   // The session whose "Link matching sessions…" picker is open, over the editor.
@@ -192,14 +185,11 @@ export function SchedulePage() {
 
   const bundle = data.bundle;
   const event = bundle?.event;
-  const timezone = event?.timezone ?? "UTC";
+  const timezone = event?.timezone ?? 'UTC';
 
-  const days = useMemo(
-    () => (event ? dateRange(event.startDate, event.endDate) : []),
-    [event],
-  );
+  const days = useMemo(() => (event ? dateRange(event.startDate, event.endDate) : []), [event]);
   const today = useMemo(
-    () => (event ? todayInZone(timezone, new Date(clock)) : ""),
+    () => (event ? todayInZone(timezone, new Date(clock)) : ''),
     [event, timezone, clock],
   );
   const day =
@@ -207,7 +197,7 @@ export function SchedulePage() {
       ? filters.day
       : days.includes(today)
         ? today
-        : (days[0] ?? "");
+        : (days[0] ?? '');
   const isToday = day === today;
   const nowMin = useMemo(
     () => (event && isToday ? nowMinuteOfDay(timezone, new Date(clock)) : null),
@@ -221,11 +211,8 @@ export function SchedulePage() {
    *  "Unassigned" filter chip, and the column of the same name, worth showing. */
   const hasUntracked = (bundle?.sessions ?? []).some((s) => s.trackId === null);
   /** Pitches nobody has placed yet — the number beside the board's button. */
-  const openPitchCount = (bundle?.proposals ?? []).filter(
-    (p) => p.placedSessionId === null,
-  ).length;
-  const axis: "room" | "track" =
-    hasTracks && filters.axis === "track" ? "track" : "room";
+  const openPitchCount = (bundle?.proposals ?? []).filter((p) => p.placedSessionId === null).length;
+  const axis: 'room' | 'track' = hasTracks && filters.axis === 'track' ? 'track' : 'room';
 
   /* Where a reader who has not picked a view lands. It used to be a guess
      about the device — under 640px the list, above it the grid — which is the
@@ -235,7 +222,7 @@ export function SchedulePage() {
      in Manage Event → Settings, and until they do it is the list, the view
      that survives every shape of event. The switch still works either way, and
      a chosen view goes in the URL, which is what a shared link reproduces. */
-  const view = filters.view ?? event?.defaultView ?? "list";
+  const view = filters.view ?? event?.defaultView ?? 'list';
 
   /** The day after the one being read, for the button at the end of the
    *  list. Absent on the last day, which has nothing after it. */
@@ -279,7 +266,7 @@ export function SchedulePage() {
    * dropping those sessions would hide real programme.
    */
   const columns = useMemo(() => {
-    if (axis === "room") {
+    if (axis === 'room') {
       return (bundle?.rooms ?? []).map((room) => {
         // The card is the room's name and nothing else. Seats, the booking
         // permission and the directions are all the same kind of thing — facts
@@ -325,8 +312,8 @@ export function SchedulePage() {
     if (sessions.some((x) => x.trackId === null)) {
       cols.push({
         id: UNTRACKED,
-        name: "Unassigned",
-        color: "#E7E5E4",
+        name: 'Unassigned',
+        color: '#E7E5E4',
         detail: (
           <div className="truncate text-xs text-stone-600">
             {sessions.filter((x) => x.trackId === null).length} with no track
@@ -339,8 +326,7 @@ export function SchedulePage() {
   }, [axis, bundle?.rooms, bundle?.tracks, bundle?.sessions, day]);
 
   const columnOf = useCallback(
-    (session: SessionDto) =>
-      axis === "room" ? session.roomId : (session.trackId ?? UNTRACKED),
+    (session: SessionDto) => (axis === 'room' ? session.roomId : (session.trackId ?? UNTRACKED)),
     [axis],
   );
 
@@ -349,7 +335,7 @@ export function SchedulePage() {
     [bundle?.rooms],
   );
   const roomNameOf = useCallback(
-    (session: SessionDto) => roomNames.get(session.roomId) ?? "",
+    (session: SessionDto) => roomNames.get(session.roomId) ?? '',
     [roomNames],
   );
 
@@ -365,9 +351,7 @@ export function SchedulePage() {
 
   // Derived from the selected day rather than held in state, so the rail
   // follows a shared `?day=` link instead of fighting it.
-  const weekIndex = weeks.length
-    ? Math.floor(Math.max(0, days.indexOf(day)) / 7)
-    : 0;
+  const weekIndex = weeks.length ? Math.floor(Math.max(0, days.indexOf(day)) / 7) : 0;
   const stripDays = weeks.length ? (weeks[weekIndex] ?? days) : days;
 
   /** The identity's starred session ids, as a set for cheap lookups. */
@@ -392,8 +376,7 @@ export function SchedulePage() {
             starred: (x) => starredIds.has(x.id),
             // The grid draws one day, so "now" is a minute of that day and
             // `nowMin` is null unless the day on screen is today.
-            upcoming: (x) =>
-              soonNow !== null && place(x, timezone).endMin > soonNow,
+            upcoming: (x) => soonNow !== null && place(x, timezone).endMin > soonNow,
           }),
         )
         .map((s) => s.id),
@@ -401,10 +384,7 @@ export function SchedulePage() {
   }, [bundle, filters, starredIds, nowMin, timezone]);
 
   const daySessions = useMemo(
-    () =>
-      bundle
-        ? bundle.sessions.filter((s) => place(s, timezone).date === day)
-        : [],
+    () => (bundle ? bundle.sessions.filter((s) => place(s, timezone).date === day) : []),
     [bundle, timezone, day],
   );
   const visibleSessions = useMemo(
@@ -420,9 +400,7 @@ export function SchedulePage() {
     return bundle.sessions
       .filter((s) => matchedIds.has(s.id) && place(s, timezone).date !== day)
       .map((s) => ({ session: s, ...place(s, timezone) }))
-      .sort((a, b) =>
-        a.date < b.date ? -1 : a.date > b.date ? 1 : a.startMin - b.startMin,
-      );
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.startMin - b.startMin));
   }, [bundle, filters.q, matchedIds, timezone, day]);
 
   /** Starred pairs that overlap in time (any room) — you cannot attend both. */
@@ -439,8 +417,8 @@ export function SchedulePage() {
   );
   // Dismissal is keyed to the clashing set, so starring into a fresh clash
   // brings the warning back.
-  const clashKey = clashPairs.map(([a, b]) => `${a.id}-${b.id}`).join(",");
-  const showClashBanner = clashKey !== "" && clashDismissed !== clashKey;
+  const clashKey = clashPairs.map(([a, b]) => `${a.id}-${b.id}`).join(',');
+  const showClashBanner = clashKey !== '' && clashDismissed !== clashKey;
 
   /**
    * The same question, asked of the whole event.
@@ -454,14 +432,14 @@ export function SchedulePage() {
    */
   const searchEverywhere = useCallback(() => {
     const params = lensParams(filters).toString();
-    navigate(`/e/${slug}/search${params ? `?${params}` : ""}`);
+    navigate(`/e/${slug}/search${params ? `?${params}` : ''}`);
   }, [filters, navigate, slug]);
 
   /** Jump to a search result on another day: switch day and open it in one nav. */
   const openResult = useCallback(
     (session: SessionDto) => {
       const params = new URLSearchParams(window.location.search);
-      params.set("day", place(session, timezone).date);
+      params.set('day', place(session, timezone).date);
       navigate(`/e/${slug}/s/${session.id}?${params.toString()}`);
     },
     [navigate, slug, timezone],
@@ -476,9 +454,7 @@ export function SchedulePage() {
     [navigate, slug],
   );
 
-  const selected = sessionId
-    ? bundle?.sessions.find((s) => s.id === Number(sessionId))
-    : undefined;
+  const selected = sessionId ? bundle?.sessions.find((s) => s.id === Number(sessionId)) : undefined;
 
   // `/s/:id/full` renders the same session as a page instead of a panel. It
   // stays on this component rather than becoming its own route component
@@ -486,10 +462,8 @@ export function SchedulePage() {
   // hide — is defined here, along with the live stream that keeps it current.
   // Falling back to the grid when the id matches nothing means a stale link
   // lands somewhere useful instead of on an empty page.
-  const fullPage = useMatch("/e/:slug/s/:sessionId/full") !== null && !!selected;
-  const sheetUrl = selected
-    ? `/e/${slug}/s/${selected.id}${window.location.search}`
-    : `/e/${slug}`;
+  const fullPage = useMatch('/e/:slug/s/:sessionId/full') !== null && !!selected;
+  const sheetUrl = selected ? `/e/${slug}/s/${selected.id}${window.location.search}` : `/e/${slug}`;
 
   const { loadContributions } = data;
   useEffect(() => {
@@ -508,7 +482,7 @@ export function SchedulePage() {
    *  are unit-tested rather than trusted by eye. */
   const viewer = useMemo(
     (): Viewer => ({
-      role: bundle?.role ?? "viewer",
+      role: bundle?.role ?? 'viewer',
       identityId: me?.id ?? null,
       myPersonIds,
       permissions: bundle?.permissions ?? {},
@@ -537,8 +511,7 @@ export function SchedulePage() {
    *  for. Revert and toast if the server rejects it. */
   const toggleStar = useCallback(
     async (session: SessionDto) => {
-      const wasStarred =
-        bundle?.starredSessionIds.includes(session.id) ?? false;
+      const wasStarred = bundle?.starredSessionIds.includes(session.id) ?? false;
       data.setStarred(session.id, !wasStarred);
       try {
         if (wasStarred) await api.unstarSession(slug, session.id);
@@ -565,7 +538,7 @@ export function SchedulePage() {
    */
   const jumped = useRef(false);
   useEffect(() => {
-    if (jumped.current || data.status !== "ready" || !event) return;
+    if (jumped.current || data.status !== 'ready' || !event) return;
     if (sessionId || filters.day) return;
     if (nowMin === null || nowMin < event.dayStartMin || nowMin > event.dayEndMin) {
       return;
@@ -576,10 +549,9 @@ export function SchedulePage() {
     const raf = requestAnimationFrame(() => {
       const el = calRef.current;
       if (el) {
-        el.scrollTop =
-          (nowMin - event.dayStartMin) * PX_PER_MIN - el.clientHeight / 2;
+        el.scrollTop = (nowMin - event.dayStartMin) * PX_PER_MIN - el.clientHeight / 2;
       }
-      document.getElementById("now-anchor")?.scrollIntoView({ block: "center" });
+      document.getElementById('now-anchor')?.scrollIntoView({ block: 'center' });
     });
     return () => cancelAnimationFrame(raf);
   }, [data.status, event, filters.day, nowMin, sessionId]);
@@ -592,12 +564,12 @@ export function SchedulePage() {
       if (el && event) {
         el.scrollTo({
           top: (minute - event.dayStartMin) * PX_PER_MIN - el.clientHeight / 2,
-          behavior: "smooth",
+          behavior: 'smooth',
         });
       }
       document
-        .getElementById("now-anchor")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        .getElementById('now-anchor')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }, [days, event, filters, timezone, today]);
 
@@ -655,10 +627,10 @@ export function SchedulePage() {
    *  `scrollHeight` against its `clientHeight` — so when it misbehaves on a
    *  real device this is the difference between a guess and an answer. Off
    *  unless asked for, and it reads state rather than changing any. */
-  const debugFold = new URLSearchParams(window.location.search).get("debug") === "fold";
-  const [foldStats, setFoldStats] = useState("");
+  const debugFold = new URLSearchParams(window.location.search).get('debug') === 'fold';
+  const [foldStats, setFoldStats] = useState('');
 
-  const [chromeMode, setChromeMode] = useState<"auto" | "open" | "shut">("auto");
+  const [chromeMode, setChromeMode] = useState<'auto' | 'open' | 'shut'>('auto');
   const [autoFolded, setAutoFolded] = useState(false);
   const [foldMoving, setFoldMoving] = useState(false);
   /** Far enough down the day that scrolling back is work worth a button. */
@@ -672,8 +644,7 @@ export function SchedulePage() {
   const foldedBar = useRef<HTMLDivElement>(null);
   const foldedRows = useRef<HTMLDivElement>(null);
 
-  const folded =
-    foldable && (chromeMode === "shut" || (chromeMode === "auto" && autoFolded));
+  const folded = foldable && (chromeMode === 'shut' || (chromeMode === 'auto' && autoFolded));
 
   const readFold = useCallback(() => {
     const el = scroller();
@@ -681,11 +652,9 @@ export function SchedulePage() {
     const top = el.scrollTop;
     setPastTop(top > TOP_BUTTON_AT);
     if (debugFold) {
-      const gain =
-        (foldedBar.current?.offsetHeight ?? 0) +
-        (foldedRows.current?.offsetHeight ?? 0);
+      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
       setFoldStats(
-        `${el === calRef.current ? "grid" : "main"} top=${Math.round(top)} ` +
+        `${el === calRef.current ? 'grid' : 'main'} top=${Math.round(top)} ` +
           `scrollH=${el.scrollHeight} clientH=${el.clientHeight} ` +
           `slack=${el.scrollHeight - el.clientHeight} gain=${gain}`,
       );
@@ -697,9 +666,7 @@ export function SchedulePage() {
       // Unfolds at the very top, folds at FOLD_AT: one threshold in both
       // directions would flicker, because folding resizes the grid it reads.
       if (was) return top > 0;
-      const gain =
-        (foldedBar.current?.offsetHeight ?? 0) +
-        (foldedRows.current?.offsetHeight ?? 0);
+      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
       // `slack`, not `slack - top`: what folding costs is the same wherever you
       // are in the day — the box keeps its content and gains `gain` of
       // viewport, so what is left to scroll afterwards is `slack - gain`. Ask
@@ -711,14 +678,14 @@ export function SchedulePage() {
       return top > FOLD_AT && slack > gain + FOLD_AT;
     });
     setChromeMode((mode) => {
-      if (mode === "auto") return mode;
+      if (mode === 'auto') return mode;
       // Coming back to the top of the day spends the override either way: it
       // is where the header is open anyway, and where the scroll rule and the
       // button agree again. "Coming back" is the point — folding by hand while
       // already at the top would otherwise undo itself on the spot.
-      if (top <= 0 && beenDown.current) return "auto";
-      if (mode === "open" && top > overrideFrom.current + OVERRIDE_PX) {
-        return "auto";
+      if (top <= 0 && beenDown.current) return 'auto';
+      if (mode === 'open' && top > overrideFrom.current + OVERRIDE_PX) {
+        return 'auto';
       }
       return mode;
     });
@@ -728,12 +695,12 @@ export function SchedulePage() {
     const top = scroller()?.scrollTop ?? 0;
     overrideFrom.current = top;
     beenDown.current = top > FOLD_AT;
-    setChromeMode(folded ? "open" : "shut");
+    setChromeMode(folded ? 'open' : 'shut');
   }, [folded, scroller]);
 
   const jumpToTop = useCallback(() => {
-    setChromeMode("auto");
-    scroller()?.scrollTo({ top: 0, behavior: "smooth" });
+    setChromeMode('auto');
+    scroller()?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [scroller]);
 
   /**
@@ -803,50 +770,39 @@ export function SchedulePage() {
   }, [folded, readFold]);
 
   useEffect(() => {
-    const boxes = [calRef.current, mainRef.current].filter(
-      (el): el is HTMLElement => el !== null,
-    );
+    const boxes = [calRef.current, mainRef.current].filter((el): el is HTMLElement => el !== null);
     if (!foldable || boxes.length === 0) {
       setAutoFolded(false);
-      setChromeMode("auto");
+      setChromeMode('auto');
       setPastTop(false);
       return;
     }
     readFold();
     // Both, not the one we think will scroll: a listener on the wrong box
     // hears nothing, and which box scrolls is the grid's business, not ours.
-    for (const el of boxes) el.addEventListener("scroll", readFold, { passive: true });
+    for (const el of boxes) el.addEventListener('scroll', readFold, { passive: true });
     return () => {
-      for (const el of boxes) el.removeEventListener("scroll", readFold);
+      for (const el of boxes) el.removeEventListener('scroll', readFold);
     };
   }, [foldable, readFold, bundle?.rooms.length, day, view]);
 
   /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
   const moveSession = useCallback(
-    async (
-      session: SessionDto,
-      startMin: number,
-      durMin: number,
-      roomId: number,
-    ) => {
+    async (session: SessionDto, startMin: number, durMin: number, roomId: number) => {
       if (!event) return;
       const date = place(session, timezone).date;
       try {
         const updated = await api.updateSession(slug, session.id, {
           roomId,
           startsAt: zonedTimeToUtc(date, startMin, timezone).toISOString(),
-          endsAt: zonedTimeToUtc(
-            date,
-            startMin + durMin,
-            timezone,
-          ).toISOString(),
+          endsAt: zonedTimeToUtc(date, startMin + durMin, timezone).toISOString(),
           expectedUpdatedAt: session.updatedAt,
         });
-        data.apply({ type: "session.updated", entity: updated });
+        data.apply({ type: 'session.updated', entity: updated });
         toast.show(`Moved to ${fmtMin(startMin)}`);
       } catch (err) {
-        if (err instanceof ApiError && err.code === "stale") {
-          toast.show("Someone else moved that session — reloading");
+        if (err instanceof ApiError && err.code === 'stale') {
+          toast.show('Someone else moved that session — reloading');
           void data.reload();
         } else {
           reportError(err);
@@ -866,7 +822,7 @@ export function SchedulePage() {
             expectedUpdatedAt: editing.session.updatedAt,
             ...(opts?.applyTo ? { applyTo: opts.applyTo } : {}),
           });
-          data.apply({ type: "session.updated", entity: updated });
+          data.apply({ type: 'session.updated', entity: updated });
           // Siblings the edit reached arrive over the live channel; a series
           // edit says how far it got, since some may not have been the user's.
           const reach = updated.seriesApply;
@@ -877,7 +833,7 @@ export function SchedulePage() {
           } else if (reach) {
             toast.show(`Applied to ${reach.applied} linked sessions`);
           } else {
-            toast.show("Session updated");
+            toast.show('Session updated');
           }
         } else if (opts?.repeat) {
           // One request, then every session it made applied here: the server
@@ -889,7 +845,7 @@ export function SchedulePage() {
             ...(opts.link ? { link: true } : {}),
           });
           for (const created of sessions) {
-            data.apply({ type: "session.created", entity: created });
+            data.apply({ type: 'session.created', entity: created });
           }
           toast.show(
             opts.link
@@ -898,8 +854,8 @@ export function SchedulePage() {
           );
         } else {
           const created = await api.createSession(slug, body);
-          data.apply({ type: "session.created", entity: created });
-          toast.show("Session added");
+          data.apply({ type: 'session.created', entity: created });
+          toast.show('Session added');
         }
         setEditing(null);
       } catch (err) {
@@ -916,13 +872,13 @@ export function SchedulePage() {
       try {
         const { sessions } = await api.unlinkSession(slug, session.id);
         for (const updated of sessions) {
-          data.apply({ type: "session.updated", entity: updated });
+          data.apply({ type: 'session.updated', entity: updated });
         }
         // Keep the form open on the now-unlinked session, so its own DTO is
         // fresh and the linked controls fall away.
         const mine = sessions.find((s) => s.id === session.id);
         if (mine) setEditing({ session: mine });
-        toast.show("Unlinked from its series");
+        toast.show('Unlinked from its series');
       } catch (err) {
         reportError(err);
       }
@@ -939,10 +895,10 @@ export function SchedulePage() {
       if (!ok) return;
       try {
         await api.deleteSession(slug, session.id);
-        data.apply({ type: "session.deleted", entity: { id: session.id } });
+        data.apply({ type: 'session.deleted', entity: { id: session.id } });
         setEditing(null);
         closeSession();
-        toast.show("Session deleted");
+        toast.show('Session deleted');
       } catch (err) {
         reportError(err);
       }
@@ -959,8 +915,8 @@ export function SchedulePage() {
           body,
           url,
         });
-        data.apply({ type: "contribution.created", entity: created });
-        toast.show("Added — everyone sees it live");
+        data.apply({ type: 'contribution.created', entity: created });
+        toast.show('Added — everyone sees it live');
       } catch (err) {
         reportError(err);
       }
@@ -974,7 +930,7 @@ export function SchedulePage() {
       try {
         await api.deleteContribution(slug, id);
         data.apply({
-          type: "contribution.deleted",
+          type: 'contribution.deleted',
           entity: { id, sessionId: selected.id },
         });
       } catch (err) {
@@ -992,7 +948,7 @@ export function SchedulePage() {
           contribution.id,
           !contribution.hidden,
         );
-        data.apply({ type: "contribution.hidden", entity: updated });
+        data.apply({ type: 'contribution.hidden', entity: updated });
       } catch (err) {
         reportError(err);
       }
@@ -1000,16 +956,14 @@ export function SchedulePage() {
     [data, reportError, slug],
   );
 
-  if (data.status === "loading") return <Spinner label="Loading schedule…" />;
-  if (data.status === "gate") {
-    return (
-      <Gate slug={slug} me={me} onEntered={() => void data.reload()} />
-    );
+  if (data.status === 'loading') return <Spinner label="Loading schedule…" />;
+  if (data.status === 'gate') {
+    return <Gate slug={slug} me={me} onEntered={() => void data.reload()} />;
   }
-  if (data.status === "error" || !bundle || !event) {
+  if (data.status === 'error' || !bundle || !event) {
     return (
       <EmptyState>
-        {data.error ?? "Could not load this event."}
+        {data.error ?? 'Could not load this event.'}
         <div className="mt-3">
           <Link to="/events" className="underline">
             Back to all events
@@ -1020,7 +974,7 @@ export function SchedulePage() {
   }
 
   const role = bundle.role;
-  const canWrite = role !== "viewer" && !event.archived;
+  const canWrite = role !== 'viewer' && !event.archived;
   // Admin-only. Arrange is a whole-grid drag mode, and the grid is the
   // organiser's instrument: an attendee has at most one open session of their
   // own on it, and dragging is a clumsy way to move the one thing you may
@@ -1034,7 +988,7 @@ export function SchedulePage() {
   // for a mode with no effect: it lit up, said "Done arranging", and changed
   // nothing on the page under it. Editing from the list is unaffected; it
   // never went through Arrange, it is Edit session on the row.
-  const canArrange = !event.archived && role === "admin" && view === "cal";
+  const canArrange = !event.archived && role === 'admin' && view === 'cal';
 
   // Ordered coach-marks. Role-conditional controls are dropped here; the Tour
   // itself also skips any target that isn't in the DOM. Not memoised because
@@ -1042,74 +996,74 @@ export function SchedulePage() {
   const participant = event.userRoleLabel;
   const tourSteps: TourStep[] = [
     {
-      target: "identity",
-      title: "This is you",
+      target: 'identity',
+      title: 'This is you',
       body: `You're known by a name on this device, not an account — you're here as ${participant}. Open it for your profile, your calendar links, or to sign out.`,
     },
     {
-      target: "days",
-      title: "Pick a day",
+      target: 'days',
+      title: 'Pick a day',
       body:
         weeks.length > 1
-          ? "One tab per day. A long event splits into weeks above — pick a week, then a day. Dimmed days have nothing scheduled yet."
-          : "One tab per day of the event.",
+          ? 'One tab per day. A long event splits into weeks above — pick a week, then a day. Dimmed days have nothing scheduled yet.'
+          : 'One tab per day of the event.',
     },
     {
-      target: "view",
-      title: "Grid or list",
-      body: "Grid shows the rooms side by side; list is a plain agenda that reads better on a phone.",
+      target: 'view',
+      title: 'Grid or list',
+      body: 'Grid shows the rooms side by side; list is a plain agenda that reads better on a phone.',
     },
     {
-      target: "axis",
-      title: "Rooms or tracks",
-      body: "This event has tracks, so the grid can lay its columns out either way. Reading by track, each block says which room it is in.",
+      target: 'axis',
+      title: 'Rooms or tracks',
+      body: 'This event has tracks, so the grid can lay its columns out either way. Reading by track, each block says which room it is in.',
     },
     {
-      target: "pitches",
-      title: "Pitch a session",
-      body: "Propose a session with no room or time, and say which pitches you would turn up to. Organisers place the popular ones on the grid.",
+      target: 'pitches',
+      title: 'Pitch a session',
+      body: 'Propose a session with no room or time, and say which pitches you would turn up to. Organisers place the popular ones on the grid.',
     },
     {
-      target: "now",
-      title: "Jump to now",
-      body: "Scrolls the grid to the current time and the yellow now-line.",
+      target: 'now',
+      title: 'Jump to now',
+      body: 'Scrolls the grid to the current time and the yellow now-line.',
     },
     {
-      target: "session-block",
-      title: "Open a session",
+      target: 'session-block',
+      title: 'Open a session',
       body: "Tap any block for its description, speaker and everyone's notes, links and questions. Dashed green blocks are non-official — anyone may propose one, and something else can always run alongside it.",
     },
     {
-      target: "filters",
-      title: "Find and narrow",
-      body: "Search finds a session on any day — press Enter for the full list of results. Filter narrows the day on screen by room, tag or text, and lives in the URL, so a filtered view can be shared as a link.",
+      target: 'filters',
+      title: 'Find and narrow',
+      body: 'Search finds a session on any day — press Enter for the full list of results. Filter narrows the day on screen by room, tag or text, and lives in the URL, so a filtered view can be shared as a link.',
     },
   ];
   if (canArrange) {
     tourSteps.push({
-      target: "arrange",
-      title: "Move things around",
-      body: "Turn on Arrange, then drag a block to change its time or room, or drag its bottom edge to change its length. It snaps to 5 minutes and only moves what you may edit.",
+      target: 'arrange',
+      title: 'Move things around',
+      body: 'Turn on Arrange, then drag a block to change its time or room, or drag its bottom edge to change its length. It snaps to 5 minutes and only moves what you may edit.',
     });
   }
   if (canWrite) {
     tourSteps.push({
-      target: "add",
-      title: "Add a session",
-      body: "Organisers add official sessions anywhere; everyone else proposes non-official ones in the rooms that anyone may book.",
+      target: 'add',
+      title: 'Add a session',
+      body: 'Organisers add official sessions anywhere; everyone else proposes non-official ones in the rooms that anyone may book.',
     });
   }
-  if (role === "admin") {
+  if (role === 'admin') {
     tourSteps.push({
-      target: "manage",
-      title: "Organiser tools",
-      body: "Rooms, tags, passwords, duplicating the event and archiving all live behind Manage Event.",
+      target: 'manage',
+      title: 'Organiser tools',
+      body: 'Rooms, tags, passwords, duplicating the event and archiving all live behind Manage Event.',
     });
   }
   tourSteps.push({
-    target: "live",
+    target: 'live',
     title: "It's live",
-    body: "Everyone else sees your changes within a second, with no refresh needed.",
+    body: 'Everyone else sees your changes within a second, with no refresh needed.',
   });
 
   /* Folding is a movement rather than a cut: the rows shrink to nothing over
@@ -1127,15 +1081,15 @@ export function SchedulePage() {
      that is actually there hands the squeeze back to the rows, which each
      already know how to take it: truncation, or a scroller of their own. */
   const foldRow = `grid grid-cols-[minmax(0,1fr)] transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
-    folded ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+    folded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
   }`;
   /* Clipped while it moves and while it is away, open once it has settled: the
      profile menu drops out of the event bar, and a permanent `overflow-hidden`
      here would cut it off. `invisible` only at the end, because a row that is
      still on its way out is still on screen, and one that has gone should not
      be a tab stop. */
-  const foldInner = `${folded || foldMoving ? "overflow-hidden" : ""}${
-    folded && !foldMoving ? " invisible" : ""
+  const foldInner = `${folded || foldMoving ? 'overflow-hidden' : ''}${
+    folded && !foldMoving ? ' invisible' : ''
   }`;
 
   return (
@@ -1154,11 +1108,7 @@ export function SchedulePage() {
                 is the difference between reading a name and guessing it. The
                 desktop spacing is unchanged: there is nothing to win there. */}
             <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
-              <Link
-                to="/"
-                className="flex shrink-0 items-center"
-                aria-label="LibreSesh home"
-              >
+              <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
                 {/* Below `sm` the wordmark's width belongs to the event name, so
                     the phone header gets the near-square mark instead. The swap
                     lives on wrappers because Logo spends its own display classes
@@ -1175,19 +1125,17 @@ export function SchedulePage() {
                 className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
               />
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold tracking-tight">
-                  {event.name}
-                </div>
+                <div className="truncate text-sm font-semibold tracking-tight">{event.name}</div>
                 <div
                   data-tour="live"
                   className="truncate text-xs text-stone-500 dark:text-stone-400"
                 >
-                  {days.length} day{days.length > 1 ? "s" : ""} ·{" "}
+                  {plural(days.length, { one: 'day', other: 'days' })} ·{' '}
                   {event.archived
-                    ? "archived — read-only"
+                    ? 'archived — read-only'
                     : data.connected
-                      ? "schedule is live"
-                      : "reconnecting…"}
+                      ? 'schedule is live'
+                      : 'reconnecting…'}
                 </div>
               </div>
               {/* Theme moved into the profile menu and Manage Event down to the
@@ -1205,7 +1153,7 @@ export function SchedulePage() {
                   role={role}
                   userLabel={event.userRoleLabel}
                   people={bundle.people}
-                  publicId={me?.uid ?? ""}
+                  publicId={me?.uid ?? ''}
                   onSignOut={() => {
                     void api.logout(slug).then(() => void data.reload());
                   }}
@@ -1220,141 +1168,139 @@ export function SchedulePage() {
             for its context and drops the rest. */}
         {!fullPage && (
           <>
-          <div ref={foldedRows} className={foldRow}>
-            <div className={foldInner}>
-              {weeks.length > 1 && (
-                /* One line that scrolls sideways, like the day strip below
+            <div ref={foldedRows} className={foldRow}>
+              <div className={foldInner}>
+                {weeks.length > 1 && (
+                  /* One line that scrolls sideways, like the day strip below
                    it, rather than a row that wraps: on a phone a four-week
                    conference wrapped to two lines and a six-week one to three,
                    and every line of it is height the grid wanted. `Rail`
                    carries the arrows that say the line goes on — without them
                    a week past the edge was simply a week you never found. */
-                /* The rail's own box is exactly the line of chips: the space
+                  /* The rail's own box is exactly the line of chips: the space
                    under it is this wrapper's, because the arrows are centred
                    on the rail and padding inside it would sit them low. */
-                <div className="mx-auto max-w-6xl pb-2">
-                  <Rail label="Weeks" className="gap-1.5 px-4">
-                    {weeks.map((week, i) => {
-                      const first = week[0] as string;
-                      const last = week[week.length - 1] as string;
-                      const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
-                      const holdsToday = week.includes(today);
-                      return (
-                        <button
-                          key={first}
-                          type="button"
-                          onClick={() => goToDay(holdsToday ? today : first)}
-                          aria-pressed={i === weekIndex}
-                          aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
-                          className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
-                            i === weekIndex
-                              ? "border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900"
-                              : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400"
-                          }`}
-                        >
-                          Week {i + 1}
-                          <span className="ms-1.5 text-stone-400 dark:text-stone-500">
-                            {dayRangeLabel(first, last)}
-                          </span>
-                          {holdsToday && !week.includes(day) && (
-                            <span className="ms-1.5 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </Rail>
-                </div>
-              )}
-
-              <div
-                className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4"
-              >
-                <div
-                  data-tour="days"
-                  className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
-                >
-                  {stripDays.map((d) => {
-                    const label = dayLabel(d, today);
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => goToDay(d)}
-                        aria-pressed={day === d}
-                        className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
-                          day === d
-                            ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                            : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
-                        } ${day !== d && (perDay.get(d) ?? 0) === 0 ? "opacity-40" : ""}`}
-                      >
-                        {label.top}{" "}
-                        <span
-                          className={
-                            day === d
-                              ? "text-stone-300 dark:text-stone-600"
-                              : "text-stone-400 dark:text-stone-500"
-                          }
-                        >
-                          {label.sub}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div
-                  data-tour="view"
-                  className="flex rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5"
-                >
-                  {(["cal", "list"] as const).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => {
-                        filters.set({ view: v });
-                        // Leaving the grid also leaves Arrange, rather than
-                        // holding a drag mode open behind a button that is no
-                        // longer on screen to turn it off.
-                        if (v !== "cal") setArrange(false);
-                      }}
-                      aria-pressed={view === v}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                        view === v
-                          ? "bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                          : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
-                      }`}
-                    >
-                      {v === "cal" ? "Grid" : "List"}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Only when the event has tracks, and only in the grid — the list
-                    is an agenda in time order, with no columns to lay out. */}
-                {hasTracks && view === "cal" && (
-                  <div
-                    data-tour="axis"
-                    className="flex rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
-                  >
-                    {(["room", "track"] as const).map((a) => (
-                      <button
-                        key={a}
-                        type="button"
-                        onClick={() => filters.set({ axis: a })}
-                        aria-pressed={axis === a}
-                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                          axis === a
-                            ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900"
-                            : "text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800"
-                        }`}
-                      >
-                        {a === "room" ? "Rooms" : "Tracks"}
-                      </button>
-                    ))}
+                  <div className="mx-auto max-w-6xl pb-2">
+                    <Rail label="Weeks" className="gap-1.5 px-4">
+                      {weeks.map((week, i) => {
+                        const first = week[0] as string;
+                        const last = week[week.length - 1] as string;
+                        const count = week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0);
+                        const holdsToday = week.includes(today);
+                        return (
+                          <button
+                            key={first}
+                            type="button"
+                            onClick={() => goToDay(holdsToday ? today : first)}
+                            aria-pressed={i === weekIndex}
+                            aria-label={`Week ${i + 1}, ${dayRangeLabel(first, last)}, ${count} sessions`}
+                            className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium ${
+                              i === weekIndex
+                                ? 'border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900'
+                                : 'border-stone-300 text-stone-600 hover:border-stone-500 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400'
+                            }`}
+                          >
+                            Week {i + 1}
+                            <span className="ms-1.5 text-stone-400 dark:text-stone-500">
+                              {dayRangeLabel(first, last)}
+                            </span>
+                            {holdsToday && !week.includes(day) && (
+                              <span className="ms-1.5 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </Rail>
                   </div>
                 )}
 
-                {/* Everyone needs the board: attendees pitch there, viewers can
+                <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4">
+                  <div
+                    data-tour="days"
+                    className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
+                  >
+                    {stripDays.map((d) => {
+                      const label = dayLabel(d, today);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => goToDay(d)}
+                          aria-pressed={day === d}
+                          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
+                            day === d
+                              ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                              : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                          } ${day !== d && (perDay.get(d) ?? 0) === 0 ? 'opacity-40' : ''}`}
+                        >
+                          {label.top}{' '}
+                          <span
+                            className={
+                              day === d
+                                ? 'text-stone-300 dark:text-stone-600'
+                                : 'text-stone-400 dark:text-stone-500'
+                            }
+                          >
+                            {label.sub}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    data-tour="view"
+                    className="flex rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5"
+                  >
+                    {(['cal', 'list'] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => {
+                          filters.set({ view: v });
+                          // Leaving the grid also leaves Arrange, rather than
+                          // holding a drag mode open behind a button that is no
+                          // longer on screen to turn it off.
+                          if (v !== 'cal') setArrange(false);
+                        }}
+                        aria-pressed={view === v}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                          view === v
+                            ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                            : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                        }`}
+                      >
+                        {v === 'cal' ? 'Grid' : 'List'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Only when the event has tracks, and only in the grid — the list
+                    is an agenda in time order, with no columns to lay out. */}
+                  {hasTracks && view === 'cal' && (
+                    <div
+                      data-tour="axis"
+                      className="flex rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
+                    >
+                      {(['room', 'track'] as const).map((a) => (
+                        <button
+                          key={a}
+                          type="button"
+                          onClick={() => filters.set({ axis: a })}
+                          aria-pressed={axis === a}
+                          className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                            axis === a
+                              ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                              : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+                          }`}
+                        >
+                          {a === 'room' ? 'Rooms' : 'Tracks'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Everyone needs the board: attendees pitch there, viewers can
                     register interest. It sits with the other ways of looking at the
                     programme, not up with the account chrome.
 
@@ -1368,167 +1314,160 @@ export function SchedulePage() {
                     Gone entirely on an event that has turned the board off: the
                     pitches themselves are untouched, but there is nothing here
                     to walk into. */}
-                {event.pitchesEnabled && (
-                  <Link
-                    data-tour="pitches"
-                    to={`/e/${slug}/proposals`}
-                    aria-label="Pitch a session"
-                    title="Pitch a session"
-                    className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                  >
-                    <PitchIcon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Pitch a session</span>
-                    {openPitchCount > 0 && (
-                      <span className="text-stone-400 dark:text-stone-500">
-                        {openPitchCount}
-                      </span>
-                    )}
-                  </Link>
-                )}
+                  {event.pitchesEnabled && (
+                    <Link
+                      data-tour="pitches"
+                      to={`/e/${slug}/proposals`}
+                      aria-label="Pitch a session"
+                      title="Pitch a session"
+                      className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                    >
+                      <PitchIcon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Pitch a session</span>
+                      {openPitchCount > 0 && (
+                        <span className="text-stone-400 dark:text-stone-500">{openPitchCount}</span>
+                      )}
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Two controls, not a row of chips that scrolled off the right
+            {/* Two controls, not a row of chips that scrolled off the right
               edge: find a session anywhere (the box), or narrow the day on
               screen (the panel). Whatever the panel is currently doing shows
               up beside it as chips you can take off one at a time. */}
-          <div
-            className={`mx-auto max-w-6xl px-3 pb-3 transition-[padding] duration-700 ease-in-out motion-reduce:transition-none sm:px-4 ${
-              folded ? "pt-2" : "pt-0"
-            }`}
-          >
             <div
-              data-tour="filters"
-              className="flex flex-wrap items-center gap-1.5"
+              className={`mx-auto max-w-6xl px-3 pb-3 transition-[padding] duration-700 ease-in-out motion-reduce:transition-none sm:px-4 ${
+                folded ? 'pt-2' : 'pt-0'
+              }`}
             >
-              {/* This row is the whole header once the rest folds away, so it
+              <div data-tour="filters" className="flex flex-wrap items-center gap-1.5">
+                {/* This row is the whole header once the rest folds away, so it
                   carries the way back — and the day it is showing, since the
                   day strip that usually answers that is one of the things put
                   away. The button stays put in both states rather than
                   appearing with the fold: a control that vanishes the moment
                   you press it reads as one that did not work. */}
-              <button
-                type="button"
-                onClick={toggleChrome}
-                aria-expanded={!folded}
-                aria-label={
-                  folded
-                    ? "Show the event bar and the day picker"
-                    : "Fold the event bar and the day picker away"
-                }
-                title={
-                  folded
-                    ? "Show the event bar and the day picker"
-                    : "Fold the event bar and the day picker away"
-                }
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
-              >
-                {/* A calendar and an arrow, at both states and at every width.
+                <button
+                  type="button"
+                  onClick={toggleChrome}
+                  aria-expanded={!folded}
+                  aria-label={
+                    folded
+                      ? 'Show the event bar and the day picker'
+                      : 'Fold the event bar and the day picker away'
+                  }
+                  title={
+                    folded
+                      ? 'Show the event bar and the day picker'
+                      : 'Fold the event bar and the day picker away'
+                  }
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+                >
+                  {/* A calendar and an arrow, at both states and at every width.
                     The folded button used to carry the day as text, which made
                     it a different width in each state and a different width
                     again on a Tuesday than on a Wednesday — a control that
                     moves under the thumb that is reaching for it. The calendar
                     says what comes back; the arrow says which way. */}
-                <CalendarIcon className="h-3.5 w-3.5" />
-                {folded ? (
-                  <ChevronDownIcon className="h-3.5 w-3.5" />
-                ) : (
-                  <ChevronUpIcon className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <SearchBox
-                sessions={bundle.sessions}
-                rooms={bundle.rooms}
-                timezone={timezone}
-                today={today}
-                onOpen={openResult}
-                onSeeAll={(q) =>
-                  navigate(`/e/${slug}/search?q=${encodeURIComponent(q)}`)
-                }
-              />
-              <FilterMenu
-                filters={filters}
-                rooms={bundle.rooms}
-                tags={bundle.tags}
-                tracks={bundle.tracks}
-                hasUntracked={hasUntracked}
-                starredCount={starredIds.size}
-                onSearchEverywhere={searchEverywhere}
-              />
-              {/* Now lives with the filters rather than up in the action row:
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {folded ? (
+                    <ChevronDownIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <ChevronUpIcon className="h-3.5 w-3.5" />
+                  )}
+                </button>
+                <SearchBox
+                  sessions={bundle.sessions}
+                  rooms={bundle.rooms}
+                  timezone={timezone}
+                  today={today}
+                  onOpen={openResult}
+                  onSeeAll={(q) => navigate(`/e/${slug}/search?q=${encodeURIComponent(q)}`)}
+                />
+                <FilterMenu
+                  filters={filters}
+                  rooms={bundle.rooms}
+                  tags={bundle.tags}
+                  tracks={bundle.tracks}
+                  hasUntracked={hasUntracked}
+                  starredCount={starredIds.size}
+                  onSearchEverywhere={searchEverywhere}
+                />
+                {/* Now lives with the filters rather than up in the action row:
                   this row is what survives folding, and jumping to the current
                   time is the thing you reach for mid-scroll. */}
-              <button
-                type="button"
-                data-tour="now"
-                onClick={jumpToNow}
-                className="shrink-0 rounded-lg bg-highlight px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
-              >
-                ● Now {fmtMin(nowMinuteOfDay(timezone))}
-              </button>
-              <ActiveFilters
-                filters={filters}
-                rooms={bundle.rooms}
-                tags={bundle.tags}
-                tracks={bundle.tracks}
-              />
-              {/* Manage / Arrange / Add end this row rather than the one above:
+                <button
+                  type="button"
+                  data-tour="now"
+                  onClick={jumpToNow}
+                  className="shrink-0 rounded-lg bg-highlight px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
+                >
+                  ● Now {fmtMin(nowMinuteOfDay(timezone))}
+                </button>
+                <ActiveFilters
+                  filters={filters}
+                  rooms={bundle.rooms}
+                  tags={bundle.tags}
+                  tracks={bundle.tracks}
+                />
+                {/* Manage / Arrange / Add end this row rather than the one above:
                   the day strip and the view toggles left a wide gap on the right of
                   it, and the organiser's three actions were taking a whole row of
                   their own to sit in. `basis-full` below `sm` puts them back on a
                   line of their own, because on a phone they do not fit beside the
                   search box. Living here also means they survive the fold — Arrange
                   is a thing you reach for mid-scroll, and it used to fold away. */}
-              <div className="flex basis-full items-center justify-end gap-2 sm:ms-auto sm:basis-auto">
-                {role === "admin" && (
-                  <Link
-                    data-tour="manage"
-                    to={`/e/${slug}/admin`}
-                    aria-label="Manage Event"
-                    title="Manage Event"
-                    className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                  >
-                    <SettingsIcon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">Manage Event</span>
-                  </Link>
-                )}
-                {canArrange && (
-                  <button
-                    type="button"
-                    data-tour="arrange"
-                    onClick={() => setArrange((a) => !a)}
-                    aria-pressed={arrange}
-                    aria-label={arrange ? "Done arranging" : "Arrange sessions"}
-                    title={arrange ? "Done arranging" : "Arrange sessions"}
-                    className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
-                      arrange
-                        ? "border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white"
-                        : "border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                    }`}
-                  >
-                    <span aria-hidden="true">{arrange ? "✓" : "↕"}</span>
-                    <span className="hidden sm:inline">
-                      {arrange ? "Done arranging" : "Arrange Sessions"}
-                    </span>
-                  </button>
-                )}
-                {canWrite && (
-                  <button
-                    type="button"
-                    data-tour="add"
-                    onClick={() => setEditing({})}
-                    aria-label="Add session"
-                    title="Add session"
-                    className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
-                  >
-                    <span aria-hidden="true">+</span>
-                    <span className="hidden sm:inline">Add session</span>
-                  </button>
-                )}
+                <div className="flex basis-full items-center justify-end gap-2 sm:ms-auto sm:basis-auto">
+                  {role === 'admin' && (
+                    <Link
+                      data-tour="manage"
+                      to={`/e/${slug}/admin`}
+                      aria-label="Manage Event"
+                      title="Manage Event"
+                      className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
+                    >
+                      <SettingsIcon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Manage Event</span>
+                    </Link>
+                  )}
+                  {canArrange && (
+                    <button
+                      type="button"
+                      data-tour="arrange"
+                      onClick={() => setArrange((a) => !a)}
+                      aria-pressed={arrange}
+                      aria-label={arrange ? 'Done arranging' : 'Arrange sessions'}
+                      title={arrange ? 'Done arranging' : 'Arrange sessions'}
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        arrange
+                          ? 'border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                          : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'
+                      }`}
+                    >
+                      <span aria-hidden="true">{arrange ? '✓' : '↕'}</span>
+                      <span className="hidden sm:inline">
+                        {arrange ? 'Done arranging' : 'Arrange Sessions'}
+                      </span>
+                    </button>
+                  )}
+                  {canWrite && (
+                    <button
+                      type="button"
+                      data-tour="add"
+                      onClick={() => setEditing({})}
+                      aria-label="Add session"
+                      title="Add session"
+                      className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
+                    >
+                      <span aria-hidden="true">+</span>
+                      <span className="hidden sm:inline">Add session</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
           </>
         )}
       </header>
@@ -1572,167 +1511,154 @@ export function SchedulePage() {
           />
         </main>
       ) : (
-      <main
-        ref={mainRef}
-        className="mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col overflow-y-auto px-0 sm:px-4"
-      >
-        {showClashBanner && (
-          <div className="mx-4 mt-2 shrink-0 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-100 dark:bg-amber-950/60 p-3 text-amber-900 dark:text-amber-200 sm:mx-0">
-            <div className="flex items-start gap-2">
-              <div className="min-w-0 flex-1 text-sm">
-                <p className="font-medium">
-                  {clashIds.size} sessions on your agenda clash.
-                </p>
-                <ul className="mt-1 space-y-0.5 text-xs">
-                  {clashPairs.map(([a, b]) => {
-                    const pa = place(a, timezone);
-                    const pb = place(b, timezone);
-                    return (
-                      <li key={`${a.id}-${b.id}`}>
-                        {a.title} ({fmtMin(pa.startMin)}–{fmtMin(pa.endMin)})
-                        overlaps {b.title} ({fmtMin(pb.startMin)}–
-                        {fmtMin(pb.endMin)})
-                      </li>
-                    );
-                  })}
-                </ul>
+        <main
+          ref={mainRef}
+          className="mx-auto flex w-full min-h-0 max-w-6xl flex-1 flex-col overflow-y-auto px-0 sm:px-4"
+        >
+          {showClashBanner && (
+            <div className="mx-4 mt-2 shrink-0 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-100 dark:bg-amber-950/60 p-3 text-amber-900 dark:text-amber-200 sm:mx-0">
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1 text-sm">
+                  <p className="font-medium">{clashIds.size} sessions on your agenda clash.</p>
+                  <ul className="mt-1 space-y-0.5 text-xs">
+                    {clashPairs.map(([a, b]) => {
+                      const pa = place(a, timezone);
+                      const pb = place(b, timezone);
+                      return (
+                        <li key={`${a.id}-${b.id}`}>
+                          {a.title} ({fmtMin(pa.startMin)}–{fmtMin(pa.endMin)}) overlaps {b.title} (
+                          {fmtMin(pb.startMin)}–{fmtMin(pb.endMin)})
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClashDismissed(clashKey)}
+                  aria-label="Dismiss agenda clash warning"
+                  className="-m-1 shrink-0 rounded-sm p-1 text-lg leading-none hover:text-amber-950 dark:hover:text-amber-100"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setClashDismissed(clashKey)}
-                aria-label="Dismiss agenda clash warning"
-                className="-m-1 shrink-0 rounded-sm p-1 text-lg leading-none hover:text-amber-950 dark:hover:text-amber-100"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
             </div>
-          </div>
-        )}
-        {bundle.rooms.length === 0 ? (
-          <EmptyState>
-            No rooms yet.{" "}
-            {role === "admin" ? (
-              <Link to={`/e/${slug}/admin`} className="underline">
-                Add the first one
-              </Link>
-            ) : (
-              "An organiser needs to add one."
-            )}
-          </EmptyState>
-        ) : view === "cal" ? (
-          /* The grid takes the height the header leaves and scrolls inside
-             it. `min-h-0` so this flex item may shrink below its content, and
-             a floor so a banner above cannot squeeze the day to nothing. */
-          <div className="min-h-[16rem] min-w-0 flex-1 sm:pt-2">
-            <Calendar
-              scrollRef={calRef}
-              columns={columns}
-              columnOf={columnOf}
-              axis={axis === "track" ? "Track" : "Room"}
-              moveBetweenColumns={axis === "room"}
-              subtitleOf={axis === "track" ? roomNameOf : undefined}
-              tags={bundle.tags}
-              showOfficialBadge={event.showOfficialBadge}
-              sessions={daySessions}
-              breaks={bundle.breaks}
-              matchedIds={matchedIds}
-              starredIds={starredIds}
-              starCounts={bundle.starCounts}
-              onToggleStar={(s) => void toggleStar(s)}
-              activeId={selected?.id}
-              timezone={timezone}
-              day={day}
-              dayStartMin={event.dayStartMin}
-              dayEndMin={event.dayEndMin}
-              nowMin={nowMin}
-              // Guarded, not just hidden: the toggle disappears when the role
-              // changes but the state it left behind does not.
-              arrange={arrange && canArrange}
-              canEdit={canEdit}
-              nextDay={nextDay}
-              onGoToDay={goToDay}
-              onOpen={openSession}
-              onMove={moveSession}
-            />
-          </div>
-        ) : (
-          <ListView
-            rooms={bundle.rooms}
-            tags={bundle.tags}
-            showOfficialBadge={event.showOfficialBadge}
-            sessions={visibleSessions}
-            breaks={bundle.breaks}
-            contributionCounts={bundle.contributionCounts}
-            starredIds={starredIds}
-            starCounts={bundle.starCounts}
-            clashingIds={clashIds}
-            timezone={timezone}
-            day={day}
-            nextDay={nextDay}
-            nowMin={nowMin}
-            onOpen={openSession}
-            onGoToDay={goToDay}
-            onToggleStar={(s) => void toggleStar(s)}
-          />
-        )}
-
-        {bundle.rooms.length > 0 &&
-          visibleSessions.length === 0 &&
-          otherDayMatches.length === 0 && (
+          )}
+          {bundle.rooms.length === 0 ? (
             <EmptyState>
-              {filters.active ? (
-                <>
-                  No sessions match.{" "}
-                  <button
-                    type="button"
-                    className="underline"
-                    onClick={filters.clear}
-                  >
-                    Clear filters
-                  </button>
-                </>
+              No rooms yet.{' '}
+              {role === 'admin' ? (
+                <Link to={`/e/${slug}/admin`} className="underline">
+                  Add the first one
+                </Link>
               ) : (
-                "Nothing scheduled on this day yet."
+                'An organiser needs to add one.'
               )}
             </EmptyState>
+          ) : view === 'cal' ? (
+            /* The grid takes the height the header leaves and scrolls inside
+             it. `min-h-0` so this flex item may shrink below its content, and
+             a floor so a banner above cannot squeeze the day to nothing. */
+            <div className="min-h-[16rem] min-w-0 flex-1 sm:pt-2">
+              <Calendar
+                scrollRef={calRef}
+                columns={columns}
+                columnOf={columnOf}
+                axis={axis === 'track' ? 'Track' : 'Room'}
+                moveBetweenColumns={axis === 'room'}
+                subtitleOf={axis === 'track' ? roomNameOf : undefined}
+                tags={bundle.tags}
+                showOfficialBadge={event.showOfficialBadge}
+                sessions={daySessions}
+                breaks={bundle.breaks}
+                matchedIds={matchedIds}
+                starredIds={starredIds}
+                starCounts={bundle.starCounts}
+                onToggleStar={(s) => void toggleStar(s)}
+                activeId={selected?.id}
+                timezone={timezone}
+                day={day}
+                dayStartMin={event.dayStartMin}
+                dayEndMin={event.dayEndMin}
+                nowMin={nowMin}
+                // Guarded, not just hidden: the toggle disappears when the role
+                // changes but the state it left behind does not.
+                arrange={arrange && canArrange}
+                canEdit={canEdit}
+                nextDay={nextDay}
+                onGoToDay={goToDay}
+                onOpen={openSession}
+                onMove={moveSession}
+              />
+            </div>
+          ) : (
+            <ListView
+              rooms={bundle.rooms}
+              tags={bundle.tags}
+              showOfficialBadge={event.showOfficialBadge}
+              sessions={visibleSessions}
+              breaks={bundle.breaks}
+              contributionCounts={bundle.contributionCounts}
+              starredIds={starredIds}
+              starCounts={bundle.starCounts}
+              clashingIds={clashIds}
+              timezone={timezone}
+              day={day}
+              nextDay={nextDay}
+              nowMin={nowMin}
+              onOpen={openSession}
+              onGoToDay={goToDay}
+              onToggleStar={(s) => void toggleStar(s)}
+            />
           )}
 
-        {otherDayMatches.length > 0 && (
-          <section className="px-4 pb-24 pt-2 sm:px-0">
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-              {visibleSessions.length === 0
-                ? `${otherDayMatches.length} match${
-                    otherDayMatches.length > 1 ? "es" : ""
-                  } on other days`
-                : `${otherDayMatches.length} more on other days`}
-            </h2>
-            <ul className="space-y-2">
-              {otherDayMatches.map(({ session, startMin, endMin, date }) => {
-                const label = dayLabel(date, today);
-                return (
-                  <li key={session.id}>
-                    <button
-                      type="button"
-                      onClick={() => openResult(session)}
-                      className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-start shadow-xs hover:shadow-sm"
-                    >
-                      <div className="truncate text-sm font-semibold">
-                        {session.title}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">
-                        {label.top} {label.sub} · {fmtMin(startMin)}–
-                        {fmtMin(endMin)}
-                        {session.speakers.length > 0 &&
-                          ` · ${speakerLine(session.speakers)}`}
-                      </div>
+          {bundle.rooms.length > 0 &&
+            visibleSessions.length === 0 &&
+            otherDayMatches.length === 0 && (
+              <EmptyState>
+                {filters.active ? (
+                  <>
+                    No sessions match.{' '}
+                    <button type="button" className="underline" onClick={filters.clear}>
+                      Clear filters
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-      </main>
+                  </>
+                ) : (
+                  'Nothing scheduled on this day yet.'
+                )}
+              </EmptyState>
+            )}
+
+          {otherDayMatches.length > 0 && (
+            <section className="px-4 pb-24 pt-2 sm:px-0">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                {visibleSessions.length === 0
+                  ? `${plural(otherDayMatches.length, { one: 'match', other: 'matches' })} on other days`
+                  : `${otherDayMatches.length} more on other days`}
+              </h2>
+              <ul className="space-y-2">
+                {otherDayMatches.map(({ session, startMin, endMin, date }) => {
+                  const label = dayLabel(date, today);
+                  return (
+                    <li key={session.id}>
+                      <button
+                        type="button"
+                        onClick={() => openResult(session)}
+                        className="block w-full rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-3 text-start shadow-xs hover:shadow-sm"
+                      >
+                        <div className="truncate text-sm font-semibold">{session.title}</div>
+                        <div className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">
+                          {label.top} {label.sub} · {fmtMin(startMin)}–{fmtMin(endMin)}
+                          {session.speakers.length > 0 && ` · ${speakerLine(session.speakers)}`}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </main>
       )}
 
       {selected && !fullPage && (
@@ -1765,39 +1691,39 @@ export function SchedulePage() {
 
       {editing && (
         <Suspense fallback={null}>
-        <SessionModal
-          session={editing.session}
-          rooms={bundle.rooms}
-          tags={bundle.tags}
-          formats={bundle.formats}
-          tracks={bundle.tracks}
-          people={bundle.people}
-          role={role}
-          canCreditOthers={can(bundle.permissions, role, 'session.credit_others')}
-          timezone={timezone}
-          days={days}
-          dayLabels={dayLabels}
-          defaultDay={day}
-          dayStartMin={event.dayStartMin}
-          dayEndMin={event.dayEndMin}
-          saving={saving}
-          onCancel={() => setEditing(null)}
-          onSave={(body, opts) => void saveSession(body, opts)}
-          canMove={canMove(editing.session)}
-          onDelete={
-            editing.session && canDelete(editing.session)
-              ? () => void deleteSession(editing.session as SessionDto)
-              : undefined
-          }
-          onUnlink={
-            editing.session?.seriesId
-              ? () => void unlinkSession(editing.session as SessionDto)
-              : undefined
-          }
-          onLinkExisting={
-            editing.session ? () => setLinkingExisting(editing.session as SessionDto) : undefined
-          }
-        />
+          <SessionModal
+            session={editing.session}
+            rooms={bundle.rooms}
+            tags={bundle.tags}
+            formats={bundle.formats}
+            tracks={bundle.tracks}
+            people={bundle.people}
+            role={role}
+            canCreditOthers={can(bundle.permissions, role, 'session.credit_others')}
+            timezone={timezone}
+            days={days}
+            dayLabels={dayLabels}
+            defaultDay={day}
+            dayStartMin={event.dayStartMin}
+            dayEndMin={event.dayEndMin}
+            saving={saving}
+            onCancel={() => setEditing(null)}
+            onSave={(body, opts) => void saveSession(body, opts)}
+            canMove={canMove(editing.session)}
+            onDelete={
+              editing.session && canDelete(editing.session)
+                ? () => void deleteSession(editing.session as SessionDto)
+                : undefined
+            }
+            onUnlink={
+              editing.session?.seriesId
+                ? () => void unlinkSession(editing.session as SessionDto)
+                : undefined
+            }
+            onLinkExisting={
+              editing.session ? () => setLinkingExisting(editing.session as SessionDto) : undefined
+            }
+          />
         </Suspense>
       )}
 
@@ -1810,7 +1736,7 @@ export function SchedulePage() {
           reportError={reportError}
           onLinked={(sessions) => {
             for (const updated of sessions) {
-              data.apply({ type: "session.updated", entity: updated });
+              data.apply({ type: 'session.updated', entity: updated });
             }
             // Reopen the editor on the fresh anchor so its linked controls appear.
             const anchor = sessions.find((s) => s.id === linkingExisting.id);
@@ -1823,8 +1749,8 @@ export function SchedulePage() {
 
       {debugFold && (
         <div className="pointer-events-none fixed bottom-2 start-2 end-2 z-50 rounded-lg bg-stone-900/90 px-2 py-1 font-mono text-[10px] leading-tight text-stone-100">
-          {view} · {foldStats || "no scroller yet"} · folded={String(folded)}{" "}
-          auto={String(autoFolded)} mode={chromeMode}
+          {view} · {foldStats || 'no scroller yet'} · folded={String(folded)} auto=
+          {String(autoFolded)} mode={chromeMode}
         </div>
       )}
 
@@ -1841,12 +1767,8 @@ export function SchedulePage() {
           aria-label="Back to the top of the day"
           title="Back to the top of the day"
           className={`fixed end-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-lg transition-all duration-300 hover:border-stone-400 hover:text-stone-900 motion-reduce:transition-none dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500 dark:hover:text-stone-100 ${
-            arrange ? "bottom-16" : "bottom-4"
-          } ${
-            pastTop
-              ? "opacity-100"
-              : "pointer-events-none translate-y-2 opacity-0"
-          }`}
+            arrange ? 'bottom-16' : 'bottom-4'
+          } ${pastTop ? 'opacity-100' : 'pointer-events-none translate-y-2 opacity-0'}`}
         >
           <span aria-hidden="true">↑</span>
         </button>
@@ -1867,9 +1789,7 @@ export function SchedulePage() {
         />
       )}
 
-      {tourOpen && (
-        <Tour steps={tourSteps} onClose={closeTour} />
-      )}
+      {tourOpen && <Tour steps={tourSteps} onClose={closeTour} />}
     </div>
   );
 }
@@ -1886,7 +1806,7 @@ function CalendarExportModal({
   starredCount: number;
   /** Which half the menu asked for. Both are always shown — they are two
    *  answers to the same question — but the one you picked is scrolled to. */
-  section: "download" | "subscribe";
+  section: 'download' | 'subscribe';
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -1906,13 +1826,11 @@ function CalendarExportModal({
         const { token } = await api.calendarToken(slug);
         setSubUrl(
           `${window.location.origin}${base}?token=${encodeURIComponent(token)}${
-            mine ? "&mine=1" : ""
+            mine ? '&mine=1' : ''
           }`,
         );
       } catch (err) {
-        toast.show(
-          errorText(err, "Could not create a subscription link"),
-        );
+        toast.show(errorText(err, 'Could not create a subscription link'));
       } finally {
         setLoading(false);
       }
@@ -1925,27 +1843,25 @@ function CalendarExportModal({
     try {
       // Rejects on insecure origins — fall back to a manual selection.
       await navigator.clipboard.writeText(subUrl);
-      toast.show("Link copied");
+      toast.show('Link copied');
     } catch {
       inputRef.current?.select();
-      toast.show("Press Ctrl/Cmd+C to copy the selected link");
+      toast.show('Press Ctrl/Cmd+C to copy the selected link');
     }
   }, [subUrl, toast]);
 
   // The modal is short enough to show both halves at once on a desktop; on a
   // phone it is not, so the half the menu asked for is brought into view.
   useEffect(() => {
-    const target = section === "subscribe" ? subscribeRef : downloadRef;
-    target.current?.scrollIntoView({ block: "nearest" });
+    const target = section === 'subscribe' ? subscribeRef : downloadRef;
+    target.current?.scrollIntoView({ block: 'nearest' });
   }, [section]);
 
   return (
     <Modal title="Calendar" onClose={onClose}>
       <div className="space-y-4 text-sm">
         <div ref={downloadRef}>
-          <p className="font-medium text-stone-800 dark:text-stone-200">
-            Download
-          </p>
+          <p className="font-medium text-stone-800 dark:text-stone-200">Download</p>
           <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
             A one-off snapshot you can import into any calendar app.
           </p>
@@ -1973,16 +1889,11 @@ function CalendarExportModal({
           </div>
         </div>
 
-        <div
-          ref={subscribeRef}
-          className="border-t border-stone-200 dark:border-stone-700 pt-4"
-        >
-          <p className="font-medium text-stone-800 dark:text-stone-200">
-            Subscribe
-          </p>
+        <div ref={subscribeRef} className="border-t border-stone-200 dark:border-stone-700 pt-4">
+          <p className="font-medium text-stone-800 dark:text-stone-200">Subscribe</p>
           <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-            A live link your calendar app refreshes on its own. It is personal
-            to you — anyone who has it can read the schedule.
+            A live link your calendar app refreshes on its own. It is personal to you — anyone who
+            has it can read the schedule.
           </p>
           {subUrl ? (
             <div className="flex gap-2">
@@ -2001,11 +1912,8 @@ function CalendarExportModal({
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <PrimaryButton
-                onClick={() => void subscribe(false)}
-                disabled={loading}
-              >
-                {loading ? "Creating…" : "Link to the whole schedule"}
+              <PrimaryButton onClick={() => void subscribe(false)} disabled={loading}>
+                {loading ? 'Creating…' : 'Link to the whole schedule'}
               </PrimaryButton>
               <SecondaryButton
                 onClick={() => void subscribe(true)}

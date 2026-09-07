@@ -15,7 +15,10 @@ import { describe, expect, it } from 'vitest';
  * number is the thing that matters to somebody reading a hint on a phone in
  * daylight.
  */
-const ui = readFileSync(join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui.tsx'), 'utf8');
+const ui = readFileSync(
+  join(import.meta.dirname, '..', 'web', 'src', 'components', 'ui.tsx'),
+  'utf8',
+);
 
 /** Tailwind v4 stone, as published: [L, C, H]. */
 const STONE: Record<number, [number, number, number]> = {
@@ -100,23 +103,43 @@ describe('form text clears AA on the surface it sits on', () => {
   it('placeholders are readable — the old pair failed outright', () => {
     // stone-400 on white was 2.59, and stone-500 on stone-900 was 3.64:
     // both under 4.5, in the one piece of text that tells you what to type.
-    const input = ui.slice(ui.indexOf('export const TextInput'), ui.indexOf('export const TextArea'));
-    const area = ui.slice(ui.indexOf('export const TextArea'), ui.indexOf('export function ControlAdornment'));
-    for (const [what, src] of [['TextInput', input], ['TextArea', area]] as const) {
-      expect(contrast(step(src, 'placeholder:text'), null), `${what} light`).toBeGreaterThanOrEqual(TEXT);
-      expect(contrast(step(src, 'dark:placeholder:text'), 900), `${what} dark`).toBeGreaterThanOrEqual(TEXT);
+    const input = ui.slice(
+      ui.indexOf('export const TextInput'),
+      ui.indexOf('export const TextArea'),
+    );
+    const area = ui.slice(
+      ui.indexOf('export const TextArea'),
+      ui.indexOf('export function ControlAdornment'),
+    );
+    for (const [what, src] of [
+      ['TextInput', input],
+      ['TextArea', area],
+    ] as const) {
+      expect(contrast(step(src, 'placeholder:text'), null), `${what} light`).toBeGreaterThanOrEqual(
+        TEXT,
+      );
+      expect(
+        contrast(step(src, 'dark:placeholder:text'), 900),
+        `${what} dark`,
+      ).toBeGreaterThanOrEqual(TEXT);
     }
   });
 
   it('labels clear AA in both themes', () => {
-    const field = ui.slice(ui.indexOf('export function Field'), ui.indexOf('export function FieldError'));
+    const field = ui.slice(
+      ui.indexOf('export function Field'),
+      ui.indexOf('export function FieldError'),
+    );
     const label = field.slice(field.indexOf('<label'), field.indexOf('</label>'));
     expect(contrast(step(label, 'text'), null)).toBeGreaterThanOrEqual(TEXT);
     expect(contrast(step(label, 'dark:text'), 900)).toBeGreaterThanOrEqual(TEXT);
   });
 
   it('the field border clears the 3:1 floor for a non-text control', () => {
-    const shell = ui.slice(ui.indexOf('export function ControlShell'), ui.indexOf('export const TextInput'));
+    const shell = ui.slice(
+      ui.indexOf('export function ControlShell'),
+      ui.indexOf('export const TextInput'),
+    );
     const border = shell.slice(shell.indexOf('border-stone'));
     expect(contrast(step(border, 'border'), null)).toBeGreaterThanOrEqual(UI);
     expect(contrast(500, 900)).toBeGreaterThanOrEqual(UI); // dark side, same step
@@ -143,7 +166,7 @@ describe('a field is a visible box, not just a border', () => {
   );
 
   it('fills the field a step off the panel behind it, in both themes', () => {
-    const surface = ui.slice(ui.indexOf("export const fieldSurfaceClass ="));
+    const surface = ui.slice(ui.indexOf('export const fieldSurfaceClass ='));
     const light = step(surface.slice(0, surface.indexOf(';')), 'bg');
     const dark = step(surface.slice(0, surface.indexOf(';')), 'dark:bg');
 

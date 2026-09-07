@@ -191,7 +191,10 @@ describe('blank passwords are filled in', () => {
       seedEvent(harness.db);
       admin = agentFor(harness);
       await admin.get('/api/me').expect(200);
-      await admin.post('/api/e/testconf/auth').send({ role: 'admin', displayName: nextUsername() }).expect(200);
+      await admin
+        .post('/api/e/testconf/auth')
+        .send({ role: 'admin', displayName: nextUsername() })
+        .expect(200);
     });
 
     it('gives a newly created event real passwords, not the published ones', async () => {
@@ -203,7 +206,10 @@ describe('blank passwords are filled in', () => {
       // And that event's gate is a password prompt, not a role picker.
       const visitor = agentFor(harness);
       await visitor.get('/api/me').expect(200);
-      await visitor.post('/api/e/demo-conf/auth').send({ role: 'admin', displayName: nextUsername() }).expect(400);
+      await visitor
+        .post('/api/e/demo-conf/auth')
+        .send({ role: 'admin', displayName: nextUsername() })
+        .expect(400);
     });
 
     it('restores the published passwords when the demo fixture is recreated', async () => {

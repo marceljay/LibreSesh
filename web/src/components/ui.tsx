@@ -249,9 +249,7 @@ export function ControlShell({
         }
       }}
       className={`flex min-h-[2.375rem] flex-wrap items-center gap-1.5 rounded-lg border ${fieldSurfaceClass} px-3 py-1.5 transition-colors ${fieldFocusRing} ${
-        isInvalid
-          ? 'border-red-500 dark:border-red-500'
-          : 'border-stone-500 dark:border-stone-500'
+        isInvalid ? 'border-red-500 dark:border-red-500' : 'border-stone-500 dark:border-stone-500'
       } ${disabled ? 'opacity-60' : ''} ${className}`}
     >
       {children}
@@ -375,7 +373,13 @@ export const PasswordInput = forwardRef<
 });
 
 /** Vertically stacked form controls, evenly spaced. */
-export function FormStack({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function FormStack({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return <div className={`flex flex-col gap-3 ${className}`}>{children}</div>;
 }
 
@@ -997,9 +1001,7 @@ export function Section({
     <section
       className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900 ${className}`}
     >
-      <div
-        className={`flex flex-wrap items-start gap-3 ${children ? 'mb-3' : ''}`}
-      >
+      <div className={`flex flex-wrap items-start gap-3 ${children ? 'mb-3' : ''}`}>
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">{title}</h2>
           {description && (
@@ -1052,7 +1054,13 @@ export function Toggle({
 /** Why the last attempt did not go through. Sits in the modal footer beside the
  *  button you just pressed, rather than at the top of a form you have scrolled
  *  away from. */
-export function FormError({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function FormError({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <p
       role="alert"
@@ -1171,8 +1179,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   } | null>(null);
 
   const ask = useCallback(
-    (request: ConfirmRequest) =>
-      new Promise<boolean>((settle) => setPending({ request, settle })),
+    (request: ConfirmRequest) => new Promise<boolean>((settle) => setPending({ request, settle })),
     [],
   );
 
@@ -1189,23 +1196,23 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       {pending && (
         <Suspense fallback={null}>
-        <LazyModal
-          title={pending.request.title}
-          onClose={() => close(false)}
-          onSubmit={() => close(true)}
-          footer={
-            <>
-              <SecondaryButton onClick={() => close(false)}>Cancel</SecondaryButton>
-              {danger ? (
-                <DangerButton type="submit">{label}</DangerButton>
-              ) : (
-                <PrimaryButton type="submit">{label}</PrimaryButton>
-              )}
-            </>
-          }
-        >
-          <p className="text-sm text-stone-600 dark:text-stone-300">{pending.request.body}</p>
-        </LazyModal>
+          <LazyModal
+            title={pending.request.title}
+            onClose={() => close(false)}
+            onSubmit={() => close(true)}
+            footer={
+              <>
+                <SecondaryButton onClick={() => close(false)}>Cancel</SecondaryButton>
+                {danger ? (
+                  <DangerButton type="submit">{label}</DangerButton>
+                ) : (
+                  <PrimaryButton type="submit">{label}</PrimaryButton>
+                )}
+              </>
+            }
+          >
+            <p className="text-sm text-stone-600 dark:text-stone-300">{pending.request.body}</p>
+          </LazyModal>
         </Suspense>
       )}
     </ConfirmContext.Provider>
@@ -1216,7 +1223,9 @@ export const useConfirm = (): ((request: ConfirmRequest) => Promise<boolean>) =>
   useContext(ConfirmContext);
 
 export function EmptyState({ children }: { children: ReactNode }) {
-  return <div className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">{children}</div>;
+  return (
+    <div className="py-16 text-center text-sm text-stone-500 dark:text-stone-400">{children}</div>
+  );
 }
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {

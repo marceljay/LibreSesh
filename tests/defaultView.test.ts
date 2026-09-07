@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { actorWithRole, agentFor, makeHarness, seedEvent, type Harness, nextUsername } from './helpers.js';
+import {
+  actorWithRole,
+  agentFor,
+  makeHarness,
+  seedEvent,
+  type Harness,
+  nextUsername,
+} from './helpers.js';
 
 /**
  * Where a schedule opens for someone who has not picked a view.
@@ -84,7 +91,10 @@ describe('an event says which view it opens in', () => {
         adminPassword: 'admin22',
       })
       .expect(201);
-    await admin.post('/api/e/testconf-copy/auth').send({ password: 'admin22', displayName: nextUsername() }).expect(200);
+    await admin
+      .post('/api/e/testconf-copy/auth')
+      .send({ password: 'admin22', displayName: nextUsername() })
+      .expect(200);
     const res = await admin.get('/api/e/testconf-copy/bundle').expect(200);
     expect(res.body.event.defaultView).toBe('cal');
   });
@@ -113,7 +123,10 @@ describe('an event says which view it opens in', () => {
         rooms: [{ name: 'Main hall' }],
       })
       .expect(201);
-    await admin.post('/api/e/importedconf/auth').send({ password: 'admin22', displayName: nextUsername() }).expect(200);
+    await admin
+      .post('/api/e/importedconf/auth')
+      .send({ password: 'admin22', displayName: nextUsername() })
+      .expect(200);
     const res = await admin.get('/api/e/importedconf/bundle').expect(200);
     expect(res.body.event.defaultView).toBe('cal');
   });
@@ -137,7 +150,10 @@ describe('an event says which view it opens in', () => {
         rooms: [{ name: 'Main hall' }],
       })
       .expect(201);
-    await admin.post('/api/e/quietconf/auth').send({ password: 'admin22', displayName: nextUsername() }).expect(200);
+    await admin
+      .post('/api/e/quietconf/auth')
+      .send({ password: 'admin22', displayName: nextUsername() })
+      .expect(200);
     const res = await admin.get('/api/e/quietconf/bundle').expect(200);
     expect(res.body.event.defaultView).toBe('list');
   });
@@ -150,7 +166,7 @@ describe('the schedule reads the default off the event', () => {
   );
 
   it('no longer guesses from the width of the window', () => {
-    expect(schedule).toContain('filters.view ?? event?.defaultView ?? "list"');
+    expect(schedule).toContain("filters.view ?? event?.defaultView ?? 'list'");
     expect(schedule).not.toContain('window.innerWidth < 640');
   });
 });

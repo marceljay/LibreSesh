@@ -123,9 +123,7 @@ export function SessionDetail({
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
   const [posting, setPosting] = useState(false);
-  const [expandedKinds, setExpandedKinds] = useState<
-    Partial<Record<ContributionKind, true>>
-  >({});
+  const [expandedKinds, setExpandedKinds] = useState<Partial<Record<ContributionKind, true>>>({});
 
   // Collapse again when pointed at a different session: one component instance
   // serves every session, so without this an expanded Notes list would stay
@@ -240,9 +238,7 @@ export function SessionDetail({
             return format ? <FormatLabel color={format.color}>{format.name}</FormatLabel> : null;
           })()}
         </div>
-        <p
-          className={`mt-1 text-stone-500 dark:text-stone-400 ${page ? 'text-base' : 'text-sm'}`}
-        >
+        <p className={`mt-1 text-stone-500 dark:text-stone-400 ${page ? 'text-base' : 'text-sm'}`}>
           {dayText} · {fmtMin(startMin)}–{fmtMin(endMin)} · {room?.name ?? 'unknown room'} ·{' '}
           {/* One link each: a name on the bill is a person with a profile,
               and a panel of four is four people to read about. */}
@@ -331,9 +327,7 @@ export function SessionDetail({
 
   const contributionLists =
     contributions === undefined ? (
-      <p className="mb-3 text-sm text-stone-400 dark:text-stone-500">
-        Loading contributions…
-      </p>
+      <p className="mb-3 text-sm text-stone-400 dark:text-stone-500">Loading contributions…</p>
     ) : (
       <>
         {KINDS.map((k) => {
@@ -346,9 +340,7 @@ export function SessionDetail({
           // rows it reveals will appear.
           const expanded = expandedKinds[k] === true;
           const hiddenCount =
-            expanded || collapseAt === null
-              ? 0
-              : Math.max(0, items.length - collapseAt);
+            expanded || collapseAt === null ? 0 : Math.max(0, items.length - collapseAt);
           const shown = hiddenCount > 0 ? items.slice(hiddenCount) : items;
           return (
             <div key={k} className="mb-3">
@@ -410,7 +402,9 @@ export function SessionDetail({
                         {role === 'admin' && !archived && (
                           <IconButton
                             onClick={() => onToggleHidden(c)}
-                            aria-label={c.hidden ? 'Unhide this contribution' : 'Hide this contribution'}
+                            aria-label={
+                              c.hidden ? 'Unhide this contribution' : 'Hide this contribution'
+                            }
                             title={c.hidden ? 'Unhide' : 'Hide'}
                           >
                             {c.hidden ? <UnhideIcon /> : <HideIcon />}
@@ -448,8 +442,7 @@ export function SessionDetail({
     </p>
   ) : !canContribute ? (
     <p className="rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2 text-xs text-stone-500 dark:text-stone-400">
-      Enter the {userLabel} password (tap your name, top right) to add notes, links and
-      questions.
+      Enter the {userLabel} password (tap your name, top right) to add notes, links and questions.
     </p>
   ) : (
     <div className="rounded-xl border border-stone-200 dark:border-stone-700 p-3">

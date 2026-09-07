@@ -60,7 +60,11 @@ export async function deriveKey(
   return scrypt(passphrase.normalize('NFKC'), salt, KEY_BYTES, { ...params, maxmem: MAX_MEM });
 }
 
-export function buildHeader(salt: Buffer, iv: Buffer, params: ScryptParams = SCRYPT_PARAMS): Buffer {
+export function buildHeader(
+  salt: Buffer,
+  iv: Buffer,
+  params: ScryptParams = SCRYPT_PARAMS,
+): Buffer {
   const header = Buffer.alloc(HEADER_BYTES);
   BACKUP_MAGIC.copy(header, 0);
   header.writeUInt32BE(params.N, 8);

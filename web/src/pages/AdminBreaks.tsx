@@ -16,7 +16,13 @@ import {
   Section,
   TextInput,
 } from '../components/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 
 const EVERY_DAY = '';
 
@@ -309,21 +315,21 @@ function BreakEditor({
         <FormRow>
           <Field label="From">
             <TimeField
-                aria-label="From"
-                value={draft.start}
-                onChange={(v) => setDraft({ ...draft, start: v })}
-                min={dayStartMin}
-                max={dayEndMin}
-              />
+              aria-label="From"
+              value={draft.start}
+              onChange={(v) => setDraft({ ...draft, start: v })}
+              min={dayStartMin}
+              max={dayEndMin}
+            />
           </Field>
           <Field label="To">
             <TimeField
-                aria-label="To"
-                value={draft.end}
-                onChange={(v) => setDraft({ ...draft, end: v })}
-                min={dayStartMin}
-                max={dayEndMin}
-              />
+              aria-label="To"
+              value={draft.end}
+              onChange={(v) => setDraft({ ...draft, end: v })}
+              min={dayStartMin}
+              max={dayEndMin}
+            />
           </Field>
           <div className="min-w-40 flex-1">
             <Field label="Day">

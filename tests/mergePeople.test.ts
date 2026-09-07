@@ -196,7 +196,10 @@ describe('merging people', () => {
       await dupe.delete(`/api/e/testconf/contributions/${note}`).expect(401);
       await user.delete(`/api/e/testconf/contributions/${note}`).expect(204);
       // Re-entering works — the identity was signed out, not destroyed.
-      await dupe.post('/api/e/testconf/auth').send({ password: 'user-pw', displayName: nextUsername() }).expect(200);
+      await dupe
+        .post('/api/e/testconf/auth')
+        .send({ password: 'user-pw', displayName: nextUsername() })
+        .expect(200);
       const back = (await dupe.get('/api/e/testconf/bundle').expect(200)).body;
       expect(back.starredSessionIds).toEqual([]);
     });
@@ -215,7 +218,10 @@ describe('merging people', () => {
       const myProfileId = mine.people.find((p: { isMine: boolean }) => p.isMine).id as number;
 
       // The losing identity also lives at another event, with a star there.
-      await dupe.post('/api/e/otherconf/auth').send({ password: 'user-pw', displayName: nextUsername() }).expect(200);
+      await dupe
+        .post('/api/e/otherconf/auth')
+        .send({ password: 'user-pw', displayName: nextUsername() })
+        .expect(200);
       const otherAdmin = await actorWithRole(harness, 'otherconf', 'admin-pw');
       const otherRoom = (
         await otherAdmin.post('/api/e/otherconf/rooms').send({ name: 'Side room' }).expect(201)

@@ -90,11 +90,7 @@ function offsetMinutes(instant: Date, timeZone: string): number {
  * occurrence; skipped times (spring forward) resolve to the instant after the
  * gap — both acceptable for scheduling.
  */
-export function zonedTimeToUtc(
-  dateStr: string,
-  minuteOfDay: number,
-  timeZone: string,
-): Date {
+export function zonedTimeToUtc(dateStr: string, minuteOfDay: number, timeZone: string): Date {
   const [y, m, d] = dateStr.split('-').map(Number) as [number, number, number];
   const hour = Math.floor(minuteOfDay / 60);
   const minute = minuteOfDay % 60;

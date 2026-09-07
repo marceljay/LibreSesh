@@ -80,11 +80,15 @@ describe('the header folds once you are into the day', () => {
     // Every height the animation passes through moves the scroll position, and
     // none of those movements are the reader scrolling.
     expect(schedule).toMatch(/if \(foldInFlight\.current\) return;/);
-    expect(schedule).toMatch(/foldInFlight\.current = false;\n\s*setFoldMoving\(false\);\n\s*readFold\(\);/);
+    expect(schedule).toMatch(
+      /foldInFlight\.current = false;\n\s*setFoldMoving\(false\);\n\s*readFold\(\);/,
+    );
   });
 
   it('keeps a way back that does not cost you your place in the day', () => {
-    expect(schedule).toMatch(/aria-label=\{\n\s*folded\n\s*\? "Show the event bar and the day picker"/);
+    expect(schedule).toMatch(
+      /aria-label=\{\n\s*folded\n\s*\? 'Show the event bar and the day picker'/,
+    );
     expect(schedule).toMatch(/onClick=\{toggleChrome\}/);
     // The toggle is in the row that never folds, and is rendered in both
     // states: a control that disappears the moment you press it reads as a
@@ -128,9 +132,9 @@ describe('the header folds once you are into the day', () => {
     // The profile menu drops out of the event bar, so `overflow-hidden` can
     // only be on while the row is moving or away — permanently, it would cut
     // the menu off at the bar's bottom edge.
-    expect(schedule).toMatch(/folded \|\| foldMoving \? "overflow-hidden"/);
+    expect(schedule).toMatch(/folded \|\| foldMoving \? 'overflow-hidden'/);
     // And a row that has finished leaving is not a tab stop.
-    expect(schedule).toMatch(/folded && !foldMoving \? " invisible"/);
+    expect(schedule).toMatch(/folded && !foldMoving \? ' invisible'/);
   });
 
   it('holds still for anyone who asked for less motion', () => {
@@ -144,7 +148,7 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/aria-label="Back to the top of the day"/);
     // Scrolled, not jumped: the same scroll the fold listens to, so the header
     // comes back on the way up rather than blinking into place at the top.
-    expect(schedule).toMatch(/scrollTo\(\{ top: 0, behavior: "smooth" \}\)/);
+    expect(schedule).toMatch(/scrollTo\(\{ top: 0, behavior: 'smooth' \}\)/);
     // Its own rule, so it still shows on a day too short to fold.
     expect(schedule).toMatch(/setPastTop\(top > TOP_BUTTON_AT\)/);
     // Out of the way means out of reach, not merely invisible.
@@ -188,13 +192,9 @@ describe('the header folds once you are into the day', () => {
     // moved, in one view or the other. Which one has the overflow depends on
     // the day's length, the header's height and whether a banner is up.
     expect(schedule).toMatch(/el\.scrollHeight > el\.clientHeight \+ 1/);
-    expect(schedule).toMatch(
-      /const boxes = \[calRef\.current, mainRef\.current\]/,
-    );
+    expect(schedule).toMatch(/const boxes = \[calRef\.current, mainRef\.current\]/);
     // And both are listened to: a listener on the wrong box hears nothing.
-    expect(schedule).toMatch(
-      /for \(const el of boxes\) el\.addEventListener\("scroll", readFold/,
-    );
+    expect(schedule).toMatch(/for \(const el of boxes\) el\.addEventListener\('scroll', readFold/);
   });
 
   it('pins the folding rows to the width that is there', () => {
@@ -234,7 +234,9 @@ describe('a rail says when the line goes on', () => {
     // inside that box sits them below the chips they belong to. The space
     // under the rail is the caller's, outside it.
     expect(rail).toContain('absolute inset-y-0');
-    expect(schedule).toMatch(/<div className="mx-auto max-w-6xl pb-2">\n\s*<Rail label="Weeks" className="gap-1.5 px-4">/);
+    expect(schedule).toMatch(
+      /<div className="mx-auto max-w-6xl pb-2">\n\s*<Rail label="Weeks" className="gap-1.5 px-4">/,
+    );
   });
 
   it('draws its arrows rather than setting them as text', () => {
@@ -266,5 +268,4 @@ describe('a rail says when the line goes on', () => {
     expect(calendar).toContain('absolute bottom-0.5 end-2');
     expect(calendar).toMatch(/columns\.length > 2 &&[\s\S]{0,80}>= 44/);
   });
-
 });

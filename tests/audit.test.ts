@@ -177,7 +177,9 @@ describe('the audit log, read back', () => {
       expect(count()).toBe(10);
       // The survivors are the *newest* ten, which is the whole point.
       const kept = harness.db
-        .prepare<[number], { id: number }>('SELECT id FROM audit WHERE event_id = ? ORDER BY id DESC')
+        .prepare<[number], { id: number }>(
+          'SELECT id FROM audit WHERE event_id = ? ORDER BY id DESC',
+        )
         .all(eventId) as { id: number }[];
       expect(kept[0]?.id).toBe(newest.id);
       expect(kept).toHaveLength(10);
@@ -227,7 +229,10 @@ describe('the audit log, read back', () => {
       // Subsequent writes accumulate against the slack rather than each paying
       // for a DELETE, so the log sits a little above the cap between prunes.
       for (let i = 0; i < 5; i += 1) {
-        await admin.post('/api/e/testconf/tags').send({ name: `Tag ${i}` }).expect(201);
+        await admin
+          .post('/api/e/testconf/tags')
+          .send({ name: `Tag ${i}` })
+          .expect(201);
       }
       expect(count()).toBeGreaterThan(100);
       expect(count()).toBeLessThan(200);

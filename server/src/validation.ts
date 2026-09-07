@@ -62,7 +62,9 @@ const ROLE_OF_FIELD = {
 } as const;
 
 /** Names the first colliding pair, or undefined when they are all distinct. */
-export function collidingPasswords(v: PasswordTrio): [keyof typeof ROLE_OF_FIELD, keyof typeof ROLE_OF_FIELD] | undefined {
+export function collidingPasswords(
+  v: PasswordTrio,
+): [keyof typeof ROLE_OF_FIELD, keyof typeof ROLE_OF_FIELD] | undefined {
   const fields = ['viewerPassword', 'userPassword', 'adminPassword'] as const;
   for (let i = 0; i < fields.length; i++) {
     for (let j = i + 1; j < fields.length; j++) {
@@ -204,7 +206,11 @@ const trackHoursShape = {
 };
 
 const checkTrackHours = (
-  v: { startMin?: number | null; endMin?: number | null; windows?: z.infer<typeof trackWindowSchema>[] },
+  v: {
+    startMin?: number | null;
+    endMin?: number | null;
+    windows?: z.infer<typeof trackWindowSchema>[];
+  },
   ctx: z.RefinementCtx,
 ): void => {
   const half =
@@ -317,7 +323,11 @@ export const breakSchema = z
       }
     }
     if (v.endMin <= v.startMin) {
-      ctx.addIssue({ code: 'custom', path: ['endMin'], message: 'A break must end after it starts' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endMin'],
+        message: 'A break must end after it starts',
+      });
     }
   });
 
@@ -388,7 +398,13 @@ export const hiddenSchema = z.object({ hidden: z.boolean() });
 /** One notification switch. The kinds are listed here rather than imported
  *  from `notifications.ts` so validation stays a leaf module. */
 export const muteSchema = z.object({
-  kind: z.enum(['mention', 'session_changed', 'starred_changed', 'pitch_scheduled', 'pitch_posted']),
+  kind: z.enum([
+    'mention',
+    'session_changed',
+    'starred_changed',
+    'pitch_scheduled',
+    'pitch_posted',
+  ]),
   muted: z.boolean(),
 });
 

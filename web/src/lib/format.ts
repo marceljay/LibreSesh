@@ -88,9 +88,7 @@ export function dayRangeLabel(from: string, to: string): string {
   const aMonth = a.toLocaleDateString(undefined, { month: 'short', ...utc });
   const bMonth = b.toLocaleDateString(undefined, { month: 'short', ...utc });
   if (from === to) return `${aDay} ${aMonth}`;
-  return aMonth === bMonth
-    ? `${aDay}–${bDay} ${bMonth}`
-    : `${aDay} ${aMonth} – ${bDay} ${bMonth}`;
+  return aMonth === bMonth ? `${aDay}–${bDay} ${bMonth}` : `${aDay} ${aMonth} – ${bDay} ${bMonth}`;
 }
 
 /** "just now" / "5m ago" / "2h ago" / a date, for contribution timestamps. */

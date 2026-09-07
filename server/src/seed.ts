@@ -72,7 +72,12 @@ const ROOMS = [
   { name: 'Main Hall', description: 'Keynotes and plenaries', capacity: 300, openBooking: 0 },
   { name: 'Workshop A', description: 'Hands-on, bring a laptop', capacity: 60, openBooking: 0 },
   { name: 'Workshop B', description: 'Hands-on, bring a laptop', capacity: 60, openBooking: 0 },
-  { name: 'Unconf Room', description: 'Grab a slot — anyone may schedule here', capacity: 40, openBooking: 1 },
+  {
+    name: 'Unconf Room',
+    description: 'Grab a slot — anyone may schedule here',
+    capacity: 40,
+    openBooking: 1,
+  },
 ];
 
 const TAGS = [
@@ -238,15 +243,27 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
 
   db.transaction(() => {
     // Wipe any previous demo event, leaving other events untouched.
-    const prior = db.prepare<[string], { id: number }>('SELECT id FROM events WHERE slug = ?').get(SLUG);
+    const prior = db
+      .prepare<[string], { id: number }>('SELECT id FROM events WHERE slug = ?')
+      .get(SLUG);
     if (prior) {
       // Children first. `people`, `proposals` and `event_identities` were
       // missing here, so every reseed left rows pointing at a deleted event.
-      db.prepare('DELETE FROM session_tags WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
-      db.prepare('DELETE FROM session_speakers WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
-      db.prepare('DELETE FROM stars WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
-      db.prepare('DELETE FROM contributions WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)').run(prior.id);
-      db.prepare('DELETE FROM proposal_interest WHERE proposal_id IN (SELECT id FROM proposals WHERE event_id = ?)').run(prior.id);
+      db.prepare(
+        'DELETE FROM session_tags WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)',
+      ).run(prior.id);
+      db.prepare(
+        'DELETE FROM session_speakers WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)',
+      ).run(prior.id);
+      db.prepare(
+        'DELETE FROM stars WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)',
+      ).run(prior.id);
+      db.prepare(
+        'DELETE FROM contributions WHERE session_id IN (SELECT id FROM sessions WHERE event_id = ?)',
+      ).run(prior.id);
+      db.prepare(
+        'DELETE FROM proposal_interest WHERE proposal_id IN (SELECT id FROM proposals WHERE event_id = ?)',
+      ).run(prior.id);
       db.prepare('DELETE FROM proposals WHERE event_id = ?').run(prior.id);
       db.prepare('DELETE FROM sessions WHERE event_id = ?').run(prior.id);
       db.prepare('DELETE FROM people WHERE event_id = ?').run(prior.id);
@@ -433,7 +450,8 @@ export function seedDemoEvent(db: Db, options: DemoSeedOptions = {}): DemoSeedRe
             .filter((personId): personId is number => personId !== null)
             .forEach((personId, order) => insertSessionSpeaker.run(id, personId, order));
           titleIndex++;
-          for (const tagId of new Set([pick(tagIds), pick(tagIds)])) insertSessionTag.run(id, tagId);
+          for (const tagId of new Set([pick(tagIds), pick(tagIds)]))
+            insertSessionTag.run(id, tagId);
           // A break between sessions, rounded to the 5-minute grid.
           minute += durationMin + pick([15, 30]);
         }

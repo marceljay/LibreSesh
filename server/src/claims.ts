@@ -21,7 +21,9 @@ export function openClaimOf(db: Db, eventId: number, identityId: number): ClaimR
 
 export function claimById(db: Db, eventId: number, id: number): ClaimRow | undefined {
   return db
-    .prepare<[number, number], ClaimRow>('SELECT * FROM profile_claims WHERE id = ? AND event_id = ?')
+    .prepare<[number, number], ClaimRow>(
+      'SELECT * FROM profile_claims WHERE id = ? AND event_id = ?',
+    )
     .get(id, eventId);
 }
 
@@ -79,7 +81,9 @@ export function loadClaims(
     personId: r.person_id,
     personName: r.person_name,
     username: r.username ?? '',
-    ...(isAdmin ? { requesterUid: r.uid ?? undefined, requesterPersonId: r.requester_person_id } : {}),
+    ...(isAdmin
+      ? { requesterUid: r.uid ?? undefined, requesterPersonId: r.requester_person_id }
+      : {}),
     requestedAt: r.requested_at,
     declinedAt: r.declined_at,
     isMine: r.identity_id === identityId,

@@ -42,7 +42,9 @@ describe('per-event JSON export', () => {
 
   it('downloads as a file named for the event', async () => {
     const res = await admin.get('/api/e/testconf/export.json').expect(200);
-    expect(res.headers['content-disposition']).toMatch(/attachment; filename="testconf-\d{4}-\d{2}-\d{2}\.json"/);
+    expect(res.headers['content-disposition']).toMatch(
+      /attachment; filename="testconf-\d{4}-\d{2}-\d{2}\.json"/,
+    );
     expect(res.headers['cache-control']).toBe('no-store');
   });
 
@@ -201,9 +203,17 @@ describe('per-event JSON export', () => {
     it('is the frame alone when asked for nothing else', async () => {
       const res = await admin.get('/api/e/testconf/export.json?include=').expect(200);
       const dump = JSON.parse(res.text) as EventExport;
-      expect(Object.keys(dump).sort()).toEqual(
-        ['breaks', 'event', 'exportedAt', 'format', 'formats', 'rooms', 'tags', 'tracks', 'version'],
-      );
+      expect(Object.keys(dump).sort()).toEqual([
+        'breaks',
+        'event',
+        'exportedAt',
+        'format',
+        'formats',
+        'rooms',
+        'tags',
+        'tracks',
+        'version',
+      ]);
     });
 
     it('refuses a part it does not have rather than quietly thinning the file', async () => {

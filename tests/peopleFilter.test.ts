@@ -200,8 +200,20 @@ describe('the People list', () => {
     });
 
     it('breaks every tie by name, so an unrelated change cannot shuffle rows', () => {
-      const zoe = person({ id: 6, name: 'Zoe Adams', claimed: true, username: 'zoe', role: 'admin' });
-      const abe = person({ id: 7, name: 'Abe Bell', claimed: true, username: 'abe', role: 'admin' });
+      const zoe = person({
+        id: 6,
+        name: 'Zoe Adams',
+        claimed: true,
+        username: 'zoe',
+        role: 'admin',
+      });
+      const abe = person({
+        id: 7,
+        name: 'Abe Bell',
+        claimed: true,
+        username: 'abe',
+        role: 'admin',
+      });
       const sorted = sortPeople([zoe, organiser, abe], { column: 'role', dir: 'desc' });
       expect(sorted.map((p) => p.name)).toEqual(['Abe Bell', 'Ada Lovelace', 'Zoe Adams']);
     });
@@ -246,9 +258,9 @@ describe('the People list', () => {
 
   it('leaves you out when the segment does not hold you', () => {
     const me = { ...attendee, isMine: true };
-    expect(filterPeople([organiser, me, shell], 'unclaimed', '', BY_NAME).map((p) => p.id)).toEqual([
-      shell.id,
-    ]);
+    expect(filterPeople([organiser, me, shell], 'unclaimed', '', BY_NAME).map((p) => p.id)).toEqual(
+      [shell.id],
+    );
   });
 
   it('applies the segment, the search and the order together', () => {
@@ -281,7 +293,9 @@ describe('the People list', () => {
     });
 
     it('stopped hiding the header once the header became the control', () => {
-      expect(admin).not.toMatch(/aria-hidden="true"\s*\n\s*className="flex items-center gap-2 border-b/);
+      expect(admin).not.toMatch(
+        /aria-hidden="true"\s*\n\s*className="flex items-center gap-2 border-b/,
+      );
       expect(admin).toContain('function PeopleHeader');
     });
   });

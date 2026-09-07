@@ -77,9 +77,7 @@ describe('linked sessions', () => {
     await make(user, 'Evening Run', DAY_ONE, 1080); // different title
     const admins = await make(admin, 'Morning Yoga', DAY_ONE, 540, hallRoom); // not the user's
 
-    const res = await user
-      .get(`/api/e/testconf/sessions/${mon.id}/link-candidates`)
-      .expect(200);
+    const res = await user.get(`/api/e/testconf/sessions/${mon.id}/link-candidates`).expect(200);
     const ids = res.body.candidates.map((c: { id: number }) => c.id);
     expect(ids).toEqual([tue.id]); // excludes the anchor, the other title, and the admin's
     expect(ids).not.toContain(admins.id);
@@ -157,7 +155,10 @@ describe('linked sessions', () => {
   it('needs a signed-in editor: a viewer cannot link', async () => {
     const a = await make(user, 'Morning Yoga', DAY_ONE);
     const b = await make(user, 'Morning Yoga', DAY_TWO);
-    await agentFor(harness).post('/api/e/testconf/sessions/link').send({ sessionIds: [a.id, b.id] }).expect(401);
+    await agentFor(harness)
+      .post('/api/e/testconf/sessions/link')
+      .send({ sessionIds: [a.id, b.id] })
+      .expect(401);
   });
 
   it("refuses to unlink another attendee's session", async () => {
@@ -181,9 +182,14 @@ describe('linked sessions', () => {
   const sessionsById = async (agent: Agent) => {
     const bundle = await agent.get('/api/e/testconf/bundle').expect(200);
     return new Map(
-      (bundle.body.sessions as { id: number; title: string; description: string; startsAt: string }[]).map(
-        (s) => [s.id, s],
-      ),
+      (
+        bundle.body.sessions as {
+          id: number;
+          title: string;
+          description: string;
+          startsAt: string;
+        }[]
+      ).map((s) => [s.id, s]),
     );
   };
 

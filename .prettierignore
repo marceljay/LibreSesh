@@ -1,0 +1,21 @@
+# Build output and data, same set eslint ignores.
+**/dist/
+data/
+deploy/data/
+node_modules/
+
+# Worktrees are whole checkouts of other branches living inside the repo.
+.claude/
+
+# The approved mockup is a reference artefact, not shipped source.
+design/mockup.jsx
+
+# Prose written and wrapped by hand. Prettier reflows Markdown paragraphs, and
+# these are read as much as the code is — CHANGELOG entries and the guides are
+# argued line by line, not filled to a column.
+*.md
+docs/
+_planning/
+
+# Generated, and enormous.
+package-lock.json

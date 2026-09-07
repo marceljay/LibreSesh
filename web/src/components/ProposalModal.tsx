@@ -96,57 +96,57 @@ export function ProposalModal({
       }
     >
       <FormStack>
-      <Field label="Title">
-        <ControlShell>
-          <TextInput
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={120}
-            autoFocus
+        <Field label="Title">
+          <ControlShell>
+            <TextInput
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={120}
+              autoFocus
+            />
+          </ControlShell>
+        </Field>
+        <Field label="Speaker or host">
+          <SpeakerCombobox
+            people={people}
+            value={speaker}
+            onChange={setSpeaker}
+            max={1}
+            isAdmin={isAdmin}
+            onlySelf={!isAdmin && !canCreditOthers}
           />
-        </ControlShell>
-      </Field>
-      <Field label="Speaker or host">
-        <SpeakerCombobox
-          people={people}
-          value={speaker}
-          onChange={setSpeaker}
-          max={1}
-          isAdmin={isAdmin}
-          onlySelf={!isAdmin && !canCreditOthers}
-        />
-      </Field>
-      <Field label="Description" hint="Markdown is supported.">
-        <TextArea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          maxLength={5000}
-          className="resize-none"
-        />
-      </Field>
+        </Field>
+        <Field label="Description" hint="Markdown is supported.">
+          <TextArea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            maxLength={5000}
+            className="resize-none"
+          />
+        </Field>
 
-      <Field label="Tags">
-        <div className="flex flex-wrap gap-1.5">
-          {tags.length === 0 && (
-            <span className="text-xs text-stone-400 dark:text-stone-500">No tags yet.</span>
-          )}
-          {tags.map((t) => (
-            <Chip
-              key={t.id}
-              dot={t.color}
-              active={tagIds.includes(t.id)}
-              onClick={() =>
-                setTagIds((prev) =>
-                  prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
-                )
-              }
-            >
-              {t.name}
-            </Chip>
-          ))}
-        </div>
-      </Field>
+        <Field label="Tags">
+          <div className="flex flex-wrap gap-1.5">
+            {tags.length === 0 && (
+              <span className="text-xs text-stone-400 dark:text-stone-500">No tags yet.</span>
+            )}
+            {tags.map((t) => (
+              <Chip
+                key={t.id}
+                dot={t.color}
+                active={tagIds.includes(t.id)}
+                onClick={() =>
+                  setTagIds((prev) =>
+                    prev.includes(t.id) ? prev.filter((x) => x !== t.id) : [...prev, t.id],
+                  )
+                }
+              >
+                {t.name}
+              </Chip>
+            ))}
+          </div>
+        </Field>
       </FormStack>
     </Modal>
   );

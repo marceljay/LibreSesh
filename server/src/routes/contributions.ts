@@ -121,7 +121,9 @@ export function contributionRoutes(ctx: Ctx): Router {
     (req, res) => {
       const row = load(req.event.id, Number(req.params.id));
       const { hidden } = parse(hiddenSchema, req.body);
-      ctx.db.prepare('UPDATE contributions SET hidden = ? WHERE id = ?').run(hidden ? 1 : 0, row.id);
+      ctx.db
+        .prepare('UPDATE contributions SET hidden = ? WHERE id = ?')
+        .run(hidden ? 1 : 0, row.id);
       const dto = dtoFor(load(req.event.id, row.id), req.event.id);
       audit(ctx.db, {
         identityId: req.identity.id,

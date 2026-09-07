@@ -1,6 +1,14 @@
 import type { Server } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { DAY_ONE, at, makeHarness, seedEvent, seedRoom, type Harness, nextUsername } from './helpers.js';
+import {
+  DAY_ONE,
+  at,
+  makeHarness,
+  seedEvent,
+  seedRoom,
+  type Harness,
+  nextUsername,
+} from './helpers.js';
 
 /** A cookie-carrying fetch against the real listening server. */
 class Client {

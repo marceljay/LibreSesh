@@ -13,12 +13,17 @@ import { describe, expect, it } from 'vitest';
 const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
 const read = (...parts: string[]) => readFileSync(join(WEB_SRC, ...parts), 'utf8');
 const ui = read('components', 'ui.tsx');
-const passwordInput = ui.slice(ui.indexOf('export const PasswordInput'), ui.indexOf('export function FormStack'));
+const passwordInput = ui.slice(
+  ui.indexOf('export const PasswordInput'),
+  ui.indexOf('export function FormStack'),
+);
 
 describe('PasswordInput', () => {
   it('is a TextInput whose type the eye flips', () => {
     expect(passwordInput).toContain('const [shown, setShown] = useState(false);');
-    expect(passwordInput).toContain(`<TextInput ref={ref} type={shown ? 'text' : 'password'} {...props} />`);
+    expect(passwordInput).toContain(
+      `<TextInput ref={ref} type={shown ? 'text' : 'password'} {...props} />`,
+    );
     // The caller cannot pass a `type` — the eye owns it.
     expect(passwordInput).toContain("Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>");
   });

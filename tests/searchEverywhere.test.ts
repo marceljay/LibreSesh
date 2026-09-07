@@ -45,8 +45,15 @@ describe('lensParams — the hand-off to the search page', () => {
 
   it('writes nothing for an empty lens', () => {
     expect(
-      lensParams({ ...filters, rooms: [], tags: [], tracks: [], q: '', soon: false, mine: false })
-        .toString(),
+      lensParams({
+        ...filters,
+        rooms: [],
+        tags: [],
+        tracks: [],
+        q: '',
+        soon: false,
+        mine: false,
+      }).toString(),
     ).toBe('');
   });
 });
@@ -74,7 +81,9 @@ describe('both surfaces share the lens', () => {
   });
 
   it('"now / next" spans dates on the page and one day on the grid', () => {
-    expect(search).toMatch(/at\.date > nowDate \|\| \(at\.date === nowDate && at\.endMin > nowMin\)/);
+    expect(search).toMatch(
+      /at\.date > nowDate \|\| \(at\.date === nowDate && at\.endMin > nowMin\)/,
+    );
     expect(schedule).toMatch(/soonNow !== null && place\(x, timezone\)\.endMin > soonNow/);
   });
 

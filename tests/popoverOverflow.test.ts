@@ -103,7 +103,6 @@ describe('usePopover', () => {
     expect(source).toMatch(/maxWidth\s*=\s*`\$\{Math\.max\(0, availableWidth\)\}px`/);
     expect(source).toMatch(/maxHeight\s*=\s*`\$\{Math\.max\(0, availableHeight\)\}px`/);
   });
-
 });
 
 describe('nothing is measured in vh', () => {

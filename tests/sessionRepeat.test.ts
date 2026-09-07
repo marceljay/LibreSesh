@@ -201,9 +201,9 @@ describe('repeating a session from the form', () => {
     expect(await message({ repeat: { until: '2026-07-01' } })).toContain(
       `after the event ends ${SUNDAY}`,
     );
-    expect(
-      await message({ repeat: { until: SUNDAY, days: ['mon'], except: [MONDAY] } }),
-    ).toContain('lands on no day at all');
+    expect(await message({ repeat: { until: SUNDAY, days: ['mon'], except: [MONDAY] } })).toContain(
+      'lands on no day at all',
+    );
     // Nothing is written when a run is refused.
     const bundle = (await admin.get('/api/e/testconf/bundle').expect(200)).body as {
       sessions: unknown[];

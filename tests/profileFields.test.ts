@@ -32,7 +32,8 @@ describe('a profile field saves without the rest of the profile', () => {
         name: 'Ada',
         bio: 'Builds engines.',
         links: [{ label: 'Site', url: 'https://example.com' }],
-      }).expect(200);
+      })
+      .expect(200);
 
     // What the Bio field on its own sends.
     const patched = await user
@@ -48,14 +49,12 @@ describe('a profile field saves without the rest of the profile', () => {
     const user = await actorWithRole(harness, 'testconf', 'user-pw');
     await user
       .patch('/api/e/testconf/me/profile')
-      .send({ bio: 'Placeholder.', links: [{ label: 'Site', url: 'https://example.com' }] }).expect(200);
+      .send({ bio: 'Placeholder.', links: [{ label: 'Site', url: 'https://example.com' }] })
+      .expect(200);
 
     // Clearing is a save like any other — the field goes back to its empty
     // state on the page rather than silently keeping the old text.
-    const cleared = await user
-      .patch('/api/e/testconf/me/profile')
-      .send({ bio: '' })
-      .expect(200);
+    const cleared = await user.patch('/api/e/testconf/me/profile').send({ bio: '' }).expect(200);
     expect(cleared.body.bio).toBe('');
     expect(cleared.body.links).toHaveLength(1);
 
@@ -78,10 +77,7 @@ describe('a profile field saves without the rest of the profile', () => {
   });
 });
 
-const page = readFileSync(
-  join(__dirname, '..', 'web', 'src', 'pages', 'ProfilePage.tsx'),
-  'utf8',
-);
+const page = readFileSync(join(__dirname, '..', 'web', 'src', 'pages', 'ProfilePage.tsx'), 'utf8');
 
 describe('the profile page edits a field at a time', () => {
   it('has no page-wide edit button or dialog left', () => {

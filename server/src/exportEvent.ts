@@ -11,12 +11,7 @@ import type {
   TrackRow,
 } from './db.js';
 import { NameResolver } from './eventIdentity.js';
-import {
-  parseLinks,
-  speakerNames,
-  speakersBySession,
-  tagIdsBySession,
-} from './mappers.js';
+import { parseLinks, speakerNames, speakersBySession, tagIdsBySession } from './mappers.js';
 import { trackWindowsFor } from './trackHours.js';
 import { EXPORT_PARTS, type ExportPart } from './shared/exportParts.js';
 import type { EventExport } from './shared/types.js';

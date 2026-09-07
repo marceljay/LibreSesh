@@ -41,7 +41,9 @@ export function LinkSessionsModal({
         // opening the picker on a linked session shows its current members.
         setChosen(
           new Set(
-            r.candidates.filter((c) => c.seriesId && c.seriesId === session.seriesId).map((c) => c.id),
+            r.candidates
+              .filter((c) => c.seriesId && c.seriesId === session.seriesId)
+              .map((c) => c.id),
           ),
         );
       })

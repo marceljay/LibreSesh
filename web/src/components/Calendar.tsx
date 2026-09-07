@@ -29,7 +29,6 @@ const BLOCK_GAP_PX = 3;
 const snap = (m: number): number => Math.round(m / SNAP) * SNAP;
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-
 /**
  * Ids of sessions that share a room and a time span with another session.
  * The server permits admins to double-book, so the calendar flags the clash
@@ -326,12 +325,7 @@ export interface CalendarProps {
    *  and released the hold on the next microtask, so every drop flashed back
    *  to its old slot for a whole round trip. The type is what stops that
    *  coming back. */
-  onMove: (
-    session: SessionDto,
-    startMin: number,
-    durMin: number,
-    roomId: number,
-  ) => Promise<void>;
+  onMove: (session: SessionDto, startMin: number, durMin: number, roomId: number) => Promise<void>;
 }
 
 export function Calendar({
@@ -513,7 +507,14 @@ export function Calendar({
             return;
           }
           settle(
-            { id: session.id, mode, startMin, durMin: nextDur, columnIndex: fromIndex, pending: true },
+            {
+              id: session.id,
+              mode,
+              startMin,
+              durMin: nextDur,
+              columnIndex: fromIndex,
+              pending: true,
+            },
             onMove(session, startMin, nextDur, session.roomId),
           );
           return;
@@ -595,7 +596,10 @@ export function Calendar({
         </div>
 
         <div className="relative flex" style={{ height }}>
-          <div className="sticky start-0 z-10 shrink-0 bg-white dark:bg-stone-900" style={{ width: GUTTER_W }}>
+          <div
+            className="sticky start-0 z-10 shrink-0 bg-white dark:bg-stone-900"
+            style={{ width: GUTTER_W }}
+          >
             {Array.from({ length: hourCount }, (_, i) => (
               <div
                 key={i}
@@ -611,7 +615,9 @@ export function Calendar({
             <div
               key={i}
               className={`pointer-events-none absolute end-0 border-t ${
-                i % 2 ? 'border-stone-100 dark:border-stone-800' : 'border-stone-200 dark:border-stone-700'
+                i % 2
+                  ? 'border-stone-100 dark:border-stone-800'
+                  : 'border-stone-200 dark:border-stone-700'
               }`}
               style={{ top: i * 30 * PX_PER_MIN, left: GUTTER_W }}
             />

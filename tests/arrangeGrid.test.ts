@@ -20,12 +20,12 @@ describe('Arrange belongs to the grid', () => {
   it('is offered only in the grid view', () => {
     const gate = schedule.match(/const canArrange = ([^;]+);/);
     expect(gate).not.toBeNull();
-    expect((gate as RegExpMatchArray)[1]).toContain('view === "cal"');
+    expect((gate as RegExpMatchArray)[1]).toContain("view === 'cal'");
   });
 
   it('is still admin-only and still off for an archived event', () => {
     const gate = (schedule.match(/const canArrange = ([^;]+);/) as RegExpMatchArray)[1] as string;
-    expect(gate).toContain('role === "admin"');
+    expect(gate).toContain("role === 'admin'");
     expect(gate).toContain('!event.archived');
   });
 
@@ -37,7 +37,7 @@ describe('Arrange belongs to the grid', () => {
   it('turns the mode off on the way out of the grid', () => {
     // Otherwise the drag mode stays open behind a button that is no longer on
     // screen to close it.
-    expect(schedule).toContain('if (v !== "cal") setArrange(false);');
+    expect(schedule).toContain("if (v !== 'cal') setArrange(false);");
   });
 
   it('is read by the grid and by nothing in the list', () => {

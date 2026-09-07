@@ -37,7 +37,9 @@ async function main(): Promise<void> {
   };
 
   try {
-    const name = await ask('Event name', (v) => (v.length >= 1 && v.length <= 120 ? undefined : 'Required, up to 120 characters'));
+    const name = await ask('Event name', (v) =>
+      v.length >= 1 && v.length <= 120 ? undefined : 'Required, up to 120 characters',
+    );
     const slug = await ask('Slug (URL segment)', (v) => {
       if (!SLUG_RE.test(v)) return '3–40 characters of a–z, 0–9 or -';
       if (getEventBySlug(db, v)) return 'That slug is already taken';
@@ -48,7 +50,9 @@ async function main(): Promise<void> {
       (v) => (isValidTimezone(v) ? undefined : 'Unknown timezone, e.g. Europe/Berlin'),
       'Europe/Berlin',
     );
-    const startDate = await ask('Start date (YYYY-MM-DD)', (v) => (DATE_RE.test(v) ? undefined : 'Expected YYYY-MM-DD'));
+    const startDate = await ask('Start date (YYYY-MM-DD)', (v) =>
+      DATE_RE.test(v) ? undefined : 'Expected YYYY-MM-DD',
+    );
     const endDate = await ask(
       'End date (YYYY-MM-DD)',
       (v) => {

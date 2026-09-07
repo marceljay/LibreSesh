@@ -100,7 +100,8 @@ export function preflight(env: Env): PreflightProblem[] {
   if (railway && env.TRUST_PROXY !== '1') {
     problems.push({
       severity: 'warning',
-      problem: 'TRUST_PROXY is not set, but this looks like a platform that terminates TLS in front of the app.',
+      problem:
+        'TRUST_PROXY is not set, but this looks like a platform that terminates TLS in front of the app.',
       fix: `Set TRUST_PROXY=1 in ${where}, or rate limiting sees the proxy as the only client and one visitor can lock out everyone.`,
     });
   }

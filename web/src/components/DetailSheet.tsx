@@ -52,12 +52,7 @@ const headerButtonClass =
 /** Bottom sheet on mobile, side panel from `sm` up (SPEC §7.4). The panel is
  *  chrome only: everything inside it is `SessionDetail`, shared with the
  *  full-page route so the two cannot drift apart. */
-export function DetailSheet({
-  session,
-  expandTo,
-  onClose,
-  ...rest
-}: DetailSheetProps) {
+export function DetailSheet({ session, expandTo, onClose, ...rest }: DetailSheetProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -91,10 +86,20 @@ export function DetailSheet({
           collapseAt={COLLAPSED_COUNT}
           headerActions={
             <div className="flex shrink-0 items-center gap-1">
-              <Link to={expandTo} aria-label="Open this session as a full page" title="Open as a full page" className={headerButtonClass}>
+              <Link
+                to={expandTo}
+                aria-label="Open this session as a full page"
+                title="Open as a full page"
+                className={headerButtonClass}
+              >
                 <ExpandIcon />
               </Link>
-              <button type="button" onClick={onClose} aria-label="Close" className={headerButtonClass}>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className={headerButtonClass}
+              >
                 <CloseIcon />
               </button>
             </div>

@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { PrimaryButton, SecondaryButton } from './ui';
 
 /** One coach-mark: `target` is a `data-tour` id somewhere in the page. */
@@ -25,13 +18,7 @@ interface Placement {
   width: number;
 }
 
-export function Tour({
-  steps,
-  onClose,
-}: {
-  steps: TourStep[];
-  onClose: () => void;
-}) {
+export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => void }) {
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement>(null);
   // Freeze the step list to those actually on screen now, so a role-conditional
@@ -150,8 +137,7 @@ export function Tour({
     const width = narrow ? vw - margin * 2 : Math.min(320, vw - margin * 2);
     const height = cardRef.current?.offsetHeight ?? 200;
     const below = rect.bottom + gap;
-    const top =
-      below + height <= vh - margin ? below : Math.max(margin, rect.top - gap - height);
+    const top = below + height <= vh - margin ? below : Math.max(margin, rect.top - gap - height);
     const left = narrow
       ? margin
       : clamp(rect.left + rect.width / 2 - width / 2, margin, vw - width - margin);
@@ -212,7 +198,9 @@ export function Tour({
         <div id={titleId} className="text-sm font-semibold text-stone-900 dark:text-stone-100">
           {step.title}
         </div>
-        <p className="mt-1 text-xs leading-relaxed text-stone-600 dark:text-stone-300">{step.body}</p>
+        <p className="mt-1 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+          {step.body}
+        </p>
         <div className="mt-3 flex items-center justify-between gap-3">
           <button
             type="button"

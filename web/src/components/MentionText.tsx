@@ -5,10 +5,7 @@ import { tokenizeMentions } from '@shared/mentions';
 
 /** Whoever goes by this username in the event, if anyone. Usernames are unique
  *  per event (migration 009), so a match is the one person and nothing else. */
-export function personByUsername(
-  people: PersonDto[],
-  username: string,
-): PersonDto | undefined {
+export function personByUsername(people: PersonDto[], username: string): PersonDto | undefined {
   const wanted = username.toLowerCase();
   return people.find((p) => p.username !== null && p.username.toLowerCase() === wanted);
 }
@@ -49,9 +46,7 @@ export function MentionText({
   people: PersonDto[];
   text: string;
 }) {
-  const usernames = people
-    .map((p) => p.username)
-    .filter((u): u is string => u !== null);
+  const usernames = people.map((p) => p.username).filter((u): u is string => u !== null);
   const segments = tokenizeMentions(text, usernames);
 
   return (

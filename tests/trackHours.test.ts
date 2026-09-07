@@ -78,7 +78,12 @@ describe('track hours', () => {
   });
   afterEach(() => harness.close());
 
-  const book = (agent: Agent, startMin: number, endMin: number, body: Record<string, unknown> = {}) =>
+  const book = (
+    agent: Agent,
+    startMin: number,
+    endMin: number,
+    body: Record<string, unknown> = {},
+  ) =>
     agent.post('/api/e/testconf/sessions').send({
       roomId,
       title: 'Talk',
@@ -189,10 +194,7 @@ describe('track hours', () => {
 
   it('refuses moving an existing session onto a track it does not fit', async () => {
     const made = await book(attendee, 900, 960, { trackId: null }).expect(201);
-    await attendee
-      .patch(`/api/e/testconf/sessions/${made.body.id}`)
-      .send({ trackId })
-      .expect(400);
+    await attendee.patch(`/api/e/testconf/sessions/${made.body.id}`).send({ trackId }).expect(400);
   });
 
   it('lifts the limit when both ends are sent as null', async () => {

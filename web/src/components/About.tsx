@@ -39,9 +39,8 @@ export function AboutModal({ demo, onClose }: { demo: boolean; onClose: () => vo
     <Modal title="About LibreSesh" onClose={onClose}>
       <div className="space-y-3 text-sm">
         <p className="text-stone-600 dark:text-stone-300">
-          A simple, open-source scheduling tool for conferences and
-          unconferences. Everyone reads the same live schedule; anyone with a
-          link can follow it, and nobody needs an account.
+          A simple, open-source scheduling tool for conferences and unconferences. Everyone reads
+          the same live schedule; anyone with a link can follow it, and nobody needs an account.
         </p>
         {demo && (
           <p className="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">

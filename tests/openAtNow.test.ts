@@ -16,13 +16,17 @@ const schedule = readFileSync(join(WEB_SRC, 'pages', 'SchedulePage.tsx'), 'utf8'
 
 describe('a running event opens at the current time', () => {
   it('scrolls the grid to now once the schedule is ready', () => {
-    expect(schedule).toMatch(/if \(jumped\.current \|\| data\.status !== "ready" \|\| !event\) return;/);
     expect(schedule).toMatch(
-      /el\.scrollTop =\n\s*\(nowMin - event\.dayStartMin\) \* PX_PER_MIN - el\.clientHeight \/ 2;/,
+      /if \(jumped\.current \|\| data\.status !== 'ready' \|\| !event\) return;/,
+    );
+    expect(schedule).toMatch(
+      /el\.scrollTop =\s*\(nowMin - event\.dayStartMin\) \* PX_PER_MIN - el\.clientHeight \/ 2;/,
     );
     // The list view has no grid to scroll; it carries the same anchor the Now
     // button uses.
-    expect(schedule).toMatch(/getElementById\("now-anchor"\)\?\.scrollIntoView\(\{ block: "center" \}\)/);
+    expect(schedule).toMatch(
+      /getElementById\('now-anchor'\)\?\.scrollIntoView\(\{ block: 'center' \}\)/,
+    );
   });
 
   it('only when now is a place in the day', () => {
@@ -46,6 +50,6 @@ describe('a running event opens at the current time', () => {
     // where the page opens.
     const jump = schedule.slice(schedule.indexOf('const jumped = useRef(false);'));
     const body = jump.slice(0, jump.indexOf('const jumpToNow'));
-    expect(body).not.toContain('behavior: "smooth"');
+    expect(body).not.toContain("behavior: 'smooth'");
   });
 });

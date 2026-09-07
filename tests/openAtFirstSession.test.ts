@@ -26,9 +26,7 @@ describe('a day opens on its first session', () => {
   it('scrolls the grid to the earliest session on the day it is given', () => {
     // The minimum over the day's own sessions, not over the day's hours.
     expect(goToDay).toMatch(/at\.date === date && \(first === null \|\| at\.startMin < first\)/);
-    expect(goToDay).toMatch(
-      /\(first - event\.dayStartMin\) \* PX_PER_MIN - DAY_LEAD_IN/,
-    );
+    expect(goToDay).toMatch(/\(first - event\.dayStartMin\) \* PX_PER_MIN - DAY_LEAD_IN/);
     // No header offset in that arithmetic: the room cards are sticky inside the
     // same scroller, so scrolling by the session's distance into the day leaves
     // it just under them.
@@ -63,10 +61,7 @@ describe('a day opens on its first session', () => {
   it('offers the next day at the bottom of the grid, not only the list', () => {
     // It was a list-only affordance from the day it was added (`83c54bd`), so
     // in the grid the only way on was the day strip at the top of the page.
-    const calendar = readFileSync(
-      join(WEB_SRC, 'components', 'Calendar.tsx'),
-      'utf8',
-    );
+    const calendar = readFileSync(join(WEB_SRC, 'components', 'Calendar.tsx'), 'utf8');
     expect(calendar).toMatch(/Next day · \{nextDay\.label\}/);
     // Centred under the day, not tacked to its left margin.
     expect(calendar).toMatch(/mx-auto w-\[min\(24rem,100%\)\]/);

@@ -11,7 +11,13 @@
  *  button, as an `aria-label`.
  */
 
-function Icon({ className = 'h-4 w-4', children }: { className?: string; children: React.ReactNode }) {
+function Icon({
+  className = 'h-4 w-4',
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
     <svg
       viewBox="0 0 16 16"

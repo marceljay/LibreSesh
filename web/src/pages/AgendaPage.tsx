@@ -5,14 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { SessionDto } from '@shared/types';
 
 import { api } from '../lib/api';
-import {
-  dayLabel,
-  fmtMin,
-  nowMinuteOfDay,
-  place,
-  speakerLine,
-  todayInZone,
-} from '../lib/format';
+import { dayLabel, fmtMin, nowMinuteOfDay, place, speakerLine, todayInZone } from '../lib/format';
 import { useEventData } from '../lib/useEventData';
 import { useMe } from '../lib/useMe';
 import { timeClashPairs } from '../components/Calendar';
@@ -66,10 +59,7 @@ export function AgendaPage() {
     [event, timezone, clock],
   );
 
-  const roomById = useMemo(
-    () => new Map((bundle?.rooms ?? []).map((r) => [r.id, r])),
-    [bundle],
-  );
+  const roomById = useMemo(() => new Map((bundle?.rooms ?? []).map((r) => [r.id, r])), [bundle]);
 
   /** Starred, placed and in programme order — one flat list before it is cut
    *  into days, so a clash across midnight is still a clash. */
@@ -79,9 +69,7 @@ export function AgendaPage() {
     return bundle.sessions
       .filter((s) => starred.has(s.id))
       .map((session) => ({ session, ...place(session, timezone) }))
-      .sort((a, b) =>
-        a.date < b.date ? -1 : a.date > b.date ? 1 : a.startMin - b.startMin,
-      );
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.startMin - b.startMin));
   }, [bundle, timezone]);
 
   const clashPairs = useMemo(() => timeClashPairs(mine), [mine]);
@@ -184,9 +172,7 @@ export function AgendaPage() {
 
         {clashPairs.length > 0 && (
           <div className="mt-4 rounded-xl border border-amber-300 bg-amber-100 p-3 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
-            <p className="text-sm font-medium">
-              {clashIds.size} of these overlap.
-            </p>
+            <p className="text-sm font-medium">{clashIds.size} of these overlap.</p>
             <ul className="mt-1 space-y-0.5 text-xs">
               {clashPairs.map(([a, b]) => {
                 const pa = place(a, timezone);
@@ -205,9 +191,8 @@ export function AgendaPage() {
         {mine.length === 0 ? (
           <div className="mt-4">
             <EmptyState>
-              Star a session with the ☆ on the schedule and it lands here. Your
-              stars are private — nobody else, organisers included, can see what
-              you have picked.
+              Star a session with the ☆ on the schedule and it lands here. Your stars are private —
+              nobody else, organisers included, can see what you have picked.
               <div className="mt-3">
                 <Link to={`/e/${slug}`} className="underline">
                   Go to the schedule

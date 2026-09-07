@@ -126,8 +126,8 @@ export function FilterMenu({
                 Now / next
               </Chip>
               <Chip active={filters.mine} onClick={() => filters.set({ mine: !filters.mine })}>
-                <span className={filters.mine ? '' : 'text-amber-500 dark:text-amber-400'}>★</span> My
-                agenda ({starredCount})
+                <span className={filters.mine ? '' : 'text-amber-500 dark:text-amber-400'}>★</span>{' '}
+                My agenda ({starredCount})
               </Chip>
             </div>
 
@@ -290,8 +290,7 @@ export function ActiveFilters({
 
   return (
     <>
-      {filters.q.trim() &&
-        remove(`“${filters.q.trim()}”`, () => filters.set({ q: '' }), 'q')}
+      {filters.q.trim() && remove(`“${filters.q.trim()}”`, () => filters.set({ q: '' }), 'q')}
       {filters.soon && remove('Now / next', () => filters.set({ soon: false }), 'soon')}
       {filters.mine && remove('★ My agenda', () => filters.set({ mine: false }), 'mine')}
       {filters.rooms.map((id) => {

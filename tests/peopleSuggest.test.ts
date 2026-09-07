@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PersonDto } from '../server/src/shared/types.js';
-import {
-  mergeConsequence,
-  personLabel,
-  suggestDuplicates,
-} from '../web/src/lib/people.js';
+import { mergeConsequence, personLabel, suggestDuplicates } from '../web/src/lib/people.js';
 
 /**
  * Merging is irreversible, and the dialog's job is to make the right pick the
@@ -45,7 +41,9 @@ describe('suggesting duplicates', () => {
   });
 
   it('finds one name inside the other', () => {
-    expect(namesFor([person({ id: 2, name: 'Ada' })])).toEqual([['Ada', 'one name contains the other']]);
+    expect(namesFor([person({ id: 2, name: 'Ada' })])).toEqual([
+      ['Ada', 'one name contains the other'],
+    ]);
   });
 
   it('offers a shared surname, but ranks it below the rest', () => {
@@ -85,7 +83,12 @@ describe('suggesting duplicates', () => {
 });
 
 describe('what a merge is about to do', () => {
-  const survivorClaimed = claimed({ id: 1, name: 'Ada Lovelace', username: 'ada', holderUid: 'a1b2c' });
+  const survivorClaimed = claimed({
+    id: 1,
+    name: 'Ada Lovelace',
+    username: 'ada',
+    holderUid: 'a1b2c',
+  });
   const survivorShell = person({ id: 1, name: 'Ada Lovelace' });
 
   it('folding in a profile nobody holds moves the sessions and nothing else', () => {

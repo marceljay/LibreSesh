@@ -1,13 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  actorWithRole,
-  makeHarness,
-  seedEvent,
-  type Agent,
-  type Harness,
-} from './helpers.js';
+import { actorWithRole, makeHarness, seedEvent, type Agent, type Harness } from './helpers.js';
 
 /**
  * The pitch board is the unconference half of the app, and an event with a

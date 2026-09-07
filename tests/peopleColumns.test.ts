@@ -38,11 +38,12 @@ describe('which People columns are showing', () => {
     expect(PEOPLE_OPTIONAL_COLUMNS.map((c) => c.id)).toEqual(['username', 'uid', 'role', 'seen']);
     expect(PEOPLE_OPTIONAL_COLUMNS.map((c) => c.id)).not.toContain('name');
     // Each says what the column is for; a bare word is not a reason to want it.
-    for (const column of PEOPLE_OPTIONAL_COLUMNS) expect(column.hint.length, column.id).toBeGreaterThan(10);
+    for (const column of PEOPLE_OPTIONAL_COLUMNS)
+      expect(column.hint.length, column.id).toBeGreaterThan(10);
   });
 
   describe('reading back what was stored', () => {
-    it('takes the screen\'s default when nothing was stored', () => {
+    it("takes the screen's default when nothing was stored", () => {
       expect(parsePeopleColumns(null, ALL_PEOPLE_COLUMNS)).toEqual(ALL_PEOPLE_COLUMNS);
       expect(parsePeopleColumns(null, COMPACT_PEOPLE_COLUMNS)).toEqual(COMPACT_PEOPLE_COLUMNS);
     });

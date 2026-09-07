@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  actorWithRole,
-  makeHarness,
-  seedEvent,
-  type Agent,
-  type Harness,
-} from './helpers.js';
+import { actorWithRole, makeHarness, seedEvent, type Agent, type Harness } from './helpers.js';
 
 /**
  * Whether the schedule marks its official programme is the organiser's call,
@@ -46,10 +40,7 @@ describe('the official badge is an event setting', () => {
 
   it('is an organiser setting, not an attendee one', async () => {
     const attendee = await actorWithRole(harness, 'testconf', 'user-pw');
-    await attendee
-      .patch('/api/e/testconf/settings')
-      .send({ showOfficialBadge: true })
-      .expect(403);
+    await attendee.patch('/api/e/testconf/settings').send({ showOfficialBadge: true }).expect(403);
   });
 
   it('carries into a clone, which runs the same shape of event', async () => {

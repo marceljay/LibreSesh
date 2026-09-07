@@ -250,7 +250,12 @@ function PersonActions({
               </span>
             </PersonLink>
 
-            <button type="button" role="menuitem" onClick={() => run(onMerge)} className={itemClass}>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => run(onMerge)}
+              className={itemClass}
+            >
               <span className="font-semibold text-stone-700 dark:text-stone-200">Merge…</span>
               <span className="text-stone-500 dark:text-stone-400">
                 Fold a duplicate of {person.name} into this profile.
@@ -387,15 +392,17 @@ import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminSearch } from './AdminSearch';
-import {
-  ADMIN_TABS,
-  type AdminSetting,
-  type AdminTabId,
-} from '../lib/adminSearch';
+import { ADMIN_TABS, type AdminSetting, type AdminTabId } from '../lib/adminSearch';
 import { AdminBackup } from './AdminBackup';
 import { AdminAudit } from './AdminAudit';
 import { AdminInvite } from './AdminInvite';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import {
   ControlShell,
   DangerButton,
@@ -420,7 +427,6 @@ import {
   useConfirm,
   useToast,
 } from '../components/ui';
-
 
 /** The tabs and everything findable inside them live together in one index, so
  *  the search box and the tab bar cannot disagree about what this page holds. */
@@ -908,7 +914,10 @@ export function AdminPage() {
 
   const patchFormat = async (format: FormatDto, patch: Partial<FormatDto>): Promise<boolean> => {
     try {
-      data.apply({ type: 'format.updated', entity: await api.updateFormat(slug, format.id, patch) });
+      data.apply({
+        type: 'format.updated',
+        entity: await api.updateFormat(slug, format.id, patch),
+      });
       return true;
     } catch (err) {
       fail(err);
@@ -1005,8 +1014,7 @@ export function AdminPage() {
       ? Math.max(
           1,
           Math.round(
-            (Date.parse(`${endDate}T12:00:00Z`) - Date.parse(`${startDate}T12:00:00Z`)) /
-              86400000,
+            (Date.parse(`${endDate}T12:00:00Z`) - Date.parse(`${startDate}T12:00:00Z`)) / 86400000,
           ) + 1,
         )
       : 1;
@@ -1017,9 +1025,7 @@ export function AdminPage() {
       await api.confirmAdmin(slug, password);
       return true;
     } catch (err) {
-      toast.show(
-        errorText(err, 'Could not check that password'),
-      );
+      toast.show(errorText(err, 'Could not check that password'));
       return false;
     }
   };
@@ -1035,18 +1041,17 @@ export function AdminPage() {
    * They are cheap to check here and the server still checks them all — this
    * is the form telling you before you ask, not the validation itself moving.
    */
-  const settingsProblem =
-    !name.trim()
-      ? 'The event needs a name'
-      : slugField !== event?.slug && !/^[a-z0-9-]{3,40}$/.test(slugField)
-        ? 'Slug must be 3–40 characters of a–z, 0–9 or -'
-        : parsedWeekRail.error
-          ? fieldProblem('Group days into weeks past', parsedWeekRail.error)
-          : parsedAuditKeep.error
-            ? fieldProblem('Audit entries to keep', parsedAuditKeep.error)
-            : [viewerPassword, userPassword, adminPassword].some((pw) => pw && pw.length < 6)
-              ? 'Passwords must be at least 6 characters'
-              : null;
+  const settingsProblem = !name.trim()
+    ? 'The event needs a name'
+    : slugField !== event?.slug && !/^[a-z0-9-]{3,40}$/.test(slugField)
+      ? 'Slug must be 3–40 characters of a–z, 0–9 or -'
+      : parsedWeekRail.error
+        ? fieldProblem('Group days into weeks past', parsedWeekRail.error)
+        : parsedAuditKeep.error
+          ? fieldProblem('Audit entries to keep', parsedAuditKeep.error)
+          : [viewerPassword, userPassword, adminPassword].some((pw) => pw && pw.length < 6)
+            ? 'Passwords must be at least 6 characters'
+            : null;
 
   const saveSettings = async () => {
     // The second and third clauses are the narrowing the first already
@@ -1289,8 +1294,7 @@ export function AdminPage() {
                       {track.startMin !== null && (
                         <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
                           {windowLabel({ startMin: track.startMin, endMin: track.endMin ?? 1440 })}
-                          {track.windows.length > 0 &&
-                            ` +${plural(track.windows.length, DAYS)}`}
+                          {track.windows.length > 0 && ` +${plural(track.windows.length, DAYS)}`}
                         </span>
                       )}
                       <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
@@ -1373,7 +1377,9 @@ export function AdminPage() {
                   </button>
                 </li>
               ))}
-              {bundle.tags.length === 0 && <li className="text-sm text-stone-400 dark:text-stone-500">No tags yet.</li>}
+              {bundle.tags.length === 0 && (
+                <li className="text-sm text-stone-400 dark:text-stone-500">No tags yet.</li>
+              )}
             </ul>
             <InlineCreate
               action="Add a tag"
@@ -1559,16 +1565,16 @@ export function AdminPage() {
                 ))}
               </div>
               <div className="relative ms-auto w-32 sm:w-48">
-              <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
-              {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
-              <input
-                type="search"
-                value={peopleQuery}
-                onChange={(e) => setPeopleQuery(e.target.value)}
-                aria-label="Search people"
-                placeholder="Name, @username or UID"
-                className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
-              />
+                <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
+                {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
+                <input
+                  type="search"
+                  value={peopleQuery}
+                  onChange={(e) => setPeopleQuery(e.target.value)}
+                  aria-label="Search people"
+                  placeholder="Name, @username or UID"
+                  className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
+                />
               </div>
               <PeopleColumnsMenu columns={peopleColumns} />
             </div>
@@ -1583,7 +1589,7 @@ export function AdminPage() {
                 slack goes to the name and the username. */}
             <div className="overflow-x-auto">
               <div style={{ minWidth: peopleTableWidth(peopleColumns.shown) }}>
-              {/* A header, because this is a table now: six facts about a
+                {/* A header, because this is a table now: six facts about a
                   person, the same six on every row, and an organiser reading
                   down one column should not have to work out which is which.
                   The widths are shared with the rows below.
@@ -1594,70 +1600,70 @@ export function AdminPage() {
                   viewer" had no answer but reading the whole list. The header
                   was `aria-hidden` while it was decoration; now that it is the
                   control, it is not. */}
-              <div className="flex items-center gap-2 border-b border-stone-200 pb-1 text-[0.65rem] font-semibold uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:text-stone-500">
-                {(
-                  [
-                    ['name', 'Name'],
-                    ['username', 'Username'],
-                    ['uid', 'UID'],
-                    ['role', 'Role'],
-                    ['seen', 'Last seen'],
-                  ] as [PeopleSortColumn, string][]
-                )
-                  .filter(([column]) => peopleColumns.showing(column))
-                  .map(([column, label]) => (
-                    <PeopleHeader
-                      key={column}
-                      column={column}
-                      label={label}
-                      sort={peopleOrder}
-                      onSort={sortBy}
-                      className={PEOPLE_COL[column].className}
-                    />
-                  ))}
-                {/* Named, like every column beside it, and not a button:
+                <div className="flex items-center gap-2 border-b border-stone-200 pb-1 text-[0.65rem] font-semibold uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:text-stone-500">
+                  {(
+                    [
+                      ['name', 'Name'],
+                      ['username', 'Username'],
+                      ['uid', 'UID'],
+                      ['role', 'Role'],
+                      ['seen', 'Last seen'],
+                    ] as [PeopleSortColumn, string][]
+                  )
+                    .filter(([column]) => peopleColumns.showing(column))
+                    .map(([column, label]) => (
+                      <PeopleHeader
+                        key={column}
+                        column={column}
+                        label={label}
+                        sort={peopleOrder}
+                        onSort={sortBy}
+                        className={PEOPLE_COL[column].className}
+                      />
+                    ))}
+                  {/* Named, like every column beside it, and not a button:
                     there is nothing here to order by, because it holds a menu
                     rather than a fact. "Edit" rather than "Actions" — it is
                     two characters cheaper in a column nine wide, and it is
                     what the menu is opened to do. */}
-                <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
-              </div>
+                  <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
+                </div>
 
-              <ul className="mb-4">
-                {shownPeople.map((person) => (
-                  <li
-                    key={person.id}
-                    className="flex items-center gap-2 border-b border-stone-100 py-1.5 last:border-0 dark:border-stone-800"
-                  >
-                    {/* The name is the way in, at the size a finger is aimed
+                <ul className="mb-4">
+                  {shownPeople.map((person) => (
+                    <li
+                      key={person.id}
+                      className="flex items-center gap-2 border-b border-stone-100 py-1.5 last:border-0 dark:border-stone-800"
+                    >
+                      {/* The name is the way in, at the size a finger is aimed
                         at. It used to be text with a 56-pixel "Open" button four
                         columns away — the one link on the row that was not where
                         anyone pointed. */}
-                    <span
-                      className={`${PEOPLE_COL.name.className} flex items-baseline gap-1.5`}
-                      title={
-                        (person.sessionCount ?? 0) === 0
-                          ? 'Not credited on any session'
-                          : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
-                      }
-                    >
-                      <PersonLink
-                        slug={slug}
-                        person={person}
-                        className="truncate text-sm font-medium hover:underline"
+                      <span
+                        className={`${PEOPLE_COL.name.className} flex items-baseline gap-1.5`}
+                        title={
+                          (person.sessionCount ?? 0) === 0
+                            ? 'Not credited on any session'
+                            : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
+                        }
                       >
-                        {person.name}
-                      </PersonLink>
-                      {/* Your own row, pinned to the top by `filterPeople`. */}
-                      {person.isMine && (
-                        <span
-                          title="This device — the profile you are signed in as"
-                          className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[0.65rem] font-semibold text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                        <PersonLink
+                          slug={slug}
+                          person={person}
+                          className="truncate text-sm font-medium hover:underline"
                         >
-                          you
-                        </span>
-                      )}
-                      {/* No "code" badge here. An outstanding speaker code is
+                          {person.name}
+                        </PersonLink>
+                        {/* Your own row, pinned to the top by `filterPeople`. */}
+                        {person.isMine && (
+                          <span
+                            title="This device — the profile you are signed in as"
+                            className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[0.65rem] font-semibold text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                          >
+                            you
+                          </span>
+                        )}
+                        {/* No "code" badge here. An outstanding speaker code is
                           a fact about one person, and it was being read down a
                           column of two hundred rows where it is noise — it
                           says nothing about who they are or what they may do,
@@ -1665,93 +1671,93 @@ export function AdminPage() {
                           page says it, in the place the code is minted and
                           revoked, and says which of the three states it is in
                           rather than only flagging one. */}
-                    </span>
+                      </span>
 
-                    {peopleColumns.showing('username') && (
-                      <span className={`${PEOPLE_COL.username.className} truncate text-xs`}>
-                        {/* An em dash is not a profile to open, so only a real
+                      {peopleColumns.showing('username') && (
+                        <span className={`${PEOPLE_COL.username.className} truncate text-xs`}>
+                          {/* An em dash is not a profile to open, so only a real
                             username is a link. */}
-                        {person.username === null ? (
-                          <span
-                            className="text-stone-500 dark:text-stone-400"
-                            title="Nobody holds this profile, so it has no username"
-                          >
-                            —
-                          </span>
-                        ) : (
-                          <PersonLink
-                            slug={slug}
-                            person={person}
-                            title="Their username in this event — what they post under"
-                            className="text-stone-500 hover:underline dark:text-stone-400"
-                          >
-                            @{person.username}
-                          </PersonLink>
-                        )}
-                      </span>
-                    )}
+                          {person.username === null ? (
+                            <span
+                              className="text-stone-500 dark:text-stone-400"
+                              title="Nobody holds this profile, so it has no username"
+                            >
+                              —
+                            </span>
+                          ) : (
+                            <PersonLink
+                              slug={slug}
+                              person={person}
+                              title="Their username in this event — what they post under"
+                              className="text-stone-500 hover:underline dark:text-stone-400"
+                            >
+                              @{person.username}
+                            </PersonLink>
+                          )}
+                        </span>
+                      )}
 
-                    {peopleColumns.showing('uid') && (
-                      <span
-                        className={`${PEOPLE_COL.uid.className} truncate font-mono text-xs text-stone-400 dark:text-stone-500`}
-                        title="The identity holding this profile — the code the audit log names, and the same one at every event on this instance"
-                      >
-                        {person.holderUid == null ? '—' : person.holderUid.toUpperCase()}
-                      </span>
-                    )}
+                      {peopleColumns.showing('uid') && (
+                        <span
+                          className={`${PEOPLE_COL.uid.className} truncate font-mono text-xs text-stone-400 dark:text-stone-500`}
+                          title="The identity holding this profile — the code the audit log names, and the same one at every event on this instance"
+                        >
+                          {person.holderUid == null ? '—' : person.holderUid.toUpperCase()}
+                        </span>
+                      )}
 
-                    {/* The role *is* the status: the badge everyone else sees,
+                      {/* The role *is* the status: the badge everyone else sees,
                         with a pencil in it for anyone who holds the profile, and
                         a plain badge for a profile nobody holds. */}
-                    {peopleColumns.showing('role') && (
-                      <span className={PEOPLE_COL.role.className}>
-                        {person.claimed ? (
-                          <RoleControl
-                            role={person.role ?? null}
-                            userLabel={event.userRoleLabel}
-                            personName={person.name}
-                            onChange={(role) => void changeRole(person, role)}
-                          />
-                        ) : (
-                          <PersonStatusBadge person={person} userLabel={event.userRoleLabel} />
-                        )}
-                      </span>
-                    )}
+                      {peopleColumns.showing('role') && (
+                        <span className={PEOPLE_COL.role.className}>
+                          {person.claimed ? (
+                            <RoleControl
+                              role={person.role ?? null}
+                              userLabel={event.userRoleLabel}
+                              personName={person.name}
+                              onChange={(role) => void changeRole(person, role)}
+                            />
+                          ) : (
+                            <PersonStatusBadge person={person} userLabel={event.userRoleLabel} />
+                          )}
+                        </span>
+                      )}
 
-                    {peopleColumns.showing('seen') && (
-                      <span
-                        className={`${PEOPLE_COL.seen.className} truncate text-xs text-stone-400 dark:text-stone-500`}
-                        title={
-                          person.lastSeenAt == null
-                            ? 'Nobody holds this profile, so it has never been used'
-                            : `Last seen ${new Date(person.lastSeenAt).toLocaleString()}`
-                        }
-                      >
-                        {person.lastSeenAt == null ? '—' : relativeTime(person.lastSeenAt)}
-                      </span>
-                    )}
+                      {peopleColumns.showing('seen') && (
+                        <span
+                          className={`${PEOPLE_COL.seen.className} truncate text-xs text-stone-400 dark:text-stone-500`}
+                          title={
+                            person.lastSeenAt == null
+                              ? 'Nobody holds this profile, so it has never been used'
+                              : `Last seen ${new Date(person.lastSeenAt).toLocaleString()}`
+                          }
+                        >
+                          {person.lastSeenAt == null ? '—' : relativeTime(person.lastSeenAt)}
+                        </span>
+                      )}
 
-                    {/* One icon, and everything behind it. The column was four
+                      {/* One icon, and everything behind it. The column was four
                         times this wide to hold a button saying "Open" beside a
                         second one saying only "more", and the width it gives
                         back is width the name column now has on the screen with
                         the least of it to spare. */}
-                    <span className={`${PEOPLE_COL.actions.className} flex justify-end`}>
-                      <PersonActions
-                        slug={slug}
-                        person={person}
-                        onMerge={() => setMerging(person)}
-                        onArchive={() => void toggleArchive(person)}
-                      />
-                    </span>
-                  </li>
-                ))}
-                {shownPeople.length === 0 && (
-                  <li className="py-2 text-sm text-stone-400 dark:text-stone-500">
-                    {bundle.people.length === 0 ? 'Nobody here yet.' : 'Nobody matches that.'}
-                  </li>
-                )}
-              </ul>
+                      <span className={`${PEOPLE_COL.actions.className} flex justify-end`}>
+                        <PersonActions
+                          slug={slug}
+                          person={person}
+                          onMerge={() => setMerging(person)}
+                          onArchive={() => void toggleArchive(person)}
+                        />
+                      </span>
+                    </li>
+                  ))}
+                  {shownPeople.length === 0 && (
+                    <li className="py-2 text-sm text-stone-400 dark:text-stone-500">
+                      {bundle.people.length === 0 ? 'Nobody here yet.' : 'Nobody matches that.'}
+                    </li>
+                  )}
+                </ul>
               </div>
             </div>
 
@@ -1800,193 +1806,223 @@ export function AdminPage() {
         <div role="tabpanel" id="admin-panel-settings" aria-labelledby="admin-tab-settings">
           <Section title="Event settings" className="mb-6">
             <FormStack>
-            <SettingAnchor id="name" flashed={flashed}>
-  <Field label="Name">
-                <ControlShell>
-                  <TextInput value={name} onChange={(e) => setName(e.target.value)} />
-                </ControlShell>
-              </Field>
-            </SettingAnchor>
-            {/* Renaming an event is renaming its address, which sounds more
+              <SettingAnchor id="name" flashed={flashed}>
+                <Field label="Name">
+                  <ControlShell>
+                    <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+                  </ControlShell>
+                </Field>
+              </SettingAnchor>
+              {/* Renaming an event is renaming its address, which sounds more
                 dangerous than it is: roles are held against the event itself,
                 not its slug, so nobody is signed out or demoted — and the old
                 address goes on working rather than 404ing. The hint says both,
                 because an organiser who does not know that will not touch
                 this field. */}
-            <SettingAnchor id="slug" flashed={flashed}>
-  <Field
-                label="Slug"
-                hint={
-                  slugField && slugField !== event?.slug
-                    ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
-                    : `Used in the URL: /e/${slugField || event?.slug}`
-                }
-              >
-                <ControlShell>
-                  <TextInput
-                    value={slugField}
-                    onChange={(e) => setSlugField(slugify(e.target.value))}
-                  />
-                </ControlShell>
-              </Field>
-            </SettingAnchor>
-            <SettingAnchor id="when" flashed={flashed}>
-  <FormGrid>
-                <Field label="Start date">
-                  <ControlShell>
-                    <TextInput type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label="End date">
-                  <ControlShell>
-                    <TextInput type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label="Day starts">
-                  <TimeField aria-label="Day starts" className="w-full" value={dayStart} onChange={setDayStart} />
-                </Field>
-                <Field label="Day ends">
-                  <TimeField aria-label="Day ends" className="w-full" value={dayEnd} onChange={setDayEnd} />
-                </Field>
-              </FormGrid>
-            </SettingAnchor>
-            <SettingAnchor id="week-rail" flashed={flashed}>
-  <NumberField
-                label="Group days into weeks past"
-                hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
-                spec={weekRailFromField}
-                value={weekRailFrom}
-                onChange={setWeekRailFrom}
-                suffix={
-                  parsedWeekRail.value === null
-                    ? 'days'
-                    : eventDays > parsedWeekRail.value
-                      ? 'days · the rail is on for this event'
-                      : 'days · one row of tabs for this event'
-                }
-              />
-            </SettingAnchor>
-            <SettingAnchor id="default-view" flashed={flashed}>
-  <Field
-                label="Default view"
-                hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
-              >
-                <Select
-                  value={defaultView}
-                  onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
+              <SettingAnchor id="slug" flashed={flashed}>
+                <Field
+                  label="Slug"
+                  hint={
+                    slugField && slugField !== event?.slug
+                      ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
+                      : `Used in the URL: /e/${slugField || event?.slug}`
+                  }
                 >
-                  {/* Wide enough for the longest option in full: at w-48 both
+                  <ControlShell>
+                    <TextInput
+                      value={slugField}
+                      onChange={(e) => setSlugField(slugify(e.target.value))}
+                    />
+                  </ControlShell>
+                </Field>
+              </SettingAnchor>
+              <SettingAnchor id="when" flashed={flashed}>
+                <FormGrid>
+                  <Field label="Start date">
+                    <ControlShell>
+                      <TextInput
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                  <Field label="End date">
+                    <ControlShell>
+                      <TextInput
+                        type="date"
+                        value={endDate}
+                        min={startDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                  <Field label="Day starts">
+                    <TimeField
+                      aria-label="Day starts"
+                      className="w-full"
+                      value={dayStart}
+                      onChange={setDayStart}
+                    />
+                  </Field>
+                  <Field label="Day ends">
+                    <TimeField
+                      aria-label="Day ends"
+                      className="w-full"
+                      value={dayEnd}
+                      onChange={setDayEnd}
+                    />
+                  </Field>
+                </FormGrid>
+              </SettingAnchor>
+              <SettingAnchor id="week-rail" flashed={flashed}>
+                <NumberField
+                  label="Group days into weeks past"
+                  hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
+                  spec={weekRailFromField}
+                  value={weekRailFrom}
+                  onChange={setWeekRailFrom}
+                  suffix={
+                    parsedWeekRail.value === null
+                      ? 'days'
+                      : eventDays > parsedWeekRail.value
+                        ? 'days · the rail is on for this event'
+                        : 'days · one row of tabs for this event'
+                  }
+                />
+              </SettingAnchor>
+              <SettingAnchor id="default-view" flashed={flashed}>
+                <Field
+                  label="Default view"
+                  hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
+                >
+                  <Select
+                    value={defaultView}
+                    onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
+                  >
+                    {/* Wide enough for the longest option in full: at w-48 both
                       ran under the chevron. */}
-                  <SelectTrigger aria-label="Default view" className="w-72">
-                    <SelectValue>
-                      {(v: string | null) =>
-                        v === 'cal' ? 'Calendar — a grid of rooms' : 'List — one column, in time order'
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="list">List — one column, in time order</SelectItem>
-                    <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </SettingAnchor>
-            <SettingAnchor id="official-badge" flashed={flashed}>
-  <Field
-                label="Mark the official programme"
-                hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
-              >
-                <Toggle
-                  checked={showOfficialBadge}
-                  onChange={setShowOfficialBadge}
-                  label="Show an “Official” tag on grid blocks and list cards"
-                />
-              </Field>
-            </SettingAnchor>
-            <SettingAnchor id="pitches" flashed={flashed}>
-  <Field
-                label="Pitch board"
-                hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
-              >
-                <Toggle
-                  checked={pitchesEnabled}
-                  onChange={setPitchesEnabled}
-                  label="Let people pitch sessions"
-                />
-                {!pitchesEnabled && openPitches > 0 && (
-                  <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-                    {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the
-                    board and will be hidden, not deleted.
-                  </p>
-                )}
-              </Field>
-            </SettingAnchor>
-            <SettingAnchor id="audit-keep" flashed={flashed}>
-  <NumberField
-                label="Audit entries to keep"
-                hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
-                spec={auditKeepField}
-                value={auditKeep}
-                onChange={setAuditKeep}
-                className="w-32"
-                suffix={
-                  parsedAuditKeep.value === 0
-                    ? 'entries · keeping everything'
-                    : 'entries · older ones are dropped'
-                }
-              />
-            </SettingAnchor>
-            <SettingAnchor id="role-label" flashed={flashed}>
-  <Field
-                label="What you call your participants"
-                hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
-              >
-                <ControlShell>
-                  <TextInput
-                    value={userRoleLabel}
-                    onChange={(e) => setUserRoleLabel(e.target.value)}
-                    maxLength={24}
+                    <SelectTrigger aria-label="Default view" className="w-72">
+                      <SelectValue>
+                        {(v: string | null) =>
+                          v === 'cal'
+                            ? 'Calendar — a grid of rooms'
+                            : 'List — one column, in time order'
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="list">List — one column, in time order</SelectItem>
+                      <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </SettingAnchor>
+              <SettingAnchor id="official-badge" flashed={flashed}>
+                <Field
+                  label="Mark the official programme"
+                  hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
+                >
+                  <Toggle
+                    checked={showOfficialBadge}
+                    onChange={setShowOfficialBadge}
+                    label="Show an “Official” tag on grid blocks and list cards"
                   />
-                </ControlShell>
-              </Field>
-            </SettingAnchor>
+                </Field>
+              </SettingAnchor>
+              <SettingAnchor id="pitches" flashed={flashed}>
+                <Field
+                  label="Pitch board"
+                  hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
+                >
+                  <Toggle
+                    checked={pitchesEnabled}
+                    onChange={setPitchesEnabled}
+                    label="Let people pitch sessions"
+                  />
+                  {!pitchesEnabled && openPitches > 0 && (
+                    <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+                      {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the board
+                      and will be hidden, not deleted.
+                    </p>
+                  )}
+                </Field>
+              </SettingAnchor>
+              <SettingAnchor id="audit-keep" flashed={flashed}>
+                <NumberField
+                  label="Audit entries to keep"
+                  hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
+                  spec={auditKeepField}
+                  value={auditKeep}
+                  onChange={setAuditKeep}
+                  className="w-32"
+                  suffix={
+                    parsedAuditKeep.value === 0
+                      ? 'entries · keeping everything'
+                      : 'entries · older ones are dropped'
+                  }
+                />
+              </SettingAnchor>
+              <SettingAnchor id="role-label" flashed={flashed}>
+                <Field
+                  label="What you call your participants"
+                  hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
+                >
+                  <ControlShell>
+                    <TextInput
+                      value={userRoleLabel}
+                      onChange={(e) => setUserRoleLabel(e.target.value)}
+                      maxLength={24}
+                    />
+                  </ControlShell>
+                </Field>
+              </SettingAnchor>
 
-            <SettingAnchor id="passwords" flashed={flashed}>
-  <div className="mt-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                  Change passwords
-                </p>
-                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                  Leave blank to keep the current one.
-                </p>
+              <SettingAnchor id="passwords" flashed={flashed}>
+                <div className="mt-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                    Change passwords
+                  </p>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    Leave blank to keep the current one.
+                  </p>
+                </div>
+                <FormGrid cols={3}>
+                  <Field label="Viewer">
+                    <ControlShell>
+                      <TextInput
+                        value={viewerPassword}
+                        onChange={(e) => setViewerPassword(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                  <Field label={userRoleLabel.trim() || 'User'}>
+                    <ControlShell>
+                      <TextInput
+                        value={userPassword}
+                        onChange={(e) => setUserPassword(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                  <Field label="Admin">
+                    <ControlShell>
+                      <TextInput
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                      />
+                    </ControlShell>
+                  </Field>
+                </FormGrid>
+              </SettingAnchor>
+              <div>
+                {settingsProblem && <FormError className="mb-2">{settingsProblem}</FormError>}
+                <PrimaryButton
+                  onClick={() => void saveSettings()}
+                  disabled={settingsProblem !== null}
+                >
+                  Save settings
+                </PrimaryButton>
               </div>
-              <FormGrid cols={3}>
-                <Field label="Viewer">
-                  <ControlShell>
-                    <TextInput value={viewerPassword} onChange={(e) => setViewerPassword(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label={userRoleLabel.trim() || 'User'}>
-                  <ControlShell>
-                    <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field label="Admin">
-                  <ControlShell>
-                    <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
-                  </ControlShell>
-                </Field>
-              </FormGrid>
-            </SettingAnchor>
-            <div>
-              {settingsProblem && <FormError className="mb-2">{settingsProblem}</FormError>}
-              <PrimaryButton
-                onClick={() => void saveSettings()}
-                disabled={settingsProblem !== null}
-              >
-                Save settings
-              </PrimaryButton>
-            </div>
             </FormStack>
           </Section>
 
@@ -2011,75 +2047,89 @@ export function AdminPage() {
             >
               {cloneOpen && (
                 <FormStack>
-                <Field label="New name">
-                  <ControlShell>
-                    <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
-                  </ControlShell>
-                </Field>
-                <Field
-                  label="New slug"
-                  hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
-                >
-                  <ControlShell>
-                    <TextInput
-                      value={cloneSlug}
-                      onChange={(e) => setCloneSlug(slugify(e.target.value))}
-                      placeholder={slugify(cloneName) || 'your-event'}
-                    />
-                  </ControlShell>
-                </Field>
-                <FormGrid>
-                  <Field label="Start date">
+                  <Field label="New name">
+                    <ControlShell>
+                      <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
+                    </ControlShell>
+                  </Field>
+                  <Field
+                    label="New slug"
+                    hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
+                  >
                     <ControlShell>
                       <TextInput
-                        type="date"
-                        value={cloneStart}
-                        onChange={(e) => {
-                          setCloneStart(e.target.value);
-                          if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
-                        }}
+                        value={cloneSlug}
+                        onChange={(e) => setCloneSlug(slugify(e.target.value))}
+                        placeholder={slugify(cloneName) || 'your-event'}
                       />
                     </ControlShell>
                   </Field>
-                  <Field label="End date">
-                    <ControlShell>
-                      <TextInput
-                        type="date"
-                        value={cloneEnd}
-                        min={cloneStart}
-                        onChange={(e) => setCloneEnd(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                </FormGrid>
-                <div className="mt-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                    New passwords
-                  </p>
-                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">At least 6 characters each.</p>
-                </div>
-                <FormGrid cols={3}>
-                  <Field label="Viewer">
-                    <ControlShell>
-                      <TextInput value={cloneViewer} onChange={(e) => setCloneViewer(e.target.value)} />
-                    </ControlShell>
-                  </Field>
-                  <Field label="User">
-                    <ControlShell>
-                      <TextInput value={cloneUser} onChange={(e) => setCloneUser(e.target.value)} />
-                    </ControlShell>
-                  </Field>
-                  <Field label="Admin">
-                    <ControlShell>
-                      <TextInput value={cloneAdmin} onChange={(e) => setCloneAdmin(e.target.value)} />
-                    </ControlShell>
-                  </Field>
-                </FormGrid>
-                <div>
-                  <PrimaryButton onClick={() => void cloneEvent()} disabled={!cloneReady || cloning}>
-                    {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
-                  </PrimaryButton>
-                </div>
+                  <FormGrid>
+                    <Field label="Start date">
+                      <ControlShell>
+                        <TextInput
+                          type="date"
+                          value={cloneStart}
+                          onChange={(e) => {
+                            setCloneStart(e.target.value);
+                            if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
+                          }}
+                        />
+                      </ControlShell>
+                    </Field>
+                    <Field label="End date">
+                      <ControlShell>
+                        <TextInput
+                          type="date"
+                          value={cloneEnd}
+                          min={cloneStart}
+                          onChange={(e) => setCloneEnd(e.target.value)}
+                        />
+                      </ControlShell>
+                    </Field>
+                  </FormGrid>
+                  <div className="mt-1">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                      New passwords
+                    </p>
+                    <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                      At least 6 characters each.
+                    </p>
+                  </div>
+                  <FormGrid cols={3}>
+                    <Field label="Viewer">
+                      <ControlShell>
+                        <TextInput
+                          value={cloneViewer}
+                          onChange={(e) => setCloneViewer(e.target.value)}
+                        />
+                      </ControlShell>
+                    </Field>
+                    <Field label="User">
+                      <ControlShell>
+                        <TextInput
+                          value={cloneUser}
+                          onChange={(e) => setCloneUser(e.target.value)}
+                        />
+                      </ControlShell>
+                    </Field>
+                    <Field label="Admin">
+                      <ControlShell>
+                        <TextInput
+                          value={cloneAdmin}
+                          onChange={(e) => setCloneAdmin(e.target.value)}
+                        />
+                      </ControlShell>
+                    </Field>
+                  </FormGrid>
+                  <div>
+                    <PrimaryButton
+                      onClick={() => void cloneEvent()}
+                      disabled={!cloneReady || cloning}
+                    >
+                      {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
+                    </PrimaryButton>
+                  </div>
                 </FormStack>
               )}
             </Section>
@@ -2091,9 +2141,13 @@ export function AdminPage() {
               description="An archived event stays readable with the viewer password, but nobody can change anything."
             >
               {event.archived ? (
-                <SecondaryButton onClick={() => void setArchived(false)}>Un-archive event</SecondaryButton>
+                <SecondaryButton onClick={() => void setArchived(false)}>
+                  Un-archive event
+                </SecondaryButton>
               ) : (
-                <SecondaryButton onClick={() => void setArchived(true)}>Archive event</SecondaryButton>
+                <SecondaryButton onClick={() => void setArchived(true)}>
+                  Archive event
+                </SecondaryButton>
               )}
             </Section>
           </SettingAnchor>
@@ -2115,7 +2169,9 @@ export function AdminPage() {
             {trash === null ? (
               <p className="text-sm text-stone-400 dark:text-stone-500">Loading…</p>
             ) : trashEmpty ? (
-              <p className="text-sm text-stone-400 dark:text-stone-500">Nothing has been deleted.</p>
+              <p className="text-sm text-stone-400 dark:text-stone-500">
+                Nothing has been deleted.
+              </p>
             ) : (
               <div className="space-y-4">
                 {trash.sessions.length > 0 && (
@@ -2133,7 +2189,10 @@ export function AdminPage() {
                           <span className="text-xs text-stone-400 dark:text-stone-500">
                             deleted {relativeTime(s.deletedAt)} · {s.deletedByName}
                           </span>
-                          <SecondaryButton className="py-1" onClick={() => void restoreSession(s.id)}>
+                          <SecondaryButton
+                            className="py-1"
+                            onClick={() => void restoreSession(s.id)}
+                          >
                             Restore
                           </SecondaryButton>
                         </li>
@@ -2264,12 +2323,7 @@ function FormatEditor({
             />
           </ControlShell>
         </Field>
-        <ColorPicker
-          value={color}
-          onChange={setColor}
-          palette={TAG_COLORS}
-          label="Format colour"
-        />
+        <ColorPicker value={color} onChange={setColor} palette={TAG_COLORS} label="Format colour" />
       </FormStack>
 
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
@@ -2351,12 +2405,7 @@ function TagEditor({
             />
           </ControlShell>
         </Field>
-        <ColorPicker
-          value={color}
-          onChange={setColor}
-          palette={TAG_COLORS}
-          label="Tag colour"
-        />
+        <ColorPicker value={color} onChange={setColor} palette={TAG_COLORS} label="Tag colour" />
       </FormStack>
 
       <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
@@ -2425,21 +2474,21 @@ function TrackHoursFields({
       <FormRow>
         <Field label="From">
           <TimeField
-              aria-label="From"
-              value={start}
-              onChange={onStart}
-              min={dayStartMin}
-              max={dayEndMin}
-            />
+            aria-label="From"
+            value={start}
+            onChange={onStart}
+            min={dayStartMin}
+            max={dayEndMin}
+          />
         </Field>
         <Field label="To" hint={minutesOf(end) > minutesOf(start) ? undefined : 'Must be later.'}>
           <TimeField
-              aria-label="To"
-              value={end}
-              onChange={onEnd}
-              min={dayStartMin}
-              max={dayEndMin}
-            />
+            aria-label="To"
+            value={end}
+            onChange={onEnd}
+            min={dayStartMin}
+            max={dayEndMin}
+          />
         </Field>
       </FormRow>
 

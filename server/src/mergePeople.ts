@@ -116,7 +116,9 @@ export function broadcastMerge(
     }
   }
   for (const sessionId of new Set([...result.movedSessions, ...result.rekeyed.sessionIds])) {
-    const row = db.prepare<[number], SessionRow>('SELECT * FROM sessions WHERE id = ?').get(sessionId);
+    const row = db
+      .prepare<[number], SessionRow>('SELECT * FROM sessions WHERE id = ?')
+      .get(sessionId);
     if (row && row.deleted_at === null) {
       broker.publish(slug, 'session.updated', loadSessionDto(db, row));
     }

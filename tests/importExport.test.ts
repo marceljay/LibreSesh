@@ -61,10 +61,16 @@ describe('an export imports back', () => {
         .expect(201),
     );
     const deepDive = await created(
-      await admin.post('/api/e/testconf/tags').send({ name: 'Deep dive', color: '#445566' }).expect(201),
+      await admin
+        .post('/api/e/testconf/tags')
+        .send({ name: 'Deep dive', color: '#445566' })
+        .expect(201),
     );
     const talk = await created(
-      await admin.post('/api/e/testconf/formats').send({ name: 'Talk', color: '#778899' }).expect(201),
+      await admin
+        .post('/api/e/testconf/formats')
+        .send({ name: 'Talk', color: '#778899' })
+        .expect(201),
     );
     await admin
       .post('/api/e/testconf/breaks')
@@ -130,7 +136,9 @@ describe('an export imports back', () => {
     doc: unknown,
     { dryRun = false, status = dryRun ? 200 : 201 } = {},
   ): Promise<ImportResult> => {
-    const res = await (await importer())
+    const res = await (
+      await importer()
+    )
       .post(`/api/events/import${dryRun ? '?dryRun=1' : ''}`)
       .set('X-Instance-Key', 'instance-pw')
       .send(doc)
@@ -183,7 +191,9 @@ describe('an export imports back', () => {
     // And the specifics a lossy translation would have flattened.
     const opening = second.sessions!.find((s) => s.title === 'Opening')!;
     expect(opening.speakers).toEqual(['Ada Lovelace', 'Grace Hopper']);
-    expect(opening.livestreams).toEqual([{ label: 'Main camera', url: 'https://example.org/live' }]);
+    expect(opening.livestreams).toEqual([
+      { label: 'Main camera', url: 'https://example.org/live' },
+    ]);
     expect(opening.blocksOpenBooking).toBe(true);
     expect(opening.startsAt).toBe(at(DAY_ONE, 9 * 60));
     expect(second.tracks[0]).toMatchObject({
@@ -230,7 +240,9 @@ describe('an export imports back', () => {
     await buildProgramme();
     const dump = await fetchExport(admin, 'testconf');
     const broken = renamed({ ...dump, rooms: dump.rooms.slice(0, 1) }, 'testconf-copy');
-    const res = await (await importer())
+    const res = await (
+      await importer()
+    )
       .post('/api/events/import')
       .set('X-Instance-Key', 'instance-pw')
       .send(broken)
@@ -292,7 +304,11 @@ describe('livestreams in a typed document', () => {
         })
         .expect(201)
     ).body as ImportResult;
-    const admin = await actorWithRole(harness, 'streamed', result.generatedPasswords.adminPassword!);
+    const admin = await actorWithRole(
+      harness,
+      'streamed',
+      result.generatedPasswords.adminPassword!,
+    );
     const dump = JSON.parse(
       (await admin.get('/api/e/streamed/export.json').expect(200)).text,
     ) as EventExport;

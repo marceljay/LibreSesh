@@ -49,10 +49,9 @@ export function agendaRoutes(ctx: Ctx): Router {
       let token = req.identity.ics_token;
       if (!token) {
         token = randomBytes(24).toString('base64url');
-        ctx.db.prepare('UPDATE identities SET ics_token = ? WHERE id = ?').run(
-          token,
-          req.identity.id,
-        );
+        ctx.db
+          .prepare('UPDATE identities SET ics_token = ? WHERE id = ?')
+          .run(token, req.identity.id);
       }
       res.json({ token });
     },
@@ -132,9 +131,7 @@ export function calendarRoutes(ctx: Ctx): Router {
         credited.length === 0
           ? undefined
           : `${credited.length === 1 ? 'Speaker' : 'Speakers'}: ${credited.join(', ')}`;
-      const description = [credits, s.description]
-        .filter(Boolean)
-        .join('\n\n');
+      const description = [credits, s.description].filter(Boolean).join('\n\n');
       return {
         uid: `session-${s.id}@${event.slug}.libresesh`,
         startsAt: new Date(s.starts_at),

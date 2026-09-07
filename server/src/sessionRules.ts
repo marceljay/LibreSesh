@@ -174,9 +174,7 @@ export function assertWithinTrackHours(
   // day it belongs to rather than opening the next one.
   if (endMin === 0 && localDate(window.endsAt, event.timezone) > startDate) endMin = 1440;
   if (startMin < hours.startMin || endMin > hours.endMin) {
-    throw badRequest(
-      `“${track.name}” only takes sessions between ${windowLabel(hours)}`,
-    );
+    throw badRequest(`“${track.name}” only takes sessions between ${windowLabel(hours)}`);
   }
 }
 

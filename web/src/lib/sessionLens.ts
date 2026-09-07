@@ -45,11 +45,7 @@ export interface LensContext {
 }
 
 /** Whether one session survives every filter that is set. */
-export function matchesLens(
-  session: SessionDto,
-  lens: SessionLens,
-  context: LensContext,
-): boolean {
+export function matchesLens(session: SessionDto, lens: SessionLens, context: LensContext): boolean {
   if (lens.rooms.length > 0 && !lens.rooms.includes(session.roomId)) return false;
   if (lens.tags.length > 0 && !session.tagIds.some((t) => lens.tags.includes(t))) {
     return false;

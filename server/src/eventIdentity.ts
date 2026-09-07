@@ -7,11 +7,7 @@ import { conflict } from './errors.js';
  */
 
 /** The name this identity goes by inside this event, if they have claimed one. */
-export function eventDisplayName(
-  db: Db,
-  eventId: number,
-  identityId: number,
-): string | undefined {
+export function eventDisplayName(db: Db, eventId: number, identityId: number): string | undefined {
   return db
     .prepare<[number, number], { display_name: string }>(
       'SELECT display_name FROM event_identities WHERE event_id = ? AND identity_id = ?',
@@ -33,12 +29,7 @@ function holderOf(db: Db, eventId: number, name: string): number | undefined {
  * it. Idempotent: re-claiming the name you already hold is a no-op, so a
  * returning attendee is never told their own name is taken.
  */
-export function claimEventName(
-  db: Db,
-  eventId: number,
-  identityId: number,
-  desired: string,
-): void {
+export function claimEventName(db: Db, eventId: number, identityId: number, desired: string): void {
   const holder = holderOf(db, eventId, desired);
   if (holder === identityId) return;
   if (holder !== undefined) {
