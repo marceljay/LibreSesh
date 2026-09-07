@@ -352,8 +352,29 @@ ascending consequence:
    stored password into a 500 instead of a sign-in. (My first negative case was
    wrong for exactly this reason: appending a character to a 72-byte password
    changes nothing, so it must be changed in place.)
-5. `better-sqlite3` 11→13 — `npm run rebuild:native`, then boot the server for
-   real, not just the suite.
+5. `better-sqlite3` 11→13 ✅ **done 2026-09-07**, with `@types/better-sqlite3`
+   7→9. No source change; `npm run rebuild:native` after, as every install here
+   needs.
+
+   **This is the bump the Node move paid for.** `better-sqlite3@13` declares
+   `engines: node >=22`. Had production still been on `node:20-slim`, this
+   would have been blocked — Phase 6 was not tidying, it was the prerequisite.
+
+   The bundled SQLite goes **3.49.2 → 3.53.4**, which is why the suite passing
+   was not the end of it. Booted for real, both ways:
+
+   - **against an existing database** — a live `.backup()` of the dev file, 2
+     events and 20 applied migrations. No migration ran, nothing complained,
+     `/` served and `/api/events` returned the real rows. This is the path a
+     deployer is actually on.
+   - **against a fresh one** — all 20 migrations from empty, then the seed
+     wrote 232 sessions plus rooms, tags, formats and people. Then an
+     authenticated `POST /rooms` came back 201 and read back out of the bundle,
+     so a write survives the round trip and not just the insert.
+
+   The real `data/app.db` was never opened for writing; the copy was made with
+   better-sqlite3's own backup API precisely because the dev server holds the
+   original open in WAL mode.
 
 ### Phase 6 — align Node ✅ done 2026-09-07 (the alignment; vite/vitest still open)
 
