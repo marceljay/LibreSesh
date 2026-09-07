@@ -15,6 +15,14 @@ All notable changes to this project are documented here.
   person opens the People tab. A thing the server can no longer find stays
   plain text rather than becoming a link to nothing.
 
+### Changed
+
+- **The test suite renders the app now.** Every route mounts under a
+  simulated browser, talks to the real server, and is held to a clean
+  console — where React reports a bad ref, a missing key or an update it did
+  not expect. Until now nothing in the suite rendered a component, so a React
+  or router upgrade could pass every test and still break the page.
+
 ### Fixed
 
 - **The gate has a way off it.** The page that asks for an event's password
