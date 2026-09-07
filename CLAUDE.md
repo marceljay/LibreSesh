@@ -31,6 +31,15 @@ See `ARCHITECTURE.md`. Read **§What a cookie is, exactly** before touching
 anything to do with identity, sign-in or `COOKIE_SECRET` — it is the concept
 the rest hangs off, and the one most easily got wrong.
 
+## Releases and versions
+
+The `release` skill owns anything that touches a version number — cutting a
+release, bumping, tagging, dependency upgrades, merging dev into main. It fires
+on its own; it does not wait to be asked. Its first rule is the one that has
+been broken twice: `git fetch` before concluding anything about what has
+shipped, because a released version is frozen and a stale ref cannot tell you
+which those are.
+
 ## Current Status
 
 See `STATUS.md` for current work and `CHANGELOG.md` for completed milestones.
