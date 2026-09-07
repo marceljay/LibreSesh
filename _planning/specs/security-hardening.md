@@ -2,7 +2,7 @@
 
 **Status:** proposed, 2026-09-05. Companion plan:
 [`plans/2026-09-05-security-hardening.md`](../plans/2026-09-05-security-hardening.md).
-Threat model and the decisions already taken: ARCHITECTURE.md §Security.
+Threat model and the decisions already taken: SECURITY.md.
 
 The threat model stands — public-ish, low-stakes, high-trust; the host is
 trusted; identity is a cookie. This spec does not change it. It closes the gaps
@@ -245,7 +245,7 @@ hashes on lookup. A deterministic hash means a migration can rewrite the
 columns in place, every existing cookie keeps working and every old backup
 still restores.
 
-It does not protect anyone from the running server (ARCHITECTURE §Security,
+It does not protect anyone from the running server (SECURITY.md,
 *The running server can act as any user*) and the backup still needs
 encrypting for the names in it and the speaker-code hashes. What it changes is
 the sentence on the Backup tab: *the file alone cannot sign anyone in*.

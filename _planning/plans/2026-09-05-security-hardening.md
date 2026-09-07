@@ -74,7 +74,7 @@ Closes §4 except the instance-wide switch and Evict.
 - Tests: `lockdown.test.ts` (an admin freezes; an admin cannot lift; the key
   lifts; every write class is 409 while locked; reads and the feed work; prune
   is skipped; the settings PATCH is refused even for `archived: false`).
-- Docs: ARCHITECTURE §Security gets a *Lockdown* subsection; `managing.md`
+- Docs: SECURITY.md gets a *Lockdown* subsection; `managing.md`
   gets *If something goes wrong*.
 
 ## Phase 4 — tokens at rest (1 day)
