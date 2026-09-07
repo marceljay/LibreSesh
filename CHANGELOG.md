@@ -29,6 +29,16 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The time box takes digits, and only digits.** 0.3.6 had it type the colon
+  after two digits of hour, and stop there: letters still went in, a fifth
+  digit and an eighth went in, and a `9` sat alone waiting for a second digit
+  that no hour beginning with nine can have. The box is now masked as it is
+  typed. Only digits get in, four at most; the colon is typed for you after
+  the hour; `9` is `09:` at once, `93` is `09:3` on its way to `09:30`, and
+  `12345678` stops at `12:34`. A paste of `9.30` or `14h30` lands as `09:30`
+  and `14:30`. Backspace is left alone, colon included. `2pm` is no longer a
+  way to type fourteen — the clock is twenty-four hours, and the box says so.
+
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what
   site this was or where the other events were. Someone holding the wrong
