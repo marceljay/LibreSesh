@@ -57,6 +57,14 @@ export interface ThemeControl {
  * It reads the stored choice at the moment of the change rather than
  * capturing it, so an explicit "dark" chosen after this mounted is honoured —
  * the OS flipping to light must not override a person who asked for dark.
+ *
+ * The media query's `change` event is only delivered while the page is on
+ * screen. A phone that went dark at sunset with the app in the background,
+ * a tab that sat behind another, or a page restored from the back-forward
+ * cache all come back having heard nothing — and the page stays light until
+ * something else applies the theme, which was the profile menu mounting its
+ * toggle. So the follower also syncs whenever the page becomes visible again:
+ * a redundant call when the event did arrive, the only call when it did not.
  */
 export function useFollowSystemTheme(): void {
   useEffect(() => {
@@ -66,9 +74,14 @@ export function useFollowSystemTheme(): void {
     mq.addEventListener('change', sync);
     // A choice made in another tab of the same site.
     window.addEventListener('storage', sync);
+    // Back on screen, or back from the bfcache: catch up on what was missed.
+    document.addEventListener('visibilitychange', sync);
+    window.addEventListener('pageshow', sync);
     return () => {
       mq.removeEventListener('change', sync);
       window.removeEventListener('storage', sync);
+      document.removeEventListener('visibilitychange', sync);
+      window.removeEventListener('pageshow', sync);
     };
   }, []);
 }

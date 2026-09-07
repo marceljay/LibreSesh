@@ -14,6 +14,14 @@ All notable changes to this project are documented here.
   started, so a row that is running keeps its "now" cards above the line; the
   Now button and opening the schedule mid-event both land on it.
 
+- **The page catches up with the system theme when you come back to it.**
+  The 0.3.5 fix listened for the OS switch from the app itself, but a browser
+  delivers that switch only to a page that is on screen: a phone that went
+  dark at sunset with the app in the background, or a page brought back from
+  the back-forward cache, came back light and stayed light until the profile
+  menu's toggle mounted and applied the theme. The follower now also re-reads
+  the theme whenever the page becomes visible again.
+
 - **The front door fits a phone.** On a phone the landing page came up wider
   than the screen: its right edge was cut off and you zoomed out to see the
   whole of it. The board preview's address bar was the cause — a line that
