@@ -99,6 +99,42 @@ describe('the audit log, read back', () => {
     expect(deletion?.entityLabel).toBe('Something said in the room');
   });
 
+  it('says who and what well enough for a line to link somewhere', async () => {
+    const created = await makeSession('Opening keynote');
+    const sessionId = (created.body as { id: number }).id;
+    const note = await admin
+      .post(`/api/e/testconf/sessions/${sessionId}/contributions`)
+      .send({ kind: 'note', body: 'A note' })
+      .expect(201);
+    const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
+    const me = (bundle.body as { people: { id: number; isMine: boolean }[] }).people.find(
+      (p) => p.isMine,
+    );
+
+    let page = await read();
+    // The actor's profile in this event, and a note's session.
+    expect(page.entries[0]).toMatchObject({
+      entity: 'contribution',
+      actorPersonId: me?.id,
+      entityState: 'live',
+      entityParentId: sessionId,
+    });
+    expect(page.entries[1]).toMatchObject({
+      entity: 'session',
+      entityState: 'live',
+      entityParentId: null,
+    });
+
+    // Once in the bin the line says so, so it can open Trash instead.
+    await admin.delete(`/api/e/testconf/sessions/${sessionId}`).expect(204);
+    await admin
+      .delete(`/api/e/testconf/contributions/${(note.body as { id: number }).id}`)
+      .expect(204);
+    page = await read();
+    expect(page.entries[0]).toMatchObject({ entity: 'contribution', entityState: 'trashed' });
+    expect(page.entries[1]).toMatchObject({ entity: 'session', entityState: 'trashed' });
+  });
+
   it('shows one event and not its neighbour', async () => {
     seedEvent(harness.db, { slug: 'otherconf' });
     const other = await actorWithRole(harness, 'otherconf', 'admin-pw');

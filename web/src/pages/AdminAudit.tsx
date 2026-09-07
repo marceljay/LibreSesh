@@ -1,7 +1,9 @@
 import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { AuditEntryDto, AuditItemDto } from '@shared/types';
 import { api } from '../lib/api';
+import { auditActorHref, auditSubjectHref } from '../lib/auditLinks';
 import { relativeTime, rowId, uid } from '../lib/format';
 import { plural, pluralForm } from '../lib/plural';
 import {
@@ -84,11 +86,25 @@ const TONE: Record<string, string> = {
   merge: 'text-amber-700 dark:text-amber-400',
 };
 
+/** A name or a title that opens the thing it names. Quiet at rest — the log
+ *  is a dense list and every line would otherwise be half link — and plainly
+ *  a link under the pointer. */
+const LINK =
+  'rounded-sm underline decoration-stone-300 underline-offset-2 hover:decoration-current dark:decoration-stone-600';
+
 /** The actor, their UID and the time — the parts every line shares. */
-function Who({ entry }: { entry: AuditEntryDto }) {
+function Who({ slug, entry }: { slug: string; entry: AuditEntryDto }) {
+  const href = auditActorHref(slug, entry);
+  const name = entry.actorName || 'someone';
   return (
     <>
-      <span className="font-medium">{entry.actorName || 'someone'}</span>
+      {href ? (
+        <Link to={href} className={`font-medium ${LINK}`}>
+          {name}
+        </Link>
+      ) : (
+        <span className="font-medium">{name}</span>
+      )}
       {/* The UID, not just the name: names are editable and this log is read
           precisely when someone wants to know who did a thing. The same code
           identifies them at every event on this instance. */}
@@ -117,19 +133,38 @@ function When({ at }: { at: string }) {
 }
 
 /** What was acted on: its name if it could still be looked up, and always its
- *  id — the name is what it is called now, the id is what was acted on. */
-function What({ entry }: { entry: AuditEntryDto }) {
-  return (
+ *  id — the name is what it is called now, the id is what was acted on. The
+ *  name opens the thing, or the bin it is in (`auditSubjectHref`); when there
+ *  is no name to hold the link, the id holds it. */
+function What({ slug, entry }: { slug: string; entry: AuditEntryDto }) {
+  const href = auditSubjectHref(slug, entry);
+  const label = entry.entityLabel ? `“${entry.entityLabel}”` : null;
+  const id =
+    entry.entityId !== null ? (
+      <span className="font-mono text-xs text-stone-400 dark:text-stone-500">
+        ({rowId(entry.entityId)})
+      </span>
+    ) : null;
+  if (!href) {
+    return (
+      <>
+        {label && <span className="min-w-0 truncate font-medium">{label}</span>}
+        {id}
+      </>
+    );
+  }
+  const where = entry.entityState === 'trashed' ? 'Open in Trash' : 'Open';
+  return label ? (
     <>
-      {entry.entityLabel && (
-        <span className="min-w-0 truncate font-medium">“{entry.entityLabel}”</span>
-      )}
-      {entry.entityId !== null && (
-        <span className="font-mono text-xs text-stone-400 dark:text-stone-500">
-          ({rowId(entry.entityId)})
-        </span>
-      )}
+      <Link to={href} title={where} className={`min-w-0 truncate font-medium ${LINK}`}>
+        {label}
+      </Link>
+      {id}
     </>
+  ) : (
+    <Link to={href} title={where} className={LINK}>
+      {id}
+    </Link>
   );
 }
 
@@ -142,7 +177,7 @@ function What({ entry }: { entry: AuditEntryDto }) {
  * the morning's history, so the batch reads as one line and opens to show every
  * member. Nothing is hidden; it is folded.
  */
-function Entry({ entry }: { entry: AuditItemDto }) {
+function Entry({ slug, entry }: { slug: string; entry: AuditItemDto }) {
   const [open, setOpen] = useState(false);
   const action = ACTIONS[entry.action] ?? entry.action;
   const forms = ENTITIES[entry.entity] ?? { one: entry.entity, other: entry.entity };
@@ -152,10 +187,10 @@ function Entry({ entry }: { entry: AuditItemDto }) {
   if (members === undefined) {
     return (
       <li className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800">
-        <Who entry={entry} />
+        <Who slug={slug} entry={entry} />
         <span className={tone}>{action}</span>
         <span className="text-stone-500 dark:text-stone-400">{pluralForm(1, forms)}</span>
-        <What entry={entry} />
+        <What slug={slug} entry={entry} />
         <When at={entry.at} />
       </li>
     );
@@ -164,7 +199,7 @@ function Entry({ entry }: { entry: AuditItemDto }) {
   return (
     <li className="border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800">
       <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-        <Who entry={entry} />
+        <Who slug={slug} entry={entry} />
         <span className={tone}>{action}</span>
         {/* The count, and the title they share — a repeat is the same session
             on several days, so one name covers the batch. */}
@@ -190,7 +225,7 @@ function Entry({ entry }: { entry: AuditItemDto }) {
               className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-xs text-stone-500 dark:text-stone-400"
             >
               <span>{pluralForm(1, forms)}</span>
-              <What entry={member} />
+              <What slug={slug} entry={member} />
               <When at={member.at} />
             </li>
           ))}
@@ -282,7 +317,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
           </ControlShell>
           <ul>
             {shown.map((entry) => (
-              <Entry key={entry.id} entry={entry} />
+              <Entry key={entry.id} slug={slug} entry={entry} />
             ))}
           </ul>
           {shown.length === 0 && (
