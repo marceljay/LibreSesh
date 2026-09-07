@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.5] — 2026-09-07
+
 ### Added
 
 - **A mention lands somewhere now.** Writing `@ada` in a comment linked to Ada
