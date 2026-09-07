@@ -4,7 +4,14 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **The gate has a way off it.** The page that asks for an event's password
+  was a card alone on a blank page: no logo, no link, nothing to say what
+  site this was or where the other events were. Someone holding the wrong
+  link, or the wrong password, had nowhere to go but the address bar. It now
+  wears the same small header as every other page — the mark goes home, and
+  **All events** is one link away.
 
 ## [0.3.6] — 2026-09-07
 
