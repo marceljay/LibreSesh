@@ -15,6 +15,21 @@ All notable changes to this project are documented here.
   person opens the People tab. A thing the server can no longer find stays
   plain text rather than becoming a link to nothing.
 
+- **A speaker code has its own door, and its own link.** The gate now says
+  *I have a speaker code* next to *I'm already here on another device* — the
+  box that took the code was there, but only behind a sentence about device
+  linking that a speaker on their one phone would never click. When the code
+  does not match, the gate says to ask the organiser rather than hinting at a
+  ten-minute clock a speaker code does not have. And on the profile page,
+  beside the phrase, the organiser now gets the same code as a link and a QR:
+  opening `/e/:slug#c=<phrase>` signs that device in as the speaker with
+  nothing to type. The code rides in the part of the address a browser never
+  sends, as the invite QR's password does, and is taken out of the address
+  bar before the page draws. One code, and one link, work on as many devices
+  as the speaker opens them on, until the organiser revokes it. A device that
+  is already somebody in the event — an organiser checking their own link —
+  is asked before it is switched, so the link cannot silently sign them out.
+
 ### Changed
 
 - **The test suite renders the app now.** Every route mounts under a
