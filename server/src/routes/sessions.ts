@@ -8,7 +8,7 @@ import type { Role } from '../shared/types.js';
 import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
-import { isAMove, notifyDescriptionMentions, notifySessionAudience } from '../notifications.js';
+import { isAMove, notifyMentionsIn, notifySessionAudience } from '../notifications.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -167,14 +167,15 @@ export function sessionRoutes(ctx: Ctx): Router {
       entityId: id,
     });
     ctx.broker.publish(req.event.slug, 'session.created', dto);
-    notifyDescriptionMentions(
+    notifyMentionsIn(
       ctx.db,
       {
         eventId: req.event.id,
-        sessionId: id,
-        sessionTitle: dto.title,
+        subjectType: 'session',
+        subjectId: id,
         actorId: req.identity.id,
-        description: body.description ?? '',
+        text: body.description ?? '',
+        where: `in “${dto.title}”`,
       },
       (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
     );
@@ -327,14 +328,15 @@ export function sessionRoutes(ctx: Ctx): Router {
     // the first occurrence carries it, and the panel opens on that one.
     const firstOfRun = dtos[0];
     if (firstOfRun) {
-      notifyDescriptionMentions(
+      notifyMentionsIn(
         ctx.db,
         {
           eventId: req.event.id,
-          sessionId: firstOfRun.id,
-          sessionTitle: firstOfRun.title,
+          subjectType: 'session',
+          subjectId: firstOfRun.id,
           actorId: req.identity.id,
-          description: body.description ?? '',
+          text: body.description ?? '',
+          where: `in “${firstOfRun.title}”`,
         },
         (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
       );
@@ -590,15 +592,16 @@ export function sessionRoutes(ctx: Ctx): Router {
     // session that was edited — a series edit that carried the words to its
     // siblings is still one act of naming them.
     if (body.description !== undefined && body.description !== existing.description) {
-      notifyDescriptionMentions(
+      notifyMentionsIn(
         ctx.db,
         {
           eventId: req.event.id,
-          sessionId: existing.id,
-          sessionTitle: nextTitle,
+          subjectType: 'session',
+          subjectId: existing.id,
           actorId: req.identity.id,
-          description: body.description,
+          text: body.description,
           previous: existing.description,
+          where: `in “${nextTitle}”`,
         },
         (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
       );

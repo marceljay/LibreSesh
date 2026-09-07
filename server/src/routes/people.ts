@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { atLeast, getRole, requireRole, requireWritable, setRole } from '../auth.js';
 import { audit } from '../audit.js';
+import { notifyMentionsIn } from '../notifications.js';
 import type { Ctx } from '../context.js';
 import { mintSpeakerCode, revokeSpeakerCode } from '../deviceLink.js';
 import type { PersonRow, SessionRow } from '../db.js';
@@ -58,6 +59,31 @@ export function peopleRoutes(ctx: Ctx): Router {
       .get(id, eventId);
     if (!row) throw notFound('No such profile');
     return row;
+  };
+
+  /** Someone newly named in a bio hears about it — the same parse and the
+   *  same silence rules as a session description. `row` is the profile as it
+   *  was before the write, so only a name the old bio did not hold rings. */
+  const bioMentions = (
+    req: { event: { id: number; slug: string }; identity: { id: number } },
+    row: PersonRow,
+    bio: string | undefined,
+    where: string,
+  ) => {
+    if (bio === undefined || bio === row.bio) return;
+    notifyMentionsIn(
+      ctx.db,
+      {
+        eventId: req.event.id,
+        subjectType: 'person',
+        subjectId: row.id,
+        actorId: req.identity.id,
+        text: bio,
+        previous: row.bio,
+        where,
+      },
+      (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+    );
   };
 
   const write = (row: PersonRow, patch: { name?: string; bio?: string; links?: unknown[] }) => {
@@ -119,6 +145,7 @@ export function peopleRoutes(ctx: Ctx): Router {
           body.name ?? (req.identity.display_name || req.identity.public_id),
         );
       write(row, body);
+      bioMentions(req, row, body.bio, 'in their bio');
 
       const { own, pub } = views(req, row.id);
       audit(ctx.db, {
@@ -178,6 +205,7 @@ export function peopleRoutes(ctx: Ctx): Router {
 
       const body = parse(personPatchSchema, req.body);
       write(person, body);
+      bioMentions(req, person, body.bio, mine ? 'in their bio' : `in ${person.name}’s bio`);
 
       const { own, pub } = views(req, person.id);
       audit(ctx.db, {

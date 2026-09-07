@@ -168,6 +168,46 @@ describe('notifications', () => {
     });
   });
 
+  describe('a mention in a bio', () => {
+    it('lands, and opens the profile that names them', async () => {
+      const mine = await ada
+        .patch('/api/e/testconf/me/profile')
+        .send({ bio: 'Pairing with @grace all week' })
+        .expect(200);
+
+      const theirs = await inbox(grace);
+      expect(theirs.body.items).toHaveLength(1);
+      expect(theirs.body.items[0]).toMatchObject({
+        kind: 'mention',
+        subjectType: 'person',
+        subjectId: mine.body.id,
+        title: 'ada mentioned you in their bio',
+      });
+    });
+
+    it('rings once, however often the bio is re-saved with the name in it', async () => {
+      const mine = await ada
+        .patch('/api/e/testconf/me/profile')
+        .send({ bio: '@grace' })
+        .expect(200);
+      await ada.patch('/api/e/testconf/me/profile').send({ bio: '@grace and me' }).expect(200);
+      await ada
+        .patch(`/api/e/testconf/people/${mine.body.id}`)
+        .send({ bio: '@grace, me, again' })
+        .expect(200);
+      expect((await inbox(grace)).body.items).toHaveLength(1);
+    });
+
+    it('says whose bio it was when an organiser wrote it', async () => {
+      const theirs = await ada.patch('/api/e/testconf/me/profile').send({ bio: '' }).expect(200);
+      await admin
+        .patch(`/api/e/testconf/people/${theirs.body.id}`)
+        .send({ bio: 'Ask @grace' })
+        .expect(200);
+      expect((await inbox(grace)).body.items[0].title).toBe('organiser mentioned you in ada’s bio');
+    });
+  });
+
   describe('a session moving', () => {
     it('tells the people who starred it', async () => {
       await ada.put(`/api/e/testconf/sessions/${sessionId}/star`).expect(204);

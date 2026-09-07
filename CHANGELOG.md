@@ -15,7 +15,10 @@ All notable changes to this project are documented here.
   the session is made or when an edit first names her; an edit that keeps her
   name where it was says nothing, a run of repeats counts as one mention, and
   naming yourself never rings. A `@name` inside a code span or an existing
-  link stays as written. Bios and pitches are not yet covered.
+  link stays as written. A profile's **bio** works the same way: the bio box
+  offers the menu, the name links on the profile, and the person hears once
+  — *ada mentioned you in their bio* — with the entry opening that profile.
+  Pitches are not yet covered.
 
 - **Leaving Settings with unsaved edits asks first.** Manage Event → Settings
   is the one form on the page with a Save button, and switching tab, picking a

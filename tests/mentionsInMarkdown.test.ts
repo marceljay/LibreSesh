@@ -63,6 +63,20 @@ describe('the session form and panel are wired to it', () => {
     expect(modal).toContain('Type @ to mention someone.');
   });
 
+  it('the profile page does the same for a bio, and the bell opens the profile', () => {
+    const profile = readFileSync(
+      join(__dirname, '..', 'web', 'src', 'pages', 'ProfilePage.tsx'),
+      'utf8',
+    );
+    expect(profile).toMatch(/<MentionTextArea\s+people=\{people\}\s+value=\{draftBio\}/);
+    expect(profile).toMatch(/renderMarkdown\(person\.bio, \{\s*usernames:/);
+    expect(profile).toContain('onClick={followMention}');
+    const bell = src('NotificationBell.tsx');
+    expect(bell).toContain(
+      "if (n.subjectType === 'person') navigate(`/e/${slug}/p/${n.subjectId}`);",
+    );
+  });
+
   it('the panel renders the description with the event’s names, and routes the click', () => {
     const detail = src('SessionDetail.tsx');
     expect(detail).toMatch(/renderMarkdown\(session\.description, \{\s*usernames:/);

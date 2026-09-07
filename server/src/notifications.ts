@@ -52,7 +52,7 @@ export interface NewNotification {
   /** Who it is for. Nothing is written when this equals `actorId`. */
   identityId: number;
   kind: NotificationKind;
-  subjectType: 'session' | 'contribution' | 'proposal';
+  subjectType: 'session' | 'contribution' | 'proposal' | 'person';
   subjectId: number;
   title: string;
   body?: string;
@@ -152,43 +152,46 @@ export function mentionedIdentities(db: Db, eventId: number, text: string): numb
   return [...ids];
 }
 
-/** The first line or so of a description, for the panel: the session it
- *  links to holds the rest. */
+/** The first line or so of the text, for the panel: the subject it links
+ *  to holds the rest. */
 const snippet = (text: string): string => (text.length > 200 ? `${text.slice(0, 199)}…` : text);
 
 /**
- * A mention written into a session's description — on the session being made,
- * or its description edited. Only the names that are new: an edit that keeps
- * `@ada` where it was must not tell Ada again, so whoever `previous` already
- * named is subtracted first. A comment's mention is parsed in its own route;
- * this is the same parse for the other place a person can be named.
- * Returns the identities told.
+ * A mention written into a body of text that is not a comment — a session's
+ * description, a person's bio — on the text being written or rewritten. Only
+ * the names that are new: an edit that keeps `@ada` where it was must not
+ * tell Ada again, so whoever `previous` already named is subtracted first.
+ * A comment's mention is parsed in its own route; this is the same parse for
+ * the other places a person can be named. `where` finishes the sentence
+ * "X mentioned you …" — *in “Panel”*, *in their bio*. Returns the identities
+ * told.
  */
-export function notifyDescriptionMentions(
+export function notifyMentionsIn(
   db: Db,
   n: {
     eventId: number;
-    sessionId: number;
-    sessionTitle: string;
+    subjectType: 'session' | 'person';
+    subjectId: number;
     actorId: number;
-    description: string;
+    text: string;
     previous?: string;
+    where: string;
   },
   ping: (identityId: number) => void,
 ): number[] {
   const already = new Set(n.previous ? mentionedIdentities(db, n.eventId, n.previous) : []);
   const actorName = eventDisplayName(db, n.eventId, n.actorId) ?? 'Someone';
   const told: number[] = [];
-  for (const identityId of mentionedIdentities(db, n.eventId, n.description)) {
+  for (const identityId of mentionedIdentities(db, n.eventId, n.text)) {
     if (already.has(identityId)) continue;
     const id = notify(db, {
       eventId: n.eventId,
       identityId,
       kind: 'mention',
-      subjectType: 'session',
-      subjectId: n.sessionId,
-      title: `${actorName} mentioned you in “${n.sessionTitle}”`,
-      body: snippet(n.description),
+      subjectType: n.subjectType,
+      subjectId: n.subjectId,
+      title: `${actorName} mentioned you ${n.where}`,
+      body: snippet(n.text),
       actorId: n.actorId,
     });
     if (id !== null) {

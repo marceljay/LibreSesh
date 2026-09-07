@@ -41,8 +41,8 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   you sent in chat, one commit each, all in CHANGELOG `[Unreleased]` and
   queued for your eyes as **R31–R35** — the now line in List view, the theme
   catching up when the page comes back on screen, *Leave without saving?* on
-  the Settings tab, `@` mentions in a session description (composer, link
-  and bell), and the time box typing its own colon. **Not merged to `dev`**:
+  the Settings tab, `@` mentions in a session description and in a bio
+  (composer, link and bell), and the time box typing its own colon. **Not merged to `dev`**:
   another session is landing a dependency round there (zod 4 at `0341e1f`,
   the lockfile still moving), so the merge waits until that settles —
   `git merge fix/review-round-2` on `dev`, then delete the worktree. The suite
@@ -272,17 +272,17 @@ so ticking there is enough — nothing needs pasting back.
     **Progress 2026-09-07:** 2 of the 17 checks ticked on the review sheet
     (the password-manager save, and the eye) — the time fields and the two
     2026-09-05 notes are still unseen.
-19. **R31 · The now line in List view.** On the day of the event, switch to
+20. **R31 · The now line in List view.** On the day of the event, switch to
     List. *Pass:* the same yellow line as the grid, with the time on it, sits
     between the rows — after a session that is running (its cards say *now*)
     and before the next one to start; after the last row once everything has
     started; nowhere on any other day. **Now** in the header scrolls to it;
     opening the schedule mid-event lands on it.
-20. **R32 · Dark mode catches up.** Theme on *System*. Put the app in the
+21. **R32 · Dark mode catches up.** Theme on *System*. Put the app in the
     background (another tab, or the phone's home screen), flip the OS to
     dark, come back. *Pass:* the page is dark the moment it is on screen,
     with the profile menu closed. Also try the browser's Back into the app.
-21. **R33 · Leave without saving.** Manage Event → Settings, change the name,
+22. **R33 · Leave without saving.** Manage Event → Settings, change the name,
     then click another tab. *Pass:* a dialog asks *Leave without saving?*;
     **Cancel** keeps you and your edit; **Leave without saving** switches tab
     and, back on Settings, the name is the saved one. The same for a
@@ -290,15 +290,18 @@ so ticking there is enough — nothing needs pasting back.
     **Save settings** and switch tab: no dialog. A reload with an edit
     pending gets the browser's own warning. The browser's Back button does
     not ask — known, not covered.
-22. **R34 · A mention in a description.** Add or edit a session, type `@` in
+23. **R34 · A mention in a description.** Add or edit a session, type `@` in
     **Description**. *Pass:* the same menu as the comment box; pick a name;
     save. On the session panel the name is a link that opens the profile
     without a page reload; a `@name` inside backticks stays plain. The named
     person's bell rings once, the entry says *X mentioned you in “Title”*
     and opens the session; edit the description keeping the name and it
     does **not** ring again; add a second name and only that person hears.
-    Placing a repeat with a mention rings once, not once per day.
-23. **R35 · The time box types the colon.** Any time field: type `0` `8` —
+    Placing a repeat with a mention rings once, not once per day. Then your
+    **profile → Bio**: the same menu; on the profile the name links; the
+    named person's entry reads *ada mentioned you in their bio* and opens
+    that profile.
+24. **R35 · The time box types the colon.** Any time field: type `0` `8` —
     the box reads `08:` and the next digits are minutes; type `9` `3` `0` —
     it reads `09:30`. Backspace over the colon: it does not come back.
     On a **phone**, the numeric keyboard can now type a whole time. `2pm`
@@ -464,15 +467,16 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentions in bios and pitches.** Delivery landed 2026-09-05 (the bell,
-  R29) and descriptions followed on 2026-09-07 (`fix/review-round-2`, R34):
-  `renderMarkdown` now takes the event's names and links a mention in the
+- **Mentions in pitches.** Delivery landed 2026-09-05 (the bell, R29);
+  descriptions and bios followed on 2026-09-07 (`fix/review-round-2`, R34):
+  `renderMarkdown` takes the event's names and links a mention in the
   rendered prose (`linkMentionsInHtml`, skipping code and links), the
-  description box is a `MentionTextArea`, and `notifyDescriptionMentions`
-  tells a newly named person once. What is left is the same three steps for
-  a bio (`ProfilePage`) and a pitch (`ProposalBoard`, `ProposalModal`) — the
-  renderer and the composer are reusable as they are; each needs the
-  `people` list where it renders and a notify call on its write route. And
+  description and bio boxes are `MentionTextArea`s, and `notifyMentionsIn`
+  tells a newly named person once, for a `session` or a `person` subject.
+  What is left is the same three steps for a pitch (`ProposalBoard`,
+  `ProposalModal`, `routes/proposals.ts`): the `people` list where it
+  renders, the composer, and a notify call on its write route with a
+  `proposal` subject — which the bell already knows how to open. And
   resolution is still by username only, so a mention of an unclaimed profile
   — a name typed onto a session before that person arrives — has no inbox to
   wait in; deliver on adoption (`adoptProfile` in `people.ts`) when this is
