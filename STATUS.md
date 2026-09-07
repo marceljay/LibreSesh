@@ -380,6 +380,26 @@ they left behind landed 2026-09-05 as R26).
   No captcha or edge proxy assumed — the question was whether the server can
   do this alone, and it can, up to "slow and visible" rather than "impossible".
 
+- **D4 · A signed-in-devices view, and what it costs.** Your proposal
+  (2026-09-07): a speaker — or also an organiser — can see which devices are
+  signed in as them, by address and browser, whether they came through a
+  device phrase or a speaker code; from what the request already carries, no
+  tracking modules. What I found: today the server *cannot* tell devices
+  apart. Every device that redeems a phrase receives the same identity token,
+  so there is no row per device to list, and no way to sign one out. The
+  audit log records a redemption but neither address nor browser. So the
+  feature is a data-model change, not a screen: a `devices` table (identity,
+  hashed per-device token, origin `gate|phrase|code|link`, first and last
+  seen, IP, User-Agent), the cookie carrying the device token, and revocation
+  per device — which also lets "revoke the speaker code" evict the devices it
+  let in, the gap SECURITY.md now names. Decisions I need: (a) who sees it —
+  I recommend everyone sees their own devices, and organisers see them on the
+  profile of anyone holding a speaker code, since those are the credentials
+  they hand out; (b) retention — I recommend last-seen only, rows dropped 90
+  days after they were last seen; (c) go or park. It is its own branch and a
+  migration on identity, so it should follow the token-hashing work in D3
+  rather than precede it.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -433,7 +453,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   existing cookie working and every old backup restorable. `identity.ts` and
   `agenda.ts:78` change; the backup warning and the threat-model row get
   weaker in the good sense. It does **not** protect anyone from the running
-  server — see ARCHITECTURE §Security, *The running server can act as any
+  server — see SECURITY.md, *The running server can act as any
   user* — and the file still needs encrypting for the names in it and the
   crackable speaker-code hashes. Its own branch: it is a migration on identity.
 
