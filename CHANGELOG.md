@@ -103,6 +103,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A pitch notification opens the pitch board.** Tapping one in the bell sent
+  you to the front door instead: it navigated to `/e/<event>/pitches` while the
+  board has always lived at `/e/<event>/proposals`, so the catch-all route
+  bounced you to the landing page with no error to explain it. The bell now
+  points at the route that exists, and a test walks every `/e/<event>/…` link
+  the app builds against the route table, so the next dead link fails the suite
+  rather than the visitor.
+
 - **A dragged session no longer flashes back to its old slot.** In Arrange,
   dropping a block was meant to hold it where it landed until the server
   answered; instead it snapped back for the whole round trip — about half a
