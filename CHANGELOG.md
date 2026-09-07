@@ -6,6 +6,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The list has the now line too.** In List view the only trace of the
+  current time was a "next / now" pill on one row's clock — no line and no
+  time — so switching from the grid on the day of the event lost the one mark
+  that said where you were. The list now draws the grid's yellow line between
+  its rows, carrying the time. It sits before the first row that has not
+  started, so a row that is running keeps its "now" cards above the line; the
+  Now button and opening the schedule mid-event both land on it.
+
 - **The front door fits a phone.** On a phone the landing page came up wider
   than the screen: its right edge was cut off and you zoomed out to see the
   whole of it. The board preview's address bar was the cause — a line that
