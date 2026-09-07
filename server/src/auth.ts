@@ -95,10 +95,25 @@ export function roleForPassword(event: EventRow, password: string): Role | undef
   return undefined;
 }
 
+/**
+ * One path segment, as a string.
+ *
+ * Express 5 routes through path-to-regexp 8, where a pattern can repeat a
+ * parameter, so `req.params.x` is typed `string | string[]`. None of ours
+ * repeat — every route is `:id` or `:slug`, one segment each — but the type is
+ * honest about what the router can express, so the narrowing has to be too.
+ * An array here would mean a route pattern changed underneath this; taking the
+ * first value keeps that a 404 rather than a crash.
+ */
+export const pathParam = (req: Request, name: string): string => {
+  const raw: string | string[] | undefined = req.params[name];
+  return (Array.isArray(raw) ? raw[0] : raw) ?? '';
+};
+
 /** Resolve `:slug` into `req.event`. */
 export function loadEvent(db: Db) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    const event = getEventBySlug(db, req.params.slug ?? '');
+    const event = getEventBySlug(db, pathParam(req, 'slug'));
     if (!event) {
       next(notFound('No such event'));
       return;

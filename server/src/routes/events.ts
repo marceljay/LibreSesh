@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import type { EventRow } from '../db.js';
-import { getEventBySlug, getRole, hasInstanceKey, hashPassword, setRole } from '../auth.js';
+import {
+  getEventBySlug,
+  getRole,
+  hasInstanceKey,
+  hashPassword,
+  pathParam,
+  setRole,
+} from '../auth.js';
 import { audit } from '../audit.js';
 import { isDemoEvent } from '../config.js';
 import type { Ctx } from '../context.js';
@@ -86,7 +93,7 @@ export function eventRoutes(ctx: Ctx): Router {
   /** Copy rooms, tags and formats into a fresh event — never sessions or
    *  contributions. */
   router.post('/events/:slug/clone', limit(ctx.limiter, 'write'), (req, res) => {
-    const source = getEventBySlug(ctx.db, req.params.slug ?? '');
+    const source = getEventBySlug(ctx.db, pathParam(req, 'slug'));
     if (!source) throw notFound('No such event');
 
     const isEventAdmin = getRole(ctx.db, req.identity.id, source.id) === 'admin';
