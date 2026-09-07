@@ -39,10 +39,11 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
 - **Branch `fix/review-round-2`** (2026-09-07, worktree
   `.claude/worktrees/review-fixes`, off `cce7f94` = 0.3.5): the five things
   you sent in chat, one commit each, all in CHANGELOG `[Unreleased]` and
-  queued for your eyes as **R31–R35** — the now line in List view, the theme
+  queued for your eyes as **R31–R36** — the now line in List view, the theme
   catching up when the page comes back on screen, *Leave without saving?* on
   the Settings tab, `@` mentions in a session description and in a bio
-  (composer, link and bell), and the time box typing its own colon. **Not merged to `dev`**:
+  (composer, link and bell), the time box typing its own colon, and the gate
+  wearing the logo and a link to the other events. **Not merged to `dev`**:
   another session is landing a dependency round there (zod 4 at `0341e1f`,
   the lockfile still moving), so the merge waits until that settles —
   `git merge fix/review-round-2` on `dev`, then delete the worktree. The suite
@@ -133,7 +134,7 @@ that is where these break.
 Freshest first. **R26 is the export/import work**, R21–R22 what is left of
 the 2026-09-04 checklist pass, R1–R2 the forms overhaul and the grid-block
 fix, R5–R6 linking and clashes, R7–R18 the older sweep, **R27** the `@` menu,
-**R28** the forms close-out, and **R31–R35 the five things you sent in chat
+**R28** the forms close-out, and **R31–R36 the things you sent in chat
 on 2026-09-07**, on `fix/review-round-2` until it is merged. Each takes a
 minute.
 
@@ -306,6 +307,12 @@ so ticking there is enough — nothing needs pasting back.
     it reads `09:30`. Backspace over the colon: it does not come back.
     On a **phone**, the numeric keyboard can now type a whole time. `2pm`
     still works; `12` then `pm` reads 12:00 on blur.
+
+25. **R36 · The gate has a way out.** Open an event link logged out, so the
+    password card shows. *Pass:* above the card, the LibreSesh mark on the
+    left and **All events** on the right; the mark opens `/`, the link opens
+    `/events`; in **both themes** and on a **phone** the header fits the
+    card's width.
 
 ### Decisions I need from you
 
