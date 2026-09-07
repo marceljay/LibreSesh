@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseTime, timeChoices } from '../web/src/lib/timeChoices';
+import { completeHour, parseTime, timeChoices } from '../web/src/lib/timeChoices';
 
 /**
  * The time field is the app's own — a box you type into with a list of
@@ -23,6 +23,9 @@ describe('parseTime: what the box accepts', () => {
     ['2:15 PM', '14:15'],
     ['12am', '00:00'],
     ['12pm', '12:00'],
+    // The box after `completeHour` put the colon in, and before the minutes.
+    ['08:', '08:00'],
+    ['12:pm', '12:00'],
   ])('reads %s as %s', (typed, hhmm) => {
     expect(parseTime(typed)).toBe(hhmm);
   });
@@ -131,5 +134,35 @@ describe("the field is capped to the event's day", () => {
       }
     }
     expect(uncapped).toEqual([]);
+  });
+});
+
+/**
+ * "After writing 08 it should jump to the minutes" (2026-09-07). A box with no
+ * segments has nothing to jump to, so the colon is typed for you instead — the
+ * next digits land on the minutes, and a phone's numeric keyboard, which has
+ * no colon key, can type a whole time.
+ */
+describe('completeHour: the colon typed for you', () => {
+  it('follows the second digit of an hour', () => {
+    expect(completeHour('0', '08')).toBe('08:');
+    expect(completeHour('2', '23')).toBe('23:');
+    expect(completeHour('', '14')).toBe('14:');
+  });
+
+  it('splits two digits that cannot be an hour, because they were 9:30 on its way', () => {
+    expect(completeHour('9', '93')).toBe('09:3');
+    expect(completeHour('2', '45')).toBe('04:5');
+  });
+
+  it('leaves one digit, three digits and anything with a letter alone', () => {
+    expect(completeHour('', '9')).toBe('9');
+    expect(completeHour('08:', '08:3')).toBe('08:3');
+    expect(completeHour('2', '2p')).toBe('2p');
+  });
+
+  it('never puts back a colon a backspace just took away', () => {
+    expect(completeHour('08:', '08')).toBe('08');
+    expect(completeHour('08', '0')).toBe('0');
   });
 });

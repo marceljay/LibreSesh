@@ -28,6 +28,12 @@ describe('the page follows the OS from the root, not from a menu', () => {
     );
     expect(follower).toContain("mq.addEventListener('change', sync);");
     expect(follower).toContain("window.addEventListener('storage', sync);");
+    // The change event only reaches a visible page. A phone that went dark
+    // with the app in the background, or a page back from the bfcache, has
+    // to catch up when it is looked at again — reported 2026-09-07 as "dark
+    // mode does not refresh, only when the profile menu is clicked".
+    expect(follower).toContain("document.addEventListener('visibilitychange', sync);");
+    expect(follower).toContain("window.addEventListener('pageshow', sync);");
     // Read when it fires, not captured when it mounted: an explicit "dark"
     // chosen later must beat the OS flipping to light.
     expect(follower).toContain('const sync = (): void => applyTheme(readStored());');

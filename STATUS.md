@@ -36,6 +36,19 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   collection): eight items cleared, three bad, two faults on a fourth — the
   fixes are the top backlog group.
 
+- **Branch `fix/review-round-2`** (2026-09-07, worktree
+  `.claude/worktrees/review-fixes`, off `cce7f94` = 0.3.5): the five things
+  you sent in chat, one commit each, all in CHANGELOG `[Unreleased]` and
+  queued for your eyes as **R31–R35** — the now line in List view, the theme
+  catching up when the page comes back on screen, *Leave without saving?* on
+  the Settings tab, `@` mentions in a session description and in a bio
+  (composer, link and bell), and the time box typing its own colon. **Not merged to `dev`**:
+  another session is landing a dependency round there (zod 4 at `0341e1f`,
+  the lockfile still moving), so the merge waits until that settles —
+  `git merge fix/review-round-2` on `dev`, then delete the worktree. The suite
+  was green on the branch (1169 → 1188) before the shared `node_modules` was
+  rebuilt under it; run it once more after the merge.
+
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
 `[0.3.0]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
@@ -120,7 +133,9 @@ that is where these break.
 Freshest first. **R26 is the export/import work**, R21–R22 what is left of
 the 2026-09-04 checklist pass, R1–R2 the forms overhaul and the grid-block
 fix, R5–R6 linking and clashes, R7–R18 the older sweep, **R27** the `@` menu,
-**R28** the forms close-out. Each takes a minute.
+**R28** the forms close-out, and **R31–R35 the five things you sent in chat
+on 2026-09-07**, on `fix/review-round-2` until it is merged. Each takes a
+minute.
 
 **Verdicts so far (from the review sheet, 2026-09-07):** R3, R4, R16, R19,
 R20, R23, R29 and R30 came back *ok* and are cleared from this list (R23's
@@ -257,6 +272,41 @@ so ticking there is enough — nothing needs pasting back.
     **Progress 2026-09-07:** 2 of the 17 checks ticked on the review sheet
     (the password-manager save, and the eye) — the time fields and the two
     2026-09-05 notes are still unseen.
+20. **R31 · The now line in List view.** On the day of the event, switch to
+    List. *Pass:* the same yellow line as the grid, with the time on it, sits
+    between the rows — after a session that is running (its cards say *now*)
+    and before the next one to start; after the last row once everything has
+    started; nowhere on any other day. **Now** in the header scrolls to it;
+    opening the schedule mid-event lands on it.
+21. **R32 · Dark mode catches up.** Theme on *System*. Put the app in the
+    background (another tab, or the phone's home screen), flip the OS to
+    dark, come back. *Pass:* the page is dark the moment it is on screen,
+    with the profile menu closed. Also try the browser's Back into the app.
+22. **R33 · Leave without saving.** Manage Event → Settings, change the name,
+    then click another tab. *Pass:* a dialog asks *Leave without saving?*;
+    **Cancel** keeps you and your edit; **Leave without saving** switches tab
+    and, back on Settings, the name is the saved one. The same for a
+    **Find a setting** result on another tab, and for **← Schedule**. Press
+    **Save settings** and switch tab: no dialog. A reload with an edit
+    pending gets the browser's own warning. The browser's Back button does
+    not ask — known, not covered.
+23. **R34 · A mention in a description.** Add or edit a session, type `@` in
+    **Description**. *Pass:* the same menu as the comment box; pick a name;
+    save. On the session panel the name is a link that opens the profile
+    without a page reload; a `@name` inside backticks stays plain. The named
+    person's bell rings once, the entry says *X mentioned you in “Title”*
+    and opens the session; edit the description keeping the name and it
+    does **not** ring again; add a second name and only that person hears.
+    Placing a repeat with a mention rings once, not once per day. Then your
+    **profile → Bio**: the same menu; on the profile the name links; the
+    named person's entry reads *ada mentioned you in their bio* and opens
+    that profile.
+24. **R35 · The time box types the colon.** Any time field: type `0` `8` —
+    the box reads `08:` and the next digits are minutes; type `9` `3` `0` —
+    it reads `09:30`. Backspace over the colon: it does not come back.
+    On a **phone**, the numeric keyboard can now type a whole time. `2pm`
+    still works; `12` then `pm` reads 12:00 on blur.
+
 ### Decisions I need from you
 
 - **D1 · Purge the local dangling git objects?** The accidental Valley-export
@@ -417,17 +467,20 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentions beyond comments.** Delivery landed 2026-09-05 — the bell,
-  `server/src/notifications.ts`, migration 020, CHANGELOG `[Unreleased]`,
-  R29 — and settled the questions this item used to carry (recipient is the
-  identity, so a merge cannot orphan an inbox; 30/90-day retention; nothing
-  by mail): `_planning/specs/mentions-and-notifications.md` §Settled. What is
-  left is reach. Descriptions, bios and pitches render through
-  `renderMarkdown` and their composers have no `@` menu, so a mention there
-  neither links nor lands. And resolution is still by username only, so a
-  mention of an unclaimed profile — a name typed onto a session before that
-  person arrives — has no inbox to wait in; deliver on adoption
-  (`adoptProfile` in `people.ts`) when this is picked up.
+- **Mentions in pitches.** Delivery landed 2026-09-05 (the bell, R29);
+  descriptions and bios followed on 2026-09-07 (`fix/review-round-2`, R34):
+  `renderMarkdown` takes the event's names and links a mention in the
+  rendered prose (`linkMentionsInHtml`, skipping code and links), the
+  description and bio boxes are `MentionTextArea`s, and `notifyMentionsIn`
+  tells a newly named person once, for a `session` or a `person` subject.
+  What is left is the same three steps for a pitch (`ProposalBoard`,
+  `ProposalModal`, `routes/proposals.ts`): the `people` list where it
+  renders, the composer, and a notify call on its write route with a
+  `proposal` subject — which the bell already knows how to open. And
+  resolution is still by username only, so a mention of an unclaimed profile
+  — a name typed onto a session before that person arrives — has no inbox to
+  wait in; deliver on adoption (`adoptProfile` in `people.ts`) when this is
+  picked up.
 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** Noticed 2026-09-02 when a `git add -A` swept

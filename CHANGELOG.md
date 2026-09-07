@@ -4,7 +4,56 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **A mention in a session's description links, and lands.** `@ada` in a
+  comment linked to Ada and rang her bell; the same words in a session's
+  description were plain text, and the description box had no menu to pick
+  her from. The description box is now the same composer as the comment box —
+  type `@` and the event's people are offered — and on the session panel the
+  name links to her profile, as it does in a comment. She is told once, when
+  the session is made or when an edit first names her; an edit that keeps her
+  name where it was says nothing, a run of repeats counts as one mention, and
+  naming yourself never rings. A `@name` inside a code span or an existing
+  link stays as written. A profile's **bio** works the same way: the bio box
+  offers the menu, the name links on the profile, and the person hears once
+  — *ada mentioned you in their bio* — with the entry opening that profile.
+  Pitches are not yet covered.
+
+- **Leaving Settings with unsaved edits asks first.** Manage Event → Settings
+  is the one form on the page with a Save button, and switching tab, picking a
+  search result on another tab or going back to the schedule dropped whatever
+  was typed there without a word. Each of those now asks *Leave without
+  saving?* — leaving puts the form back to what is saved, staying leaves it
+  as typed for you to press Save. A reload or a closed tab gets the browser's
+  own warning. The browser's Back button is the one door not covered.
+
+### Changed
+
+- **The time box types the colon for you.** After two digits of hour the box
+  reads `08:` and the next digits are the minutes — which is what "jump to the
+  minutes" means in a box with no segments, and what a phone's numeric
+  keyboard, which has no colon key, needs to type a whole time. Two digits
+  that cannot be an hour, `93`, were the start of `9:30` and are split as
+  such. A backspace that removes the colon is respected; nothing is put back.
+
 ### Fixed
+
+- **The list has the now line too.** In List view the only trace of the
+  current time was a "next / now" pill on one row's clock — no line and no
+  time — so switching from the grid on the day of the event lost the one mark
+  that said where you were. The list now draws the grid's yellow line between
+  its rows, carrying the time. It sits before the first row that has not
+  started, so a row that is running keeps its "now" cards above the line; the
+  Now button and opening the schedule mid-event both land on it.
+
+- **The page catches up with the system theme when you come back to it.**
+  The 0.3.5 fix listened for the OS switch from the app itself, but a browser
+  delivers that switch only to a page that is on screen: a phone that went
+  dark at sunset with the app in the background, or a page brought back from
+  the back-forward cache, came back light and stayed light until the profile
+  menu's toggle mounted and applied the theme. The follower now also re-reads
+  the theme whenever the page becomes visible again.
 
 - **The front door fits a phone.** On a phone the landing page came up wider
   than the screen: its right edge was cut off and you zoomed out to see the
