@@ -301,11 +301,15 @@ so ticking there is enough — nothing needs pasting back.
     **profile → Bio**: the same menu; on the profile the name links; the
     named person's entry reads *ada mentioned you in their bio* and opens
     that profile.
-24. **R35 · The time box types the colon.** Any time field: type `0` `8` —
-    the box reads `08:` and the next digits are minutes; type `9` `3` `0` —
-    it reads `09:30`. Backspace over the colon: it does not come back.
-    On a **phone**, the numeric keyboard can now type a whole time. `2pm`
-    still works; `12` then `pm` reads 12:00 on blur.
+24. **R35 · The time box is masked.** Any time field: type `0` `8` — the
+    box reads `08:` and the next digits are minutes; type `9` `3` `0` — it
+    reads `09:30`; type `9` alone — it reads `09:` at once. Type letters:
+    nothing appears. Type eight digits: the box stops at `12:34`. Backspace
+    over the colon: it does not come back. Paste `9.30`: it lands as
+    `09:30`. On a **phone**, the numeric keyboard can type a whole time.
+    `2pm` is gone — digits only. (Branch `fix/time-mask`, worktree
+    `.claude/worktrees/time-mask`, after your 2026-09-07 report that 0.3.6's
+    colon-only version let letters and eight digits through.)
 
 25. **R36 · The gate has a way out.** Open an event link logged out, so the
     password card shows. *Pass:* above the card, the LibreSesh mark on the

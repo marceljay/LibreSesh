@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { completeHour, parseTime, timeChoices } from '../web/src/lib/timeChoices';
+import { maskTime, parseTime, timeChoices } from '../web/src/lib/timeChoices';
 
 /**
  * The time field is the app's own — a box you type into with a list of
@@ -13,19 +13,11 @@ describe('parseTime: what the box accepts', () => {
   it.each([
     ['9', '09:00'],
     ['09', '09:00'],
-    ['930', '09:30'],
-    ['1430', '14:30'],
     ['9:30', '09:30'],
-    ['9.30', '09:30'],
-    ['14h30', '14:30'],
+    ['14:30', '14:30'],
     [' 14:30 ', '14:30'],
-    ['2pm', '14:00'],
-    ['2:15 PM', '14:15'],
-    ['12am', '00:00'],
-    ['12pm', '12:00'],
-    // The box after `completeHour` put the colon in, and before the minutes.
+    // The box after `maskTime` put the colon in, and before the minutes.
     ['08:', '08:00'],
-    ['12:pm', '12:00'],
   ])('reads %s as %s', (typed, hhmm) => {
     expect(parseTime(typed)).toBe(hhmm);
   });
@@ -37,7 +29,9 @@ describe('parseTime: what the box accepts', () => {
   });
 
   it('refuses what is not a time', () => {
-    for (const bad of ['', 'noon', '25:00', '9:60', '2400', '12:3', '9:30:00', '13pm']) {
+    // `930` and `2pm` are refused here because the mask never lets them
+    // reach this far: `930` has become `09:30` and the `pm` never got in.
+    for (const bad of ['', 'noon', '25:00', '9:60', '930', '12:3', '9:30:00', '2pm', '9.30']) {
       expect(parseTime(bad), bad).toBeNull();
     }
   });
@@ -138,31 +132,67 @@ describe("the field is capped to the event's day", () => {
 });
 
 /**
- * "After writing 08 it should jump to the minutes" (2026-09-07). A box with no
- * segments has nothing to jump to, so the colon is typed for you instead — the
- * next digits land on the minutes, and a phone's numeric keyboard, which has
- * no colon key, can type a whole time.
+ * "After writing 08 it should jump to the minutes" (2026-09-07), and then:
+ * "you can enter even letters into the time field, or 8 digits, it never
+ * jumps to minutes". A box with no segments has nothing to jump to, so it is
+ * masked instead: digits only, four at most, the colon typed for you. Typed
+ * one key at a time here, the way the box sees it.
  */
-describe('completeHour: the colon typed for you', () => {
-  it('follows the second digit of an hour', () => {
-    expect(completeHour('0', '08')).toBe('08:');
-    expect(completeHour('2', '23')).toBe('23:');
-    expect(completeHour('', '14')).toBe('14:');
+function type(keys: string, from = ''): string {
+  let text = from;
+  for (const key of keys) text = maskTime(text, text + key);
+  return text;
+}
+
+describe('maskTime: what the box shows as you type', () => {
+  it('types the colon after the hour, so the next digits are the minutes', () => {
+    expect(type('0')).toBe('0');
+    expect(type('08')).toBe('08:');
+    expect(type('083')).toBe('08:3');
+    expect(type('0830')).toBe('08:30');
+    expect(type('2359')).toBe('23:59');
   });
 
-  it('splits two digits that cannot be an hour, because they were 9:30 on its way', () => {
-    expect(completeHour('9', '93')).toBe('09:3');
-    expect(completeHour('2', '45')).toBe('04:5');
+  it('knows an hour that cannot go on, and pads it', () => {
+    expect(type('9')).toBe('09:');
+    expect(type('93')).toBe('09:3');
+    expect(type('930')).toBe('09:30');
+    expect(type('24')).toBe('02:4');
+    expect(type('245')).toBe('02:45');
+    expect(type('1')).toBe('1'); // 1 or 2 could still be the first of two
+    expect(type('2')).toBe('2');
   });
 
-  it('leaves one digit, three digits and anything with a letter alone', () => {
-    expect(completeHour('', '9')).toBe('9');
-    expect(completeHour('08:', '08:3')).toBe('08:3');
-    expect(completeHour('2', '2p')).toBe('2p');
+  it('stops at four digits', () => {
+    expect(type('12345678')).toBe('12:34');
+    expect(type('08300')).toBe('08:30');
   });
 
-  it('never puts back a colon a backspace just took away', () => {
-    expect(completeHour('08:', '08')).toBe('08');
-    expect(completeHour('08', '0')).toBe('0');
+  it('lets no letter in, and no second colon', () => {
+    expect(type('a')).toBe('');
+    expect(type('2pm')).toBe('2');
+    expect(type('08:a')).toBe('08:');
+    expect(type('08::')).toBe('08:');
+    expect(type('x9x3x0x')).toBe('09:30');
+  });
+
+  it('takes a paste through the same door', () => {
+    expect(maskTime('', '9.30')).toBe('09:30');
+    expect(maskTime('', '14h30')).toBe('14:30');
+    expect(maskTime('', '9:30')).toBe('09:30');
+  });
+
+  it('leaves a deletion alone, colon included', () => {
+    expect(maskTime('08:30', '08:3')).toBe('08:3');
+    expect(maskTime('08:3', '08:')).toBe('08:');
+    expect(maskTime('08:', '08')).toBe('08'); // the colon is not put straight back
+    expect(maskTime('08', '0')).toBe('0');
+    expect(maskTime('0', '')).toBe('');
+    expect(maskTime('08:30', '0830')).toBe('0830'); // the colon itself removed
+  });
+
+  it('lets typing carry on after a deletion', () => {
+    expect(type('30', '08:')).toBe('08:30');
+    expect(type('5', '08')).toBe('08:5');
   });
 });
