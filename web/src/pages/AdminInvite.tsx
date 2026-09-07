@@ -2,7 +2,7 @@ import { errorText } from '../lib/errorText';
 import { useMemo, useRef, useState } from 'react';
 import type { Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
-import { buildInviteUrl, normalizeBaseUrl } from '../lib/inviteLink';
+import { buildInviteUrl, normalizeBaseUrl, readLinkBase, writeLinkBase } from '../lib/inviteLink';
 import { QrCode } from '../components/QrCode';
 import {
   ControlShell,
@@ -16,32 +16,6 @@ import {
   TextInput,
   useToast,
 } from '../components/ui';
-
-const STORAGE_KEY = 'libresesh:invite-base';
-
-/**
- * The address the QR should point at, which is not reliably the one the
- * organiser is looking at. Behind Caddy they match; in a dev container the app
- * is reached through a forwarded port, and on a laptop plugged into the
- * projector it can be a LAN address no phone can resolve. So it is remembered
- * per browser and editable, with the current origin as the starting guess.
- */
-function readBase(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY) ?? window.location.origin;
-  } catch {
-    // Private windows and blocked site data throw on access.
-    return window.location.origin;
-  }
-}
-
-function writeBase(value: string): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, value);
-  } catch {
-    // Nothing to persist; the field simply starts from the origin next time.
-  }
-}
 
 /** A password the server has confirmed, and the role it answers to. */
 interface Verified {
@@ -109,7 +83,7 @@ function ShareWarning({ role, userLabel }: { role: Role; userLabel?: string }) {
 export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLabel?: string }) {
   const toast = useToast();
   const linkRef = useRef<HTMLInputElement>(null);
-  const [base, setBase] = useState(readBase);
+  const [base, setBase] = useState(readLinkBase);
   const [password, setPassword] = useState('');
   const [verified, setVerified] = useState<Verified | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -242,7 +216,7 @@ export function AdminInvite({ slug, userRoleLabel }: { slug: string; userRoleLab
                   value={base}
                   onChange={(e) => {
                     setBase(e.target.value);
-                    writeBase(e.target.value);
+                    writeLinkBase(e.target.value);
                   }}
                   placeholder="https://schedule.example.org"
                   autoCapitalize="none"

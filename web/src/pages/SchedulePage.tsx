@@ -30,6 +30,7 @@ import { plural } from '../lib/plural';
 import { roomHasInfo, roomNote, seatsLabel } from '../lib/rooms';
 import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
+import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
 import { DetailSheet } from '../components/DetailSheet';
 import { SessionDetail } from '../components/SessionDetail';
@@ -48,6 +49,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { ProfileMenu } from '../components/ProfileMenu';
 import { Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
+import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
 import type { SaveOpts } from '../components/SessionModal';
 const SessionModal = lazy(() =>
   import('../components/SessionModal').then((m) => ({ default: m.SessionModal })),
@@ -155,7 +157,18 @@ export function SchedulePage() {
   const confirm = useConfirm();
   const { me } = useMe();
   const data = useEventData(slug);
+  // `data.reload` is stable per slug, so the hook's callback is too.
+  const speakerLink = useSpeakerLink(slug, data.reload);
   const filters = useFilters();
+
+  // A device that already held a role here chose to switch and the code
+  // failed: the schedule is still theirs, so the news arrives as a toast
+  // rather than a gate. (A stranger's failure is told by the gate itself.)
+  useEffect(() => {
+    if (speakerLink.status === 'failed' && data.status === 'ready') {
+      toast.show('That speaker link didn’t work — ask your organiser for a new one.');
+    }
+  }, [speakerLink.status, data.status, toast]);
 
   const [tourOpen, setTourOpen] = useState(false);
   const [arrange, setArrange] = useState(false);
@@ -956,9 +969,35 @@ export function SchedulePage() {
     [data, reportError, slug],
   );
 
+  // A speaker link is settled before anything else is drawn: the bundle that
+  // loaded (or 401'd) under the old cookie is the wrong person's, and flashing
+  // the gate at a speaker whose code is being redeemed reads as a refusal.
+  if (speakerLink.status === 'waiting' || speakerLink.status === 'redeeming') {
+    return <Spinner label="Signing you in as a speaker…" />;
+  }
+  if (speakerLink.status === 'ask' && bundle) {
+    return (
+      <SpeakerLinkPrompt
+        eventName={bundle.event.name}
+        displayName={bundle.displayName}
+        role={bundle.role}
+        userRoleLabel={bundle.event.userRoleLabel}
+        onSwitch={() => void speakerLink.redeem()}
+        onStay={speakerLink.decline}
+      />
+    );
+  }
+
   if (data.status === 'loading') return <Spinner label="Loading schedule…" />;
   if (data.status === 'gate') {
-    return <Gate slug={slug} me={me} onEntered={() => void data.reload()} />;
+    return (
+      <Gate
+        slug={slug}
+        me={me}
+        onEntered={() => void data.reload()}
+        speakerLinkFailed={speakerLink.status === 'failed'}
+      />
+    );
   }
   if (data.status === 'error' || !bundle || !event) {
     return (
