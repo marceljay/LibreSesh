@@ -268,7 +268,7 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
 }
 
 export interface CalendarProps {
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   columns: CalendarColumn[];
   /** Which column a session belongs in. */
   columnOf: (session: SessionDto) => number;

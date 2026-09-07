@@ -15,6 +15,21 @@ All notable changes to this project are documented here.
   person opens the People tab. A thing the server can no longer find stays
   plain text rather than becoming a link to nothing.
 
+### Changed
+
+- **The test suite renders the app now.** Every route mounts under a
+  simulated browser, talks to the real server, and is held to a clean
+  console — where React reports a bad ref, a missing key or an update it did
+  not expect. Until now nothing in the suite rendered a component, so a React
+  or router upgrade could pass every test and still break the page. For what
+  a simulated browser cannot show — layout, the time box, the theme following
+  the system — `npm run browser-pass` drives the built app through a real
+  headless Chromium and fails on the same signals.
+- **React moved to 19.** Taken after the suite could render, not before:
+  every route mounted clean under it on the first run, and the only edits
+  were two type annotations. Nothing you can see changes; it is the runtime
+  every library the app sits on has been testing against for a year.
+
 ### Fixed
 
 - **The time box takes digits, and only digits.** 0.3.6 had it type the colon
