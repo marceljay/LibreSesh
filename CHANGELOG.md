@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.6] — 2026-09-07
+
 ### Added
 
 - **A mention in a session's description links, and lands.** `@ada` in a
