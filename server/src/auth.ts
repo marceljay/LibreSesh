@@ -15,6 +15,17 @@ export const atLeast = (role: Role, min: Role): boolean => RANK[role] >= RANK[mi
 
 export const hashPassword = (plain: string): string => bcrypt.hashSync(plain, BCRYPT_COST);
 
+/**
+ * The counterpart, so bcrypt is named in one module and nowhere else.
+ *
+ * Every event password on every existing instance is a stored hash that
+ * nothing re-hashes, so "can this still read a hash written by an older
+ * release?" is the only question a bcrypt upgrade has to answer — and it is
+ * answerable in one place because of this.
+ */
+export const verifyPassword = (plain: string, hash: string): boolean =>
+  bcrypt.compareSync(plain, hash);
+
 function constantTimeEquals(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
@@ -89,9 +100,9 @@ export function clearRole(db: Db, identityId: number, eventId: number): void {
  * Returns the granted role, or undefined on no match.
  */
 export function roleForPassword(event: EventRow, password: string): Role | undefined {
-  if (bcrypt.compareSync(password, event.admin_pw_hash)) return 'admin';
-  if (bcrypt.compareSync(password, event.user_pw_hash)) return 'user';
-  if (bcrypt.compareSync(password, event.viewer_pw_hash)) return 'viewer';
+  if (verifyPassword(password, event.admin_pw_hash)) return 'admin';
+  if (verifyPassword(password, event.user_pw_hash)) return 'user';
+  if (verifyPassword(password, event.viewer_pw_hash)) return 'viewer';
   return undefined;
 }
 

@@ -39,7 +39,7 @@
     "@base-ui/react": "1.8.0",
     "@floating-ui/react": "0.27.20",
     "@tailwindcss/vite": "4.3.3",
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.5.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
