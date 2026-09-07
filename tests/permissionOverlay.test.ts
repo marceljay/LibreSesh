@@ -62,8 +62,8 @@ describe('settled', () => {
       'session.create': ['speaker', 'admin'],
       'contribution.create': ['admin'],
     };
-    expect(
-      settled(saved({ 'session.create': ['speaker', 'admin'] }), optimistic),
-    ).toEqual({ 'contribution.create': ['admin'] });
+    expect(settled(saved({ 'session.create': ['speaker', 'admin'] }), optimistic)).toEqual({
+      'contribution.create': ['admin'],
+    });
   });
 });

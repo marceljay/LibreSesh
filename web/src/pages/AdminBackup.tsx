@@ -94,9 +94,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
       setConfirm('');
       toast.show(`Saved ${filename} — keep the passphrase with it`);
     } catch (err) {
-      toast.show(
-        errorText(err, 'The backup could not be made'),
-      );
+      toast.show(errorText(err, 'The backup could not be made'));
     } finally {
       setBusy(false);
     }
@@ -147,9 +145,8 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
           Download {eventName} as JSON
         </a>
         <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-          Deleted sessions and contributions are left out — they are still in
-          Trash until you empty it. The file can be imported back as a new event
-          from{' '}
+          Deleted sessions and contributions are left out — they are still in Trash until you empty
+          it. The file can be imported back as a new event from{' '}
           <Link to="/import" className={`${linkClass} underline`}>
             Import a schedule
           </Link>
@@ -162,16 +159,14 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
         description="An encrypted copy of the entire database — every event on this instance, not just this one. Needs the instance password, and a passphrase you choose now to seal the file."
       >
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          <strong className="font-semibold">This file is a credential, not a document.</strong>{' '}
-          It is the whole database: the sign-in token of everyone who has ever
-          opened an event here, their calendar-feed tokens, the hashes of every
-          device and speaker code, and every name, bio, comment and who-starred-what
-          on this instance. With the cookie secret, whoever opens it can become any of
-          them; without it, the calendar feeds work as they are and a speaker code's
-          hash gives way to a laptop in minutes. Store it where you would store the
-          instance password — and nowhere else — and restore it only onto a box at
-          the same address with the same cookie secret, or everyone comes back a
-          stranger.
+          <strong className="font-semibold">This file is a credential, not a document.</strong> It
+          is the whole database: the sign-in token of everyone who has ever opened an event here,
+          their calendar-feed tokens, the hashes of every device and speaker code, and every name,
+          bio, comment and who-starred-what on this instance. With the cookie secret, whoever opens
+          it can become any of them; without it, the calendar feeds work as they are and a speaker
+          code's hash gives way to a laptop in minutes. Store it where you would store the instance
+          password — and nowhere else — and restore it only onto a box at the same address with the
+          same cookie secret, or everyone comes back a stranger.
         </div>
 
         <FormStack>
@@ -209,9 +204,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
             </ControlShell>
           </Field>
           {confirm.length > 0 && passphrase !== confirm && (
-            <p className="text-xs text-red-600 dark:text-red-400">
-              Those two do not match.
-            </p>
+            <p className="text-xs text-red-600 dark:text-red-400">Those two do not match.</p>
           )}
           <div>
             <PrimaryButton onClick={() => void download()} disabled={!ready || busy}>
@@ -221,13 +214,13 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
         </FormStack>
 
         <p className="mt-4 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-          Lose the passphrase and the file is gone — there is no recovery, by
-          design. To open one, run{' '}
+          Lose the passphrase and the file is gone — there is no recovery, by design. To open one,
+          run{' '}
           <code className="rounded-sm bg-stone-100 px-1 dark:bg-stone-800">
             npm run decrypt-backup -- backup.lsbk restored.db
           </code>{' '}
-          on the server. Do it once now, while nothing is on fire: a backup you
-          have never restored is a guess.
+          on the server. Do it once now, while nothing is on fire: a backup you have never restored
+          is a guess.
         </p>
       </Section>
     </>

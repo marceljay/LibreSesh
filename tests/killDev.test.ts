@@ -11,7 +11,9 @@ import { ancestry, isDevCommand, parsePids } from '../scripts/killDev.js';
  */
 describe('what counts as a dev server', () => {
   it('recognises the three commands the dev script actually starts', () => {
-    expect(isDevCommand('node /repo/node_modules/.bin/vite --config web/vite.config.ts')).toBe(true);
+    expect(isDevCommand('node /repo/node_modules/.bin/vite --config web/vite.config.ts')).toBe(
+      true,
+    );
     expect(isDevCommand('node /repo/node_modules/.bin/tsx watch server/src/index.ts')).toBe(true);
     expect(isDevCommand('node /repo/node_modules/.bin/concurrently -n api,web')).toBe(true);
   });
@@ -19,9 +21,9 @@ describe('what counts as a dev server', () => {
   it('spares vite’s esbuild service, which only matches by its path', () => {
     // Its binary lives under .../vite/node_modules/@esbuild/..., so the word
     // "vite" is in the command line of something that is not a server.
-    expect(isDevCommand('/repo/node_modules/vite/node_modules/@esbuild/linux-arm64/bin/esbuild')).toBe(
-      false,
-    );
+    expect(
+      isDevCommand('/repo/node_modules/vite/node_modules/@esbuild/linux-arm64/bin/esbuild'),
+    ).toBe(false);
   });
 
   it('spares the ordinary commands that share a cwd with the dev server', () => {

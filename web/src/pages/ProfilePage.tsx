@@ -107,10 +107,7 @@ export function ProfilePage() {
     return detail?.sessions ?? [];
   }, [bundle, detail, id]);
 
-  const bioHtml = useMemo(
-    () => (person?.bio ? renderMarkdown(person.bio) : ''),
-    [person?.bio],
-  );
+  const bioHtml = useMemo(() => (person?.bio ? renderMarkdown(person.bio) : ''), [person?.bio]);
 
   const isAdmin = bundle?.role === 'admin';
   /**
@@ -299,9 +296,7 @@ export function ProfilePage() {
                   calls them. The profile's row id used to sit here; it is in
                   the address bar and nowhere else does anyone need it. */}
               <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
-                {person.username === null
-                  ? 'Nobody holds this profile yet'
-                  : `@${person.username}`}
+                {person.username === null ? 'Nobody holds this profile yet' : `@${person.username}`}
               </p>
               {/* What this person is here, for organisers only — the same
                   badge the People list shows, changeable in the same way.
@@ -501,9 +496,7 @@ export function ProfilePage() {
                 // A row left blank is a row you added and changed your mind
                 // about; a half-filled one is a mistake worth saying out loud,
                 // because the server would only ever see it as missing.
-                const kept = draftLinks.filter(
-                  (l) => l.label.trim() !== '' || l.url.trim() !== '',
-                );
+                const kept = draftLinks.filter((l) => l.label.trim() !== '' || l.url.trim() !== '');
                 if (kept.some((l) => l.label.trim() === '' || l.url.trim() === '')) {
                   throw new Error('Every link needs both a label and an address.');
                 }
@@ -574,11 +567,7 @@ export function ProfilePage() {
           </div>
 
           {isAdmin && (
-            <SpeakerAccess
-              slug={slug}
-              person={person}
-              onChanged={() => void data.reload()}
-            />
+            <SpeakerAccess slug={slug} person={person} onChanged={() => void data.reload()} />
           )}
         </div>
 
@@ -887,8 +876,8 @@ function SpeakerAccess({
             {phrase}
           </div>
           <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-            Shown once — give it to {person.name}. Typing it at the event gate signs them in as
-            this profile with the speaker role, from any device, until you revoke it.
+            Shown once — give it to {person.name}. Typing it at the event gate signs them in as this
+            profile with the speaker role, from any device, until you revoke it.
           </p>
         </>
       ) : (

@@ -106,7 +106,9 @@ export function RoleControl({
                   option === role ? 'bg-stone-50 dark:bg-stone-800/60' : ''
                 }`}
               >
-                <span className={`${roleTagShape} ${roleTagColor[option]} mt-0.5 shrink-0 capitalize`}>
+                <span
+                  className={`${roleTagShape} ${roleTagColor[option]} mt-0.5 shrink-0 capitalize`}
+                >
                   {roleWord(option, userLabel)}
                 </span>
                 <span className="min-w-0 flex-1 text-xs text-stone-500 dark:text-stone-400">

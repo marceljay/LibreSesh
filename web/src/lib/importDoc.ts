@@ -36,8 +36,7 @@ export interface DocSummary {
 }
 
 export type ParseResult =
-  | { ok: true; doc: unknown; summary: DocSummary }
-  | { ok: false; error: string };
+  { ok: true; doc: unknown; summary: DocSummary } | { ok: false; error: string };
 
 const str = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() !== '' ? value : null;

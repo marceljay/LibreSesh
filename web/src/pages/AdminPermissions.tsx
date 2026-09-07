@@ -217,7 +217,9 @@ export function AdminPermissions({
                                 : undefined
                           }
                           onChange={(next) => void toggle(cap.id, role, next)}
-                          label={<span className="sr-only">{`${heading(role)}: ${cap.label}`}</span>}
+                          label={
+                            <span className="sr-only">{`${heading(role)}: ${cap.label}`}</span>
+                          }
                         />
                       </span>
                     </td>

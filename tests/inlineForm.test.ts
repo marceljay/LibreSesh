@@ -30,7 +30,10 @@ function tsxFiles(dir: string): string[] {
 }
 
 describe('InlineForm is a real form that validates nothing natively', () => {
-  const form = ui.slice(ui.indexOf('export function InlineForm'), ui.indexOf('export function NumberField'));
+  const form = ui.slice(
+    ui.indexOf('export function InlineForm'),
+    ui.indexOf('export function NumberField'),
+  );
 
   it('renders a <form noValidate> and hands submit to the caller', () => {
     expect(form).toMatch(/<form\s+noValidate/);
@@ -67,14 +70,20 @@ describe('every loose section is a form', () => {
   });
 
   it('InlineCreate submits through the same form, and only Escape is hand-rolled', () => {
-    const ic = ui.slice(ui.indexOf('export function InlineCreate'), ui.indexOf('export function DangerButton'));
+    const ic = ui.slice(
+      ui.indexOf('export function InlineCreate'),
+      ui.indexOf('export function DangerButton'),
+    );
     expect(ic).toContain('<InlineForm');
     expect(ic).toContain('<PrimaryButton type="submit"');
     expect(ic).not.toContain("e.key === 'Enter'");
   });
 
   it('NumberField no longer takes a keydown handler — the form around it submits', () => {
-    const nf = ui.slice(ui.indexOf('export function NumberField'), ui.indexOf('export const roleTagColor'));
+    const nf = ui.slice(
+      ui.indexOf('export function NumberField'),
+      ui.indexOf('export const roleTagColor'),
+    );
     expect(nf).not.toContain('onKeyDown');
   });
 });
@@ -110,7 +119,10 @@ describe('the gate is a login a password manager can see', () => {
     // A one-time phrase is not a password to remember. And it must not nest
     // inside the entry form, which HTML forbids and browsers silently flatten.
     expect(gate).toContain('<InlineForm onSubmit={() => void link()}>');
-    const phrase = gate.slice(gate.indexOf('value={phrase}'), gate.indexOf('placeholder="house-dog-erratic"'));
+    const phrase = gate.slice(
+      gate.indexOf('value={phrase}'),
+      gate.indexOf('placeholder="house-dog-erratic"'),
+    );
     expect(gate.slice(gate.indexOf('value={phrase}'))).toContain('autoComplete="off"');
     expect(phrase).not.toContain("e.key === 'Enter'");
   });

@@ -10,7 +10,9 @@ const apiTarget = process.env.API_URL ?? 'http://127.0.0.1:3001';
 /** Best-effort: the Docker build stage copies source without `.git`. */
 function git(command: string): string {
   try {
-    return execSync(command, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return execSync(command, { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
   } catch {
     return '';
   }
@@ -23,7 +25,8 @@ const pkg = JSON.parse(
 // Env vars win so a build without a git checkout (Docker, a tarball) can still
 // be stamped — pass them as build args. Falling back to the package version
 // keeps the footer honest rather than blank.
-const buildTag = process.env.BUILD_TAG || git('git describe --tags --abbrev=0') || `v${pkg.version}`;
+const buildTag =
+  process.env.BUILD_TAG || git('git describe --tags --abbrev=0') || `v${pkg.version}`;
 const buildCommit = process.env.BUILD_COMMIT || git('git rev-parse --short HEAD') || 'unknown';
 const buildDirty = process.env.BUILD_COMMIT ? false : git('git status --porcelain') !== '';
 const buildTime = new Date().toISOString();

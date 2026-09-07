@@ -62,9 +62,7 @@ export function trashRoutes(ctx: Ctx): Router {
     // Its room may have been removed in the meantime; refuse rather than
     // resurrect a session pointing at nothing.
     const room = ctx.db
-      .prepare<[number], { id: number }>(
-        'SELECT id FROM rooms WHERE id = ? AND deleted_at IS NULL',
-      )
+      .prepare<[number], { id: number }>('SELECT id FROM rooms WHERE id = ? AND deleted_at IS NULL')
       .get(row.room_id);
     if (!room) throw conflict('That session’s room is gone — recreate it first', 'room_missing');
 

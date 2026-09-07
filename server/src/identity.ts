@@ -59,9 +59,7 @@ declare global {
 }
 
 export function findIdentityByToken(db: Db, token: string): IdentityRow | undefined {
-  return db
-    .prepare<[string], IdentityRow>('SELECT * FROM identities WHERE token = ?')
-    .get(token);
+  return db.prepare<[string], IdentityRow>('SELECT * FROM identities WHERE token = ?').get(token);
 }
 
 /**

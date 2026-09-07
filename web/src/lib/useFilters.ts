@@ -126,8 +126,7 @@ export function useFilters(): FilterApi {
       toggleRoom: (id: number) => set({ rooms: toggle(filters.rooms, id) }),
       toggleTag: (id: number) => set({ tags: toggle(filters.tags, id) }),
       toggleTrack: (id: number) => set({ tracks: toggle(filters.tracks, id) }),
-      clear: () =>
-        set({ rooms: [], tags: [], tracks: [], q: '', soon: false, mine: false }),
+      clear: () => set({ rooms: [], tags: [], tracks: [], q: '', soon: false, mine: false }),
     }),
     [filters, set],
   );

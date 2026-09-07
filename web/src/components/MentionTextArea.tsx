@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type TextareaHTMLAttributes,
-} from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
 import type { PersonDto } from '@shared/types';
 import { findMentionQuery, matchMentionNames, type MentionQuery } from '@shared/mentions';
 import { TextArea } from './ui';

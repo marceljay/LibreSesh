@@ -61,10 +61,7 @@ export function ProposalBoard() {
   const event = bundle?.event;
   const timezone = event?.timezone ?? 'UTC';
 
-  const days = useMemo(
-    () => (event ? dateRange(event.startDate, event.endDate) : []),
-    [event],
-  );
+  const days = useMemo(() => (event ? dateRange(event.startDate, event.endDate) : []), [event]);
   const today = useMemo(() => (event ? todayInZone(timezone) : ''), [event, timezone]);
   const dayLabels = useMemo(
     () =>
@@ -131,9 +128,7 @@ export function ProposalBoard() {
           toast.show('Pitch updated');
         } else {
           const created = await api.createProposal(slug, body);
-          setBundle((prev) =>
-            prev ? { ...prev, proposals: [...prev.proposals, created] } : prev,
-          );
+          setBundle((prev) => (prev ? { ...prev, proposals: [...prev.proposals, created] } : prev));
           toast.show('Pitch posted');
         }
         setEditing(null);
@@ -157,9 +152,7 @@ export function ProposalBoard() {
       try {
         await api.deleteProposal(slug, proposal.id);
         setBundle((prev) =>
-          prev
-            ? { ...prev, proposals: prev.proposals.filter((p) => p.id !== proposal.id) }
-            : prev,
+          prev ? { ...prev, proposals: prev.proposals.filter((p) => p.id !== proposal.id) } : prev,
         );
         setEditing(null);
         toast.show('Pitch withdrawn');
@@ -257,14 +250,12 @@ export function ProposalBoard() {
 
       <main className="mx-auto max-w-3xl px-4 py-6">
         <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
-          Sessions people want to run. Say you&rsquo;d come along, and organisers place the
-          popular ones on the grid.
+          Sessions people want to run. Say you&rsquo;d come along, and organisers place the popular
+          ones on the grid.
         </p>
 
         {sorted.length === 0 ? (
-          <EmptyState>
-            No pitches yet.{canPitch ? ' Be the first to pitch one.' : ''}
-          </EmptyState>
+          <EmptyState>No pitches yet.{canPitch ? ' Be the first to pitch one.' : ''}</EmptyState>
         ) : (
           <ul className="space-y-3">
             {sorted.map((proposal) => (
@@ -297,7 +288,9 @@ export function ProposalBoard() {
           onCancel={() => setEditing(null)}
           onSave={(body) => void saveProposal(body)}
           onDelete={
-            editing.proposal ? () => void withdrawProposal(editing.proposal as ProposalDto) : undefined
+            editing.proposal
+              ? () => void withdrawProposal(editing.proposal as ProposalDto)
+              : undefined
           }
         />
       )}
@@ -373,9 +366,7 @@ function ProposalCard({
             onClick={onToggleInterest}
             disabled={interestBusy}
             aria-pressed={proposal.interested}
-            aria-label={
-              proposal.interested ? "I'm no longer interested" : "I'd come to this"
-            }
+            aria-label={proposal.interested ? "I'm no longer interested" : "I'd come to this"}
             className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50 ${
               proposal.interested
                 ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'

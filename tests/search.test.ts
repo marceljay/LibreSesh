@@ -77,19 +77,15 @@ describe('rankSessions', () => {
   });
 
   it('keeps the input order between equally good hits', () => {
-    const ids = rankSessions(
-      [session(7, 'Space one'), session(8, 'Space two')],
-      'space',
-    ).map((s) => s.id);
+    const ids = rankSessions([session(7, 'Space one'), session(8, 'Space two')], 'space').map(
+      (s) => s.id,
+    );
     expect(ids).toEqual([7, 8]);
   });
 
   it('prefers the whole query in one title over two scattered words', () => {
     const ids = rankSessions(
-      [
-        session(1, 'Open agendas', '', 'we hold space for it'),
-        session(2, 'Open Space', 'Ada'),
-      ],
+      [session(1, 'Open agendas', '', 'we hold space for it'), session(2, 'Open Space', 'Ada')],
       'open space',
     ).map((s) => s.id);
     expect(ids[0]).toBe(2);

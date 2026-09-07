@@ -32,7 +32,5 @@ export const trackBucket = (session: { trackId: number | null }): number =>
  * sessions nobody has put on a strand yet" is the question an organiser asks
  * most, and it is unanswerable if the only choices are the tracks that exist.
  */
-export const matchesTracks = (
-  selected: number[],
-  session: { trackId: number | null },
-): boolean => selected.length === 0 || selected.includes(trackBucket(session));
+export const matchesTracks = (selected: number[], session: { trackId: number | null }): boolean =>
+  selected.length === 0 || selected.includes(trackBucket(session));

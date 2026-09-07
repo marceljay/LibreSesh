@@ -622,11 +622,7 @@ export type ChangeType =
  *  and a cancellation together, because "what happened to my talk" is one
  *  switch to a speaker, not two. */
 export type NotificationKind =
-  | 'mention'
-  | 'session_changed'
-  | 'starred_changed'
-  | 'pitch_scheduled'
-  | 'pitch_posted';
+  'mention' | 'session_changed' | 'starred_changed' | 'pitch_scheduled' | 'pitch_posted';
 
 export interface NotificationDto {
   id: number;

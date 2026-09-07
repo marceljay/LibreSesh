@@ -3,7 +3,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { GeneratedPasswords } from '../../../server/src/shared/types';
-import { ControlShell, Field, FormGrid, FormStack, PrimaryButton, TextInput } from '../components/ui';
+import {
+  ControlShell,
+  Field,
+  FormGrid,
+  FormStack,
+  PrimaryButton,
+  TextInput,
+} from '../components/ui';
 import { useToast } from '../components/ui';
 
 const browserTimezone = (): string => {
@@ -90,17 +97,15 @@ export function NewEventPage() {
       <div className="mx-auto max-w-lg px-4 py-10">
         <h1 className="mb-1 text-lg font-semibold tracking-tight">Event created</h1>
         <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
-          You are its admin already. These passwords were generated for the roles you
-          left blank — <strong>write them down now</strong>. They are stored hashed, so
-          this screen is the only place they can be read.
+          You are its admin already. These passwords were generated for the roles you left blank —{' '}
+          <strong>write them down now</strong>. They are stored hashed, so this screen is the only
+          place they can be read.
         </p>
         <dl className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
           {rows.map(([label, value]) =>
             value ? (
               <div key={label} className="mb-3 last:mb-0">
-                <dt className="text-xs font-medium text-stone-600 dark:text-stone-300">
-                  {label}
-                </dt>
+                <dt className="text-xs font-medium text-stone-600 dark:text-stone-300">{label}</dt>
                 <dd className="mt-1 select-all break-all font-mono text-sm">{value}</dd>
               </div>
             ) : null,
@@ -123,133 +128,128 @@ export function NewEventPage() {
       </Link>
       <h1 className="mb-1 mt-3 text-lg font-semibold tracking-tight">Create an event</h1>
       <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
-        Two different kinds of password are involved. The{' '}
-        <strong>instance password</strong> belongs to this server and lets you create an
-        event at all. The three <strong>event passwords</strong> are the ones you hand out
-        afterwards, and they decide what each person can do inside your event.
+        Two different kinds of password are involved. The <strong>instance password</strong> belongs
+        to this server and lets you create an event at all. The three{' '}
+        <strong>event passwords</strong> are the ones you hand out afterwards, and they decide what
+        each person can do inside your event.
       </p>
 
       <div className="rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
         <FormStack>
-        <Field
-          label="Instance password"
-          hint="Set by whoever runs this server, shared by everyone allowed to create events here. It is not one of your event’s passwords and grants nothing inside an event — if you don’t have it, ask the person hosting this instance."
-        >
-          <ControlShell>
-            <TextInput
-              type="password"
-              value={instanceKey}
-              onChange={(e) => setInstanceKey(e.target.value)}
-            />
-          </ControlShell>
-        </Field>
-
-        <Field label="Event name">
-          <ControlShell>
-            <TextInput
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                if (!slug) setSlug('');
-              }}
-              maxLength={120}
-            />
-          </ControlShell>
-        </Field>
-        <Field label="Slug" hint={`Used in the URL: /e/${slug || slugify(name) || 'your-event'}`}>
-          <ControlShell>
-            <TextInput
-              value={slug}
-              onChange={(e) => setSlug(slugify(e.target.value))}
-              placeholder={slugify(name) || 'your-event'}
-            />
-          </ControlShell>
-        </Field>
-        <Field label="Timezone" hint="IANA name, e.g. Europe/Berlin.">
-          <ControlShell>
-            <TextInput
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-            />
-          </ControlShell>
-        </Field>
-
-        <FormGrid>
-          <Field label="Start date">
+          <Field
+            label="Instance password"
+            hint="Set by whoever runs this server, shared by everyone allowed to create events here. It is not one of your event’s passwords and grants nothing inside an event — if you don’t have it, ask the person hosting this instance."
+          >
             <ControlShell>
               <TextInput
-                type="date"
-                value={startDate}
+                type="password"
+                value={instanceKey}
+                onChange={(e) => setInstanceKey(e.target.value)}
+              />
+            </ControlShell>
+          </Field>
+
+          <Field label="Event name">
+            <ControlShell>
+              <TextInput
+                value={name}
                 onChange={(e) => {
-                  setStartDate(e.target.value);
-                  if (endDate < e.target.value) setEndDate(e.target.value);
+                  setName(e.target.value);
+                  if (!slug) setSlug('');
                 }}
+                maxLength={120}
               />
             </ControlShell>
           </Field>
-          <Field label="End date">
+          <Field label="Slug" hint={`Used in the URL: /e/${slug || slugify(name) || 'your-event'}`}>
             <ControlShell>
               <TextInput
-                type="date"
-                value={endDate}
-                min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={slug}
+                onChange={(e) => setSlug(slugify(e.target.value))}
+                placeholder={slugify(name) || 'your-event'}
               />
             </ControlShell>
           </Field>
-        </FormGrid>
+          <Field label="Timezone" hint="IANA name, e.g. Europe/Berlin.">
+            <ControlShell>
+              <TextInput value={timezone} onChange={(e) => setTimezone(e.target.value)} />
+            </ControlShell>
+          </Field>
 
-        <Field
-          label="What you call your participants"
-          hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
-        >
-          <ControlShell>
-            <TextInput
-              value={userRoleLabel}
-              onChange={(e) => setUserRoleLabel(e.target.value)}
-              maxLength={24}
-            />
-          </ControlShell>
-        </Field>
+          <FormGrid>
+            <Field label="Start date">
+              <ControlShell>
+                <TextInput
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (endDate < e.target.value) setEndDate(e.target.value);
+                  }}
+                />
+              </ControlShell>
+            </Field>
+            <Field label="End date">
+              <ControlShell>
+                <TextInput
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </ControlShell>
+            </Field>
+          </FormGrid>
 
-        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-          Event passwords
-        </p>
-        <p className="-mt-2 text-xs text-stone-500 dark:text-stone-400">
-          Leave any of them blank and one is generated for you, shown once on the next
-          screen. All three must differ — they are what tell the roles apart.
-        </p>
-        <Field label="Viewer — read the schedule" hint="Optional — blank generates one.">
-          <ControlShell>
-            <TextInput
-              value={viewerPassword}
-              onChange={(e) => setViewerPassword(e.target.value)}
-            />
-          </ControlShell>
-        </Field>
-        <Field
-          label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and propose sessions`}
-          hint="Optional — blank generates one."
-        >
-          <ControlShell>
-            <TextInput
-              value={userPassword}
-              onChange={(e) => setUserPassword(e.target.value)}
-            />
-          </ControlShell>
-        </Field>
-        <Field label="Admin — full control" hint="Optional — blank generates one.">
-          <ControlShell>
-            <TextInput
-              value={adminPassword}
-              onChange={(e) => setAdminPassword(e.target.value)}
-            />
-          </ControlShell>
-        </Field>
+          <Field
+            label="What you call your participants"
+            hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
+          >
+            <ControlShell>
+              <TextInput
+                value={userRoleLabel}
+                onChange={(e) => setUserRoleLabel(e.target.value)}
+                maxLength={24}
+              />
+            </ControlShell>
+          </Field>
+
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+            Event passwords
+          </p>
+          <p className="-mt-2 text-xs text-stone-500 dark:text-stone-400">
+            Leave any of them blank and one is generated for you, shown once on the next screen. All
+            three must differ — they are what tell the roles apart.
+          </p>
+          <Field label="Viewer — read the schedule" hint="Optional — blank generates one.">
+            <ControlShell>
+              <TextInput
+                value={viewerPassword}
+                onChange={(e) => setViewerPassword(e.target.value)}
+              />
+            </ControlShell>
+          </Field>
+          <Field
+            label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and propose sessions`}
+            hint="Optional — blank generates one."
+          >
+            <ControlShell>
+              <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
+            </ControlShell>
+          </Field>
+          <Field label="Admin — full control" hint="Optional — blank generates one.">
+            <ControlShell>
+              <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
+            </ControlShell>
+          </Field>
         </FormStack>
 
         {error && <p className="mt-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
-        <PrimaryButton className="mt-4 w-full py-2 text-sm" onClick={() => void submit()} disabled={busy}>
+        <PrimaryButton
+          className="mt-4 w-full py-2 text-sm"
+          onClick={() => void submit()}
+          disabled={busy}
+        >
           {busy ? 'Creating…' : 'Create event'}
         </PrimaryButton>
       </div>

@@ -94,8 +94,6 @@ describe('the long fixture', () => {
       (new Date(long.endDate).getTime() - new Date(long.startDate).getTime()) / 86_400_000;
     expect(days).toBe(LONG_DEMO.days - 1);
 
-    expect(
-      db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM events').get()!.n,
-    ).toBe(2);
+    expect(db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM events').get()!.n).toBe(2);
   });
 });

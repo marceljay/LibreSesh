@@ -80,10 +80,7 @@ export function setRole(db: Db, identityId: number, eventId: number, role: Role)
 }
 
 export function clearRole(db: Db, identityId: number, eventId: number): void {
-  db.prepare('DELETE FROM roles WHERE identity_id = ? AND event_id = ?').run(
-    identityId,
-    eventId,
-  );
+  db.prepare('DELETE FROM roles WHERE identity_id = ? AND event_id = ?').run(identityId, eventId);
 }
 
 /**

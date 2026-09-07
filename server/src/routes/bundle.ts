@@ -36,7 +36,6 @@ import { limit } from '../ratelimit.js';
 import { trackWindowsFor } from '../trackHours.js';
 import { getSession } from '../sessionRules.js';
 
-
 /** Read endpoints. The whole event fits comfortably in one JSON payload, so the
  *  client fetches a bundle once and patches it from the SSE stream. */
 export function bundleRoutes(ctx: Ctx): Router {
@@ -115,20 +114,14 @@ export function bundleRoutes(ctx: Ctx): Router {
     const bundle: BundleDto = {
       event: toEventDto(req.event),
       role: req.role,
-      displayName:
-        eventDisplayName(ctx.db, eventId, req.identity.id) ?? req.identity.display_name,
+      displayName: eventDisplayName(ctx.db, eventId, req.identity.id) ?? req.identity.display_name,
       rooms: rooms.map(toRoomDto),
       tags: tags.map(toTagDto),
       formats: formats.map(toFormatDto),
       tracks: tracks.map((t) => toTrackDto(t, trackWindowRows.get(t.id) ?? [])),
       breaks: breaks.map(toBreakDto),
       sessions: sessions.map((s) =>
-        toSessionDto(
-          s,
-          tagMap.get(s.id) ?? [],
-          names.get(s.created_by),
-          speakers.get(s.id) ?? [],
-        ),
+        toSessionDto(s, tagMap.get(s.id) ?? [], names.get(s.created_by), speakers.get(s.id) ?? []),
       ),
       // Who holds each profile, at what role, and whether they have ever
       // used it is for organisers only — an attendee has no business being

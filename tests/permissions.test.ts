@@ -224,7 +224,10 @@ describe('permission matrix', () => {
         .post('/api/e/testconf/proposals')
         .send({ title: 'Pitch', speakerName: 'Someone Else' })
         .expect(403);
-      await user.post('/api/e/testconf/proposals').send({ title: 'Pitch', speakerId: me }).expect(201);
+      await user
+        .post('/api/e/testconf/proposals')
+        .send({ title: 'Pitch', speakerId: me })
+        .expect(201);
       // Organisers are never held to it.
       await post(admin, ['Someone New'], roomId, 10).expect(201);
     });
@@ -287,11 +290,17 @@ describe('confirming the organiser password', () => {
   afterEach(() => harness.close());
 
   it('accepts the organiser password', async () => {
-    await admin.post('/api/e/testconf/confirm-admin').send({ password: 'admin-pw', displayName: nextUsername() }).expect(204);
+    await admin
+      .post('/api/e/testconf/confirm-admin')
+      .send({ password: 'admin-pw', displayName: nextUsername() })
+      .expect(204);
   });
 
   it('rejects another role’s password without touching the caller’s role', async () => {
-    await admin.post('/api/e/testconf/confirm-admin').send({ password: 'viewer-pw', displayName: nextUsername() }).expect(403);
+    await admin
+      .post('/api/e/testconf/confirm-admin')
+      .send({ password: 'viewer-pw', displayName: nextUsername() })
+      .expect(403);
     // The whole point of not reusing POST /auth: that would have demoted them.
     const res = await admin.get('/api/e/testconf/bundle').expect(200);
     expect(res.body.role).toBe('admin');
@@ -303,6 +312,9 @@ describe('confirming the organiser password', () => {
 
   it('is closed to non-organisers', async () => {
     const user = await actorWithRole(harness, 'testconf', 'user-pw');
-    await user.post('/api/e/testconf/confirm-admin').send({ password: 'admin-pw', displayName: nextUsername() }).expect(403);
+    await user
+      .post('/api/e/testconf/confirm-admin')
+      .send({ password: 'admin-pw', displayName: nextUsername() })
+      .expect(403);
   });
 });

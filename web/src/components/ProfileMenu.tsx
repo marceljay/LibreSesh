@@ -102,9 +102,7 @@ export function ProfileMenu({
   const arrowKeys = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     e.preventDefault();
-    const all = Array.from(
-      menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [],
-    );
+    const all = Array.from(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
     const from = all.indexOf(document.activeElement as HTMLElement);
     const to = e.key === 'ArrowDown' ? from + 1 : from - 1;
     all[(to + all.length) % all.length]?.focus();
@@ -156,7 +154,7 @@ export function ProfileMenu({
         >
           <div className="border-b border-stone-100 px-3 pb-2 pt-1 dark:border-stone-800">
             <p className="truncate text-xs font-semibold">{displayName}</p>
-            {publicId !== "" && (
+            {publicId !== '' && (
               <p
                 title="Your identity on this instance. Quote it to an organiser if two people here share a name."
                 className="font-mono text-xs text-stone-400 dark:text-stone-500"
@@ -210,10 +208,7 @@ export function ProfileMenu({
           >
             Link another device
           </button>
-          <div
-            role="separator"
-            className="my-1 border-t border-stone-200 dark:border-stone-700"
-          />
+          <div role="separator" className="my-1 border-t border-stone-200 dark:border-stone-700" />
           {/* Deliberately not a menuitem: picking a theme is a setting you
               adjust and look at, so the menu stays open while you do. */}
           <div className="px-3 py-2">
@@ -222,10 +217,7 @@ export function ProfileMenu({
             </p>
             <ThemeToggle fullWidth />
           </div>
-          <div
-            role="separator"
-            className="my-1 border-t border-stone-200 dark:border-stone-700"
-          />
+          <div role="separator" className="my-1 border-t border-stone-200 dark:border-stone-700" />
           {/* The two halves of what used to be the header's "?": a tour you
               ask for, and what this thing is. Their own group, because unlike
               everything above they are about the app rather than about you. */}
@@ -251,10 +243,7 @@ export function ProfileMenu({
           >
             About LibreSesh
           </button>
-          <div
-            role="separator"
-            className="my-1 border-t border-stone-200 dark:border-stone-700"
-          />
+          <div role="separator" className="my-1 border-t border-stone-200 dark:border-stone-700" />
           <button
             type="button"
             role="menuitem"

@@ -11,7 +11,15 @@
  * `BACKUP_PASSPHRASE` when there is no terminal (CI, a restore script).
  */
 import { createDecipheriv } from 'node:crypto';
-import { createReadStream, createWriteStream, existsSync, openSync, readSync, statSync, closeSync } from 'node:fs';
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  openSync,
+  readSync,
+  statSync,
+  closeSync,
+} from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout, argv, exit } from 'node:process';
 import { pipeline } from 'node:stream/promises';
@@ -92,7 +100,9 @@ async function main(): Promise<void> {
   );
 
   console.log(`Wrote ${destination} (${total - HEADER_BYTES - TAG_BYTES} bytes).`);
-  console.log('Check it before trusting it:  sqlite3 ' + destination + ' "PRAGMA integrity_check;"');
+  console.log(
+    'Check it before trusting it:  sqlite3 ' + destination + ' "PRAGMA integrity_check;"',
+  );
 }
 
 main().catch((err: unknown) => {

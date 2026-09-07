@@ -101,7 +101,9 @@ export function isEventExport(body: unknown): boolean {
     Array.isArray(list) && list.length > 0 && typeof list[0] === 'object' && list[0] !== null
       ? (list[0] as Loose)
       : undefined;
-  return typeof first(doc.rooms)?.id === 'number' || typeof first(doc.sessions)?.roomId === 'number';
+  return (
+    typeof first(doc.rooms)?.id === 'number' || typeof first(doc.sessions)?.roomId === 'number'
+  );
 }
 
 /** Minutes of the day as the importer prints them; 1440 is `24:00`. */
@@ -135,8 +137,7 @@ const present = (source: Loose, keys: readonly string[]): Loose => {
 const bySortOrder = <T extends { sortOrder?: number }>(list: T[]): T[] =>
   [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-const plural = (n: number, one: string, other: string): string =>
-  `${n} ${n === 1 ? one : other}`;
+const plural = (n: number, one: string, other: string): string => `${n} ${n === 1 ? one : other}`;
 
 /**
  * An export as the importer would have it written. Ids become the names they
@@ -215,13 +216,7 @@ export function fromExport(body: unknown): { doc: unknown; warnings: string[] } 
       const row: Loose = {
         room: resolve('roomId', roomName, session.roomId),
         title: session.title,
-        ...present(session, [
-          'description',
-          'type',
-          'blocksOpenBooking',
-          'startsAt',
-          'endsAt',
-        ]),
+        ...present(session, ['description', 'type', 'blocksOpenBooking', 'startsAt', 'endsAt']),
       };
       if (typeof session.trackId === 'number') {
         row.track = resolve('trackId', trackName, session.trackId);

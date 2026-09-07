@@ -321,7 +321,9 @@ describe('a session can be streamed more than once', () => {
 
   it('refuses a link that runs code, or one with no scheme, or a nameless one', async () => {
     await make({ livestreams: [{ label: 'Bad', url: 'javascript:alert(1)' }] }).expect(400);
-    await make({ livestreams: [{ label: 'Bad', url: 'data:text/html,<script>x</script>' }] }).expect(400);
+    await make({
+      livestreams: [{ label: 'Bad', url: 'data:text/html,<script>x</script>' }],
+    }).expect(400);
     await make({ livestreams: [{ label: 'Bad', url: 'not a url' }] }).expect(400);
     await make({ livestreams: [{ label: '', url: YT.url }] }).expect(400);
   });

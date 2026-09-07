@@ -30,10 +30,7 @@ const isWordChar = (ch: string | undefined): boolean =>
  * `@ann` does not claim the front of `@anna` when both exist, and the longer
  * of two names wins when one is a prefix of the other.
  */
-export function tokenizeMentions(
-  text: string,
-  knownNames: Iterable<string>,
-): MentionSegment[] {
+export function tokenizeMentions(text: string, knownNames: Iterable<string>): MentionSegment[] {
   // Canonical casing keyed by lowercase, longest first so the first prefix hit
   // is also the longest — a stable, allocation-free way to longest-match.
   const names = [...knownNames].sort((a, b) => b.length - a.length);

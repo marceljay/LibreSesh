@@ -26,11 +26,15 @@ export function eventRoutes(ctx: Ctx): Router {
       throw forbidden('Wrong instance password');
     }
     const body = parse(createEventSchema, req.body);
-    if (getEventBySlug(ctx.db, body.slug)) throw conflict('That slug is already taken', 'slug_taken');
+    if (getEventBySlug(ctx.db, body.slug))
+      throw conflict('That slug is already taken', 'slug_taken');
 
     // Blank password fields are filled in, not rejected; `generated` is the
     // subset this instance invented, which the creator is shown once.
-    const { passwords, generated } = resolveEventPasswords(body, isDemoEvent(ctx.config, body.slug));
+    const { passwords, generated } = resolveEventPasswords(
+      body,
+      isDemoEvent(ctx.config, body.slug),
+    );
 
     const now = new Date().toISOString();
     const info = ctx.db
@@ -71,7 +75,9 @@ export function eventRoutes(ctx: Ctx): Router {
       entityId: eventId,
     });
 
-    const row = ctx.db.prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?').get(eventId);
+    const row = ctx.db
+      .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
+      .get(eventId);
     // The only time these leave the server: they are hashed on the way in and
     // unrecoverable afterwards, so the creator has to see them now or never.
     res.status(201).json({ ...toEventSummary(row as EventRow), generatedPasswords: generated });

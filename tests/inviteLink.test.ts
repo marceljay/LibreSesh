@@ -29,9 +29,9 @@ describe('invite links', () => {
 
   it('tolerates a base with a trailing slash', () => {
     expect(normalizeBaseUrl('https://x.test///')).toBe('https://x.test');
-    expect(
-      buildInviteUrl({ baseUrl: ' https://x.test/ ', slug: 'c', password: 'p' }),
-    ).toBe('https://x.test/e/c#k=p');
+    expect(buildInviteUrl({ baseUrl: ' https://x.test/ ', slug: 'c', password: 'p' })).toBe(
+      'https://x.test/e/c#k=p',
+    );
   });
 
   it('ignores a fragment that is not an invite', () => {

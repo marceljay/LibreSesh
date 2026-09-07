@@ -63,7 +63,10 @@ describe('password-role', () => {
 
   it('logs who made an invite code', async () => {
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
-    await admin.post('/api/e/testconf/password-role').send({ password: 'user-pw', displayName: nextUsername() }).expect(200);
+    await admin
+      .post('/api/e/testconf/password-role')
+      .send({ password: 'user-pw', displayName: nextUsername() })
+      .expect(200);
     const row = harness.db
       .prepare<[], { action: string; entity: string }>(
         "SELECT action, entity FROM audit WHERE action = 'invite_qr'",

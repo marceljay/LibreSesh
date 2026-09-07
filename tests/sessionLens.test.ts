@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SessionDto } from '../server/src/shared/types.js';
-import {
-  lensActive,
-  matchesLens,
-  type SessionLens,
-} from '../web/src/lib/sessionLens.js';
+import { lensActive, matchesLens, type SessionLens } from '../web/src/lib/sessionLens.js';
 import { UNTRACKED } from '../web/src/lib/tracks.js';
 
 /**

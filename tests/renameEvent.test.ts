@@ -82,7 +82,10 @@ describe('renaming an event', () => {
     // `otherconf` still points somewhere. Handing it to this event would steal
     // every old link pointing at the other one.
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
-    const res = await admin.patch('/api/e/testconf/settings').send({ slug: 'otherconf' }).expect(409);
+    const res = await admin
+      .patch('/api/e/testconf/settings')
+      .send({ slug: 'otherconf' })
+      .expect(409);
     expect(res.body.error.code).toBe('slug_taken');
   });
 

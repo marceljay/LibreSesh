@@ -43,12 +43,7 @@ function payloadTooLarge(err: unknown): { limit: number } | null {
 }
 
 /** Terminal error handler: shapes every failure as `{ error: { code, message } }`. */
-export function errorHandler(
-  err: unknown,
-  _req: Request,
-  res: Response,
-  next: NextFunction,
-): void {
+export function errorHandler(err: unknown, _req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
     next(err);
     return;
@@ -69,7 +64,8 @@ export function errorHandler(
   // big" to someone importing a programme.
   const oversized = payloadTooLarge(err);
   if (oversized) {
-    const limit = oversized.limit > 0 ? ` (the limit is ${Math.floor(oversized.limit / 1024)} KB)` : '';
+    const limit =
+      oversized.limit > 0 ? ` (the limit is ${Math.floor(oversized.limit / 1024)} KB)` : '';
     res
       .status(413)
       .json({ error: { code: 'too_large', message: `That request is too large${limit}.` } });

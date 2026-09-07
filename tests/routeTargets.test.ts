@@ -45,9 +45,7 @@ function declaredSegments(app: string): Set<string> {
  *  first segment matters; `${...}` right after the slash is an id, which the
  *  `:sessionId`-style routes cover. */
 function usedSegments(source: string): string[] {
-  return [...source.matchAll(/`\/e\/\$\{[a-zA-Z.?]+\}\/([a-zA-Z][a-zA-Z0-9-]*)/g)].map(
-    (m) => m[1],
-  );
+  return [...source.matchAll(/`\/e\/\$\{[a-zA-Z.?]+\}\/([a-zA-Z][a-zA-Z0-9-]*)/g)].map((m) => m[1]);
 }
 
 describe('every route the app links to exists', () => {

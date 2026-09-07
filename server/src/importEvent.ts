@@ -519,8 +519,12 @@ export function importEvent(
     );
     // Document order is the running order, the way it is for rooms.
     formats.forEach((format, i) => {
-      const id = insertFormat.run(eventId, format.name, format.color ?? '#6B7280', i)
-        .lastInsertRowid;
+      const id = insertFormat.run(
+        eventId,
+        format.name,
+        format.color ?? '#6B7280',
+        i,
+      ).lastInsertRowid;
       formatIds.set(key(format.name), Number(id));
     });
 
@@ -540,9 +544,7 @@ export function importEvent(
       const startMin = minuteOfDay(row.start);
       const endMin = minuteOfDay(row.end);
       if (startMin % 5 !== 0 || endMin % 5 !== 0) {
-        throw badRequest(
-          `breaks[${index}] "${row.label}": times land on a 5-minute step`,
-        );
+        throw badRequest(`breaks[${index}] "${row.label}": times land on a 5-minute step`);
       }
       // Same reasoning as a session outside the viewport: in the database and
       // off the top of the grid reads as an import that failed.
@@ -591,11 +593,19 @@ export function importEvent(
       const startsAt =
         session.startsAt !== undefined
           ? new Date(session.startsAt)
-          : zonedTimeToUtc(session.date as string, minuteOfDay(session.start as string), event.timezone);
+          : zonedTimeToUtc(
+              session.date as string,
+              minuteOfDay(session.start as string),
+              event.timezone,
+            );
       const endsAt =
         session.endsAt !== undefined
           ? new Date(session.endsAt)
-          : zonedTimeToUtc(session.date as string, minuteOfDay(session.end as string), event.timezone);
+          : zonedTimeToUtc(
+              session.date as string,
+              minuteOfDay(session.end as string),
+              event.timezone,
+            );
 
       if (endsAt <= startsAt) throw badRequest(`${errorLabel}: ends before it starts`);
       try {
@@ -628,7 +638,8 @@ export function importEvent(
       const resolvedTags: number[] = [];
       for (const name of session.tags ?? []) {
         const tagId = tagIds.get(key(name));
-        if (tagId === undefined) throw badRequest(`${errorLabel}: no tag called "${name}" is declared`);
+        if (tagId === undefined)
+          throw badRequest(`${errorLabel}: no tag called "${name}" is declared`);
         resolvedTags.push(tagId);
       }
 
@@ -666,9 +677,7 @@ export function importEvent(
         ).lastInsertRowid,
       );
       for (const tagId of new Set(resolvedTags)) linkTag.run(sessionId, tagId);
-      speakerIds.forEach((personId, order) =>
-        insertSessionSpeaker.run(sessionId, personId, order),
-      );
+      speakerIds.forEach((personId, order) => insertSessionSpeaker.run(sessionId, personId, order));
 
       // Outside the day viewport a session is in the database and off the top
       // or bottom of the grid — invisible, which reads as a failed import.

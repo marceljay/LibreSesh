@@ -31,8 +31,7 @@ export const fold = (text: string): string =>
   text.replace(/[À-ɏ]/g, (c) => c.normalize('NFD')[0] ?? c).toLowerCase();
 
 /** A query as the words it has to match — all of them, in any order. */
-export const searchTerms = (query: string): string[] =>
-  fold(query).split(/\s+/).filter(Boolean);
+export const searchTerms = (query: string): string[] => fold(query).split(/\s+/).filter(Boolean);
 
 const isBoundary = (text: string, i: number): boolean =>
   i === 0 || !/[\p{L}\p{N}]/u.test(text[i - 1] as string);
@@ -44,7 +43,12 @@ const isBoundary = (text: string, i: number): boolean =>
  * sessions but wants the same answer to "does typing more of a word count for
  * more than typing the middle of one".
  */
-export function scoreField(folded: string, term: string, wordStart: number, inside: number): number {
+export function scoreField(
+  folded: string,
+  term: string,
+  wordStart: number,
+  inside: number,
+): number {
   let best = 0;
   for (let i = folded.indexOf(term); i !== -1; i = folded.indexOf(term, i + 1)) {
     const hit = isBoundary(folded, i) ? wordStart : inside;

@@ -44,7 +44,12 @@ describe('foldLine', () => {
 
   it('continues folded lines with a single space', () => {
     const folded = foldLine(`SUMMARY:${'y'.repeat(120)}`);
-    expect(folded.split('\r\n').slice(1).every((l) => l.startsWith(' '))).toBe(true);
+    expect(
+      folded
+        .split('\r\n')
+        .slice(1)
+        .every((l) => l.startsWith(' ')),
+    ).toBe(true);
   });
 
   it('counts octets, not characters, so multi-byte text still fits', () => {

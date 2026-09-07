@@ -27,7 +27,7 @@
     "decrypt-backup": "tsx scripts/decrypt-backup.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint . && tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
+    "lint": "prettier --check . && eslint . && tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

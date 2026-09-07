@@ -72,7 +72,12 @@ export function listenersOn(port: number): number[] {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return parsePids(out.match(/pid=(\d+)/g)?.join('\n').replace(/pid=/g, '') ?? '');
+    return parsePids(
+      out
+        .match(/pid=(\d+)/g)
+        ?.join('\n')
+        .replace(/pid=/g, '') ?? '',
+    );
   } catch {
     return [];
   }

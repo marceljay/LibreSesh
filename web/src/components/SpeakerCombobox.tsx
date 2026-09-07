@@ -176,31 +176,31 @@ export function SpeakerCombobox({
         ))}
 
         {room && (
-        <TextInput
-          value={query ?? ''}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setQuery(query ?? '')}
-          onKeyDown={(e) => {
-            // Closed, Enter is the dialog's: it saves the session. Open, every
-            // key below is the list's first.
-            if (!open) return;
-            if (list.onKeyDown(e)) return;
-            if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
-              // The chip-field convention: backspace on an empty field takes the
-              // last one off, so a mistyped name is one key away from gone.
-              onChange(value.slice(0, -1));
+          <TextInput
+            value={query ?? ''}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setQuery(query ?? '')}
+            onKeyDown={(e) => {
+              // Closed, Enter is the dialog's: it saves the session. Open, every
+              // key below is the list's first.
+              if (!open) return;
+              if (list.onKeyDown(e)) return;
+              if (e.key === 'Backspace' && (query ?? '') === '' && value.length > 0) {
+                // The chip-field convention: backspace on an empty field takes the
+                // last one off, so a mistyped name is one key away from gone.
+                onChange(value.slice(0, -1));
+              }
+            }}
+            {...list.comboboxProps}
+            maxLength={120}
+            placeholder={
+              onlySelf
+                ? 'Only you can be credited here'
+                : value.length === 0
+                  ? 'Search people or type a new name'
+                  : 'Add another'
             }
-          }}
-          {...list.comboboxProps}
-          maxLength={120}
-          placeholder={
-            onlySelf
-              ? 'Only you can be credited here'
-              : value.length === 0
-                ? 'Search people or type a new name'
-                : 'Add another'
-          }
-        />
+          />
         )}
       </ControlShell>
 

@@ -88,8 +88,8 @@ export function LandingPage() {
           </h1>
 
           <p className="max-w-[42ch] text-base leading-7 text-stone-600 dark:text-stone-300">
-            One link, one board. Anyone in the room can claim an empty slot, and the
-            schedule updates for everyone at once. No accounts, no app, open source.
+            One link, one board. Anyone in the room can claim an empty slot, and the schedule
+            updates for everyone at once. No accounts, no app, open source.
           </p>
 
           <div className="flex flex-wrap gap-3">
@@ -116,10 +116,9 @@ export function LandingPage() {
               nothing else. Tell them they are already done rather than making
               them hunt for their event in a list they have no business in. */}
           <p className="max-w-[46ch] text-sm leading-6 text-stone-500 dark:text-stone-400">
-            Holding a link to an event? Open it — that link is the whole way in.
-            You will be asked for the event&rsquo;s password once, and nothing else.
+            Holding a link to an event? Open it — that link is the whole way in. You will be asked
+            for the event&rsquo;s password once, and nothing else.
           </p>
-
         </div>
 
         <BoardPreview />

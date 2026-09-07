@@ -50,10 +50,7 @@ describe('laneLayout', () => {
   it('reuses a freed lane so a chain of clashes stays two wide', () => {
     // A 10–11 & B 10:30–11:30 clash (2 lanes); C 11:15–12:00 overlaps only B,
     // so it reuses A's freed lane and the cluster stays two wide, not three.
-    const lanes = laneLayout(
-      [item(1, 600, 660), item(2, 630, 690), item(3, 675, 720)],
-      oneColumn,
-    );
+    const lanes = laneLayout([item(1, 600, 660), item(2, 630, 690), item(3, 675, 720)], oneColumn);
     expect(lanes.get(1)).toEqual({ lane: 0, lanes: 2 });
     expect(lanes.get(2)).toEqual({ lane: 1, lanes: 2 });
     expect(lanes.get(3)).toEqual({ lane: 0, lanes: 2 }); // back in lane 0

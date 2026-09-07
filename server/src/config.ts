@@ -82,14 +82,18 @@ export function isDemoEvent(config: Config, slug: string): boolean {
  * and kept beside the database, where it survives a restart the same way the
  * data does.
  */
-function resolveCookieSecret(isProd: boolean, databasePath: string): {
+function resolveCookieSecret(
+  isProd: boolean,
+  databasePath: string,
+): {
   secret: string;
   origin: 'env' | 'file' | 'ephemeral';
 } {
   if (isProd) return { secret: required('COOKIE_SECRET'), origin: 'env' };
   const configured = process.env.COOKIE_SECRET;
   if (configured) return { secret: configured, origin: 'env' };
-  if (databasePath === ':memory:') return { secret: randomBytes(32).toString('hex'), origin: 'ephemeral' };
+  if (databasePath === ':memory:')
+    return { secret: randomBytes(32).toString('hex'), origin: 'ephemeral' };
 
   const path = join(dirname(databasePath), '.cookie-secret');
   try {

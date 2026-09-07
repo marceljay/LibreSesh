@@ -12,7 +12,7 @@ import { isAMove, notifySessionAudience } from '../notifications.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
-    assertMayBlock,
+  assertMayBlock,
   assertMayMutate,
   assertMayPlace,
   assertNoOverlap,
@@ -39,7 +39,6 @@ import {
   seriesTitleKey,
   unlinkSession,
 } from '../series.js';
-
 
 import {
   parse,
@@ -191,135 +190,130 @@ export function sessionRoutes(ctx: Ctx): Router {
    * is open sessions, held to the same per-day rules a single open session is
    * (open room, inside the event window, no clash, not under a hold).
    */
-  router.post(
-    '/sessions/repeat',
-    ...userWrite,
-    (req, res) => {
-      const body = parse(sessionRepeatSchema, req.body);
-      const room = getRoom(ctx.db, req.event.id, body.roomId);
-      // Only admins choose the type or hold the floor; anyone else placing a
-      // run is placing open sessions, the same as a single one.
-      const type = req.role === 'admin' ? (body.type ?? 'official') : 'open';
-      assertMayPlace(getPermissions(ctx.db, req.event.id), req.role, room, type);
-      const blocks = req.role === 'admin' && assertMayBlock(type, body.blocksOpenBooking);
+  router.post('/sessions/repeat', ...userWrite, (req, res) => {
+    const body = parse(sessionRepeatSchema, req.body);
+    const room = getRoom(ctx.db, req.event.id, body.roomId);
+    // Only admins choose the type or hold the floor; anyone else placing a
+    // run is placing open sessions, the same as a single one.
+    const type = req.role === 'admin' ? (body.type ?? 'official') : 'open';
+    assertMayPlace(getPermissions(ctx.db, req.event.id), req.role, room, type);
+    const blocks = req.role === 'admin' && assertMayBlock(type, body.blocksOpenBooking);
 
-      const first = { startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) };
-      assertValidTimes(req.event, first);
-      const tagIds = body.tagIds ?? [];
-      assertTagsBelong(ctx.db, req.event.id, tagIds);
-      const trackId = body.trackId ?? null;
-      assertTrackBelongs(ctx.db, req.event.id, trackId);
-      // Every occurrence is the same kind of thing as the first one.
-      const formatId = body.formatId ?? null;
-      assertFormatBelongs(ctx.db, req.event.id, formatId);
+    const first = { startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) };
+    assertValidTimes(req.event, first);
+    const tagIds = body.tagIds ?? [];
+    assertTagsBelong(ctx.db, req.event.id, tagIds);
+    const trackId = body.trackId ?? null;
+    assertTrackBelongs(ctx.db, req.event.id, trackId);
+    // Every occurrence is the same kind of thing as the first one.
+    const formatId = body.formatId ?? null;
+    assertFormatBelongs(ctx.db, req.event.id, formatId);
 
-      // The run is a claim about the printed clock, so it is the wall-clock
-      // start and end that repeat, not the instants. Each day is resolved
-      // through the event's timezone separately, which is what keeps 14:00 at
-      // 14:00 when the clocks change partway through a long programme.
-      const tz = req.event.timezone;
-      const firstDate = localDate(first.startsAt, tz);
-      const startMin = localMinuteOfDay(first.startsAt, tz);
-      const endMin = localMinuteOfDay(first.endsAt, tz);
-      // A session ending at or past local midnight belongs to the next date;
-      // every occurrence keeps that same offset.
-      const endOffset =
-        (dateToUtcMs(localDate(first.endsAt, tz)) - dateToUtcMs(firstDate)) / DAY_MS;
+    // The run is a claim about the printed clock, so it is the wall-clock
+    // start and end that repeat, not the instants. Each day is resolved
+    // through the event's timezone separately, which is what keeps 14:00 at
+    // 14:00 when the clocks change partway through a long programme.
+    const tz = req.event.timezone;
+    const firstDate = localDate(first.startsAt, tz);
+    const startMin = localMinuteOfDay(first.startsAt, tz);
+    const endMin = localMinuteOfDay(first.endsAt, tz);
+    // A session ending at or past local midnight belongs to the next date;
+    // every occurrence keeps that same offset.
+    const endOffset = (dateToUtcMs(localDate(first.endsAt, tz)) - dateToUtcMs(firstDate)) / DAY_MS;
 
-      const { dates } = repeatDays(firstDate, body.repeat, {
-        eventEndDate: req.event.end_date,
-        max: MAX_REPEAT_DAYS,
-      });
+    const { dates } = repeatDays(firstDate, body.repeat, {
+      eventEndDate: req.event.end_date,
+      max: MAX_REPEAT_DAYS,
+    });
 
-      const windows = dates.map((date) => {
-        const window = {
-          startsAt: zonedTimeToUtc(date, startMin, tz),
-          endsAt: zonedTimeToUtc(addDays(date, endOffset), endMin, tz),
-        };
-        // Checked per day rather than once: a wall-clock span that is 90
-        // minutes most days is 30 on the day the clocks go forward, and a
-        // session that quietly changed length is worse than a refusal. The
-        // day naming the failure rides along, so "Wed: outside the day" points
-        // at the one occurrence that cannot land, not the whole run.
-        try {
-          assertValidTimes(req.event, window);
-          // The same gate a single open session passes, once per occurrence:
-          // an organiser's run is trusted to overlap and to sit off-viewport,
-          // an attendee's is not.
-          if (req.role !== 'admin') {
-            assertWithinEventWindow(req.event, window);
-            assertNoOverlap(ctx.db, req.event.id, room.id, window);
-            assertNotBlocked(ctx.db, req.event.id, req.role, window);
-            assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
-          }
-        } catch (err) {
-          throw badRequest(`${date}: ${(err as Error).message}`);
+    const windows = dates.map((date) => {
+      const window = {
+        startsAt: zonedTimeToUtc(date, startMin, tz),
+        endsAt: zonedTimeToUtc(addDays(date, endOffset), endMin, tz),
+      };
+      // Checked per day rather than once: a wall-clock span that is 90
+      // minutes most days is 30 on the day the clocks go forward, and a
+      // session that quietly changed length is worse than a refusal. The
+      // day naming the failure rides along, so "Wed: outside the day" points
+      // at the one occurrence that cannot land, not the whole run.
+      try {
+        assertValidTimes(req.event, window);
+        // The same gate a single open session passes, once per occurrence:
+        // an organiser's run is trusted to overlap and to sit off-viewport,
+        // an attendee's is not.
+        if (req.role !== 'admin') {
+          assertWithinEventWindow(req.event, window);
+          assertNoOverlap(ctx.db, req.event.id, room.id, window);
+          assertNotBlocked(ctx.db, req.event.id, req.role, window);
+          assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
         }
-        return window;
-      });
+      } catch (err) {
+        throw badRequest(`${date}: ${(err as Error).message}`);
+      }
+      return window;
+    });
 
-      // A series of one is just a session, so a link is only minted when the run
-      // actually lands on more than one day.
-      const seriesId = body.link && windows.length > 1 ? randomUUID() : null;
-      const now = new Date().toISOString();
-      const ids = ctx.db.transaction((): number[] => {
-        const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? [], actor(req));
-        const insert = ctx.db.prepare(
-          `INSERT INTO sessions
+    // A series of one is just a session, so a link is only minted when the run
+    // actually lands on more than one day.
+    const seriesId = body.link && windows.length > 1 ? randomUUID() : null;
+    const now = new Date().toISOString();
+    const ids = ctx.db.transaction((): number[] => {
+      const speakerIds = resolveSpeakers(ctx.db, req.event.id, body.speakers ?? [], actor(req));
+      const insert = ctx.db.prepare(
+        `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
              created_by, created_at, updated_at, series_id)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      return windows.map((window) => {
+        const newId = Number(
+          insert.run(
+            req.event.id,
+            room.id,
+            trackId,
+            formatId,
+            type,
+            blocks ? 1 : 0,
+            body.title,
+            body.description ?? '',
+            JSON.stringify(body.livestreams ?? []),
+            window.startsAt.toISOString(),
+            window.endsAt.toISOString(),
+            req.identity.id,
+            now,
+            now,
+            seriesId,
+          ).lastInsertRowid,
         );
-        return windows.map((window) => {
-          const newId = Number(
-            insert.run(
-              req.event.id,
-              room.id,
-              trackId,
-              formatId,
-              type,
-              blocks ? 1 : 0,
-              body.title,
-              body.description ?? '',
-              JSON.stringify(body.livestreams ?? []),
-              window.startsAt.toISOString(),
-              window.endsAt.toISOString(),
-              req.identity.id,
-              now,
-              now,
-              seriesId,
-            ).lastInsertRowid,
-          );
-          setTags(ctx, newId, tagIds);
-          // Each repeat is its own session from the moment it exists, credits
-          // included — the same people, written once per row.
-          setSessionSpeakers(ctx.db, newId, speakerIds);
-          return newId;
-        });
-      })();
+        setTags(ctx, newId, tagIds);
+        // Each repeat is its own session from the moment it exists, credits
+        // included — the same people, written once per row.
+        setSessionSpeakers(ctx.db, newId, speakerIds);
+        return newId;
+      });
+    })();
 
-      // One audit row and one broadcast each: they are separate sessions from
-      // the moment they exist, and every later edit or deletion will name one.
-      // The rows share a batch so the log reads as one line — five rows for one
-      // press buried the rest of the morning, and a fortnight-long run could
-      // push earlier actions past the retention cap on its own.
-      const dtos = ids.map((id) => loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id)));
-      const batch = dtos.length > 1 ? newBatch() : undefined;
-      for (const dto of dtos) {
-        audit(ctx.db, {
-          identityId: req.identity.id,
-          eventId: req.event.id,
-          action: 'create',
-          entity: 'session',
-          entityId: dto.id,
-          batch,
-        });
-        ctx.broker.publish(req.event.slug, 'session.created', dto);
-      }
-      res.status(201).json({ sessions: dtos });
-    },
-  );
+    // One audit row and one broadcast each: they are separate sessions from
+    // the moment they exist, and every later edit or deletion will name one.
+    // The rows share a batch so the log reads as one line — five rows for one
+    // press buried the rest of the morning, and a fortnight-long run could
+    // push earlier actions past the retention cap on its own.
+    const dtos = ids.map((id) => loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id)));
+    const batch = dtos.length > 1 ? newBatch() : undefined;
+    for (const dto of dtos) {
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action: 'create',
+        entity: 'session',
+        entityId: dto.id,
+        batch,
+      });
+      ctx.broker.publish(req.event.slug, 'session.created', dto);
+    }
+    res.status(201).json({ sessions: dtos });
+  });
 
   router.patch('/sessions/:id', ...userEdit, (req, res) => {
     const existing = getSession(ctx.db, req.event.id, Number(req.params.id));
@@ -453,7 +447,18 @@ export function sessionRoutes(ctx: Ctx): Router {
                   livestreams = ?, updated_at = ?
             WHERE id = ?`,
         )
-        .run(room.id, nextTrackId, nextFormatId, type, blocks ? 1 : 0, nextTitle, nextDescription, nextLivestreams, now, t.id);
+        .run(
+          room.id,
+          nextTrackId,
+          nextFormatId,
+          type,
+          blocks ? 1 : 0,
+          nextTitle,
+          nextDescription,
+          nextLivestreams,
+          now,
+          t.id,
+        );
       if (body.tagIds) setTags(ctx, t.id, body.tagIds);
       return true;
     };
@@ -507,9 +512,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         // "This and later" is from the anchor's own day onward; "all" is the
         // whole series. Instants sort lexically, so a string compare is enough.
         const targets =
-          scope === 'all'
-            ? siblings
-            : siblings.filter((m) => m.starts_at >= existing.starts_at);
+          scope === 'all' ? siblings : siblings.filter((m) => m.starts_at >= existing.starts_at);
         considered += targets.length;
         for (const t of targets) {
           if (applyToSibling(t)) {

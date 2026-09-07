@@ -7,11 +7,7 @@ import type { ProposalRow } from '../db.js';
 import { conflict, forbidden, notFound } from '../errors.js';
 import { NameResolver } from '../eventIdentity.js';
 import { notify, organiserIdentities } from '../notifications.js';
-import {
-  loadSessionDto,
-  speakerNames,
-  toProposalDto,
-} from '../mappers.js';
+import { loadSessionDto, speakerNames, toProposalDto } from '../mappers.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import { resolveSpeaker, setSessionSpeakers, type Actor } from '../speakers.js';
@@ -40,7 +36,8 @@ export function proposalRoutes(ctx: Ctx): Router {
     identityId: req.identity.id,
     role: req.role,
     creditOthers: can(getPermissions(ctx.db, req.event.id), req.role, 'session.credit_others'),
-    alreadyCredited: existing?.speaker_id === null || existing === undefined ? [] : [existing.speaker_id],
+    alreadyCredited:
+      existing?.speaker_id === null || existing === undefined ? [] : [existing.speaker_id],
   });
 
   const load = (eventId: number, id: number): ProposalRow => {
@@ -181,7 +178,13 @@ export function proposalRoutes(ctx: Ctx): Router {
       if (body.tagIds) assertTagsBelong(ctx.db, req.event.id, body.tagIds);
 
       ctx.db.transaction(() => {
-        const speakerId = resolveSpeaker(ctx.db, req.event.id, body, row.speaker_id, actor(req, row));
+        const speakerId = resolveSpeaker(
+          ctx.db,
+          req.event.id,
+          body,
+          row.speaker_id,
+          actor(req, row),
+        );
         ctx.db
           .prepare(
             `UPDATE proposals SET title = ?, description = ?, speaker_id = ?, updated_at = ?

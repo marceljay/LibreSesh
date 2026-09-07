@@ -186,10 +186,16 @@ describe('speaker profiles', () => {
 
     it('lets the owner patch it through the roster route, but not a stranger', async () => {
       const mine = await user.patch('/api/e/testconf/me/profile').send({ bio: 'Mine' }).expect(200);
-      await user.patch(`/api/e/testconf/people/${mine.body.id}`).send({ bio: 'Edited' }).expect(200);
+      await user
+        .patch(`/api/e/testconf/people/${mine.body.id}`)
+        .send({ bio: 'Edited' })
+        .expect(200);
       await viewer.patch(`/api/e/testconf/people/${mine.body.id}`).send({ bio: 'No' }).expect(403);
       // Organisers still override.
-      await admin.patch(`/api/e/testconf/people/${mine.body.id}`).send({ bio: 'Moderated' }).expect(200);
+      await admin
+        .patch(`/api/e/testconf/people/${mine.body.id}`)
+        .send({ bio: 'Moderated' })
+        .expect(200);
     });
 
     it('shows isMine only to the owner', async () => {
@@ -229,7 +235,10 @@ describe('speaker profiles', () => {
 
     it('lets you take a full name someone else also uses', async () => {
       await viewer.patch('/api/e/testconf/me/profile').send({ name: 'Taken' }).expect(200);
-      const res = await user.patch('/api/e/testconf/me/profile').send({ name: 'Taken' }).expect(200);
+      const res = await user
+        .patch('/api/e/testconf/me/profile')
+        .send({ name: 'Taken' })
+        .expect(200);
       expect(res.body.name).toBe('Taken');
     });
 
@@ -288,7 +297,10 @@ describe('speaker profiles', () => {
    */
   describe('arriving under the name of an unclaimed profile', () => {
     it('asks first, then adopts the profile on a yes', async () => {
-      const shell = await admin.post('/api/e/testconf/people').send({ name: 'Unclaimed' }).expect(201);
+      const shell = await admin
+        .post('/api/e/testconf/people')
+        .send({ name: 'Unclaimed' })
+        .expect(201);
       const ada = agentFor(harness);
       await ada.get('/api/me').expect(200);
 
@@ -317,7 +329,10 @@ describe('speaker profiles', () => {
     });
 
     it('starts a fresh person on a no', async () => {
-      const shell = await admin.post('/api/e/testconf/people').send({ name: 'Unclaimed' }).expect(201);
+      const shell = await admin
+        .post('/api/e/testconf/people')
+        .send({ name: 'Unclaimed' })
+        .expect(201);
       const other = agentFor(harness);
       await other.get('/api/me').expect(200);
       await other
@@ -356,10 +371,12 @@ describe('speaker profiles', () => {
       return res.body.speakers[0].id as number;
     };
     const personFrom = async (agent: Agent, id: number) =>
-      ((await agent.get('/api/e/testconf/bundle').expect(200)).body.people as {
-        id: number;
-        archivedAt: string | null;
-      }[]).find((p) => p.id === id);
+      (
+        (await agent.get('/api/e/testconf/bundle').expect(200)).body.people as {
+          id: number;
+          archivedAt: string | null;
+        }[]
+      ).find((p) => p.id === id);
 
     it('marks the profile without removing it or its sessions', async () => {
       const id = await personIdFor('Ada Lovelace');
@@ -389,10 +406,12 @@ describe('speaker profiles', () => {
      */
     it('lets whoever holds the profile take it back out', async () => {
       await user.patch('/api/e/testconf/me/profile').send({ name: 'Grace' }).expect(200);
-      const mine = ((await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
-        id: number;
-        isMine: boolean;
-      }[]).find((p) => p.isMine);
+      const mine = (
+        (await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
+          id: number;
+          isMine: boolean;
+        }[]
+      ).find((p) => p.isMine);
       const id = mine?.id as number;
 
       await admin.post(`/api/e/testconf/people/${id}/archive`).expect(200);
@@ -417,10 +436,12 @@ describe('speaker profiles', () => {
      */
     it('takes the profile back out when its holder enters again', async () => {
       await user.patch('/api/e/testconf/me/profile').send({ name: 'Grace' }).expect(200);
-      const mine = ((await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
-        id: number;
-        isMine: boolean;
-      }[]).find((p) => p.isMine);
+      const mine = (
+        (await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
+          id: number;
+          isMine: boolean;
+        }[]
+      ).find((p) => p.isMine);
       const id = mine?.id as number;
 
       await admin.post(`/api/e/testconf/people/${id}/archive`).expect(200);
@@ -434,10 +455,12 @@ describe('speaker profiles', () => {
 
     it('says who took it out, so the log is not a mystery', async () => {
       await user.patch('/api/e/testconf/me/profile').send({ name: 'Grace' }).expect(200);
-      const mine = ((await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
-        id: number;
-        isMine: boolean;
-      }[]).find((p) => p.isMine);
+      const mine = (
+        (await user.get('/api/e/testconf/bundle').expect(200)).body.people as {
+          id: number;
+          isMine: boolean;
+        }[]
+      ).find((p) => p.isMine);
       const id = mine?.id as number;
 
       await admin.post(`/api/e/testconf/people/${id}/archive`).expect(200);
@@ -532,9 +555,7 @@ describe('speaker profiles', () => {
     it('flags a speaker code that nobody has redeemed yet', async () => {
       const res = await makeSession(admin, { speakers: ['Ada Lovelace'] }).expect(201);
       const personId = res.body.speakers[0].id as number;
-      const code = await admin
-        .post(`/api/e/testconf/people/${personId}/speaker-code`)
-        .expect(200);
+      const code = await admin.post(`/api/e/testconf/people/${personId}/speaker-code`).expect(200);
 
       // Claimed on paper — an identity exists — but nobody has turned up.
       const before = await peopleFor(admin);
@@ -583,7 +604,7 @@ describe('speaker profiles', () => {
       const bundle = await user.get('/api/e/testconf/bundle').expect(200);
       const username = bundle.body.displayName as string;
       await makeSession(admin, { speakers: [username] }).expect(201);
-      await makeSession(admin, { speakers: [username, 'Ada Lovelace'] }, ).expect(201);
+      await makeSession(admin, { speakers: [username, 'Ada Lovelace'] }).expect(201);
 
       const people = (await admin.get('/api/e/testconf/bundle').expect(200)).body.people as {
         name: string;
@@ -599,7 +620,12 @@ describe('speaker profiles', () => {
 
       // A profile nobody holds has no username, no dates, and its own count.
       const ada = people.find((p) => p.name === 'Ada Lovelace');
-      expect(ada).toMatchObject({ username: null, lastSeenAt: null, joinedAt: null, sessionCount: 1 });
+      expect(ada).toMatchObject({
+        username: null,
+        lastSeenAt: null,
+        joinedAt: null,
+        sessionCount: 1,
+      });
     });
 
     it('gives every person a distinct, stable UID for the audit log', async () => {

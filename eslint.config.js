@@ -26,7 +26,7 @@ const logicalProperties = [
 /** The two old field skins: `inputClass` went in Phase 2, `selectClass` with
  *  the last native `<select>` in the Base UI migration. */
 const noOldSkins = {
-  selector: "VariableDeclarator[id.name=/^(inputClass|selectClass)$/]",
+  selector: 'VariableDeclarator[id.name=/^(inputClass|selectClass)$/]',
   message:
     'The old field skins are gone. Use <ControlShell> + <TextInput> for a text field, or <Select> from components/ui/select for a dropdown.',
 };

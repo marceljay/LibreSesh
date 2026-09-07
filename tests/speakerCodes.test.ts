@@ -106,7 +106,8 @@ describe('speaker codes', () => {
     // An organiser who is also speaking stays an organiser.
     const profile = await admin
       .patch('/api/e/testconf/me/profile')
-      .send({ name: 'Orga' }).expect(200);
+      .send({ name: 'Orga' })
+      .expect(200);
     await mint(profile.body.id as number);
     const { body: me } = await admin.get('/api/me').expect(200);
     expect(me.roles.testconf).toBe('admin');
@@ -147,9 +148,7 @@ describe('speaker codes', () => {
       await stranger.get('/api/me').expect(200);
       await stranger.post('/api/me/link').send({ phrase: body.phrase }).expect(403);
       await stranger.get('/api/e/testconf/bundle').expect(401);
-      expect(
-        harness.db.prepare('SELECT COUNT(*) AS n FROM link_codes').get(),
-      ).toEqual({ n: 0 });
+      expect(harness.db.prepare('SELECT COUNT(*) AS n FROM link_codes').get()).toEqual({ n: 0 });
     });
 
     /** The backstop, for a row written before the routes learned to revoke. */

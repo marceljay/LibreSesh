@@ -49,8 +49,6 @@ describe('tokenizeMentions', () => {
   });
 
   it('returns a single text segment when there is nothing to link', () => {
-    expect(tokenizeMentions('plain words', names)).toEqual([
-      { type: 'text', text: 'plain words' },
-    ]);
+    expect(tokenizeMentions('plain words', names)).toEqual([{ type: 'text', text: 'plain words' }]);
   });
 });

@@ -4,7 +4,15 @@ import type { AuditEntryDto, AuditItemDto } from '@shared/types';
 import { api } from '../lib/api';
 import { relativeTime, rowId, uid } from '../lib/format';
 import { plural, pluralForm } from '../lib/plural';
-import { ControlShell, EmptyState, SecondaryButton, Section, Spinner, TextInput, useToast } from '../components/ui';
+import {
+  ControlShell,
+  EmptyState,
+  SecondaryButton,
+  Section,
+  Spinner,
+  TextInput,
+  useToast,
+} from '../components/ui';
 
 /**
  * The write log, which the server has kept since the first migration and
@@ -160,9 +168,7 @@ function Entry({ entry }: { entry: AuditItemDto }) {
         <span className={tone}>{action}</span>
         {/* The count, and the title they share — a repeat is the same session
             on several days, so one name covers the batch. */}
-        <span className="text-stone-500 dark:text-stone-400">
-          {plural(members.length, forms)}
-        </span>
+        <span className="text-stone-500 dark:text-stone-400">{plural(members.length, forms)}</span>
         {entry.entityLabel && (
           <span className="min-w-0 truncate font-medium">“{entry.entityLabel}”</span>
         )}

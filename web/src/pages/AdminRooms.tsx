@@ -1,10 +1,10 @@
-import { useState } from "react";
-import type { RoomDto } from "@shared/types";
-import { ROOM_COLORS } from "@shared/roomColors";
+import { useState } from 'react';
+import type { RoomDto } from '@shared/types';
+import { ROOM_COLORS } from '@shared/roomColors';
 
-import { ColorPicker } from "../components/ColorPicker";
-import { capacityField, parseNumberField } from "../lib/numberField";
-import { plural } from "../lib/plural";
+import { ColorPicker } from '../components/ColorPicker';
+import { capacityField, parseNumberField } from '../lib/numberField';
+import { plural } from '../lib/plural';
 import {
   ControlShell,
   DangerButton,
@@ -21,7 +21,7 @@ import {
   TextArea,
   TextInput,
   Toggle,
-} from "../components/ui";
+} from '../components/ui';
 
 export interface AdminRoomsProps {
   rooms: RoomDto[];
@@ -39,7 +39,6 @@ export interface RoomDraft {
   openBooking: boolean;
 }
 
-
 /** '' means "no capacity", which is a real state distinct from 0 — so a blank
  *  field parses to `null` with no complaint. A value the field cannot make a
  *  number of also parses to `null`, which is why saving is blocked on the
@@ -49,9 +48,7 @@ export interface RoomDraft {
 const parseCapacity = (raw: string) => parseNumberField(raw, capacityField);
 
 const capacityLabel = (capacity: number | null): string =>
-  capacity === null
-    ? "no capacity set"
-    : plural(capacity, { one: "seat", other: "seats" });
+  capacity === null ? 'no capacity set' : plural(capacity, { one: 'seat', other: 'seats' });
 
 /**
  * One room. Collapsed it is a summary row; expanded it is a real form.
@@ -80,9 +77,7 @@ function RoomRow({
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(room.name);
-  const [capacity, setCapacity] = useState(
-    room.capacity === null ? "" : String(room.capacity),
-  );
+  const [capacity, setCapacity] = useState(room.capacity === null ? '' : String(room.capacity));
   const [description, setDescription] = useState(room.description);
   const [color, setColor] = useState(room.color);
   const [openBooking, setOpenBooking] = useState(room.openBooking);
@@ -90,7 +85,7 @@ function RoomRow({
 
   const reset = () => {
     setName(room.name);
-    setCapacity(room.capacity === null ? "" : String(room.capacity));
+    setCapacity(room.capacity === null ? '' : String(room.capacity));
     setDescription(room.description);
     setColor(room.color);
     setOpenBooking(room.openBooking);
@@ -153,7 +148,7 @@ function RoomRow({
           <p className="truncate text-xs text-stone-500 dark:text-stone-400">
             {room.openBooking && (
               <span className="font-medium text-stone-600 dark:text-stone-300">
-                Attendees may book this room ·{" "}
+                Attendees may book this room ·{' '}
               </span>
             )}
             {capacityLabel(room.capacity)}
@@ -169,7 +164,7 @@ function RoomRow({
           }}
           aria-expanded={open}
         >
-          {open ? "Close" : "Edit"}
+          {open ? 'Close' : 'Edit'}
         </SecondaryButton>
       </div>
 
@@ -196,10 +191,7 @@ function RoomRow({
               />
             </FormGrid>
 
-            <Field
-              label="Description"
-              hint="Shown to attendees. Where it is, how to find it."
-            >
+            <Field label="Description" hint="Shown to attendees. Where it is, how to find it.">
               <TextArea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -227,7 +219,7 @@ function RoomRow({
                 onClick={() => void save()}
                 disabled={!dirty || !name.trim() || parsedCapacity.error !== null || saving}
               >
-                {saving ? "Saving…" : "Save room"}
+                {saving ? 'Saving…' : 'Save room'}
               </PrimaryButton>
               <SecondaryButton
                 onClick={() => {
@@ -237,10 +229,7 @@ function RoomRow({
               >
                 Cancel
               </SecondaryButton>
-              <DangerButton
-                className="ms-auto"
-                onClick={() => void onDelete(room)}
-              >
+              <DangerButton className="ms-auto" onClick={() => void onDelete(room)}>
                 Delete
               </DangerButton>
             </FormRow>
@@ -260,8 +249,8 @@ export function AdminRooms({
   onMove,
   onDelete,
 }: AdminRoomsProps) {
-  const [name, setName] = useState("");
-  const [capacity, setCapacity] = useState("");
+  const [name, setName] = useState('');
+  const [capacity, setCapacity] = useState('');
   // Most rooms never get one, so the field is asked for rather than always sat
   // there taking width off the name.
   const [capacityOpen, setCapacityOpen] = useState(false);
@@ -277,11 +266,11 @@ export function AdminRooms({
       await onCreate({
         name: name.trim(),
         capacity: parsedCapacity.value,
-        description: "",
+        description: '',
         openBooking,
       });
-      setName("");
-      setCapacity("");
+      setName('');
+      setCapacity('');
       setCapacityOpen(false);
       setOpenBooking(false);
     } finally {
@@ -309,9 +298,7 @@ export function AdminRooms({
           />
         ))}
         {rooms.length === 0 && (
-          <li className="text-sm text-stone-400 dark:text-stone-500">
-            No rooms yet.
-          </li>
+          <li className="text-sm text-stone-400 dark:text-stone-500">No rooms yet.</li>
         )}
       </ul>
 
@@ -324,11 +311,7 @@ export function AdminRooms({
           <div className="min-w-40 flex-1">
             <Field label="New room">
               <ControlShell>
-                <TextInput
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={80}
-                />
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
               </ControlShell>
             </Field>
           </div>

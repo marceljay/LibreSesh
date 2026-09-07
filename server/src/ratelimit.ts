@@ -32,10 +32,7 @@ export class RateLimiter {
     this.sweep(t);
     const refillPerMs = spec.capacity / spec.windowMs;
     const bucket = this.buckets.get(key) ?? { tokens: spec.capacity, updatedAt: t };
-    bucket.tokens = Math.min(
-      spec.capacity,
-      bucket.tokens + (t - bucket.updatedAt) * refillPerMs,
-    );
+    bucket.tokens = Math.min(spec.capacity, bucket.tokens + (t - bucket.updatedAt) * refillPerMs);
     bucket.updatedAt = t;
 
     if (bucket.tokens < 1) {

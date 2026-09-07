@@ -154,7 +154,7 @@ describe('the shared button class keeps the shape a <button> needs', () => {
   });
 });
 
-describe('the landing page does not borrow the app\'s inline controls', () => {
+describe("the landing page does not borrow the app's inline controls", () => {
   it('draws its own buttons instead', () => {
     // The app's buttons are 38px, `text-xs`, sized to sit beside a field in a
     // toolbar. On the one page whose buttons *are* the content that reads as
@@ -187,7 +187,7 @@ describe('creating and importing live with the list, not on the front door', () 
     expect(landing).not.toContain('to="/import"');
     // Narrowly: the *password* must not be explained here. "Browse events on
     // this instance" is fine and stays — that is the offer, not a caveat.
-    expect(landing).not.toMatch(/instance&rsquo;s password|instance’s password|instance password/);
+    expect(landing).not.toMatch(/instance(?:&rsquo;|’)s\s+password|instance\s+password/);
     expect(landing).not.toMatch(/Running this server/);
   });
 
@@ -206,7 +206,7 @@ describe('creating and importing live with the list, not on the front door', () 
   it('names the instance password there, beside the buttons that want it', () => {
     // Two different passwords meet on that page and only that page: an event's
     // to enter one, the instance's to make one. Said where both are in view.
-    expect(eventList).toMatch(/instance&rsquo;s password|instance’s password/);
+    expect(eventList).toMatch(/instance(?:&rsquo;|’)s\s+password/);
     expect(eventList).toMatch(/ask for a different one/);
   });
 });
@@ -218,7 +218,7 @@ describe('the source link wears the mark', () => {
     expect(footer).toContain('<GitHubMark');
   });
 
-  it('draws the mark filled, not as one of the app\'s stroke glyphs', () => {
+  it("draws the mark filled, not as one of the app's stroke glyphs", () => {
     // It is somebody else's logo: reproduced as issued, taking `currentColor`
     // so it inherits the link's hover and dark-mode colours, which is the one
     // liberty GitHub's guidelines allow.

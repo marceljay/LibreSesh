@@ -108,12 +108,9 @@ export const api = {
       userRoleLabel?: string;
     },
   ) =>
-    request<EventSummary & { generatedPasswords: GeneratedPasswords }>(
-      'POST',
-      '/events',
-      body,
-      { 'X-Instance-Key': instanceKey },
-    ),
+    request<EventSummary & { generatedPasswords: GeneratedPasswords }>('POST', '/events', body, {
+      'X-Instance-Key': instanceKey,
+    }),
   /**
    * Build a whole event from one JSON document. `dryRun` validates and reports
    * without writing — the same code path, rolled back at the end, which is the
@@ -317,7 +314,12 @@ export const api = {
     slug: string,
     sessionId: number,
     body: { kind: 'note' | 'link' | 'question'; body: string; url?: string },
-  ) => request<ContributionDto>('POST', `/e/${encode(slug)}/sessions/${sessionId}/contributions`, body),
+  ) =>
+    request<ContributionDto>(
+      'POST',
+      `/e/${encode(slug)}/sessions/${sessionId}/contributions`,
+      body,
+    ),
   deleteContribution: (slug: string, id: number) =>
     request<void>('DELETE', `/e/${encode(slug)}/contributions/${id}`),
   setContributionHidden: (slug: string, id: number, hidden: boolean) =>
@@ -369,9 +371,7 @@ export const api = {
    *  Manage Event downloads it directly — no fetch, no blob, no wrapper.
    *  `parts` is what to include besides the frame; omit it for everything. */
   exportUrl: (slug: string, parts?: readonly ExportPart[]) =>
-    `/api/e/${encode(slug)}/export.json${
-      parts === undefined ? '' : `?include=${parts.join(',')}`
-    }`,
+    `/api/e/${encode(slug)}/export.json${parts === undefined ? '' : `?include=${parts.join(',')}`}`,
 
   /**
    * Encrypted whole-instance backup. Outside `request` deliberately: the
@@ -390,8 +390,7 @@ export const api = {
     });
     if (!res.ok) {
       const payload = (await res.json().catch(() => undefined)) as
-        | { error?: { code?: string; message?: string } }
-        | undefined;
+        { error?: { code?: string; message?: string } } | undefined;
       throw new ApiError(
         res.status,
         payload?.error?.code ?? 'unknown',

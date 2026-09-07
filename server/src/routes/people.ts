@@ -147,14 +147,8 @@ export function peopleRoutes(ctx: Ctx): Router {
             `INSERT INTO people (event_id, identity_id, name, bio, links, created_at, updated_at)
              VALUES (?, NULL, ?, ?, ?, ?, ?)`,
           )
-          .run(
-            req.event.id,
-            body.name,
-            body.bio ?? '',
-            JSON.stringify(body.links ?? []),
-            now,
-            now,
-          ).lastInsertRowid,
+          .run(req.event.id, body.name, body.bio ?? '', JSON.stringify(body.links ?? []), now, now)
+          .lastInsertRowid,
       );
       const { own, pub } = views(req, id);
       audit(ctx.db, {
@@ -312,7 +306,9 @@ export function peopleRoutes(ctx: Ctx): Router {
       const person = load(req.event.id, Number(req.params.id));
       const mine = person.identity_id !== null && person.identity_id === req.identity.id;
       if (!mine && req.role !== 'admin') {
-        throw forbidden('Only an organiser, or whoever holds it, can take a profile out of the archive');
+        throw forbidden(
+          'Only an organiser, or whoever holds it, can take a profile out of the archive',
+        );
       }
       if (person.archived_at !== null) {
         ctx.db.prepare('UPDATE people SET archived_at = NULL WHERE id = ?').run(person.id);

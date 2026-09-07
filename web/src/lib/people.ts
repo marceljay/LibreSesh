@@ -9,13 +9,7 @@ import type { PersonDto, Role } from '@shared/types';
  * what tells them apart, and the merge dialog reuses them for its search.
  */
 
-export type PeopleFilter =
-  | 'all'
-  | 'arrived'
-  | 'unclaimed'
-  | 'organisers'
-  | 'speakers'
-  | 'archived';
+export type PeopleFilter = 'all' | 'arrived' | 'unclaimed' | 'organisers' | 'speakers' | 'archived';
 
 /**
  * The segments are lenses, not a partition: an organiser has also arrived, so
@@ -176,9 +170,7 @@ export function togglePeopleColumn(
   column: PeopleSortColumn,
 ): PeopleSortColumn[] {
   if (column === 'name') return shown;
-  const next = shown.includes(column)
-    ? shown.filter((c) => c !== column)
-    : [...shown, column];
+  const next = shown.includes(column) ? shown.filter((c) => c !== column) : [...shown, column];
   return COLUMN_ORDER.filter((c) => c === 'name' || next.includes(c));
 }
 
@@ -298,7 +290,8 @@ export function filterCounts(people: PersonDto[]): Record<PeopleFilter, number> 
  * organiser took their role away), so they are neither an unclaimed shell nor
  * a person with a role.
  */
-export type PersonStatus = { kind: 'role'; role: Role } | { kind: 'signed-out' } | { kind: 'unclaimed' };
+export type PersonStatus =
+  { kind: 'role'; role: Role } | { kind: 'signed-out' } | { kind: 'unclaimed' };
 
 export function personStatus(person: PersonDto): PersonStatus {
   if (!person.claimed) return { kind: 'unclaimed' };

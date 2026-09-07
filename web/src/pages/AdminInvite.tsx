@@ -82,10 +82,10 @@ function ShareWarning({ role, userLabel }: { role: Role; userLabel?: string }) {
         </p>
       ) : (
         <p className="mt-1">
-          It carries the <strong>{attendee}</strong> password, which is permission to write: to
-          book sessions, post notes and change the programme. Put it where the people at the event
-          are — a badge, a lanyard, the door — and not anywhere it outlives the room. Posting it
-          publicly hands the programme to people who were never here.
+          It carries the <strong>{attendee}</strong> password, which is permission to write: to book
+          sessions, post notes and change the programme. Put it where the people at the event are —
+          a badge, a lanyard, the door — and not anywhere it outlives the room. Posting it publicly
+          hands the programme to people who were never here.
         </p>
       )}
       <p className="mt-1">

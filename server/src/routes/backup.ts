@@ -30,7 +30,10 @@ import { parse } from '../validation.js';
 const backupSchema = z.object({
   passphrase: z
     .string()
-    .min(12, 'A backup passphrase must be at least 12 characters — nothing rate-limits an attacker with the file'),
+    .min(
+      12,
+      'A backup passphrase must be at least 12 characters — nothing rate-limits an attacker with the file',
+    ),
 });
 
 const stamp = (): string => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -43,7 +46,12 @@ const stamp = (): string => new Date().toISOString().replace(/[:.]/g, '-').slice
  */
 const includeSchema = z
   .string()
-  .transform((raw) => raw.split(',').map((s) => s.trim()).filter((s) => s !== ''))
+  .transform((raw) =>
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== ''),
+  )
   .pipe(z.array(z.enum(EXPORT_PARTS)));
 
 /** Per-event JSON export. Admin of *this* event, no instance password needed. */

@@ -72,8 +72,7 @@ describe('a new tag takes a colour nobody is using', () => {
     // chip with no text on it as far as anyone reading it is concerned.
     for (const colour of TAG_COLORS) {
       const ink = readableInk(colour);
-      const ratio =
-        ink === '#FFFFFF' ? contrastWithWhite(colour) : contrastWithBlack(colour);
+      const ratio = ink === '#FFFFFF' ? contrastWithWhite(colour) : contrastWithBlack(colour);
       expect(ratio).toBeGreaterThanOrEqual(4.5);
     }
   });

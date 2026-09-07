@@ -87,7 +87,9 @@ export function EventListPage() {
                   {event.archived && ' · archived'}
                 </div>
               </div>
-              <span className="text-xs font-medium text-stone-400 dark:text-stone-500">Enter →</span>
+              <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+                Enter →
+              </span>
             </Link>
           </li>
         ))}
@@ -103,8 +105,8 @@ export function EventListPage() {
       <p className="mt-6 max-w-[70ch] text-xs leading-5 text-stone-400 dark:text-stone-500">
         Every event is password-protected — you’ll be asked for one when you enter.{' '}
         <span className="font-semibold">New event</span> and{' '}
-        <span className="font-semibold">Import</span> ask for a different one: this
-        instance’s password, set by whoever hosts the server.
+        <span className="font-semibold">Import</span> ask for a different one: this instance’s
+        password, set by whoever hosts the server.
       </p>
     </div>
   );

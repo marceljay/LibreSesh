@@ -89,7 +89,9 @@ describe('encrypted whole-database backup', () => {
   it('returns a sealed file that opens into a working database', async () => {
     const { status, body, headers } = await download();
     expect(status).toBe(200);
-    expect(headers['content-disposition']).toMatch(/attachment; filename="libresesh-backup-.*\.lsbk"/);
+    expect(headers['content-disposition']).toMatch(
+      /attachment; filename="libresesh-backup-.*\.lsbk"/,
+    );
     expect(headers['content-length']).toBe(String(body.length));
     expect(body.subarray(0, 8).equals(BACKUP_MAGIC)).toBe(true);
 

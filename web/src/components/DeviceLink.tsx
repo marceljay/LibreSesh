@@ -31,8 +31,8 @@ export function DeviceLinkModal({ onClose }: { onClose: () => void }) {
       description={
         <>
           On your other device, open this event’s password page and choose{' '}
-          <span className="font-medium">“I’m already here on another device”</span>, then type
-          this phrase. That device becomes you — same name, role and starred sessions.
+          <span className="font-medium">“I’m already here on another device”</span>, then type this
+          phrase. That device becomes you — same name, role and starred sessions.
         </>
       }
       onClose={onClose}
@@ -52,12 +52,11 @@ export function DeviceLinkModal({ onClose }: { onClose: () => void }) {
             {code.phrase}
           </div>
           <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-            Works once and expires in 10 minutes. Anyone who types it becomes you, so don’t
-            post it anywhere public.
+            Works once and expires in 10 minutes. Anyone who types it becomes you, so don’t post it
+            anywhere public.
           </p>
         </>
       )}
-
     </Modal>
   );
 }

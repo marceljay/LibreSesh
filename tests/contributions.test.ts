@@ -89,7 +89,10 @@ describe('contributions', () => {
 
   it('hides a contribution from non-admins but keeps it for admins', async () => {
     const item = await post(author, { kind: 'note', body: 'Spam' }).expect(201);
-    await author.patch(`/api/e/testconf/contributions/${item.body.id}/hidden`).send({ hidden: true }).expect(403);
+    await author
+      .patch(`/api/e/testconf/contributions/${item.body.id}/hidden`)
+      .send({ hidden: true })
+      .expect(403);
     await admin
       .patch(`/api/e/testconf/contributions/${item.body.id}/hidden`)
       .send({ hidden: true })
@@ -184,10 +187,7 @@ describe('rooms and tags', () => {
   });
 
   it('edits a room’s capacity and description together', async () => {
-    const created = await admin
-      .post('/api/e/testconf/rooms')
-      .send({ name: 'Hall' })
-      .expect(201);
+    const created = await admin.post('/api/e/testconf/rooms').send({ name: 'Hall' }).expect(201);
     expect(created.body).toMatchObject({ capacity: null, description: '' });
 
     const patched = await admin
@@ -431,7 +431,10 @@ describe('event settings and creation', () => {
         adminPassword: 'admin22',
       })
       .expect(201);
-    await admin.post('/api/e/testconf-rail/auth').send({ password: 'admin22', displayName: nextUsername() }).expect(200);
+    await admin
+      .post('/api/e/testconf-rail/auth')
+      .send({ password: 'admin22', displayName: nextUsername() })
+      .expect(200);
     const res = await admin.get('/api/e/testconf-rail/bundle').expect(200);
     expect(res.body.event.weekRailFrom).toBe(21);
   });
@@ -513,7 +516,10 @@ describe('event settings and creation', () => {
     expect(updated.body.userRoleLabel).toBe('participant');
 
     await admin.patch('/api/e/testconf/settings').send({ userRoleLabel: '   ' }).expect(400);
-    await admin.patch('/api/e/testconf/settings').send({ userRoleLabel: 'x'.repeat(25) }).expect(400);
+    await admin
+      .patch('/api/e/testconf/settings')
+      .send({ userRoleLabel: 'x'.repeat(25) })
+      .expect(400);
   });
 
   it('takes a user role label at creation and carries it into a clone', async () => {

@@ -26,15 +26,13 @@ describe('session formats', () => {
   afterEach(() => harness.close());
 
   const newSession = (body: Record<string, unknown> = {}) =>
-    admin
-      .post('/api/e/testconf/sessions')
-      .send({
-        roomId,
-        title: 'Talk',
-        startsAt: at(DAY_ONE, 600),
-        endsAt: at(DAY_ONE, 660),
-        ...body,
-      });
+    admin.post('/api/e/testconf/sessions').send({
+      roomId,
+      title: 'Talk',
+      startsAt: at(DAY_ONE, 600),
+      endsAt: at(DAY_ONE, 660),
+      ...body,
+    });
 
   it('starts with none, so the session form shows no format row', async () => {
     const res = await admin.get('/api/e/testconf/bundle').expect(200);
@@ -82,7 +80,11 @@ describe('session formats', () => {
     const made = await newSession({ formatId: format.body.id }).expect(201);
     expect(made.body.formatId).toBe(format.body.id);
 
-    await newSession({ formatId: format.body.id + 999, startsAt: at(DAY_ONE, 720), endsAt: at(DAY_ONE, 780) }).expect(400);
+    await newSession({
+      formatId: format.body.id + 999,
+      startsAt: at(DAY_ONE, 720),
+      endsAt: at(DAY_ONE, 780),
+    }).expect(400);
   });
 
   it('leaves the format alone on a patch that does not mention it, and clears it on null', async () => {
@@ -116,7 +118,10 @@ describe('session formats', () => {
   });
 
   it('gives every session of a repeat the same format', async () => {
-    const format = await admin.post('/api/e/testconf/formats').send({ name: 'Standup' }).expect(201);
+    const format = await admin
+      .post('/api/e/testconf/formats')
+      .send({ name: 'Standup' })
+      .expect(201);
     const res = await admin
       .post('/api/e/testconf/sessions/repeat')
       .send({

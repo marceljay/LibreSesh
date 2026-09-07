@@ -16,11 +16,16 @@ const app = readFileSync(join(WEB_SRC, 'App.tsx'), 'utf8');
 describe('the page follows the OS from the root, not from a menu', () => {
   it('mounts the follower in App, which is never unmounted', () => {
     expect(app).toContain("import { useFollowSystemTheme } from './lib/useTheme';");
-    expect(app).toMatch(/export function App\(\) \{\s*(?:\/\/[^\n]*\n\s*)*useFollowSystemTheme\(\);/);
+    expect(app).toMatch(
+      /export function App\(\) \{\s*(?:\/\/[^\n]*\n\s*)*useFollowSystemTheme\(\);/,
+    );
   });
 
   it('listens for the OS switch and for another tab, and reads the choice at that moment', () => {
-    const follower = hook.slice(hook.indexOf('export function useFollowSystemTheme'), hook.indexOf('export function useTheme'));
+    const follower = hook.slice(
+      hook.indexOf('export function useFollowSystemTheme'),
+      hook.indexOf('export function useTheme'),
+    );
     expect(follower).toContain("mq.addEventListener('change', sync);");
     expect(follower).toContain("window.addEventListener('storage', sync);");
     // Read when it fires, not captured when it mounted: an explicit "dark"

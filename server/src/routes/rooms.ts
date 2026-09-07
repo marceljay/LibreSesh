@@ -101,10 +101,9 @@ export function roomRoutes(ctx: Ctx): Router {
     if ((inUse?.n ?? 0) > 0) {
       throw conflict('Move or remove this room’s sessions first', 'room_in_use');
     }
-    ctx.db.prepare('UPDATE rooms SET deleted_at = ? WHERE id = ?').run(
-      new Date().toISOString(),
-      room.id,
-    );
+    ctx.db
+      .prepare('UPDATE rooms SET deleted_at = ? WHERE id = ?')
+      .run(new Date().toISOString(), room.id);
     audit(ctx.db, {
       identityId: req.identity.id,
       eventId: req.event.id,

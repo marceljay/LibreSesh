@@ -103,7 +103,9 @@ describe('MentionTextArea wiring', () => {
   });
 
   it('recomputes the query from the caret on input only', () => {
-    expect(source).toMatch(/onChange=\{\(e\) => \{[\s\S]*?findMentionQuery\(el\.value, el\.selectionStart/);
+    expect(source).toMatch(
+      /onChange=\{\(e\) => \{[\s\S]*?findMentionQuery\(el\.value, el\.selectionStart/,
+    );
   });
 
   it('remembers an Escape against the offset of that @, not globally', () => {
@@ -146,6 +148,8 @@ describe('MentionTextArea wiring', () => {
   });
 
   it('offers only people who have a username, since resolution is by username', () => {
-    expect(source).toContain("people.map((p) => p.username).filter((u): u is string => u !== null)");
+    expect(source).toContain(
+      'people.map((p) => p.username).filter((u): u is string => u !== null)',
+    );
   });
 });

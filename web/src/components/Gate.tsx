@@ -206,8 +206,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   };
 
   /** "Yes, that's me": the same entry again, taking the profile this time. */
-  const claimAndEnter = () =>
-    demo ? enterAs(pendingRole ?? 'viewer', true) : submit(true);
+  const claimAndEnter = () => (demo ? enterAs(pendingRole ?? 'viewer', true) : submit(true));
 
   // Per event, not per instance: a demo instance can also be hosting a real
   // conference, and that gate must still ask for a password.
@@ -254,13 +253,18 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-700 dark:bg-amber-950/40"
     >
       <p className="text-stone-800 dark:text-stone-100">
-        There is a speaker profile here called <span className="font-semibold">{namesake.name}</span>
+        There is a speaker profile here called{' '}
+        <span className="font-semibold">{namesake.name}</span>
         {namesake.sessionCount > 0 &&
           `, on ${plural(namesake.sessionCount, { one: 'session', other: 'sessions' })}`}
         . Is that you?
       </p>
       <div className="mt-2 flex gap-2">
-        <PrimaryButton className="py-1.5 text-xs" onClick={() => void claimAndEnter()} disabled={busy}>
+        <PrimaryButton
+          className="py-1.5 text-xs"
+          onClick={() => void claimAndEnter()}
+          disabled={busy}
+        >
           Yes, that’s me
         </PrimaryButton>
         <SecondaryButton
@@ -336,95 +340,99 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
              it, so Enter in either enters — and a password manager, which only
              sees a login when the fields share a form, can save and fill it. */
           <InlineForm onSubmit={() => void submit()}>
-          {invite ? (
-          <>
-            <div className="mb-1 mt-3 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
-              <span>Invited as</span>
-              <RoleBadge role={invite.role ?? 'user'} />
-            </div>
-            <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
-              The code you scanned carries this event's password. Pick the name you'll appear
-              under and you're in.
-            </p>
-            {nameField}
-            {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
-            {namesakePrompt}
-            {suggestion !== null && (
-              <button
-                type="button"
-                onClick={() => void enterWithSuffix(suggestion)}
-                disabled={busy}
-                className={`mt-1.5 text-xs font-semibold ${linkClass}`}
-              >
-                Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
-              </button>
-            )}
-            <PrimaryButton
-              className="mt-4 w-full py-2 text-sm"
-              type="submit"
-              disabled={busy || nameMissing}
-            >
-              {busy ? 'Entering…' : 'Enter'}
-            </PrimaryButton>
-            {/* The password can have been changed since the code was printed,
+            {invite ? (
+              <>
+                <div className="mb-1 mt-3 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+                  <span>Invited as</span>
+                  <RoleBadge role={invite.role ?? 'user'} />
+                </div>
+                <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
+                  The code you scanned carries this event's password. Pick the name you'll appear
+                  under and you're in.
+                </p>
+                {nameField}
+                {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
+                {namesakePrompt}
+                {suggestion !== null && (
+                  <button
+                    type="button"
+                    onClick={() => void enterWithSuffix(suggestion)}
+                    disabled={busy}
+                    className={`mt-1.5 text-xs font-semibold ${linkClass}`}
+                  >
+                    Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
+                  </button>
+                )}
+                <PrimaryButton
+                  className="mt-4 w-full py-2 text-sm"
+                  type="submit"
+                  disabled={busy || nameMissing}
+                >
+                  {busy ? 'Entering…' : 'Enter'}
+                </PrimaryButton>
+                {/* The password can have been changed since the code was printed,
                 and then the QR is simply wrong. Leaving no way past it would
                 strand whoever scanned it on a screen with one dead button. */}
-            <button
-              type="button"
-              onClick={() => {
-                setInvite(undefined);
-                setPassword('');
-                setError(null);
-              }}
-              className={`mt-3 text-xs font-semibold ${linkClass}`}
-            >
-              Type a password instead
-            </button>
-          </>
-        ) : (
-          <>
-        <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">This schedule needs the event password.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInvite(undefined);
+                    setPassword('');
+                    setError(null);
+                  }}
+                  className={`mt-3 text-xs font-semibold ${linkClass}`}
+                >
+                  Type a password instead
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
+                  This schedule needs the event password.
+                </p>
 
-        <Field label="Event password">
-          <ControlShell invalid={Boolean(error)}>
-            <PasswordInput
-              name="password"
-              autoComplete="current-password"
-              enterKeyHint="go"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoFocus
-            />
-          </ControlShell>
-        </Field>
-        {error && !linkMode && (
-          <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
-        )}
-        {!linkMode && namesakePrompt}
-        {suggestion !== null && !linkMode && (
-          <button
-            type="button"
-            onClick={() => void enterWithSuffix(suggestion)}
-            disabled={busy}
-            className={`mt-1.5 text-xs font-semibold ${linkClass}`}
-          >
-            Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
-          </button>
-        )}
+                <Field label="Event password">
+                  <ControlShell invalid={Boolean(error)}>
+                    <PasswordInput
+                      name="password"
+                      autoComplete="current-password"
+                      enterKeyHint="go"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoFocus
+                    />
+                  </ControlShell>
+                </Field>
+                {error && !linkMode && (
+                  <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
+                )}
+                {!linkMode && namesakePrompt}
+                {suggestion !== null && !linkMode && (
+                  <button
+                    type="button"
+                    onClick={() => void enterWithSuffix(suggestion)}
+                    disabled={busy}
+                    className={`mt-1.5 text-xs font-semibold ${linkClass}`}
+                  >
+                    Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
+                  </button>
+                )}
 
-        <PrimaryButton
-          className="mt-4 w-full py-2 text-sm"
-          type="submit"
-          disabled={busy || nameMissing}
-        >
-          {busy ? 'Checking…' : 'Enter schedule'}
-        </PrimaryButton>
-          </>
-          )}
-          {!invite && (
-            <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">{nameField}</div>
-          )}
+                <PrimaryButton
+                  className="mt-4 w-full py-2 text-sm"
+                  type="submit"
+                  disabled={busy || nameMissing}
+                >
+                  {busy ? 'Checking…' : 'Enter schedule'}
+                </PrimaryButton>
+              </>
+            )}
+            {!invite && (
+              <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">
+                {nameField}
+              </div>
+            )}
           </InlineForm>
         )}
 
@@ -449,11 +457,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
                 </ControlShell>
               </Field>
               {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
-              <PrimaryButton
-                className="mt-3 w-full py-2 text-sm"
-                type="submit"
-                disabled={busy}
-              >
+              <PrimaryButton className="mt-3 w-full py-2 text-sm" type="submit" disabled={busy}>
                 {busy ? 'Linking…' : 'Link this device'}
               </PrimaryButton>
             </InlineForm>

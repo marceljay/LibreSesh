@@ -197,8 +197,8 @@ export function SearchPage() {
 
         {!asked ? (
           <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-            Type above to search every session in this event by title, speaker or description —
-            or use Filter to see every session on a tag, a room or your agenda, across all days.
+            Type above to search every session in this event by title, speaker or description — or
+            use Filter to see every session on a tag, a room or your agenda, across all days.
           </p>
         ) : hits.length === 0 ? (
           <EmptyState>

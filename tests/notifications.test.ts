@@ -157,9 +157,9 @@ describe('notifications', () => {
         .send({ kind: 'mention', muted: false })
         .expect(200);
 
-      const rows = harness.db
-        .prepare('SELECT COUNT(*) c FROM notification_mutes')
-        .get() as { c: number };
+      const rows = harness.db.prepare('SELECT COUNT(*) c FROM notification_mutes').get() as {
+        c: number;
+      };
       expect(rows.c).toBe(0);
       await comment(grace, 'hello again @ada').expect(201);
       expect((await inbox(ada)).body.items).toHaveLength(1);

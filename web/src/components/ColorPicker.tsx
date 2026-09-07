@@ -85,9 +85,7 @@ export function ColorPicker({
           {value}
         </span>
       </div>
-      {hint && (
-        <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">{hint}</p>
-      )}
+      {hint && <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">{hint}</p>}
     </div>
   );
 }

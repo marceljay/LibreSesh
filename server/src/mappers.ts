@@ -182,16 +182,19 @@ export const toPersonDto = (
  */
 export function personFacts(db: Db, eventId: number, onlyId?: number): Map<number, PersonFacts> {
   const rows = db
-    .prepare<[number, number, number, number, number], {
-      id: number;
-      username: string | null;
-      role: Role | null;
-      holder_uid: string | null;
-      code_state: CodeState;
-      last_seen_at: string | null;
-      joined_at: string | null;
-      session_count: number;
-    }>(
+    .prepare<
+      [number, number, number, number, number],
+      {
+        id: number;
+        username: string | null;
+        role: Role | null;
+        holder_uid: string | null;
+        code_state: CodeState;
+        last_seen_at: string | null;
+        joined_at: string | null;
+        session_count: number;
+      }
+    >(
       // `link_codes.person_id` is unique where set, so this joins at most one
       // code per person.
       `SELECT p.id AS id,
@@ -324,11 +327,7 @@ export function loadSessionDto(db: Db, row: SessionRow): SessionDto {
 }
 
 /** Proposal DTOs need per-viewer interest, so they are built with the viewer. */
-export function loadProposalDtos(
-  db: Db,
-  eventId: number,
-  viewerIdentityId: number,
-): ProposalDto[] {
+export function loadProposalDtos(db: Db, eventId: number, viewerIdentityId: number): ProposalDto[] {
   const rows = db
     .prepare<[number], ProposalRow>(
       'SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL ORDER BY created_at',
@@ -372,13 +371,15 @@ export function loadProposalDtos(
       .map((r) => r.proposal_id),
   );
 
-  return rows.map((row) => toProposalDto(row, {
-    tagIds: tags.get(row.id) ?? [],
-    authorName: names.get(row.created_by),
-    speakerName: row.speaker_id === null ? '' : (speakers.get(row.speaker_id) ?? ''),
-    interestCount: counts.get(row.id) ?? 0,
-    interested: mine.has(row.id),
-  }));
+  return rows.map((row) =>
+    toProposalDto(row, {
+      tagIds: tags.get(row.id) ?? [],
+      authorName: names.get(row.created_by),
+      speakerName: row.speaker_id === null ? '' : (speakers.get(row.speaker_id) ?? ''),
+      interestCount: counts.get(row.id) ?? 0,
+      interested: mine.has(row.id),
+    }),
+  );
 }
 
 export function toProposalDto(

@@ -96,10 +96,7 @@ export function rekeyIdentityWork(
     eventId,
   );
 
-  db.prepare('DELETE FROM roles WHERE identity_id = ? AND event_id = ?').run(
-    fromIdentity,
-    eventId,
-  );
+  db.prepare('DELETE FROM roles WHERE identity_id = ? AND event_id = ?').run(fromIdentity, eventId);
 
   return { sessionIds, proposalIds: [...new Set([...proposalIds, ...dedupedInterest])] };
 }

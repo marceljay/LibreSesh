@@ -167,7 +167,9 @@ export function speakerIdentities(db: Db, sessionId: number): number[] {
 /** Who starred this session. */
 export function starrerIdentities(db: Db, sessionId: number): number[] {
   return db
-    .prepare<[number], { identity_id: number }>('SELECT identity_id FROM stars WHERE session_id = ?')
+    .prepare<[number], { identity_id: number }>(
+      'SELECT identity_id FROM stars WHERE session_id = ?',
+    )
     .all(sessionId)
     .map((r) => r.identity_id);
 }
@@ -243,7 +245,9 @@ export function unreadCount(db: Db, eventId: number, identityId: number): number
  *  presses, and an inbox you have looked at is one you have read. */
 export function markAllRead(db: Db, eventId: number, identityId: number): number {
   return db
-    .prepare('UPDATE notifications SET read_at = ? WHERE identity_id = ? AND event_id = ? AND read_at IS NULL')
+    .prepare(
+      'UPDATE notifications SET read_at = ? WHERE identity_id = ? AND event_id = ? AND read_at IS NULL',
+    )
     .run(new Date().toISOString(), identityId, eventId).changes;
 }
 

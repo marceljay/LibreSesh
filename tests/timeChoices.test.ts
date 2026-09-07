@@ -63,7 +63,10 @@ describe('timeChoices: the list beside the box', () => {
   });
 
   it('ignores a current value that is not a time', () => {
-    expect(timeChoices({ from: 0, to: 5, beyond: null, current: 'noon' })).toEqual(['00:00', '00:05']);
+    expect(timeChoices({ from: 0, to: 5, beyond: null, current: 'noon' })).toEqual([
+      '00:00',
+      '00:05',
+    ]);
   });
 });
 
@@ -103,7 +106,11 @@ describe("the field is capped to the event's day", () => {
   const field = readFileSync(join(WEB_SRC, 'components', 'TimeField.tsx'), 'utf8');
 
   it('offers only the window, and lands a typed or nudged time on its edge', () => {
-    expect(field).toContain('timeChoices({ from: min, to: max, step: LIST_STEP, beyond: null, current: value })');
+    // Matched by shape rather than by one line: the call is long enough that
+    // the formatter breaks it across lines, and what matters is the arguments.
+    expect(field).toMatch(
+      /timeChoices\(\{\s*from: min,\s*to: max,\s*step: LIST_STEP,\s*beyond: null,\s*current: value,?\s*\}\)/,
+    );
     expect(field).toContain('const next = capped(minutesOf(parsed));');
     expect(field).toContain('onChange(capped(minutesOf(base) + delta));');
   });

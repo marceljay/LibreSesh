@@ -154,9 +154,7 @@ export function trackRoutes(ctx: Ctx): Router {
   router.patch('/tracks', ...adminWrite, (req, res) => {
     const { ids } = parse(trackOrderSchema, req.body);
     const live = ctx.db
-      .prepare<[number], TrackRow>(
-        'SELECT * FROM tracks WHERE event_id = ? AND deleted_at IS NULL',
-      )
+      .prepare<[number], TrackRow>('SELECT * FROM tracks WHERE event_id = ? AND deleted_at IS NULL')
       .all(req.event.id);
     const known = new Set(live.map((t) => t.id));
     // Length and membership alone would let [a, a] through for two tracks,

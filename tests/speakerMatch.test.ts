@@ -47,9 +47,7 @@ describe('speaker matching', () => {
   it('stores a new speaker with collapsed whitespace', async () => {
     const res = await makeSession({ speakers: [' Grace   Hopper '] }).expect(201);
     const bundle = await admin.get('/api/e/testconf/bundle').expect(200);
-    const person = bundle.body.people.find(
-      (p: { id: number }) => p.id === res.body.speakers[0].id,
-    );
+    const person = bundle.body.people.find((p: { id: number }) => p.id === res.body.speakers[0].id);
     expect(person.name).toBe('Grace Hopper');
   });
 
