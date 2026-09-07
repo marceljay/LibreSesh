@@ -39,18 +39,37 @@ const GROUP_KEY = "COALESCE(batch, 'row:' || id)";
  * hard-deleted or never-existed id simply resolves to nothing and the entry
  * falls back to its id.
  */
-const LABEL_SOURCES: Record<string, { table: string; column: string }> = {
-  session: { table: 'sessions', column: 'title' },
-  room: { table: 'rooms', column: 'name' },
-  tag: { table: 'tags', column: 'name' },
-  track: { table: 'tracks', column: 'name' },
-  person: { table: 'people', column: 'name' },
-  proposal: { table: 'proposals', column: 'title' },
-  contribution: { table: 'contributions', column: 'body' },
-  event: { table: 'events', column: 'name' },
+const LABEL_SOURCES: Record<
+  string,
+  {
+    table: string;
+    column: string;
+    /** The table soft-deletes, so "is it in the bin" is a column away. */
+    bin: boolean;
+    /** The column naming what this belongs to, when it has no page of its own. */
+    parent?: string;
+  }
+> = {
+  session: { table: 'sessions', column: 'title', bin: true },
+  room: { table: 'rooms', column: 'name', bin: true },
+  tag: { table: 'tags', column: 'name', bin: true },
+  track: { table: 'tracks', column: 'name', bin: true },
+  format: { table: 'session_formats', column: 'name', bin: true },
+  person: { table: 'people', column: 'name', bin: true },
+  proposal: { table: 'proposals', column: 'title', bin: true },
+  contribution: { table: 'contributions', column: 'body', bin: true, parent: 'session_id' },
+  event: { table: 'events', column: 'name', bin: false },
 };
 
-function labelsFor(db: Db, rows: Row[]): Map<string, string> {
+/** What was found about an entity: its name, whether it is in the bin, and
+ *  what it belongs to — enough for the line to link somewhere. */
+interface Subject {
+  label: string;
+  state: 'live' | 'trashed' | null;
+  parentId: number | null;
+}
+
+function labelsFor(db: Db, rows: Row[]): Map<string, Subject> {
   const wanted = new Map<string, Set<number>>();
   for (const row of rows) {
     if (row.entity_id === null || !(row.entity in LABEL_SOURCES)) continue;
@@ -59,20 +78,30 @@ function labelsFor(db: Db, rows: Row[]): Map<string, string> {
     wanted.set(row.entity, ids);
   }
 
-  const out = new Map<string, string>();
+  const out = new Map<string, Subject>();
   for (const [entity, ids] of wanted) {
     const source = LABEL_SOURCES[entity];
     if (!source) continue;
     const list = [...ids];
     const found = db
-      .prepare<number[], { id: number; label: string }>(
-        // Table and column come from the constant map above, never from input.
-        `SELECT id, ${source.column} AS label FROM ${source.table}
+      .prepare<
+        number[],
+        { id: number; label: string; trashed: number | null; parent: number | null }
+      >(
+        // Table and columns come from the constant map above, never from input.
+        `SELECT id, ${source.column} AS label,
+                ${source.bin ? 'deleted_at IS NOT NULL' : 'NULL'} AS trashed,
+                ${source.parent ?? 'NULL'} AS parent
+           FROM ${source.table}
           WHERE id IN (${list.map(() => '?').join(',')})`,
       )
       .all(...list);
     for (const row of found) {
-      out.set(`${entity}:${row.id}`, row.label.slice(0, 80));
+      out.set(`${entity}:${row.id}`, {
+        label: row.label.slice(0, 80),
+        state: row.trashed === null ? null : row.trashed ? 'trashed' : 'live',
+        parentId: row.parent,
+      });
     }
   }
   return out;
@@ -159,20 +188,43 @@ export function auditRoutes(ctx: Ctx): Router {
             .map((r) => [r.id, r.public_id] as const),
     );
 
-    const toDto = (row: Row): AuditEntryDto => ({
-      id: row.id,
-      at: row.at,
-      // A row can outlive its actor's identity only if that identity was
-      // removed, which nothing does today — but the log is append-only and
-      // must render whatever it holds.
-      actorName: row.identity_id === null ? '' : names.get(row.identity_id),
-      actorUid: row.identity_id === null ? null : (uids.get(row.identity_id) ?? null),
-      action: row.action,
-      entity: row.entity,
-      entityId: row.entity_id,
-      entityLabel:
-        row.entity_id === null ? '' : (labels.get(`${row.entity}:${row.entity_id}`) ?? ''),
-    });
+    // The actor's profile here, so a name in the log opens the person. The
+    // roster route is what every other name in the app links to; a name
+    // without a profile (nothing does that today, but the log outlives
+    // everything) simply stays text.
+    const profiles = new Map(
+      actorIds.length === 0
+        ? []
+        : ctx.db
+            .prepare<(number | string)[], { id: number; identity_id: number }>(
+              `SELECT id, identity_id FROM people
+                WHERE event_id = ? AND deleted_at IS NULL
+                  AND identity_id IN (${actorIds.map(() => '?').join(',')})`,
+            )
+            .all(req.event.id, ...actorIds)
+            .map((r) => [r.identity_id, r.id] as const),
+    );
+
+    const toDto = (row: Row): AuditEntryDto => {
+      const subject =
+        row.entity_id === null ? undefined : labels.get(`${row.entity}:${row.entity_id}`);
+      return {
+        id: row.id,
+        at: row.at,
+        // A row can outlive its actor's identity only if that identity was
+        // removed, which nothing does today — but the log is append-only and
+        // must render whatever it holds.
+        actorName: row.identity_id === null ? '' : names.get(row.identity_id),
+        actorUid: row.identity_id === null ? null : (uids.get(row.identity_id) ?? null),
+        actorPersonId: row.identity_id === null ? null : (profiles.get(row.identity_id) ?? null),
+        action: row.action,
+        entity: row.entity,
+        entityId: row.entity_id,
+        entityLabel: subject?.label ?? '',
+        entityState: subject?.state ?? null,
+        entityParentId: subject?.parentId ?? null,
+      };
+    };
 
     const byGroup = new Map<string, Row[]>();
     for (const row of page) {

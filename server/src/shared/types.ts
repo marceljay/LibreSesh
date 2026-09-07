@@ -548,11 +548,21 @@ export interface AuditEntryDto {
    * so the name alone is not enough. Admin-only, like the endpoint.
    */
   actorUid: string | null;
+  /** The actor's profile in this event, so the line can open it. Null when
+   *  they have none here (an instance-level actor, a merged-away identity). */
+  actorPersonId: number | null;
   action: string;
   entity: string;
   entityId: number | null;
   /** Title or name, when it could still be looked up; otherwise empty. */
   entityLabel: string;
+  /** Whether the thing is still there or in the bin — the difference between
+   *  a line that opens the session and one that opens Trash. Null when it
+   *  could not be looked up, or the entity has no bin. */
+  entityState: 'live' | 'trashed' | null;
+  /** The session a contribution belongs to: a note has no page of its own,
+   *  so its line opens the session it was left on. Null for everything else. */
+  entityParentId: number | null;
 }
 
 /**
