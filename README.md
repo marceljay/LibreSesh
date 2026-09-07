@@ -91,6 +91,7 @@ In Docker the build stage passes `--ignore-scripts=false`, so this is handled.
 | `npm run decrypt-backup` | Opens an encrypted `.lsbk` backup                 |
 | `npm test`               | Vitest suite                                      |
 | `npm run test:watch`     | The suite in watch mode                           |
+| `npm run browser-pass`   | Drive the built app through headless Chromium     |
 | `npm run lint`           | ESLint + both TypeScript projects                 |
 | `npm run typecheck`      | Just the TypeScript projects                      |
 | `npm run rebuild:native` | Rebuilds `better-sqlite3` against the local Node  |
