@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.3.5] — 2026-09-07
+
 ### Added
 
 - **A mention in a session's description links, and lands.** `@ada` in a
@@ -28,53 +32,6 @@ All notable changes to this project are documented here.
   as typed for you to press Save. A reload or a closed tab gets the browser's
   own warning. The browser's Back button is the one door not covered.
 
-### Changed
-
-- **The time box types the colon for you.** After two digits of hour the box
-  reads `08:` and the next digits are the minutes — which is what "jump to the
-  minutes" means in a box with no segments, and what a phone's numeric
-  keyboard, which has no colon key, needs to type a whole time. Two digits
-  that cannot be an hour, `93`, were the start of `9:30` and are split as
-  such. A backspace that removes the colon is respected; nothing is put back.
-
-### Fixed
-
-- **A link title in a description could run code.** Markdown lets a link carry
-  a title — `[text](https://example.org 'the title')` — and the title went into
-  the page without its quote characters escaped. A title containing one could
-  close the attribute early and add an event handler of its own, so anyone who
-  could write a session description, a pitch or a profile bio could run script
-  in the browser of everyone who read it. Reachable only after the markdown
-  parser was updated — the previous version happened to escape titles itself —
-  and now escaped where it is written, rather than left to the parser.
-
-- **The list has the now line too.** In List view the only trace of the
-  current time was a "next / now" pill on one row's clock — no line and no
-  time — so switching from the grid on the day of the event lost the one mark
-  that said where you were. The list now draws the grid's yellow line between
-  its rows, carrying the time. It sits before the first row that has not
-  started, so a row that is running keeps its "now" cards above the line; the
-  Now button and opening the schedule mid-event both land on it.
-
-- **The page catches up with the system theme when you come back to it.**
-  The 0.3.5 fix listened for the OS switch from the app itself, but a browser
-  delivers that switch only to a page that is on screen: a phone that went
-  dark at sunset with the app in the background, or a page brought back from
-  the back-forward cache, came back light and stayed light until the profile
-  menu's toggle mounted and applied the theme. The follower now also re-reads
-  the theme whenever the page becomes visible again.
-
-- **The front door fits a phone.** On a phone the landing page came up wider
-  than the screen: its right edge was cut off and you zoomed out to see the
-  whole of it. The board preview's address bar was the cause — a line that
-  never wraps, sitting in a column that grew to hold it. The column is now
-  held to the width the screen has, and the address bar shortens itself with
-  an ellipsis the way it always could.
-
-## [0.3.5] — 2026-09-07
-
-### Added
-
 - **A mention lands somewhere now.** Writing `@ada` in a comment linked to Ada
   and told her nothing; the way she found out was the hallway. There is a bell
   in the header — where the **?** used to be — with the things addressed to
@@ -97,6 +54,23 @@ All notable changes to this project are documented here.
   password works as before.
 
 ### Changed
+
+- **The time box types the colon for you.** After two digits of hour the box
+  reads `08:` and the next digits are the minutes — which is what "jump to the
+  minutes" means in a box with no segments, and what a phone's numeric
+  keyboard, which has no colon key, needs to type a whole time. Two digits
+  that cannot be an hour, `93`, were the start of `9:30` and are split as
+  such. A backspace that removes the colon is respected; nothing is put back.
+
+- **The server's own dependencies moved a generation.** Express 4 → 5, zod 3 →
+  4, marked 14 → 18, bcryptjs 2 → 3 and better-sqlite3 11 → 13, each taken on
+  its own and each checked against the thing it could break rather than against
+  a version number. Two of them would have shipped a fault the test suite could
+  not see: one made the server refuse to start whenever it was serving the built
+  app — which is to say, only in the image people actually run — and the other
+  is the link-title flaw under Fixed below. Passwords hashed by earlier releases
+  were verified to still work before the change, not after, and the database was
+  opened both ways it can be opened: freshly created, and already full.
 
 - **Tags are calmer, and a format no longer looks like one.** A session with
   four tags was four saturated blocks shouting over the title they belonged
@@ -171,6 +145,38 @@ All notable changes to this project are documented here.
   name in the config with the work written down, rather than off by silence.
 
 ### Fixed
+
+- **A link title in a description could run code.** Markdown lets a link carry
+  a title — `[text](https://example.org 'the title')` — and the title went into
+  the page without its quote characters escaped. A title containing one could
+  close the attribute early and add an event handler of its own, so anyone who
+  could write a session description, a pitch or a profile bio could run script
+  in the browser of everyone who read it. Reachable only after the markdown
+  parser was updated — the previous version happened to escape titles itself —
+  and now escaped where it is written, rather than left to the parser.
+
+- **The list has the now line too.** In List view the only trace of the
+  current time was a "next / now" pill on one row's clock — no line and no
+  time — so switching from the grid on the day of the event lost the one mark
+  that said where you were. The list now draws the grid's yellow line between
+  its rows, carrying the time. It sits before the first row that has not
+  started, so a row that is running keeps its "now" cards above the line; the
+  Now button and opening the schedule mid-event both land on it.
+
+- **The page catches up with the system theme when you come back to it.**
+  The 0.3.5 fix listened for the OS switch from the app itself, but a browser
+  delivers that switch only to a page that is on screen: a phone that went
+  dark at sunset with the app in the background, or a page brought back from
+  the back-forward cache, came back light and stayed light until the profile
+  menu's toggle mounted and applied the theme. The follower now also re-reads
+  the theme whenever the page becomes visible again.
+
+- **The front door fits a phone.** On a phone the landing page came up wider
+  than the screen: its right edge was cut off and you zoomed out to see the
+  whole of it. The board preview's address bar was the cause — a line that
+  never wraps, sitting in a column that grew to hold it. The column is now
+  held to the width the screen has, and the address bar shortens itself with
+  an ellipsis the way it always could.
 
 - **A blank page after navigating now fixes itself.** Every route loads as its
   own chunk, and nothing caught a chunk that failed to arrive: React tore the
