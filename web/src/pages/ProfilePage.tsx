@@ -1,12 +1,14 @@
 import { errorText } from '../lib/errorText';
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { PersonDetailDto, PersonDto, LabelledLink, Role } from '@shared/types';
 import { ApiError, api, type PersonWrite } from '../lib/api';
 import { dayLabel, fmtMin, place, todayInZone } from '../lib/format';
+import { buildSpeakerLinkUrl, readLinkBase } from '../lib/inviteLink';
 import { renderMarkdown } from '../lib/markdown';
 import { useEventData } from '../lib/useEventData';
-import { EditIcon } from '../components/icons';
+import { EditIcon, SpeakerIcon } from '../components/icons';
+import { QrCode } from '../components/QrCode';
 import { personByUsername } from '../components/MentionText';
 import { MentionTextArea } from '../components/MentionTextArea';
 import { MergeModal } from '../components/MergeModal';
@@ -865,7 +867,8 @@ function SpeakerAccess({
   return (
     <div className="mt-4 border-t border-stone-100 pt-3 dark:border-stone-800">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-stone-500 dark:text-stone-400">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+          <SpeakerIcon className="h-3.5 w-3.5" />
           Speaker access
         </span>
         {state === 'pending' && (
@@ -900,15 +903,7 @@ function SpeakerAccess({
         </SecondaryButton>
       </div>
       {phrase ? (
-        <>
-          <div className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-center font-mono text-sm font-semibold dark:border-stone-700 dark:bg-stone-800">
-            {phrase}
-          </div>
-          <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-            Shown once — give it to {person.name}. Typing it at the event gate signs them in as this
-            profile with the speaker role, from any device, until you revoke it.
-          </p>
-        </>
+        <SpeakerHandout slug={slug} personName={person.name} phrase={phrase} />
       ) : (
         <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
           {state === 'none'
@@ -919,5 +914,84 @@ function SpeakerAccess({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The phrase, and the same phrase as a link and a QR. Shown once, at mint.
+ *
+ * The link is `/e/:slug#c=<phrase>` — the code rides in the fragment for the
+ * invite QR's reasons (§Invite QR codes in ARCHITECTURE.md), and opening it
+ * signs the device in as this profile with nothing to type. The address it
+ * points at is the one Manage → Invite remembers for this browser, so a
+ * forwarded dev port or a LAN address is corrected once, for both.
+ */
+function SpeakerHandout({
+  slug,
+  personName,
+  phrase,
+}: {
+  slug: string;
+  personName: string;
+  phrase: string;
+}) {
+  const toast = useToast();
+  const linkRef = useRef<HTMLInputElement>(null);
+  const url = buildSpeakerLinkUrl({ baseUrl: readLinkBase(), slug, phrase });
+
+  const copy = async (text: string, what: string) => {
+    try {
+      // Rejects on insecure origins — fall back to a manual selection.
+      await navigator.clipboard.writeText(text);
+      toast.show(`${what} copied`);
+    } catch {
+      linkRef.current?.select();
+      toast.show('Press Ctrl/Cmd+C to copy the selected link');
+    }
+  };
+
+  return (
+    <>
+      <div className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-center font-mono text-sm font-semibold dark:border-stone-700 dark:bg-stone-800">
+        {phrase}
+      </div>
+      <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+        Shown once — give it to {personName}. Typing it under “I have a speaker code” at the event
+        gate signs them in as this profile with the speaker role, from any device, until you revoke
+        it.
+      </p>
+      <div className="mt-3 flex flex-wrap items-start gap-3">
+        <QrCode
+          value={url}
+          size={112}
+          title={`Speaker link for ${personName}`}
+          className="shrink-0 border border-stone-200 dark:border-stone-700"
+        />
+        <div className="min-w-[12rem] flex-1">
+          <p className="text-xs text-stone-500 dark:text-stone-400">
+            Or send the link. Opening it signs that device in as {personName} with nothing to type;
+            it works on as many devices as they open it on. Whoever holds it is them, so send it to
+            them and nobody else.
+          </p>
+          <ControlShell className="mt-2">
+            <TextInput
+              ref={linkRef}
+              readOnly
+              value={url}
+              className="font-mono text-xs"
+              aria-label={`Speaker link for ${personName}`}
+            />
+          </ControlShell>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <SecondaryButton className="py-1 text-xs" onClick={() => void copy(url, 'Link')}>
+              Copy link
+            </SecondaryButton>
+            <SecondaryButton className="py-1 text-xs" onClick={() => void copy(phrase, 'Code')}>
+              Copy code
+            </SecondaryButton>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

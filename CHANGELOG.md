@@ -4,7 +4,71 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- **The audit log links to what it names.** A line said *ada deleted session
+  “Opening keynote”* and left you to find both. Now the name opens Ada's
+  profile, and the title opens the session — or **Trash**, when that is
+  where it went, which is the reason an organiser is reading the log in the
+  first place. A note opens the session it was left on; a pitch opens the
+  board; a room, tag, track or format opens the Programme tab; an archived
+  person opens the People tab. A thing the server can no longer find stays
+  plain text rather than becoming a link to nothing.
+
+- **A speaker code has its own door, and its own link.** The gate now says
+  *I have a speaker code* next to *I'm already here on another device* — the
+  box that took the code was there, but only behind a sentence about device
+  linking that a speaker on their one phone would never click. When the code
+  does not match, the gate says to ask the organiser rather than hinting at a
+  ten-minute clock a speaker code does not have. And on the profile page,
+  beside the phrase, the organiser now gets the same code as a link and a QR:
+  opening `/e/:slug#c=<phrase>` signs that device in as the speaker with
+  nothing to type. The code rides in the part of the address a browser never
+  sends, as the invite QR's password does, and is taken out of the address
+  bar before the page draws. One code, and one link, work on as many devices
+  as the speaker opens them on, until the organiser revokes it. A device that
+  is already somebody in the event — an organiser checking their own link —
+  is asked before it is switched, so the link cannot silently sign them out.
+
+### Changed
+
+- **The test suite renders the app now.** Every route mounts under a
+  simulated browser, talks to the real server, and is held to a clean
+  console — where React reports a bad ref, a missing key or an update it did
+  not expect. Until now nothing in the suite rendered a component, so a React
+  or router upgrade could pass every test and still break the page. For what
+  a simulated browser cannot show — layout, the time box, the theme following
+  the system — `npm run browser-pass` drives the built app through a real
+  headless Chromium and fails on the same signals.
+- **React moved to 19.** Taken after the suite could render, not before:
+  every route mounted clean under it on the first run, and the only edits
+  were two type annotations. Nothing you can see changes; it is the runtime
+  every library the app sits on has been testing against for a year.
+
+### Fixed
+
+- **The time box knows its hour from its minutes.** 0.3.6 typed the colon
+  after two digits and left the rest to the browser; the fix that followed
+  only filtered what went in — digits, four at most. Neither knew where the
+  caret was, so a `0` typed into `12:30` became `10:23` and the next three
+  keys fell off the end: the report was `0725` "turning into 07:23". The box
+  is now the segmented widget it replaced, without the look. A click selects
+  the hour or the minutes under it, and what you type replaces that segment;
+  a finished hour hands the caret to the minutes; digits typed at the end of
+  a full time start its minutes over, so `11:10` and then `0000` is `11:00`,
+  not `11:10` with a `0` left over. Typing into an empty box reads left to
+  right as before — `0`, `07:`, `07:2`, `07:25`, and `9` is `09:` at once.
+  Backspace over the colon takes the hour digit with it. Up and Down step the
+  hour or the minutes, whichever the caret is in. And Enter, which the last
+  two versions swallowed on every press, settles the time and then saves the
+  form, as it does from every other field.
+
+- **The gate has a way off it.** The page that asks for an event's password
+  was a card alone on a blank page: no logo, no link, nothing to say what
+  site this was or where the other events were. Someone holding the wrong
+  link, or the wrong password, had nowhere to go but the address bar. It now
+  wears the same small header as every other page — the mark goes home, and
+  **All events** is one link away.
 
 ## [0.3.6] — 2026-09-07
 

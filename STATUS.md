@@ -36,18 +36,20 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   collection): eight items cleared, three bad, two faults on a fourth — the
   fixes are the top backlog group.
 
-- **Branch `fix/review-round-2`** (2026-09-07, worktree
-  `.claude/worktrees/review-fixes`, off `cce7f94` = 0.3.5): the five things
-  you sent in chat, one commit each, all in CHANGELOG `[Unreleased]` and
-  queued for your eyes as **R31–R35** — the now line in List view, the theme
-  catching up when the page comes back on screen, *Leave without saving?* on
-  the Settings tab, `@` mentions in a session description and in a bio
-  (composer, link and bell), and the time box typing its own colon. **Not merged to `dev`**:
-  another session is landing a dependency round there (zod 4 at `0341e1f`,
-  the lockfile still moving), so the merge waits until that settles —
-  `git merge fix/review-round-2` on `dev`, then delete the worktree. The suite
-  was green on the branch (1169 → 1188) before the shared `node_modules` was
-  rebuilt under it; run it once more after the merge.
+- **Branch `fix/review-round-2`** is all shipped: seven commits in **0.3.6**
+  (PR #55), the last two — the gate wearing the logo and a link to the other
+  events (**R36**), the audit log linking to what it names (**R37**) — into
+  `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
+  shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
+
+- **Branch `chore/react-19`** (2026-09-07, off `561c9ac`, `origin/dev`
+  merged in at `2a84e69`): the DOM smoke suite, React 19, and
+  `npm run browser-pass` — the built app driven through the container's
+  Chromium, fourteen steps on desktop and phone, console and network clean
+  under React 19 with the time-mask fix in. Local `dev` had been left
+  pointing at `main`'s merge commit (`35d08b5`) rather than at `origin/dev`,
+  so the work went on a branch; land it with `git branch -f dev origin/dev`
+  then `git merge chore/react-19` on `dev`.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -133,7 +135,7 @@ that is where these break.
 Freshest first. **R26 is the export/import work**, R21–R22 what is left of
 the 2026-09-04 checklist pass, R1–R2 the forms overhaul and the grid-block
 fix, R5–R6 linking and clashes, R7–R18 the older sweep, **R27** the `@` menu,
-**R28** the forms close-out, and **R31–R35 the five things you sent in chat
+**R28** the forms close-out, and **R31–R37 the things you sent in chat
 on 2026-09-07**, on `fix/review-round-2` until it is merged. Each takes a
 minute.
 
@@ -145,8 +147,11 @@ boxes — an off-list session is one whose duration is not a preset, a typed
 despite its *ok*; the open ones are filed as **Fixes from your review** at
 the top of the backlog. R25 is fixed (the preview's address bar was widening
 the page's one column; it is pinned to the screen now) and back on the list
-below for a second look on the phone. Verdicts live in the sheet's own store,
-so ticking there is enough — nothing needs pasting back.
+below for a second look on the phone. R35 came back *bad* the same evening —
+`0725` typed into a filled box came out wrong, four zeros left a stray digit,
+Enter did nothing; that was the third go at the time box — and is rebuilt on
+`fix/time-box-caret`, back on the list below. Verdicts live in the sheet's
+own store, so ticking there is enough — nothing needs pasting back.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -301,11 +306,41 @@ so ticking there is enough — nothing needs pasting back.
     **profile → Bio**: the same menu; on the profile the name links; the
     named person's entry reads *ada mentioned you in their bio* and opens
     that profile.
-24. **R35 · The time box types the colon.** Any time field: type `0` `8` —
-    the box reads `08:` and the next digits are minutes; type `9` `3` `0` —
-    it reads `09:30`. Backspace over the colon: it does not come back.
-    On a **phone**, the numeric keyboard can now type a whole time. `2pm`
-    still works; `12` then `pm` reads 12:00 on blur.
+24. **R35 · The time box knows its hour from its minutes.** Any time field.
+    *Empty:* type `0` `7` `2` `5` — the box reads `0`, `07:`, `07:2`,
+    `07:25` and nothing else. *Already filled:* click on the hour — it
+    highlights; type `0` `9` — the box reads `09:` with the old minutes still
+    there, now highlighted; type `2` `5` — `09:25`. Click on the minutes and
+    type `4` `5` — only the minutes change. Click at the very end of a full
+    time and type `0` `0` `0` `0` — the minutes read `00`, nothing left over.
+    Backspace over the colon takes the hour digit with it. Up/Down with the
+    caret in the hour steps the hour; in the minutes, five minutes. **Enter**
+    settles the time and saves the dialog, as from any other field. On a
+    **phone**: tap the hour or the minutes and the numeric keyboard types
+    over it. (Branch `fix/time-box-caret`, after your 2026-09-07 report:
+    `0725` "sometimes turning into 07:23", four zeros after `11:10` leaving a
+    stray `0`, Enter doing nothing. The first was the old mask seeing five
+    digits go into four places whenever you typed into a time that was
+    already there. The fix is a box that knows which segment the caret is in
+    — `lib/timeBox.ts`, typed into key by key in `tests/timeBox.test.ts`, in
+    a real DOM in `tests/timeField.test.tsx`, and driven through the
+    container's headless Chromium before it was committed.)
+
+25. **R36 · The gate has a way out.** Open an event link logged out, so the
+    password card shows. *Pass:* above the card, the LibreSesh mark on the
+    left and **All events** on the right; the mark opens `/`, the link opens
+    `/events`; in **both themes** and on a **phone** the header fits the
+    card's width.
+
+26. **R37 · The audit log links.** Manage Event → Audit, on an event with
+    some history. *Pass:* an actor's name opens their profile; a session's
+    title opens the session, and a deleted session's title opens **Trash**
+    (hover: *Open in Trash*); a deleted note also opens Trash, a live one
+    the session it sits on; a pitch opens the board; a room or tag opens the
+    Programme tab. Links are quiet at rest (a faint underline) and plain
+    under the pointer. Open a folded batch (*Show all N*): each member's
+    title links too. A line about something the server can no longer find
+    stays plain text.
 
 ### Decisions I need from you
 
@@ -345,6 +380,26 @@ they left behind landed 2026-09-05 as R26).
   No captcha or edge proxy assumed — the question was whether the server can
   do this alone, and it can, up to "slow and visible" rather than "impossible".
 
+- **D4 · A signed-in-devices view, and what it costs.** Your proposal
+  (2026-09-07): a speaker — or also an organiser — can see which devices are
+  signed in as them, by address and browser, whether they came through a
+  device phrase or a speaker code; from what the request already carries, no
+  tracking modules. What I found: today the server *cannot* tell devices
+  apart. Every device that redeems a phrase receives the same identity token,
+  so there is no row per device to list, and no way to sign one out. The
+  audit log records a redemption but neither address nor browser. So the
+  feature is a data-model change, not a screen: a `devices` table (identity,
+  hashed per-device token, origin `gate|phrase|code|link`, first and last
+  seen, IP, User-Agent), the cookie carrying the device token, and revocation
+  per device — which also lets "revoke the speaker code" evict the devices it
+  let in, the gap SECURITY.md now names. Decisions I need: (a) who sees it —
+  I recommend everyone sees their own devices, and organisers see them on the
+  profile of anyone holding a speaker code, since those are the credentials
+  they hand out; (b) retention — I recommend last-seen only, rows dropped 90
+  days after they were last seen; (c) go or park. It is its own branch and a
+  migration on identity, so it should follow the token-hashing work in D3
+  rather than precede it.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -383,10 +438,11 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     row still has room — a `flex-wrap`/`min-width` interaction on the title
     row (2026-09-05, tags change).
   - **R30b · No invite link for a speaker code.** Your words: *"Invite link
-    for speaker code or otherwise is missing."* Filed verbatim — it reads as:
-    the demo gate (or the invite flow) offers no link that carries a speaker
-    code, only the roles. **Ask before building:** whether this is the demo
-    gate, the People tab's invite QR, or both.
+    for speaker code or otherwise is missing."* **Done 2026-09-07** on
+    `feat/speaker-link`: the gate has an *I have a speaker code* door, and the
+    profile page shows the code as a link (`/e/:slug#c=<phrase>`) and a QR
+    that signs the opening device in as the speaker. ARCHITECTURE §One
+    person, many devices.
 
 - **Hash identity and calendar tokens at rest.** From your security question
   (2026-09-05): a copy of the database — a backup, a volume snapshot, a
@@ -397,7 +453,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   existing cookie working and every old backup restorable. `identity.ts` and
   `agenda.ts:78` change; the backup warning and the threat-model row get
   weaker in the good sense. It does **not** protect anyone from the running
-  server — see ARCHITECTURE §Security, *The running server can act as any
+  server — see SECURITY.md, *The running server can act as any
   user* — and the file still needs encrypting for the names in it and the
   crackable speaker-code hashes. Its own branch: it is a migration on identity.
 
@@ -594,12 +650,17 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
   the vitest critical, the vite high and the esbuild/qs moderates are cleared,
   by the versions that actually fix them rather than by `latest`. What is left:
-  - **Phase 4 — `react` + `react-dom` 18 → 19** with `@types/react`/`-dom` 19.
-    react-router-dom 7 landed on its own and took the audit to **0**, so
-    nothing is forcing this one. Peers are clear (`@base-ui/react` takes
-    `^17 || ^18 || ^19`, `lucide-react` `^19`, `@floating-ui/react` `>=17`);
-    the risk is that the suite cannot see it — no DOM, no component tests —
-    so it needs a manual pass over the R-items below.
+  - **Phase 4 — `react` + `react-dom` 18 → 19 ✅ done 2026-09-07** on
+    `chore/react-19`, behind a DOM smoke suite (`tests/routes.test.tsx`)
+    that mounts every route against the real server and fails on any
+    console.error. Two type edits, no runtime change, 1249 green. Still
+    wants a browser pass over the R-items below for what jsdom cannot show
+    (layout, drag, the time box) — and that pass exists now:
+    `npm run browser-pass` (`scripts/browserPass.ts`) boots the built app
+    and drives it through `/usr/bin/chromium`, which is in the dev container
+    image since the 2026-09-07 rebuild (`.devcontainer/` is gitignored, so
+    that line travels with the host, not the repo). First run under React 19:
+    fourteen steps green, console and network clean. Drag is still unpassed.
   - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
     better-sqlite3. Each one needs `npm run rebuild:native` after, because
     `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3

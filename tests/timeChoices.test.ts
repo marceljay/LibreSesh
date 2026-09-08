@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { completeHour, parseTime, timeChoices } from '../web/src/lib/timeChoices';
+import { parseTime, timeChoices } from '../web/src/lib/timeChoices';
 
 /**
  * The time field is the app's own — a box you type into with a list of
@@ -13,19 +13,11 @@ describe('parseTime: what the box accepts', () => {
   it.each([
     ['9', '09:00'],
     ['09', '09:00'],
-    ['930', '09:30'],
-    ['1430', '14:30'],
     ['9:30', '09:30'],
-    ['9.30', '09:30'],
-    ['14h30', '14:30'],
+    ['14:30', '14:30'],
     [' 14:30 ', '14:30'],
-    ['2pm', '14:00'],
-    ['2:15 PM', '14:15'],
-    ['12am', '00:00'],
-    ['12pm', '12:00'],
-    // The box after `completeHour` put the colon in, and before the minutes.
+    // The box after `maskTime` put the colon in, and before the minutes.
     ['08:', '08:00'],
-    ['12:pm', '12:00'],
   ])('reads %s as %s', (typed, hhmm) => {
     expect(parseTime(typed)).toBe(hhmm);
   });
@@ -37,7 +29,21 @@ describe('parseTime: what the box accepts', () => {
   });
 
   it('refuses what is not a time', () => {
-    for (const bad of ['', 'noon', '25:00', '9:60', '2400', '12:3', '9:30:00', '13pm']) {
+    // `930` and `2pm` are refused here because the box never lets them
+    // reach this far: `930` has become `09:30` and the `pm` never got in.
+    // `:30` is what deleting the hour from under a minute leaves.
+    for (const bad of [
+      '',
+      'noon',
+      '25:00',
+      '9:60',
+      '930',
+      '12:3',
+      '9:30:00',
+      '2pm',
+      '9.30',
+      ':30',
+    ]) {
       expect(parseTime(bad), bad).toBeNull();
     }
   });
@@ -100,8 +106,10 @@ describe("no time field is the browser's", () => {
     // Typing commits on blur and Enter, never per keystroke — see the comment.
     expect(src).toContain('onBlur={commit}');
     expect(src).not.toMatch(/onChange=\{\(e\) => \{?\s*commit/);
-    // Enter settles the time; it must not also save the dialog around it.
-    expect(src).toMatch(/e\.key === 'Enter'[\s\S]{0,60}e\.preventDefault\(\);\s*commit\(\);/);
+    // Enter settles the time and goes on to the form, like every other field:
+    // the key is not swallowed.
+    expect(src).toMatch(/e\.key === 'Enter'\) \{\s*commit\(\);\s*\}/);
+    expect(src).not.toMatch(/'Enter'[\s\S]{0,80}preventDefault/);
   });
 });
 
@@ -115,7 +123,7 @@ describe("the field is capped to the event's day", () => {
       /timeChoices\(\{\s*from: min,\s*to: max,\s*step: LIST_STEP,\s*beyond: null,\s*current: value,?\s*\}\)/,
     );
     expect(field).toContain('const next = capped(minutesOf(parsed));');
-    expect(field).toContain('onChange(capped(minutesOf(base) + delta));');
+    expect(field).toMatch(/const next = capped\(minutesOf\(base\) \+ direction \*/);
   });
 
   it('is capped everywhere except the two fields that define the day', () => {
@@ -134,35 +142,5 @@ describe("the field is capped to the event's day", () => {
       }
     }
     expect(uncapped).toEqual([]);
-  });
-});
-
-/**
- * "After writing 08 it should jump to the minutes" (2026-09-07). A box with no
- * segments has nothing to jump to, so the colon is typed for you instead — the
- * next digits land on the minutes, and a phone's numeric keyboard, which has
- * no colon key, can type a whole time.
- */
-describe('completeHour: the colon typed for you', () => {
-  it('follows the second digit of an hour', () => {
-    expect(completeHour('0', '08')).toBe('08:');
-    expect(completeHour('2', '23')).toBe('23:');
-    expect(completeHour('', '14')).toBe('14:');
-  });
-
-  it('splits two digits that cannot be an hour, because they were 9:30 on its way', () => {
-    expect(completeHour('9', '93')).toBe('09:3');
-    expect(completeHour('2', '45')).toBe('04:5');
-  });
-
-  it('leaves one digit, three digits and anything with a letter alone', () => {
-    expect(completeHour('', '9')).toBe('9');
-    expect(completeHour('08:', '08:3')).toBe('08:3');
-    expect(completeHour('2', '2p')).toBe('2p');
-  });
-
-  it('never puts back a colon a backspace just took away', () => {
-    expect(completeHour('08:', '08')).toBe('08');
-    expect(completeHour('08', '0')).toBe('0');
   });
 });

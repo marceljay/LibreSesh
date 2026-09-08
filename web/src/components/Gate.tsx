@@ -1,10 +1,13 @@
 import { plural } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Me, Role } from '@shared/types';
 import { ApiError, api } from '../lib/api';
 import { takeInvite } from '../lib/inviteLink';
 import { useMe } from '../lib/useMe';
+import { DevicesIcon, SpeakerIcon } from './icons';
+import { Logo } from './Logo';
 import {
   ControlShell,
   Field,
@@ -22,10 +25,23 @@ export interface GateProps {
   eventName?: string;
   me: Me | null;
   onEntered: () => void;
+  /**
+   * The page was opened with a speaker link whose code did not redeem. The
+   * gate then opens on the speaker-code form with that said, rather than on a
+   * password box the speaker was never given.
+   */
+  speakerLinkFailed?: boolean;
 }
 
+/** The two phrase-shaped ways in. Same endpoint; different words on screen. */
+type LinkMode = 'none' | 'device' | 'speaker';
+
+const SPEAKER_CODE_FAILED =
+  'That speaker code didn’t match — it may have been revoked or replaced. Ask your organiser for a new one.';
+const DEVICE_PHRASE_FAILED = 'That phrase didn’t match — it may have expired or been revoked.';
+
 /** Full-screen password gate — an event's schedule is never public (SPEC §3.2). */
-export function Gate({ slug, eventName, me, onEntered }: GateProps) {
+export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false }: GateProps) {
   const { refresh } = useMe();
   /**
    * An invite QR puts the event password in the URL fragment. `takeInvite` has
@@ -42,7 +58,7 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
    * back from `/gate`, so re-entering is one tap.
    */
   const [name, setName] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(speakerLinkFailed ? SPEAKER_CODE_FAILED : null);
   const [busy, setBusy] = useState(false);
   /**
    * The gate's "is that you?": an organiser typed this exact name onto a
@@ -94,9 +110,19 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
    */
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [pendingRole, setPendingRole] = useState<Role | null>(null);
-  // The device-link path: type the phrase your other device shows, become it.
-  const [linkMode, setLinkMode] = useState(false);
+  /**
+   * The phrase paths: a speaker code an organiser sent, or the device phrase
+   * your other device shows. Both redeem through `/me/link` and both make
+   * this browser *become* the identity the phrase names; the gate only says
+   * different things, because a speaker holding a four-word code from an
+   * email has no reason to recognise "link another device".
+   */
+  const [linkMode, setLinkMode] = useState<LinkMode>(speakerLinkFailed ? 'speaker' : 'none');
   const [phrase, setPhrase] = useState('');
+  const openLink = (mode: LinkMode) => {
+    setLinkMode(mode);
+    setError(null);
+  };
 
   const link = async () => {
     if (!phrase.trim() || busy) return;
@@ -112,7 +138,9 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
       setError(
         err instanceof ApiError && err.status !== 403
           ? errorText(err)
-          : 'That phrase didn’t match — it may have expired or been revoked.',
+          : linkMode === 'speaker'
+            ? SPEAKER_CODE_FAILED
+            : DEVICE_PHRASE_FAILED,
       );
       setBusy(false);
     }
@@ -284,7 +312,23 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
   const nameMissing = name.trim() === '';
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
+      {/* The gate is the whole page, and it used to be a card with no way off
+          it: no logo, no link, nothing to say what site this was or where the
+          other events are. Someone with the wrong link, or the wrong password,
+          was stuck. The same small header every other page has, above the
+          card: the mark goes home, and the list of events is one link away. */}
+      <header className="mb-4 flex w-full max-w-sm items-center justify-between">
+        <Link to="/" className="flex items-center" aria-label="LibreSesh home">
+          <Logo variant="oneline" className="h-6 w-auto" />
+        </Link>
+        <Link
+          to="/events"
+          className="text-xs font-medium text-stone-500 hover:text-stone-900 hover:underline dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          All events
+        </Link>
+      </header>
       <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 shadow-xs">
         <div className="mb-1 flex items-center gap-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-sm font-bold text-white">
@@ -404,11 +448,11 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
                     />
                   </ControlShell>
                 </Field>
-                {error && !linkMode && (
+                {error && linkMode === 'none' && (
                   <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
                 )}
-                {!linkMode && namesakePrompt}
-                {suggestion !== null && !linkMode && (
+                {linkMode === 'none' && namesakePrompt}
+                {suggestion !== null && linkMode === 'none' && (
                   <button
                     type="button"
                     onClick={() => void enterWithSuffix(suggestion)}
@@ -437,41 +481,77 @@ export function Gate({ slug, eventName, me, onEntered }: GateProps) {
         )}
 
         <div className="mt-4 border-t border-stone-100 dark:border-stone-800 pt-4">
-          {linkMode ? (
+          {linkMode !== 'none' ? (
             <InlineForm onSubmit={() => void link()}>
               <Field
-                label="Link phrase"
-                hint="From “Link another device” in the menu behind your name on your other device — or the speaker phrase an organiser gave you."
+                label={linkMode === 'speaker' ? 'Speaker code' : 'Link phrase'}
+                hint={
+                  linkMode === 'speaker'
+                    ? 'The four-word phrase your organiser sent you. It signs this device in as your speaker profile — no password, no name to pick.'
+                    : 'From “Link another device” in the menu behind your name on your other device.'
+                }
               >
-                <ControlShell>
+                <ControlShell invalid={Boolean(error)}>
                   <TextInput
+                    name={linkMode === 'speaker' ? 'speaker-code' : 'link-phrase'}
                     value={phrase}
                     onChange={(e) => setPhrase(e.target.value)}
-                    placeholder="house-dog-erratic"
+                    placeholder={
+                      linkMode === 'speaker' ? 'pine-otter-lantern-bell' : 'house-dog-erratic'
+                    }
                     autoComplete="off"
                     enterKeyHint="go"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    autoFocus
                   />
                 </ControlShell>
               </Field>
               {error && <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>}
-              <PrimaryButton className="mt-3 w-full py-2 text-sm" type="submit" disabled={busy}>
-                {busy ? 'Linking…' : 'Link this device'}
+              <PrimaryButton
+                className="mt-3 w-full py-2 text-sm"
+                type="submit"
+                disabled={busy || !phrase.trim()}
+              >
+                {busy
+                  ? linkMode === 'speaker'
+                    ? 'Entering…'
+                    : 'Linking…'
+                  : linkMode === 'speaker'
+                    ? 'Enter as speaker'
+                    : 'Link this device'}
               </PrimaryButton>
+              <button
+                type="button"
+                onClick={() => openLink('none')}
+                className={`mt-3 text-xs font-semibold ${linkClass}`}
+              >
+                {demo ? 'Back' : 'Type a password instead'}
+              </button>
             </InlineForm>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setLinkMode(true);
-                setError(null);
-              }}
-              className="text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-            >
-              I’m already here on another device
-            </button>
+            /* Two doors, one endpoint. The speaker one comes first and says
+               "speaker": the person holding a code was told they are a speaker
+               and nothing else, and "already here on another device" is not a
+               sentence they would recognise themselves in. */
+            <div className="flex flex-col items-start gap-1.5">
+              <button
+                type="button"
+                onClick={() => openLink('speaker')}
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold ${linkClass}`}
+              >
+                <SpeakerIcon className="h-3.5 w-3.5" />I have a speaker code
+              </button>
+              <button
+                type="button"
+                onClick={() => openLink('device')}
+                className="inline-flex items-center gap-1.5 text-xs text-stone-500 underline hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+              >
+                <DevicesIcon className="h-3.5 w-3.5" />
+                I’m already here on another device
+              </button>
+            </div>
           )}
         </div>
       </div>

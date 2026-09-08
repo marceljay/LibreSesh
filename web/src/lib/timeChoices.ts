@@ -46,40 +46,23 @@ export function timeChoices({
 }
 
 /**
- * What somebody typed into a time box, as `HH:MM` on the five-minute grid, or
- * `null` if it is not a time.
+ * What is in a time box, as `HH:MM` on the five-minute grid, or `null` if it
+ * is not a time yet.
  *
- * Generous on the way in — `9`, `930`, `9:30`, `9.30`, `14h30`, `2pm`,
- * `2:15 PM` — because a box that only takes `09:30` is a worse version of the
- * clock widget it replaced. Strict on the way out: one shape, on the grid the
- * calendar and the server keep, never past 23:55.
+ * The box only ever holds digits and a colon — `editTime` in `timeBox.ts`
+ * sees to that — so what arrives here is `9`, `08:`, `08:3`, `1:30` or
+ * `08:30`, or what a deletion left of one of those. An hour alone is the hour
+ * on the dot, and so is an hour with the colon typed and no minutes behind it
+ * yet; one minute digit (`08:3`) is not a time, because `08:03` and `08:30`
+ * are both still possible, and `:30` has no hour at all. Strict on the way
+ * out: one shape, on the grid the calendar and the server keep, never past
+ * 23:55.
  */
 export function parseTime(text: string): string | null {
-  // A separator with nothing after it (`08:`) is the box mid-word, after
-  // `completeHour` put the colon in: an hour, minutes to come.
-  const m = /^\s*(\d{1,2})(?:[:.h]?(\d{2})|[:.h])?\s*(am|pm)?\s*$/i.exec(text);
+  const m = /^(\d{1,2})(?::(\d{2})?)?$/.exec(text.trim());
   if (!m) return null;
-  let hours = Number(m[1]);
+  const hours = Number(m[1]);
   const minutes = m[2] === undefined ? 0 : Number(m[2]);
-  const meridiem = m[3]?.toLowerCase();
-  if (meridiem) {
-    if (hours < 1 || hours > 12) return null;
-    if (meridiem === 'pm' && hours < 12) hours += 12;
-    if (meridiem === 'am' && hours === 12) hours = 0;
-  }
   if (hours > 23 || minutes > 59) return null;
   return fmtMin(Math.min(DAY - 5, snapMinute(hours * 60 + minutes)));
-}
-
-/**
- * The colon, typed for you. After the second digit of an hour the box reads
- * `08:` and the next digits are minutes — which is what "jump to the minutes"
- * means in a box with no segments, and what a phone's numeric keyboard, which
- * has no colon key, needs. Two digits that are not an hour (`93`) were the
- * start of `9:30`, so they are split as such. Only on an insertion: a backspace
- * that took the colon away must not put it straight back.
- */
-export function completeHour(previous: string, typed: string): string {
-  if (typed.length <= previous.length || !/^\d{2}$/.test(typed)) return typed;
-  return Number(typed) <= 23 ? `${typed}:` : `0${typed[0]}:${typed[1]}`;
 }
