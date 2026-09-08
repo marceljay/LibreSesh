@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## In Progress
 
@@ -42,6 +42,15 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
   shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
 
+- **Permissions, page side** (2026-09-08, on `dev`): you found a viewer
+  could not add notes in production despite the matrix allowing it. Every
+  control the page gated by the role's *name* now reads the matrix instead —
+  see CHANGELOG `[Unreleased]` → Fixed — and `tests/permissionParity.test.ts`
+  holds page and server to the same answer for every capability and role
+  (48 cases), with the production case itself pinned under jsdom. Queued for
+  your eyes as **R38**: grant viewers *Add notes, links and questions* and
+  open a session as a viewer.
+
 - **Branch `chore/react-19`** (2026-09-07, off `561c9ac`, `origin/dev`
   merged in at `2a84e69`): the DOM smoke suite, React 19, and
   `npm run browser-pass` — the built app driven through the container's
@@ -50,6 +59,26 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   pointing at `main`'s merge commit (`35d08b5`) rather than at `origin/dev`,
   so the work went on a branch; land it with `git branch -f dev origin/dev`
   then `git merge chore/react-19` on `dev`.
+
+- **Branch `fix/now-line-placement`** (2026-09-08, worktree
+  `.claude/worktrees/review`, off `dev` at `5255ae7`): the two fixes from the
+  2026-09-08 review, one commit each, both in CHANGELOG `[Unreleased]`. The
+  **R31 verdict** — the list's now line crosses every running card instead
+  of sitting under the row (your two follow-ups the same morning: no time
+  chip on it, every running session's card, not one row, the line where the
+  minute is rather than snapped to a seam, which had put it below the card,
+  and behind the card's text, paler); on the grid the time chip moved into
+  the time gutter — and the
+  **comment box's
+  *Post as*** naming the instance seed instead of the event name (on the
+  sheet as **R38**; R31 reworded for the new rule). Checked in headless
+  Chromium at four clock times, desktop, phone and dark. Suite green, lint
+  clean. Land it with `git merge fix/now-line-placement` on `dev`. Two
+  `serveStatic` tests fail *in that worktree only*: Express's `sendFile`
+  refuses a path with a dot-directory segment (`.claude/worktrees/…`), so the
+  built index never serves from there — an environment quirk, not a
+  regression, though `dotfiles: 'allow'` on that one `sendFile` would spare
+  the next worktree.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -150,8 +179,11 @@ the page's one column; it is pinned to the screen now) and back on the list
 below for a second look on the phone. R35 came back *bad* the same evening —
 `0725` typed into a filled box came out wrong, four zeros left a stray digit,
 Enter did nothing; that was the third go at the time box — and is rebuilt on
-`fix/time-box-caret`, back on the list below. Verdicts live in the sheet's
-own store, so ticking there is enough — nothing needs pasting back.
+`fix/time-box-caret`, back on the list below. **R31** came back *bad* on
+2026-09-08 — the line belongs over the running card, and the time must not
+cover a title — and is fixed on `fix/now-line-placement`, reworded on the
+sheet for a second look. Verdicts live in the sheet's own store, so ticking
+there is enough — nothing needs pasting back.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -400,6 +432,36 @@ they left behind landed 2026-09-05 as R26).
   migration on identity, so it should follow the token-hashing work in D3
   rather than precede it.
 
+- **D5 · Should a speaker code keep working after its first use?** Today it
+  does: the code, and the link that carries it, redeem any number of times
+  until an organiser revokes or replaces it (measured 2026-09-08 — one link
+  opened from three fresh browser contexts made all three the same speaker).
+  That was chosen so one code covers a speaker's phone and laptop, but it
+  makes the link a standing credential: forwarded, photographed or left in a
+  mailbox, it signs in whoever has it, indefinitely, and revoking does not
+  evict devices already in. You said (2026-09-08) multi-use is not
+  necessarily the right future. The alternatives, cheapest first:
+  - (a) **single-use** — one condition in the redemption query; the code
+    burns on first redemption like a device phrase does. A second device is
+    then added by the speaker from their menu (**Link another device**, a
+    three-word phrase that lives ten minutes), which already works and needs
+    no organiser. Cost: an organiser who opens the link to check it consumes
+    it, so the "switch or stay" prompt must become "this will use it up".
+  - (b) **single-use plus expiry** — the same, and the code dies unused
+    after a window (say seven days), so a forgotten email is not a live
+    key. Cost: a re-mint for late arrivals.
+  - (c) **multi-use with a device ceiling** — needs the per-device tokens
+    of D4 to count anything; not available before D4 lands.
+  - (d) **keep multi-use**, and document it as the accepted risk it already
+    is in SECURITY.md.
+  I recommend **(b)**, with (a) as the fallback if a window feels like
+  friction. Either way, two things found while measuring should go in the
+  same change: the gate shows *"revoked or replaced"* for a rate-limited
+  attempt too (four wrong codes from one address, then the correct link is
+  refused for fifteen minutes with the wrong reason), and the server's own
+  message still says codes "work once and expire after 10 minutes", which
+  was never true of a speaker code.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -412,6 +474,31 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
+
+- **Finer permissions** (your words, 2026-09-08: "there should maybe be a
+  few more granular permissions"). First, what is already true, because it
+  was not what you thought: a speaker credited on an official session — a
+  keynote an organiser typed their name onto — **can edit its words** today,
+  whatever role they entered with, as long as their profile is linked to
+  them (claimed, or entered through a speaker code or link). What they
+  cannot do is move it or delete it. `tests/sessionSpeakers.test.ts` pins
+  all three. If a speaker you watched could not edit, the profile was not
+  theirs yet — that is the claim flow, not the matrix. Candidates for new
+  switches, each one line in `capabilities.ts` plus a server check and a
+  client predicate, with the parity test walking them for free:
+  - **session.edit_credited** — make the "credited = may edit" rule a
+    switch rather than a constant, for events that want official copy
+    frozen.
+  - **session.move_credited** — let a credited speaker reslot their own
+    official talk (room, time), today organiser-only.
+  - **contribution.edit_own** — edit a note after posting; today the only
+    edit is delete-and-repost.
+  - **proposal.moderate** — withdraw anyone's pitch, today organiser-only
+    and not switchable.
+  - **person.edit_credited** — let a speaker fix the bio of a co-host they
+    share a session with.
+  Not proposed: switches on rooms, tags, settings, trash, roles — those are
+  what administering an event *is*, and the matrix's own comment says so.
 
 - **Fixes from your review** (2026-09-07, from the review sheet — each is a
   bug you saw in a real browser, so they go before anything reasoned). One

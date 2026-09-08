@@ -2,6 +2,7 @@ import { errorText } from '../lib/errorText';
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import type { PersonDetailDto, PersonDto, LabelledLink, Role } from '@shared/types';
+import { canEditProfile } from '../lib/sessionPerms';
 import { ApiError, api, type PersonWrite } from '../lib/api';
 import { dayLabel, fmtMin, place, todayInZone } from '../lib/format';
 import { buildSpeakerLinkUrl, readLinkBase } from '../lib/inviteLink';
@@ -152,7 +153,16 @@ export function ProfilePage() {
       setError(errorText(err));
     }
   };
-  const canEdit = !!person && (person.isMine || isAdmin);
+  // `person.edit_own` from the matrix, not the role's name — see sessionPerms.ts.
+  const canEdit =
+    !!person &&
+    canEditProfile(person, {
+      role: bundle?.role ?? 'viewer',
+      // The rule reads `isMine` from the profile, not the identity.
+      identityId: null,
+      myPersonIds: new Set(),
+      permissions: bundle?.permissions ?? {},
+    });
 
   if (status === 'loading') return <Spinner label="Loading profile…" />;
   if (status === 'notfound' || (status === 'ok' && !person)) {

@@ -29,7 +29,9 @@ import {
  * a clean console is most of the assertion.
  */
 
-configure({ asyncUtilTimeout: 5000 });
+// Generous: under the full suite's load a lazy route chunk can take seconds
+// to compile, and a timeout here says nothing about the page.
+configure({ asyncUtilTimeout: 10_000 });
 vi.setConfig({ testTimeout: 20_000 });
 
 const SLUG = 'testconf';
@@ -172,6 +174,26 @@ describe('event pages', () => {
     await viewer();
     open(`/e/${SLUG}/p/${personId}`);
     expect(await screen.findByRole('heading', { level: 1, name: 'Ada Lovelace' })).toBeTruthy();
+  });
+
+  it('shows a viewer the composer once the organiser grants contribution.create', async () => {
+    // The production bug: the composer was gated on the role's name, so the
+    // grant the organiser made in the Permissions tab changed nothing on the
+    // page while the server had already started accepting the viewer's notes.
+    await admin
+      .patch(`/api/e/${SLUG}/permissions`)
+      .send({ 'contribution.create': ['viewer', 'user', 'speaker'] })
+      .expect(200);
+    await viewer();
+    open(`/e/${SLUG}/s/${sessionId}`);
+    expect(await screen.findByPlaceholderText(/Add a question/)).toBeTruthy();
+  });
+
+  it('tells a viewer which password unlocks the composer while it is closed', async () => {
+    await viewer();
+    open(`/e/${SLUG}/s/${sessionId}`);
+    expect(await screen.findByText(/Enter the .* password/)).toBeTruthy();
+    expect(screen.queryByPlaceholderText(/Add a question/)).toBeNull();
   });
 
   it('/e/:slug/admin', async () => {

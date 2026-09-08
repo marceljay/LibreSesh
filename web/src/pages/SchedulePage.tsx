@@ -55,7 +55,17 @@ const SessionModal = lazy(() =>
   import('../components/SessionModal').then((m) => ({ default: m.SessionModal })),
 );
 import { LinkSessionsModal } from '../components/LinkSessionsModal';
-import { canDeleteSession, canEditSession, canMoveSession, type Viewer } from '../lib/sessionPerms';
+import {
+  canContribute,
+  canCreateSession,
+  canDeleteSession,
+  canEditSession,
+  canModerateContributions,
+  canMoveSession,
+  canRemoveContribution,
+  canStarSessions,
+  type Viewer,
+} from '../lib/sessionPerms';
 import { Tour, type TourStep } from '../components/Tour';
 import {
   ControlShell,
@@ -1013,7 +1023,15 @@ export function SchedulePage() {
   }
 
   const role = bundle.role;
-  const canWrite = role !== 'viewer' && !event.archived;
+  // Every control below is decided by the permission matrix through `viewer`,
+  // never by the role's name — see sessionPerms.ts for why.
+  const canWrite = canCreateSession(viewer, bundle.rooms, event.archived);
+  const canStar = canStarSessions(viewer);
+  const mayContribute = canContribute(viewer, event.archived);
+  const upgradeUnlocksContributions = can(bundle.permissions, 'user', 'contribution.create');
+  const mayModerate = canModerateContributions(viewer, event.archived);
+  const mayRemoveContribution = (c: ContributionDto) =>
+    canRemoveContribution(c, viewer, event.archived);
   // Admin-only. Arrange is a whole-grid drag mode, and the grid is the
   // organiser's instrument: an attendee has at most one open session of their
   // own on it, and dragging is a clumsy way to move the one thing you may
@@ -1531,17 +1549,21 @@ export function SchedulePage() {
             formats={bundle.formats}
             people={bundle.people}
             contributions={data.contributions[selected.id]}
-            role={role}
             me={me}
+            displayName={bundle.displayName}
             timezone={timezone}
             canEdit={canEdit(selected)}
             canDelete={canDelete(selected)}
+            canContribute={mayContribute}
+            upgradeUnlocksContributions={upgradeUnlocksContributions}
+            canModerate={mayModerate}
+            canRemoveContribution={mayRemoveContribution}
             archived={event.archived}
             starred={starredIds.has(selected.id)}
             userLabel={event.userRoleLabel}
             layout="page"
             collapseAt={null}
-            onToggleStar={() => void toggleStar(selected)}
+            onToggleStar={canStar ? () => void toggleStar(selected) : undefined}
             onEdit={() => setEditing({ session: selected })}
             onDelete={() => void deleteSession(selected)}
             onAdd={addContribution}
@@ -1613,7 +1635,7 @@ export function SchedulePage() {
                 matchedIds={matchedIds}
                 starredIds={starredIds}
                 starCounts={bundle.starCounts}
-                onToggleStar={(s) => void toggleStar(s)}
+                onToggleStar={canStar ? (s) => void toggleStar(s) : undefined}
                 activeId={selected?.id}
                 timezone={timezone}
                 day={day}
@@ -1647,7 +1669,7 @@ export function SchedulePage() {
               nowMin={nowMin}
               onOpen={openSession}
               onGoToDay={goToDay}
-              onToggleStar={(s) => void toggleStar(s)}
+              onToggleStar={canStar ? (s) => void toggleStar(s) : undefined}
             />
           )}
 
@@ -1709,17 +1731,21 @@ export function SchedulePage() {
           formats={bundle.formats}
           people={bundle.people}
           contributions={data.contributions[selected.id]}
-          role={role}
           me={me}
+          displayName={bundle.displayName}
           timezone={timezone}
           canEdit={canEdit(selected)}
           canDelete={canDelete(selected)}
+          canContribute={mayContribute}
+          upgradeUnlocksContributions={upgradeUnlocksContributions}
+          canModerate={mayModerate}
+          canRemoveContribution={mayRemoveContribution}
           archived={event.archived}
           starred={starredIds.has(selected.id)}
           userLabel={event.userRoleLabel}
           expandTo={`/e/${slug}/s/${selected.id}/full`}
           onClose={closeSession}
-          onToggleStar={() => void toggleStar(selected)}
+          onToggleStar={canStar ? () => void toggleStar(selected) : undefined}
           onEdit={() => setEditing({ session: selected })}
           onDelete={() => void deleteSession(selected)}
           onAdd={addContribution}

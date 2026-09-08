@@ -6,7 +6,6 @@ import type {
   Me,
   PersonDto,
   RoomDto,
-  Role,
   SessionDto,
   FormatDto,
   TagDto,
@@ -22,11 +21,16 @@ export interface DetailSheetProps {
   formats: FormatDto[];
   people: PersonDto[];
   contributions: ContributionDto[] | undefined;
-  role: Role;
   me: Me | null;
+  /** See `SessionDetailProps.displayName`. */
+  displayName: string;
   timezone: string;
   canEdit: boolean;
   canDelete: boolean;
+  canContribute: boolean;
+  upgradeUnlocksContributions: boolean;
+  canModerate: boolean;
+  canRemoveContribution: (contribution: ContributionDto) => boolean;
   archived: boolean;
   /** Whether this session is on the current identity's personal agenda. */
   starred: boolean;
@@ -35,7 +39,7 @@ export interface DetailSheetProps {
   /** Where the expand control goes — the same session's full-page route. */
   expandTo: string;
   onClose: () => void;
-  onToggleStar: () => void;
+  onToggleStar?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onAdd: (kind: ContributionKind, body: string, url?: string) => Promise<void>;

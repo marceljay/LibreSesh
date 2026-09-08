@@ -1,4 +1,11 @@
-import type { Role, SessionDto } from '@shared/types';
+import type {
+  ContributionDto,
+  PersonDto,
+  ProposalDto,
+  Role,
+  RoomDto,
+  SessionDto,
+} from '@shared/types';
 import { can, type PermissionMatrix } from '@shared/capabilities';
 
 /**
@@ -57,3 +64,61 @@ export function canDeleteSession(session: SessionDto, v: Viewer): boolean {
 export function canMoveSession(session: SessionDto | undefined, role: Role): boolean {
   return role === 'admin' || session === undefined || session.type !== 'official';
 }
+
+/**
+ * Everything below answers one question the same way the server does: does
+ * this role hold the capability, in this event's matrix, as the organiser set
+ * it. None of it reads the role's *name*. That was the bug: a control gated on
+ * `role !== 'viewer'` stayed hidden from a viewer the organiser had granted the
+ * capability to, and stayed visible to an attendee it had been taken from —
+ * the server answered correctly either way, and the page contradicted it.
+ */
+
+export const canStarSessions = (v: Viewer): boolean => can(v.permissions, v.role, 'session.star');
+
+export const canContribute = (v: Viewer, archived: boolean): boolean =>
+  !archived && can(v.permissions, v.role, 'contribution.create');
+
+export const canModerateContributions = (v: Viewer, archived: boolean): boolean =>
+  !archived && can(v.permissions, v.role, 'contribution.moderate');
+
+/** Removing is the author's, given the capability, and the organiser's. */
+export const canRemoveContribution = (
+  c: Pick<ContributionDto, 'createdBy'>,
+  v: Viewer,
+  archived: boolean,
+): boolean =>
+  !archived &&
+  (v.role === 'admin' ||
+    (can(v.permissions, v.role, 'contribution.delete_own') && c.createdBy === v.identityId));
+
+/** An organiser places anywhere; anyone else needs the capability *and* a
+ *  room that is open for booking, or the form would offer no room at all. */
+export const canCreateSession = (
+  v: Viewer,
+  rooms: readonly Pick<RoomDto, 'openBooking'>[],
+  archived: boolean,
+): boolean =>
+  !archived &&
+  can(v.permissions, v.role, 'session.create_open') &&
+  (v.role === 'admin' || rooms.some((r) => r.openBooking));
+
+export const canPitch = (v: Viewer, archived: boolean): boolean =>
+  !archived && can(v.permissions, v.role, 'proposal.create');
+
+/** Editing or withdrawing a pitch: its author, given the capability, or an
+ *  organiser — and never once it is on the grid. */
+export const canManageProposal = (
+  p: Pick<ProposalDto, 'createdBy' | 'placedSessionId'>,
+  v: Viewer,
+  archived: boolean,
+): boolean =>
+  !archived &&
+  p.placedSessionId === null &&
+  (v.role === 'admin' ||
+    (can(v.permissions, v.role, 'proposal.create') && p.createdBy === v.identityId));
+
+export const canVote = (v: Viewer): boolean => can(v.permissions, v.role, 'proposal.vote');
+
+export const canEditProfile = (person: Pick<PersonDto, 'isMine'>, v: Viewer): boolean =>
+  v.role === 'admin' || (person.isMine && can(v.permissions, v.role, 'person.edit_own'));

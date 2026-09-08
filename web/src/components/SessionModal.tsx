@@ -199,7 +199,9 @@ export function SessionModal({
   // is for anyone who may place a session, not organisers alone. It is only for
   // sessions that do not exist yet: editing one day of a run edits that day.
   const lastDay = days[days.length - 1] ?? day;
-  const canRepeat = role !== 'viewer' && !session && day < lastDay;
+  // Whoever opened this form for a new session was allowed to place one —
+  // the page decided that from the matrix — so the run is theirs to offer too.
+  const canRepeat = !session && day < lastDay;
   const [repeating, setRepeating] = useState(false);
   // An organiser's run defaults to loose rows (programme-building); everyone
   // else's defaults to a linked series, since a recurring session someone runs
