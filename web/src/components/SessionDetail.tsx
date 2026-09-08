@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import type {
   ContributionDto,
   ContributionKind,
-  Me,
   PersonDto,
   RoomDto,
   SessionDto,
@@ -63,7 +62,6 @@ export interface SessionDetailProps {
    *  each link to a profile. */
   people: PersonDto[];
   contributions: ContributionDto[] | undefined;
-  me: Me | null;
   /** What you go by inside this event — `BundleDto.displayName`. Not
    *  `Me.displayName`, which is the seed a newcomer is offered and follows
    *  the last name you typed at any gate on this instance. */
@@ -113,7 +111,6 @@ export function SessionDetail({
   formats,
   people,
   contributions,
-  me,
   displayName,
   timezone,
   canEdit,

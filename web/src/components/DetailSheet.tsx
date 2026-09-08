@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import type {
   ContributionDto,
   ContributionKind,
-  Me,
   PersonDto,
   RoomDto,
   SessionDto,
@@ -21,7 +20,6 @@ export interface DetailSheetProps {
   formats: FormatDto[];
   people: PersonDto[];
   contributions: ContributionDto[] | undefined;
-  me: Me | null;
   /** See `SessionDetailProps.displayName`. */
   displayName: string;
   timezone: string;
