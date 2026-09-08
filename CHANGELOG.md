@@ -42,7 +42,11 @@ All notable changes to this project are documented here.
   headless Chromium and fails on the same signals. Every organiser-only
   route is now called by a viewer, an attendee, a speaker and a browser with
   no role, and must refuse each; a count check fails when a new such route
-  appears without a row in that table.
+  appears without a row in that table. And every control the Permissions
+  tab governs is rendered for each role with the switch on and off, and
+  looked for by name — the star, the composer, Hide, Remove, Add session,
+  Edit session, Pitch a session, the interest button, Edit full name — so a
+  control wired to the wrong switch, or to none, fails the suite.
 - **React moved to 19.** Taken after the suite could render, not before:
   every route mounted clean under it on the first run, and the only edits
   were two type annotations. Nothing you can see changes; it is the runtime
