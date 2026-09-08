@@ -30,7 +30,7 @@ export interface ListViewProps {
   nextDay?: { date: string; label: string };
   nowMin: number | null;
   onOpen: (id: number) => void;
-  onToggleStar: (session: SessionDto) => void;
+  onToggleStar?: (session: SessionDto) => void;
   onGoToDay?: (date: string) => void;
 }
 
@@ -211,7 +211,7 @@ export function ListView({
                             count={stars}
                             overCapacity={overCapacity}
                             sessionTitle={session.title}
-                            onToggle={() => onToggleStar(session)}
+                            onToggle={onToggleStar ? () => onToggleStar(session) : undefined}
                           />
                         </span>
                       </div>

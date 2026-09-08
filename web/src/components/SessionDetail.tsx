@@ -7,7 +7,6 @@ import type {
   Me,
   PersonDto,
   RoomDto,
-  Role,
   SessionDto,
   FormatDto,
   TagDto,
@@ -64,13 +63,21 @@ export interface SessionDetailProps {
    *  each link to a profile. */
   people: PersonDto[];
   contributions: ContributionDto[] | undefined;
-  role: Role;
   me: Me | null;
   timezone: string;
   canEdit: boolean;
   /** Deleting is narrower than editing: a co-speaker may rewrite a session
    *  they are credited on, but not take it off the programme. */
   canDelete: boolean;
+  /** All four decided by the event's permission matrix (`sessionPerms`), never
+   *  by the role's name: a viewer an organiser has let in must see the
+   *  composer, and an attendee shut out of it must not. */
+  canContribute: boolean;
+  /** Whether entering as an attendee would unlock the composer — decides what
+   *  the closed composer says. */
+  upgradeUnlocksContributions: boolean;
+  canModerate: boolean;
+  canRemoveContribution: (contribution: ContributionDto) => boolean;
   archived: boolean;
   /** Whether this session is on the current identity's personal agenda. */
   starred: boolean;
@@ -82,7 +89,8 @@ export interface SessionDetailProps {
   /** Sits at the top right of the header — the sheet's close button, the
    *  page's link back to the grid. */
   headerActions?: ReactNode;
-  onToggleStar: () => void;
+  /** Absent when this role may not star (`session.star`); the button goes with it. */
+  onToggleStar?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onAdd: (kind: ContributionKind, body: string, url?: string) => Promise<void>;
@@ -101,11 +109,14 @@ export function SessionDetail({
   formats,
   people,
   contributions,
-  role,
   me,
   timezone,
   canEdit,
   canDelete,
+  canContribute,
+  upgradeUnlocksContributions,
+  canModerate,
+  canRemoveContribution,
   archived,
   starred,
   userLabel,
@@ -168,8 +179,6 @@ export function SessionDetail({
     navigate(link.getAttribute('href') ?? '');
   };
 
-  const canContribute = role !== 'viewer' && !archived;
-
   const submit = async () => {
     if (!body.trim() || posting) return;
     setPosting(true);
@@ -193,24 +202,25 @@ export function SessionDetail({
    * the description, the notes — is what somebody opened it for. The hollow
    * outline is the affordance; the tooltip is there for anyone unsure.
    */
-  const starButton = (
-    <button
-      type="button"
-      onClick={onToggleStar}
-      title={starred ? 'On my agenda — click to remove' : 'Add to my agenda'}
-      aria-label={starred ? `Unstar ${session.title}` : `Star ${session.title}`}
-      aria-pressed={starred}
-      // The same 36px square as the sheet's own header buttons, so the three
-      // read as one column rather than as a stack of different controls.
-      className={`grid h-9 w-9 place-items-center rounded-full text-lg leading-none ${
-        starred
-          ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/40'
-          : 'text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-300'
-      }`}
-    >
-      <span aria-hidden="true">{starred ? '★' : '☆'}</span>
-    </button>
-  );
+  const starButton =
+    onToggleStar === undefined ? null : (
+      <button
+        type="button"
+        onClick={onToggleStar}
+        title={starred ? 'On my agenda — click to remove' : 'Add to my agenda'}
+        aria-label={starred ? `Unstar ${session.title}` : `Star ${session.title}`}
+        aria-pressed={starred}
+        // The same 36px square as the sheet's own header buttons, so the three
+        // read as one column rather than as a stack of different controls.
+        className={`grid h-9 w-9 place-items-center rounded-full text-lg leading-none ${
+          starred
+            ? 'text-amber-500 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/40'
+            : 'text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-stone-800 dark:hover:text-stone-300'
+        }`}
+      >
+        <span aria-hidden="true">{starred ? '★' : '☆'}</span>
+      </button>
+    );
 
   const header = (
     <div className={`flex items-start gap-2 ${page ? 'mb-6' : 'mb-3'}`}>
@@ -421,7 +431,7 @@ export function SessionDetail({
                           and wrapped on a phone. `title` carries the wording
                           for a pointer, `aria-label` for everyone else. */}
                       <div className="ms-auto flex shrink-0 items-center gap-0.5">
-                        {role === 'admin' && !archived && (
+                        {canModerate && (
                           <IconButton
                             onClick={() => onToggleHidden(c)}
                             aria-label={
@@ -432,7 +442,7 @@ export function SessionDetail({
                             {c.hidden ? <UnhideIcon /> : <HideIcon />}
                           </IconButton>
                         )}
-                        {!archived && (role === 'admin' || c.createdBy === me?.id) && (
+                        {canRemoveContribution(c) && (
                           <IconButton
                             onClick={() => onRemoveContribution(c.id)}
                             aria-label="Remove this contribution"
@@ -464,7 +474,9 @@ export function SessionDetail({
     </p>
   ) : !canContribute ? (
     <p className="rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2 text-xs text-stone-500 dark:text-stone-400">
-      Enter the {userLabel} password (tap your name, top right) to add notes, links and questions.
+      {upgradeUnlocksContributions
+        ? `Enter the ${userLabel} password (tap your name, top right) to add notes, links and questions.`
+        : 'Notes, links and questions are closed for your role in this event.'}
     </p>
   ) : (
     <div className="rounded-xl border border-stone-200 dark:border-stone-700 p-3">

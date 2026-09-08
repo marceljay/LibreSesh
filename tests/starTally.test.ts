@@ -49,7 +49,9 @@ describe('the star tally', () => {
 describe('the list card', () => {
   it('has one star, and it is the control', () => {
     expect(list.match(/<StarTally/g)).toHaveLength(1);
-    expect(list).toContain('onToggle={() => onToggleStar(session)}');
+    // The toggle only exists for a role the matrix lets star; without it
+    // the tally is a count, which StarTally renders when it gets no handler.
+    expect(list).toContain('onToggle={onToggleStar ? () => onToggleStar(session) : undefined}');
     // The toggle that used to sit beside the title, and the count that
     // repeated it at the bottom of the same card.
     expect(list).not.toContain("{starred ? '★' : '☆'}");

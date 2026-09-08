@@ -63,6 +63,16 @@ All notable changes to this project are documented here.
   two versions swallowed on every press, settles the time and then saves the
   form, as it does from every other field.
 
+- **The page now obeys the Permissions tab.** A viewer an organiser had
+  allowed to add notes, links and questions never got the composer, and an
+  attendee the organiser had shut out kept the button and got an error on
+  sending. The server was right both times; the page decided from the role's
+  *name* instead of the matrix. Every such control now reads the matrix —
+  the composer, removing and hiding contributions, starring, **Add session**
+  (which also needs a room open for booking), pitching, registering interest,
+  and editing your own profile — and a test walks every capability, every
+  role and both settings of the switch, asking the page and the server the
+  same question and failing when their answers differ.
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what
   site this was or where the other events were. Someone holding the wrong

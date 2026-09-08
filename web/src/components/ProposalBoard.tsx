@@ -2,6 +2,7 @@ import { errorText } from '../lib/errorText';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { can } from '@shared/capabilities';
+import { canManageProposal, canPitch, canVote, type Viewer } from '../lib/sessionPerms';
 import type { BundleDto, ProposalDto } from '@shared/types';
 import { dateRange } from '@shared/time';
 import { ApiError, api, type PlaceWrite, type ProposalWrite } from '../lib/api';
@@ -226,11 +227,17 @@ export function ProposalBoard() {
   }
 
   const role = bundle.role;
-  const canPitch = role !== 'viewer' && !event.archived;
+  // Decided by the matrix, never by the role's name — see sessionPerms.ts.
+  const viewer: Viewer = {
+    role,
+    identityId: me?.id ?? null,
+    myPersonIds: new Set(),
+    permissions: bundle.permissions,
+  };
+  const mayPitch = canPitch(viewer, event.archived);
+  const mayVote = canVote(viewer);
   const mayManage = (proposal: ProposalDto): boolean =>
-    !event.archived &&
-    proposal.placedSessionId === null &&
-    (role === 'admin' || proposal.createdBy === me?.id);
+    canManageProposal(proposal, viewer, event.archived);
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
@@ -240,7 +247,7 @@ export function ProposalBoard() {
             ← Schedule
           </Link>
           <h1 className="text-lg font-semibold tracking-tight">Proposal pool</h1>
-          {canPitch && (
+          {mayPitch && (
             <PrimaryButton className="ms-auto" onClick={() => setEditing({})}>
               Pitch a session
             </PrimaryButton>
@@ -255,7 +262,7 @@ export function ProposalBoard() {
         </p>
 
         {sorted.length === 0 ? (
-          <EmptyState>No pitches yet.{canPitch ? ' Be the first to pitch one.' : ''}</EmptyState>
+          <EmptyState>No pitches yet.{mayPitch ? ' Be the first to pitch one.' : ''}</EmptyState>
         ) : (
           <ul className="space-y-3">
             {sorted.map((proposal) => (
@@ -265,6 +272,7 @@ export function ProposalBoard() {
                 slug={slug}
                 tags={bundle.tags}
                 interestBusy={busyInterest === proposal.id}
+                canVote={mayVote}
                 canPlace={role === 'admin' && !event.archived}
                 canManage={mayManage(proposal)}
                 onToggleInterest={() => void toggleInterest(proposal)}
@@ -319,6 +327,8 @@ interface ProposalCardProps {
   slug: string;
   tags: BundleDto['tags'];
   interestBusy: boolean;
+  /** `proposal.vote` for this role; without it the count is shown, not the button. */
+  canVote: boolean;
   canPlace: boolean;
   canManage: boolean;
   onToggleInterest: () => void;
@@ -332,6 +342,7 @@ function ProposalCard({
   slug,
   tags,
   interestBusy,
+  canVote,
   canPlace,
   canManage,
   onToggleInterest,
@@ -360,7 +371,16 @@ function ProposalCard({
             {proposal.speaker ? `${proposal.speaker} · ` : ''}pitched by {proposal.createdByName}
           </p>
         </div>
-        {!placed && (
+        {!placed && !canVote && (
+          <span
+            className="flex shrink-0 items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400"
+            title="Registering interest is closed for your role in this event"
+          >
+            <span aria-hidden="true">△</span>
+            {proposal.interestCount}
+          </span>
+        )}
+        {!placed && canVote && (
           <button
             type="button"
             onClick={onToggleInterest}
