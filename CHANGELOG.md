@@ -47,6 +47,14 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The comment box posts as who you are here.** Its button said *Post as*
+  and then the name the instance offers a newcomer, which follows the last
+  name typed at any gate on this instance: enter another event as *admin*
+  and this one said *Post as admin*, whatever you are called here, and
+  re-entering with the password did not put it right because the name you
+  hold here was already yours. The button now names what you go by inside
+  this event, as the header and the profile page always have.
+
 - **The time box knows its hour from its minutes.** 0.3.6 typed the colon
   after two digits and left the rest to the browser; the fix that followed
   only filtered what went in — digits, four at most. Neither knew where the

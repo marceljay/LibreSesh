@@ -22,6 +22,8 @@ export interface DetailSheetProps {
   people: PersonDto[];
   contributions: ContributionDto[] | undefined;
   me: Me | null;
+  /** See `SessionDetailProps.displayName`. */
+  displayName: string;
   timezone: string;
   canEdit: boolean;
   canDelete: boolean;
