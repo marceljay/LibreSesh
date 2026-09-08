@@ -60,6 +60,26 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   so the work went on a branch; land it with `git branch -f dev origin/dev`
   then `git merge chore/react-19` on `dev`.
 
+- **Branch `fix/now-line-placement`** (2026-09-08, worktree
+  `.claude/worktrees/review`, off `dev` at `5255ae7`): the two fixes from the
+  2026-09-08 review, one commit each, both in CHANGELOG `[Unreleased]`. The
+  **R31 verdict** — the list's now line crosses every running card instead
+  of sitting under the row (your two follow-ups the same morning: no time
+  chip on it, every running session's card, not one row, the line where the
+  minute is rather than snapped to a seam, which had put it below the card,
+  and behind the card's text, paler); on the grid the time chip moved into
+  the time gutter — and the
+  **comment box's
+  *Post as*** naming the instance seed instead of the event name (on the
+  sheet as **R38**; R31 reworded for the new rule). Checked in headless
+  Chromium at four clock times, desktop, phone and dark. Suite green, lint
+  clean. Land it with `git merge fix/now-line-placement` on `dev`. Two
+  `serveStatic` tests fail *in that worktree only*: Express's `sendFile`
+  refuses a path with a dot-directory segment (`.claude/worktrees/…`), so the
+  built index never serves from there — an environment quirk, not a
+  regression, though `dotfiles: 'allow'` on that one `sendFile` would spare
+  the next worktree.
+
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
 `[0.3.0]` → Changed, the migration is merged to `dev` (`bfcbca1`) and
@@ -159,8 +179,11 @@ the page's one column; it is pinned to the screen now) and back on the list
 below for a second look on the phone. R35 came back *bad* the same evening —
 `0725` typed into a filled box came out wrong, four zeros left a stray digit,
 Enter did nothing; that was the third go at the time box — and is rebuilt on
-`fix/time-box-caret`, back on the list below. Verdicts live in the sheet's
-own store, so ticking there is enough — nothing needs pasting back.
+`fix/time-box-caret`, back on the list below. **R31** came back *bad* on
+2026-09-08 — the line belongs over the running card, and the time must not
+cover a title — and is fixed on `fix/now-line-placement`, reworded on the
+sheet for a second look. Verdicts live in the sheet's own store, so ticking
+there is enough — nothing needs pasting back.
 
 0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**

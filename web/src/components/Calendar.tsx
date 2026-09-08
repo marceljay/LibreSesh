@@ -609,6 +609,19 @@ export function Calendar({
                 {fmtMin(dayStartMin + i * 60)}
               </div>
             ))}
+            {/* The time on the now line, in the gutter with the hours rather
+                than on the line's first inch, where it lay over the start of
+                whichever block was on in the first column (reviewed
+                2026-09-08). In here it sticks with the gutter when the grid
+                scrolls sideways, and the line meets it at the gutter's edge. */}
+            {showNow && (
+              <span
+                className="absolute end-0 -translate-y-1/2 rounded-sm bg-stone-900 px-1 py-0.5 text-xs font-semibold text-white dark:bg-stone-100 dark:text-stone-900"
+                style={{ top: (nowMin - dayStartMin) * PX_PER_MIN + 1 }}
+              >
+                {fmtMin(nowMin)}
+              </span>
+            )}
           </div>
 
           {Array.from({ length: halfHourCount }, (_, i) => (
@@ -707,17 +720,9 @@ export function Calendar({
 
           {showNow && (
             <div
-              className="pointer-events-none absolute start-0 end-0 z-10"
-              style={{ top: (nowMin - dayStartMin) * PX_PER_MIN }}
-            >
-              <div className="h-0.5 w-full bg-highlight" />
-              <span
-                className="absolute -top-2.5 rounded-r bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-1.5 py-0.5 text-xs font-semibold text-white"
-                style={{ left: GUTTER_W }}
-              >
-                {fmtMin(nowMin)}
-              </span>
-            </div>
+              className="pointer-events-none absolute end-0 z-10 h-0.5 bg-highlight mix-blend-multiply dark:mix-blend-screen"
+              style={{ top: (nowMin - dayStartMin) * PX_PER_MIN, left: GUTTER_W }}
+            />
           )}
 
           {placed.map(({ session, startMin, durMin, endMin }, blockIndex) => {
