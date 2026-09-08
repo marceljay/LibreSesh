@@ -66,6 +66,10 @@ export interface SessionDetailProps {
   contributions: ContributionDto[] | undefined;
   role: Role;
   me: Me | null;
+  /** What you go by inside this event — `BundleDto.displayName`. Not
+   *  `Me.displayName`, which is the seed a newcomer is offered and follows
+   *  the last name you typed at any gate on this instance. */
+  displayName: string;
   timezone: string;
   canEdit: boolean;
   /** Deleting is narrower than editing: a co-speaker may rewrite a session
@@ -103,6 +107,7 @@ export function SessionDetail({
   contributions,
   role,
   me,
+  displayName,
   timezone,
   canEdit,
   canDelete,
@@ -514,7 +519,7 @@ export function SessionDetail({
         onClick={() => void submit()}
         disabled={!body.trim() || posting}
       >
-        Post as {me?.displayName || 'you'}
+        Post as {displayName || 'you'}
       </PrimaryButton>
     </div>
   );

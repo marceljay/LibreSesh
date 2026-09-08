@@ -24,6 +24,8 @@ export interface DetailSheetProps {
   contributions: ContributionDto[] | undefined;
   role: Role;
   me: Me | null;
+  /** See `SessionDetailProps.displayName`. */
+  displayName: string;
   timezone: string;
   canEdit: boolean;
   canDelete: boolean;

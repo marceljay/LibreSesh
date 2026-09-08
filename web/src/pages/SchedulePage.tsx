@@ -1533,6 +1533,7 @@ export function SchedulePage() {
             contributions={data.contributions[selected.id]}
             role={role}
             me={me}
+            displayName={bundle.displayName}
             timezone={timezone}
             canEdit={canEdit(selected)}
             canDelete={canDelete(selected)}
@@ -1711,6 +1712,7 @@ export function SchedulePage() {
           contributions={data.contributions[selected.id]}
           role={role}
           me={me}
+          displayName={bundle.displayName}
           timezone={timezone}
           canEdit={canEdit(selected)}
           canDelete={canDelete(selected)}
