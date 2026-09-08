@@ -887,7 +887,12 @@ mentioned you" on a channel every reader of the schedule is subscribed to tells
 the room who was mentioned and when. The frame it sends
 (`notification.ping`) is deliberately **contentless** — the client refetches
 its own inbox over an authenticated request — so a stream attributed to the
-wrong identity leaks a nudge and nothing else.
+wrong identity leaks a nudge and nothing else. The other per-person frame is
+`role.updated`, sent when an organiser changes someone's role: the page
+concerned re-derives every control it gates from `bundle.role`, so a demoted
+attendee loses the buttons the server has started refusing without a reload,
+and a promoted one gains theirs. The room still receives `person.updated` as
+before; it carries the profile, not the reader's standing.
 
 ## Notifications
 

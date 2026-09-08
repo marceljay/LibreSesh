@@ -499,6 +499,10 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     share a session with.
   Not proposed: switches on rooms, tags, settings, trash, roles — those are
   what administering an event *is*, and the matrix's own comment says so.
+  Phase 4 of `_planning/plans/2026-09-08-permission-integrity.md`; phases
+  1–3 are in CHANGELOG, so each new switch is one line in
+  `capabilities.ts`, a server check, a client predicate, and a row in each
+  of the two sweeps.
 
 - **Fixes from your review** (2026-09-07, from the review sheet — each is a
   bug you saw in a real browser, so they go before anything reasoned). One

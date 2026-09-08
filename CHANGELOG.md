@@ -39,7 +39,14 @@ All notable changes to this project are documented here.
   or router upgrade could pass every test and still break the page. For what
   a simulated browser cannot show — layout, the time box, the theme following
   the system — `npm run browser-pass` drives the built app through a real
-  headless Chromium and fails on the same signals.
+  headless Chromium and fails on the same signals. Every organiser-only
+  route is now called by a viewer, an attendee, a speaker and a browser with
+  no role, and must refuse each; a count check fails when a new such route
+  appears without a row in that table. And every control the Permissions
+  tab governs is rendered for each role with the switch on and off, and
+  looked for by name — the star, the composer, Hide, Remove, Add session,
+  Edit session, Pitch a session, the interest button, Edit full name — so a
+  control wired to the wrong switch, or to none, fails the suite.
 - **React moved to 19.** Taken after the suite could render, not before:
   every route mounted clean under it on the first run, and the only edits
   were two type annotations. Nothing you can see changes; it is the runtime
@@ -83,6 +90,12 @@ All notable changes to this project are documented here.
   same question and failing when their answers differ. That sweep found one
   gap on the server too: editing your own profile by its id ignored the
   *Edit their own profile* switch, which only the other route honoured.
+- **A role change reaches the person's open page.** When an organiser
+  changed someone's role, that person's page kept its old controls until
+  they reloaded: a demoted attendee kept buttons that now failed, a promoted
+  one saw nothing new. The change is now sent to the person concerned over
+  their own live connection, and only to them, and the page re-derives its
+  controls at once. Permission changes already worked this way.
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what
   site this was or where the other events were. Someone holding the wrong

@@ -273,6 +273,10 @@ export function peopleRoutes(ctx: Ctx): Router {
         entityId: person.id,
       });
       ctx.broker.publish(req.event.slug, 'person.updated', pub);
+      // The person themselves learn their new role now, not at their next
+      // reload: a demoted attendee would otherwise keep every button the
+      // server has started refusing, and a promoted one would see nothing new.
+      ctx.broker.publishTo(req.event.slug, person.identity_id, 'role.updated', { role });
       res.json(own);
     },
   );

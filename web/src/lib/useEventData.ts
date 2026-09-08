@@ -13,6 +13,7 @@ import type {
   TagDto,
   FormatDto,
   TrackDto,
+  Role,
 } from '@shared/types';
 import { ApiError, api } from './api';
 
@@ -317,6 +318,10 @@ function applyChange(state: State, change: ChangeEvent): State {
         ...state,
         bundle: { ...bundle, permissions: change.entity as BundleDto['permissions'] },
       };
+    case 'role.updated':
+      // Sent only to the person concerned (`Broker.publishTo`). Everything the
+      // page gates re-derives from `bundle.role`, so this is the whole change.
+      return { ...state, bundle: { ...bundle, role: (change.entity as { role: Role }).role } };
     default:
       return state;
   }

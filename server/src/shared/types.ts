@@ -626,7 +626,11 @@ export type ChangeType =
   | 'permissions.updated'
   /** Contentless, and sent to one person's streams only (`Broker.publishTo`):
    *  the client refetches its own inbox rather than being told what is in it. */
-  | 'notification.ping';
+  | 'notification.ping'
+  /** `{ role }`, sent to the one person whose role an organiser changed, so
+   *  their open page re-derives its controls without a reload. Per person,
+   *  never to the room: a role is a fact about one attendee. */
+  | 'role.updated';
 
 /** What put a notification in someone's inbox. `session_changed` covers a move
  *  and a cancellation together, because "what happened to my talk" is one
