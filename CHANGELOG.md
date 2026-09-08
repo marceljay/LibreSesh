@@ -72,7 +72,9 @@ All notable changes to this project are documented here.
   (which also needs a room open for booking), pitching, registering interest,
   and editing your own profile — and a test walks every capability, every
   role and both settings of the switch, asking the page and the server the
-  same question and failing when their answers differ.
+  same question and failing when their answers differ. That sweep found one
+  gap on the server too: editing your own profile by its id ignored the
+  *Edit their own profile* switch, which only the other route honoured.
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what
   site this was or where the other events were. Someone holding the wrong

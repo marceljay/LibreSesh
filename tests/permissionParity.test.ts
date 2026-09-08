@@ -38,6 +38,8 @@ type Actor = { agent: Agent; role: Role; id: number };
 
 interface Case {
   capability: Capability;
+  /** Distinguishes two routes that honour the same switch. */
+  via?: string;
   /** What the page would decide from the bundle. */
   page: (v: Viewer, ctx: Ctx) => boolean;
   /** The request; returns the status. Set-up that itself needs the capability
@@ -53,6 +55,8 @@ interface Ctx {
   rooms: { openBooking: boolean }[];
   /** A contribution the actor made while allowed to, for the delete case. */
   own: Map<number, number>;
+  /** The profile each actor holds, made while allowed to. */
+  profile: Map<number, number>;
   proposalId: number;
   adminContributionId: number;
 }
@@ -120,9 +124,20 @@ const CASES: Case[] = [
   },
   {
     capability: 'person.edit_own',
+    via: 'me/profile',
     page: (v) => canEditProfile({ isMine: true }, v),
     server: async (a) =>
       (await a.agent.patch('/api/e/testconf/me/profile').send({ bio: 'hi' })).status,
+  },
+  {
+    // The same switch reached by id — the route an organiser uses on anyone,
+    // which a holder may also use on themselves. It ignored the switch.
+    capability: 'person.edit_own',
+    via: 'people/:id',
+    page: (v) => canEditProfile({ isMine: true }, v),
+    server: async (a, ctx) =>
+      (await a.agent.patch(`/api/e/testconf/people/${ctx.profile.get(a.id)}`).send({ bio: 'hi' }))
+        .status,
   },
 ];
 
@@ -196,6 +211,7 @@ describe('the page and the server agree on every capability', () => {
       openRoom,
       rooms: [{ openBooking: false }, { openBooking: true }],
       own: new Map(),
+      profile: new Map(),
       proposalId: proposal.body.id,
       adminContributionId: adminContribution.body.id,
     };
@@ -210,13 +226,23 @@ describe('the page and the server agree on every capability', () => {
         .expect(201);
       ctx.own.set(a.id, res.body.id);
     }
+    // And a profile of their own, for the by-id edit case.
+    await setPerm('person.edit_own', ['viewer', 'user', 'speaker']);
+    for (const a of actors) {
+      const res = await a.agent
+        .patch('/api/e/testconf/me/profile')
+        .send({ bio: `${a.role} here` })
+        .expect(200);
+      ctx.profile.set(a.id, res.body.id);
+    }
   });
   afterEach(() => ctx.harness.close());
 
   for (const c of CASES) {
     for (const role of ROLES) {
       for (const allowed of [true, false]) {
-        it(`${c.capability} · ${role} · ${allowed ? 'granted' : 'withheld'}`, async () => {
+        const name = c.via ? `${c.capability} via ${c.via}` : c.capability;
+        it(`${name} · ${role} · ${allowed ? 'granted' : 'withheld'}`, async () => {
           await setPerm(c.capability, allowed ? [role] : []);
           const actor = actors.find((a) => a.role === role) as Actor;
           const page = c.page(await viewerFor(actor), ctx);

@@ -422,6 +422,31 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
+- **Finer permissions** (your words, 2026-09-08: "there should maybe be a
+  few more granular permissions"). First, what is already true, because it
+  was not what you thought: a speaker credited on an official session — a
+  keynote an organiser typed their name onto — **can edit its words** today,
+  whatever role they entered with, as long as their profile is linked to
+  them (claimed, or entered through a speaker code or link). What they
+  cannot do is move it or delete it. `tests/sessionSpeakers.test.ts` pins
+  all three. If a speaker you watched could not edit, the profile was not
+  theirs yet — that is the claim flow, not the matrix. Candidates for new
+  switches, each one line in `capabilities.ts` plus a server check and a
+  client predicate, with the parity test walking them for free:
+  - **session.edit_credited** — make the "credited = may edit" rule a
+    switch rather than a constant, for events that want official copy
+    frozen.
+  - **session.move_credited** — let a credited speaker reslot their own
+    official talk (room, time), today organiser-only.
+  - **contribution.edit_own** — edit a note after posting; today the only
+    edit is delete-and-repost.
+  - **proposal.moderate** — withdraw anyone's pitch, today organiser-only
+    and not switchable.
+  - **person.edit_credited** — let a speaker fix the bio of a co-host they
+    share a session with.
+  Not proposed: switches on rooms, tags, settings, trash, roles — those are
+  what administering an event *is*, and the matrix's own comment says so.
+
 - **Fixes from your review** (2026-09-07, from the review sheet — each is a
   bug you saw in a real browser, so they go before anything reasoned). One
   commit each; when one lands, its line leaves here and the CHANGELOG gets
