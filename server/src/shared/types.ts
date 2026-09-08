@@ -224,7 +224,8 @@ export interface PersonDto {
    */
   codeState?: CodeState;
   /** Organisers only. Last request from this person's device anywhere on the
-   *  instance, minute-coarse; null for a profile nobody holds. */
+   *  instance, minute-coarse; null for a profile nobody holds, and for one
+   *  whose speaker code was minted but never redeemed — a mint is not a visit. */
   lastSeenAt?: string | null;
   /** Organisers only. When they first took a username here; null for a
    *  profile nobody holds. */

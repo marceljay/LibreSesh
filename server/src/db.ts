@@ -43,7 +43,10 @@ export interface IdentityRow {
   token: string;
   display_name: string;
   created_at: string;
-  last_seen_at: string;
+  /** Minute-coarse time of the last request carrying this identity's cookie;
+   *  null until there has been one — an identity minted for a speaker code
+   *  starts that way. */
+  last_seen_at: string | null;
   /** Capability token for calendar subscription URLs; null until first asked for. */
   ics_token: string | null;
 }
