@@ -36,19 +36,45 @@ export function installBrowserShims(): void {
     Element.prototype.scrollIntoView = () => {};
   }
   if (typeof globalThis.EventSource !== 'function') {
-    // Live updates arrive over SSE; under jsdom nothing is ever pushed, and a
-    // page must render from its first fetch alone.
-    globalThis.EventSource = class {
-      onopen = null;
-      onmessage = null;
-      onerror = null;
-      readyState = 0;
-      addEventListener(): void {}
-      removeEventListener(): void {}
-      close(): void {}
-    } as unknown as typeof EventSource;
+    // Live updates arrive over SSE. Under jsdom nothing is pushed unless a
+    // test pushes it: `emitChange` delivers a frame to every open stream, as
+    // the server's broker would, so a page can be shown reacting to one.
+    globalThis.EventSource = FakeEventSource as unknown as typeof EventSource;
   }
   window.scrollTo = () => {};
+}
+
+type Listener = (ev: { data: string }) => void;
+
+const streams = new Set<FakeEventSource>();
+
+class FakeEventSource {
+  onopen = null;
+  onmessage = null;
+  onerror = null;
+  readyState = 1;
+  private listeners = new Map<string, Set<Listener>>();
+  constructor(readonly url: string) {
+    streams.add(this);
+  }
+  addEventListener(type: string, fn: Listener): void {
+    if (!this.listeners.has(type)) this.listeners.set(type, new Set());
+    this.listeners.get(type)?.add(fn);
+  }
+  removeEventListener(type: string, fn: Listener): void {
+    this.listeners.get(type)?.delete(fn);
+  }
+  close(): void {
+    streams.delete(this);
+  }
+  deliver(type: string, data: string): void {
+    for (const fn of this.listeners.get(type) ?? []) fn({ data });
+  }
+}
+
+/** Push one change frame to every open stream, as the broker would. */
+export function emitChange(change: { type: string; entity: unknown }): void {
+  for (const s of streams) s.deliver('change', JSON.stringify(change));
 }
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';

@@ -1,6 +1,10 @@
 # Permission integrity: prove the layer between predicate and pixel
 
-**Written 2026-09-08** on `fix/matrix-gating`, after the composer bug: a
+**Written 2026-09-08** on `fix/matrix-gating`; phases 1–3 landed the same
+day on that branch (`tests/adminRoutes.test.ts`,
+`tests/controlsByRole.test.tsx`, `tests/roleChangeStream.test.ts` with
+`tests/roleChangeLive.test.tsx`). Phase 4 waits on the user's pick from the
+"Finer permissions" backlog item. Written after the composer bug: a
 viewer granted `contribution.create` in the Permissions tab never got the
 composer, because the page read the role's name and not the matrix. The fix
 landed with a parity sweep (`tests/permissionParity.test.ts`, 54 cases) that

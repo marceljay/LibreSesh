@@ -90,6 +90,12 @@ All notable changes to this project are documented here.
   same question and failing when their answers differ. That sweep found one
   gap on the server too: editing your own profile by its id ignored the
   *Edit their own profile* switch, which only the other route honoured.
+- **A role change reaches the person's open page.** When an organiser
+  changed someone's role, that person's page kept its old controls until
+  they reloaded: a demoted attendee kept buttons that now failed, a promoted
+  one saw nothing new. The change is now sent to the person concerned over
+  their own live connection, and only to them, and the page re-derives its
+  controls at once. Permission changes already worked this way.
 - **The gate has a way off it.** The page that asks for an event's password
   was a card alone on a blank page: no logo, no link, nothing to say what
   site this was or where the other events were. Someone holding the wrong
