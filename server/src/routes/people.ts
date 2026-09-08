@@ -9,7 +9,7 @@ import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { auditMerge, broadcastMerge, mergePeople } from '../mergePeople.js';
 import { factsFor, loadSessionDto, toPersonDto } from '../mappers.js';
 import { ensureOwnProfile } from '../people.js';
-import { requireCapability } from '../permissions.js';
+import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
   mergePersonSchema,
@@ -197,10 +197,16 @@ export function peopleRoutes(ctx: Ctx): Router {
     limit(ctx.limiter, 'write'),
     (req, res) => {
       const person = load(req.event.id, Number(req.params.id));
-      // Organisers edit anyone; everyone else edits only the profile they own.
+      // Organisers edit anyone; everyone else edits only the profile they own,
+      // and only while the matrix grants their role `person.edit_own` — the
+      // same switch `/me/profile` honours. Without this line the switch was
+      // decorative for anyone who addressed their profile by id instead.
       const mine = person.identity_id !== null && person.identity_id === req.identity.id;
-      if (!atLeast(req.role, 'admin') && !mine) {
-        throw forbidden('That is not your profile');
+      if (!atLeast(req.role, 'admin')) {
+        if (!mine) throw forbidden('That is not your profile');
+        if (!can(getPermissions(ctx.db, req.event.id), req.role, 'person.edit_own')) {
+          throw forbidden();
+        }
       }
 
       const body = parse(personPatchSchema, req.body);
