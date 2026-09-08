@@ -613,8 +613,11 @@ export function SchedulePage() {
   }, []);
 
   /**
-   * The header folds itself away once you are into the day, and the ⌄/⌃ button
-   * beside the filters overrides whichever way it went. The two used to fight,
+   * The day rows — weeks, the day strip, the action row — fold themselves away
+   * once you are into the day, and the ⌄/⌃ button beside the filters overrides
+   * whichever way it went. The event bar above them stays: it is the way
+   * home, the bell and the menu, and it is on every other page of the event,
+   * so a schedule that put it away was the one page where you could lose it. The two used to fight,
    * which is what made the button look broken — you pressed it, the header came
    * back, and the next flick of the wheel put it away again. Three rules keep
    * them apart:
@@ -651,7 +654,6 @@ export function SchedulePage() {
   const beenDown = useRef(false);
   /** The fold is mid-animation. A ref because the scroll listener reads it. */
   const foldInFlight = useRef(false);
-  const foldedBar = useRef<HTMLDivElement>(null);
   const foldedRows = useRef<HTMLDivElement>(null);
 
   const folded = foldable && (chromeMode === 'shut' || (chromeMode === 'auto' && autoFolded));
@@ -662,7 +664,7 @@ export function SchedulePage() {
     const top = el.scrollTop;
     setPastTop(top > TOP_BUTTON_AT);
     if (debugFold) {
-      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
+      const gain = foldedRows.current?.offsetHeight ?? 0;
       setFoldStats(
         `${el === calRef.current ? 'grid' : 'main'} top=${Math.round(top)} ` +
           `scrollH=${el.scrollHeight} clientH=${el.clientHeight} ` +
@@ -676,7 +678,7 @@ export function SchedulePage() {
       // Unfolds at the very top, folds at FOLD_AT: one threshold in both
       // directions would flicker, because folding resizes the grid it reads.
       if (was) return top > 0;
-      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
+      const gain = foldedRows.current?.offsetHeight ?? 0;
       // `slack`, not `slack - top`: what folding costs is the same wherever you
       // are in the day — the box keeps its content and gains `gain` of
       // viewport, so what is left to scroll afterwards is `slack - gain`. Ask
@@ -1118,20 +1120,21 @@ export function SchedulePage() {
 
      `grid-cols-[minmax(0,1fr)]` is not decoration. The default single column is
      `auto`, and an auto track grows to its content: a row wider than the phone
-     — the event bar with a long role badge on it, the week rail — made the row
+     — the week rail, the action row with its buttons — made the row
      itself wider than the header instead of being made to fit, so its right
-     end (the profile menu) sat off the edge of the screen with
+     end sat off the edge of the screen with
      `overflow-x: clip` over the top of it. Pinning the column to the width
      that is actually there hands the squeeze back to the rows, which each
      already know how to take it: truncation, or a scroller of their own. */
   const foldRow = `grid grid-cols-[minmax(0,1fr)] transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
     folded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
   }`;
-  /* Clipped while it moves and while it is away, open once it has settled: the
-     profile menu drops out of the event bar, and a permanent `overflow-hidden`
-     here would cut it off. `invisible` only at the end, because a row that is
-     still on its way out is still on screen, and one that has gone should not
-     be a tab stop. */
+  /* Clipped while it moves and while it is away, open once it has settled: a
+     permanent `overflow-hidden` would cut off anything a row lets spill past
+     its edge — the event bar's profile menu did, when the bar was one of
+     these rows. `invisible` only at the end, because a row that is still on
+     its way out is still on screen, and one that has gone should not be a
+     tab stop. */
   const foldInner = `${folded || foldMoving ? 'overflow-hidden' : ''}${
     folded && !foldMoving ? ' invisible' : ''
   }`;
@@ -1144,31 +1147,27 @@ export function SchedulePage() {
        on a phone `vh` counts the strip behind the address bar. */
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
-        <div ref={foldedBar} className={foldRow}>
-          <div className={foldInner}>
-            <EventBar
-              slug={slug}
-              bundle={bundle}
-              me={me}
-              ping={data.notificationPing}
-              onTour={() => setTourOpen(true)}
-              onSignOut={() => void api.logout(slug).then(() => void data.reload())}
-              sub={
-                <div
-                  data-tour="live"
-                  className="truncate text-xs text-stone-500 dark:text-stone-400"
-                >
-                  {plural(days.length, { one: 'day', other: 'days' })} ·{' '}
-                  {event.archived
-                    ? 'archived — read-only'
-                    : data.connected
-                      ? 'schedule is live'
-                      : 'reconnecting…'}
-                </div>
-              }
-            />
-          </div>
-        </div>
+        {/* Outside the fold on purpose. The rows under it give the day their
+            height back when you scroll; the bar is what every page of the
+            event shares, and the schedule is not the page to lose it on. */}
+        <EventBar
+          slug={slug}
+          bundle={bundle}
+          me={me}
+          ping={data.notificationPing}
+          onTour={() => setTourOpen(true)}
+          onSignOut={() => void api.logout(slug).then(() => void data.reload())}
+          sub={
+            <div data-tour="live" className="truncate text-xs text-stone-500 dark:text-stone-400">
+              {plural(days.length, { one: 'day', other: 'days' })} ·{' '}
+              {event.archived
+                ? 'archived — read-only'
+                : data.connected
+                  ? 'schedule is live'
+                  : 'reconnecting…'}
+            </div>
+          }
+        />
 
         {/* Everything below the event bar belongs to the grid — weeks,
             filters, the day rail. The full-page session view keeps the bar
@@ -1360,16 +1359,8 @@ export function SchedulePage() {
                   type="button"
                   onClick={toggleChrome}
                   aria-expanded={!folded}
-                  aria-label={
-                    folded
-                      ? 'Show the event bar and the day picker'
-                      : 'Fold the event bar and the day picker away'
-                  }
-                  title={
-                    folded
-                      ? 'Show the event bar and the day picker'
-                      : 'Fold the event bar and the day picker away'
-                  }
+                  aria-label={folded ? 'Show the day picker' : 'Fold the day picker away'}
+                  title={folded ? 'Show the day picker' : 'Fold the day picker away'}
                   className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
                 >
                   {/* A calendar and an arrow, at both states and at every width.

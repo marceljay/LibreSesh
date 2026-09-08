@@ -59,6 +59,12 @@ All notable changes to this project are documented here.
   called it *Edit their own speaker profile*; since every attendee has a
   profile, it now reads *Edit their own profile*, and the table in
   `docs/using.md` says the same.
+- **The schedule keeps the event bar through the fold.** Scrolling into the
+  day used to put the whole header away — logo, name, bell and menu along
+  with the weeks, the day strip and the action row. Only those rows fold
+  now; the bar stays, on the schedule as on every other page. The day gets
+  about fifty pixels less back on a phone, which is the price of never
+  losing the way home or the menu behind your name.
 - **Link another device wears the devices glyph.** The menu row that mints
   the phrase was plain text between Calendar and Theme, and the one thing in
   the menu nobody found. It now carries the same laptop-and-phone icon as the
