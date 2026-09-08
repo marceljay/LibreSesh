@@ -32,6 +32,11 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **Link another device wears the devices glyph.** The menu row that mints
+  the phrase was plain text between Calendar and Theme, and the one thing in
+  the menu nobody found. It now carries the same laptop-and-phone icon as the
+  gate's *I'm already here on another device*, so the two ends of the flow
+  are marked alike.
 - **The test suite renders the app now.** Every route mounts under a
   simulated browser, talks to the real server, and is held to a clean
   console — where React reports a bad ref, a missing key or an update it did

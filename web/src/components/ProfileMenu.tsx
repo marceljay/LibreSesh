@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { uid } from '../lib/format';
 import { AboutModal } from './About';
 import { DeviceLinkModal } from './DeviceLink';
+import { DevicesIcon } from './icons';
 import { ThemeToggle } from './ThemeToggle';
 import { RoleBadge, useToast } from './ui';
 
@@ -206,7 +207,14 @@ export function ProfileMenu({
             }}
             className={itemClass}
           >
-            Link another device
+            {/* The same two-device glyph as the gate's "I'm already here on
+                another device": this item mints the phrase that door takes,
+                and a plain row of text between Calendar and Theme was the
+                one thing in the menu nobody found. */}
+            <span className="inline-flex items-center gap-1.5">
+              <DevicesIcon className="h-3.5 w-3.5" />
+              Link another device
+            </span>
           </button>
           <div role="separator" className="my-1 border-t border-stone-200 dark:border-stone-700" />
           {/* Deliberately not a menuitem: picking a theme is a setting you
