@@ -476,14 +476,14 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 ## High Priority
 
 - **Permission integrity — prove the layer between predicate and pixel.**
-  Plan: `_planning/plans/2026-09-08-permission-integrity.md`. What the parity
-  sweep left unproven, in order: (1) a 403 sweep over all 35 admin-only
-  routes; (2) a jsdom sweep that renders every matrix-governed control for
-  each role and setting and asserts presence by accessible name; (3) role
-  changes pushed live to the affected page, as permission changes already
-  are — today a demoted attendee keeps buttons the server refuses until
-  reload. One commit each. The "Finer permissions" item below is the plan's
-  optional phase 4 and waits on these.
+  Plan: `_planning/plans/2026-09-08-permission-integrity.md`. Phase 1, the
+  admin-route sweep, is in CHANGELOG. Left, in order: (2) a jsdom sweep that
+  renders every matrix-governed control for each role and setting and
+  asserts presence by accessible name; (3) role changes pushed live to the
+  affected page, as permission changes already are — today a demoted
+  attendee keeps buttons the server refuses until reload. One commit each.
+  The "Finer permissions" item below is the plan's optional phase 4 and
+  waits on these.
 
 - **Finer permissions** (your words, 2026-09-08: "there should maybe be a
   few more granular permissions"). First, what is already true, because it

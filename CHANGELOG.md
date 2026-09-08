@@ -39,7 +39,10 @@ All notable changes to this project are documented here.
   or router upgrade could pass every test and still break the page. For what
   a simulated browser cannot show — layout, the time box, the theme following
   the system — `npm run browser-pass` drives the built app through a real
-  headless Chromium and fails on the same signals.
+  headless Chromium and fails on the same signals. Every organiser-only
+  route is now called by a viewer, an attendee, a speaker and a browser with
+  no role, and must refuse each; a count check fails when a new such route
+  appears without a row in that table.
 - **React moved to 19.** Taken after the suite could render, not before:
   every route mounted clean under it on the first run, and the only edits
   were two type annotations. Nothing you can see changes; it is the runtime
