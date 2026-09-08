@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest';
 import type { Role, SessionDto } from '../server/src/shared/types.js';
 import type { PermissionMatrix } from '../server/src/shared/capabilities.js';
 import {
+  canContribute,
+  canCreateSession,
   canDeleteSession,
+  canEditProfile,
   canEditSession,
+  canModerateContributions,
   canMoveSession,
+  canPitch,
+  canRemoveContribution,
+  canStarSessions,
+  canVote,
   type Viewer,
 } from '../web/src/lib/sessionPerms.js';
 
@@ -90,5 +98,75 @@ describe('session permissions (client)', () => {
 
   it('lets anyone move a new (undefined) session', () => {
     expect(canMoveSession(undefined, 'user')).toBe(true);
+  });
+});
+
+/**
+ * The other controls, decided by the matrix and never by the role's name.
+ * Each pair below is a viewer granted something viewers do not get by
+ * default, and an attendee stripped of something attendees do — the two
+ * cases a name check gets wrong in opposite directions.
+ */
+describe('capability-gated controls (client)', () => {
+  const v = (role: Role, permissions: Partial<PermissionMatrix>, identityId = 7): Viewer => ({
+    role,
+    identityId,
+    myPersonIds: new Set(),
+    permissions,
+  });
+
+  it('shows the composer to a viewer granted contribution.create', () => {
+    expect(canContribute(v('viewer', { 'contribution.create': ['viewer'] }), false)).toBe(true);
+  });
+  it('hides the composer from an attendee it was taken from', () => {
+    expect(canContribute(v('user', { 'contribution.create': ['viewer'] }), false)).toBe(false);
+  });
+  it('closes the composer on an archived event whatever the matrix says', () => {
+    expect(canContribute(v('user', { 'contribution.create': ['user'] }), true)).toBe(false);
+  });
+
+  it('lets the author remove their own contribution, given the capability', () => {
+    const perms = { 'contribution.delete_own': ['viewer'] };
+    expect(canRemoveContribution({ createdBy: 7 }, v('viewer', perms), false)).toBe(true);
+    expect(canRemoveContribution({ createdBy: 8 }, v('viewer', perms), false)).toBe(false);
+    expect(canRemoveContribution({ createdBy: 7 }, v('viewer', {}), false)).toBe(false);
+  });
+  it('lets an organiser remove and hide anything', () => {
+    expect(canRemoveContribution({ createdBy: 8 }, v('admin', {}), false)).toBe(true);
+    expect(canModerateContributions(v('admin', {}), false)).toBe(true);
+    expect(canModerateContributions(v('user', {}), false)).toBe(false);
+  });
+
+  it('stars by capability, viewer included', () => {
+    expect(canStarSessions(v('viewer', { 'session.star': ['viewer'] }))).toBe(true);
+    expect(canStarSessions(v('user', { 'session.star': ['viewer'] }))).toBe(false);
+  });
+
+  it('offers Add session only with the capability and a room to put it in', () => {
+    const open = [{ openBooking: false }, { openBooking: true }];
+    const closed = [{ openBooking: false }];
+    const perms = { 'session.create_open': ['viewer', 'user'] };
+    expect(canCreateSession(v('viewer', perms), open, false)).toBe(true);
+    expect(canCreateSession(v('user', perms), closed, false)).toBe(false);
+    expect(canCreateSession(v('user', {}), open, false)).toBe(false);
+    expect(canCreateSession(v('admin', {}), closed, false)).toBe(true);
+  });
+
+  it('pitches and votes by capability', () => {
+    expect(canPitch(v('viewer', { 'proposal.create': ['viewer'] }), false)).toBe(true);
+    expect(canPitch(v('user', { 'proposal.create': ['viewer'] }), false)).toBe(false);
+    expect(canVote(v('viewer', { 'proposal.vote': ['viewer'] }))).toBe(true);
+    expect(canVote(v('user', {}))).toBe(false);
+  });
+
+  it('edits a held profile by capability', () => {
+    expect(canEditProfile({ isMine: true }, v('viewer', { 'person.edit_own': ['viewer'] }))).toBe(
+      true,
+    );
+    expect(canEditProfile({ isMine: true }, v('viewer', {}))).toBe(false);
+    expect(canEditProfile({ isMine: false }, v('viewer', { 'person.edit_own': ['viewer'] }))).toBe(
+      false,
+    );
+    expect(canEditProfile({ isMine: false }, v('admin', {}))).toBe(true);
   });
 });

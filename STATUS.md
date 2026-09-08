@@ -42,6 +42,15 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
   shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
 
+- **Permissions, page side** (2026-09-08, on `dev`): you found a viewer
+  could not add notes in production despite the matrix allowing it. Every
+  control the page gated by the role's *name* now reads the matrix instead —
+  see CHANGELOG `[Unreleased]` → Fixed — and `tests/permissionParity.test.ts`
+  holds page and server to the same answer for every capability and role
+  (48 cases), with the production case itself pinned under jsdom. Queued for
+  your eyes as **R38**: grant viewers *Add notes, links and questions* and
+  open a session as a viewer.
+
 - **Branch `chore/react-19`** (2026-09-07, off `561c9ac`, `origin/dev`
   merged in at `2a84e69`): the DOM smoke suite, React 19, and
   `npm run browser-pass` — the built app driven through the container's
