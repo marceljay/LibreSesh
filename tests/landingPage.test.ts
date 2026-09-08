@@ -42,17 +42,17 @@ describe('the root is a landing page, not the event list', () => {
 
 describe('the logo goes home, and the list keeps its own way back', () => {
   it('sends every logo to `/`, under one label', () => {
-    // Five of them: the schedule, the agenda, search, the list itself, and
-    // the gate (2026-09-07, the one page that had none). They used to mean
-    // "all events"; they mean "home" now, and the label has to move with the
-    // target or it describes the old destination.
+    // Three of them: the event bar (one row, every page of an event), the
+    // list itself, and the gate (2026-09-07, the one page that had none).
+    // They used to mean "all events"; they mean "home" now, and the label has
+    // to move with the target or it describes the old destination.
     const logos = tsxFiles(WEB_SRC).flatMap((file) => {
       const source = readFileSync(file, 'utf8');
       return [...source.matchAll(/<Link[\s\S]{0,200}?aria-label="LibreSesh home"/g)].map(
         (match) => ({ file, to: /to="([^"]+)"/.exec(match[0])?.[1] }),
       );
     });
-    expect(logos).toHaveLength(5);
+    expect(logos).toHaveLength(3);
     expect(logos.every((logo) => logo.to === '/')).toBe(true);
   });
 

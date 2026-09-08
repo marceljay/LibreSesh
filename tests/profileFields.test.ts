@@ -107,8 +107,13 @@ describe('the profile page edits a field at a time', () => {
    */
   it('goes back where it was opened from, and to the schedule otherwise', () => {
     expect(page).toMatch(/useLocation\(\)\.state as \{ back\?: /);
-    expect(page).toMatch(/from\?\.to \?\? `\/e\/\$\{slug\}`/);
-    expect(page).toMatch(/from\?\.label \?\? 'Schedule'/);
+    // The way back is the line under the event name in the bar: where you
+    // came from when that is known, and the bar's own "Back to the schedule"
+    // otherwise, which is what a `sub` of `undefined` gets.
+    expect(page).toMatch(
+      /sub=\{[\s\S]*?from && \([\s\S]*?to=\{from\.to\}[\s\S]*?← \{from\.label\}/,
+    );
+    expect(page).not.toContain("'Schedule'");
     // A deep link arrives with no history, so an organiser is told the tab.
     expect(page).toContain('Manage → People');
 

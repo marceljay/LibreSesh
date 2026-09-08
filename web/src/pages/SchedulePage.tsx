@@ -31,8 +31,8 @@ import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
-import { CalendarExportModal } from '../components/CalendarExport';
 import { DetailSheet } from '../components/DetailSheet';
+import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
 import { Gate } from '../components/Gate';
@@ -44,9 +44,6 @@ import {
   SettingsIcon,
 } from '../components/icons';
 import { ListView } from '../components/ListView';
-import { Logo } from '../components/Logo';
-import { NotificationBell } from '../components/NotificationBell';
-import { ProfileMenu } from '../components/ProfileMenu';
 import { Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
 import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
@@ -173,7 +170,6 @@ export function SchedulePage() {
 
   const [tourOpen, setTourOpen] = useState(false);
   const [arrange, setArrange] = useState(false);
-  const [calendar, setCalendar] = useState<'download' | 'subscribe' | null>(null);
   const [clashDismissed, setClashDismissed] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
   // The session whose "Link matching sessions…" picker is open, over the editor.
@@ -1150,30 +1146,14 @@ export function SchedulePage() {
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
         <div ref={foldedBar} className={foldRow}>
           <div className={foldInner}>
-            {/* Tighter below `sm`. The event name is the only thing here that
-                truncates, so every pixel the padding and the gaps give back is
-                a pixel of title — about three characters between them, which
-                is the difference between reading a name and guessing it. The
-                desktop spacing is unchanged: there is nothing to win there. */}
-            <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
-              <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
-                {/* Below `sm` the wordmark's width belongs to the event name, so
-                    the phone header gets the near-square mark instead. The swap
-                    lives on wrappers because Logo spends its own display classes
-                    on the theme. */}
-                <span className="flex items-center sm:hidden">
-                  <Logo variant="mark" className="h-6 w-auto" />
-                </span>
-                <span className="hidden items-center sm:flex">
-                  <Logo variant="oneline" className="h-6 w-auto" />
-                </span>
-              </Link>
-              <span
-                aria-hidden="true"
-                className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
-              />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold tracking-tight">{event.name}</div>
+            <EventBar
+              slug={slug}
+              bundle={bundle}
+              me={me}
+              ping={data.notificationPing}
+              onTour={() => setTourOpen(true)}
+              onSignOut={() => void api.logout(slug).then(() => void data.reload())}
+              sub={
                 <div
                   data-tour="live"
                   className="truncate text-xs text-stone-500 dark:text-stone-400"
@@ -1185,29 +1165,8 @@ export function SchedulePage() {
                       ? 'schedule is live'
                       : 'reconnecting…'}
                 </div>
-              </div>
-              {/* Theme moved into the profile menu and Manage Event down to the
-                  action row, where it belongs beside Add session. On a phone this
-                  header had five controls competing for the width left over after
-                  the event name. */}
-              <div className="ms-auto flex items-center justify-end gap-1.5 sm:gap-2">
-                <NotificationBell slug={slug} ping={data.notificationPing} />
-                <ProfileMenu
-                  onTour={() => setTourOpen(true)}
-                  demo={me?.demoMode === true}
-                  onCalendar={setCalendar}
-                  displayName={bundle.displayName}
-                  slug={slug}
-                  role={role}
-                  userLabel={event.userRoleLabel}
-                  people={bundle.people}
-                  publicId={me?.uid ?? ''}
-                  onSignOut={() => {
-                    void api.logout(slug).then(() => void data.reload());
-                  }}
-                />
-              </div>
-            </div>
+              }
+            />
           </div>
         </div>
 
@@ -1832,15 +1791,6 @@ export function SchedulePage() {
         <div className="fixed bottom-4 end-4 z-40 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs text-stone-600 dark:text-stone-300 shadow-sm">
           Drag sessions you may edit · snaps to 5 min
         </div>
-      )}
-
-      {calendar && (
-        <CalendarExportModal
-          slug={slug}
-          starredCount={starredIds.size}
-          section={calendar}
-          onClose={() => setCalendar(null)}
-        />
       )}
 
       {tourOpen && <Tour steps={tourSteps} onClose={closeTour} />}

@@ -7,10 +7,11 @@ import { rankSessions, searchTerms } from '../lib/search';
 import { matchesLens } from '../lib/sessionLens';
 import { useEventData } from '../lib/useEventData';
 import { useFilters } from '../lib/useFilters';
+import { api } from '../lib/api';
 import { useMe } from '../lib/useMe';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
 import { Gate } from '../components/Gate';
-import { Logo } from '../components/Logo';
+import { EventBar } from '../components/EventBar';
 import { SearchBox, SessionResultRow } from '../components/SearchBox';
 import { EmptyState, Spinner } from '../components/ui';
 
@@ -129,28 +130,15 @@ export function SearchPage() {
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 dark:bg-stone-950 dark:text-stone-100">
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 py-3">
-          <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
-            <span className="flex items-center sm:hidden">
-              <Logo variant="mark" className="h-6 w-auto" />
-            </span>
-            <span className="hidden items-center sm:flex">
-              <Logo variant="oneline" className="h-6 w-auto" />
-            </span>
-          </Link>
-          <span
-            aria-hidden="true"
-            className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
-          />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold tracking-tight">{event.name}</div>
-            <Link
-              to={`/e/${slug}`}
-              className="text-xs text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-            >
-              ← Back to the schedule
-            </Link>
-          </div>
+        <EventBar
+          slug={slug}
+          bundle={bundle}
+          me={me}
+          ping={data.notificationPing}
+          width="max-w-4xl"
+          onSignOut={() => void api.logout(slug).then(() => void data.reload())}
+        />
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 pb-3">
           <SearchBox
             sessions={bundle.sessions}
             rooms={bundle.rooms}

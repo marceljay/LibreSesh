@@ -18,6 +18,17 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **The event bar is on every page of an event.** The logo, the event's
+  name, the notification bell and the menu behind your name were the
+  schedule's alone. The agenda and search had the logo and the name with no
+  menu; a profile, the pitch board and Manage Event had a *← Schedule* link
+  and nothing else — your agenda, your calendar, another device and the way
+  out all meant finding the schedule first. One bar now, the same on every
+  page, sized to the page under it; under the name it says how to get back
+  to the schedule, or where you came from when the page knows. On Manage
+  Event, everything on the bar asks the Settings tab's *Leave without
+  saving?* first, the way its own tabs do. *Take the tour* stays a schedule
+  row: the menu leaves it out where there is no tour to start.
 - **The audit log links to what it names.** A line said *ada deleted session
   “Opening keynote”* and left you to find both. Now the name opens Ada's
   profile, and the title opens the session — or **Trash**, when that is

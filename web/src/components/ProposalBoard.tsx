@@ -9,6 +9,7 @@ import { ApiError, api, type PlaceWrite, type ProposalWrite } from '../lib/api';
 import { dayLabel, todayInZone } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { useMe } from '../lib/useMe';
+import { EventBar } from './EventBar';
 import { PlaceProposalModal } from './PlaceProposalModal';
 import { ProposalModal } from './ProposalModal';
 import {
@@ -242,10 +243,14 @@ export function ProposalBoard() {
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       <header className="border-b border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-900">
-        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 py-4">
-          <Link to={`/e/${slug}`} className="text-xs text-stone-500 dark:text-stone-400 underline">
-            ← Schedule
-          </Link>
+        <EventBar
+          slug={slug}
+          bundle={bundle}
+          me={me}
+          width="max-w-3xl"
+          onSignOut={() => void api.logout(slug).then(() => navigate(`/e/${slug}`))}
+        />
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-3 px-4 pb-4">
           <h1 className="text-lg font-semibold tracking-tight">Proposal pool</h1>
           {mayPitch && (
             <PrimaryButton className="ms-auto" onClick={() => setEditing({})}>
