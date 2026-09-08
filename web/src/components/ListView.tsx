@@ -88,27 +88,35 @@ export function ListView({
     );
   }, [groups, breaks, day]);
 
-  // The same yellow line the grid draws across the day, between the rows
-  // here — see `nowLineIndex` for where. It used to be a "next / now" pill on
-  // the first unfinished row's time, which said which row was next and never
-  // what time it was, and a reader switching from the grid looked for the
-  // line and found nothing. The Now button and the open-at-now jump scroll
-  // to `now-anchor`, which is the line itself.
-  const nowAt = nowLineIndex(rows, nowMin);
+  // The same yellow line the grid draws across the day. The list has no
+  // minute axis, so the line goes where the sessions are: across every card
+  // that is running, as far down it as that session has run, the way the
+  // grid's line crosses every block that is on. One card wearing it while
+  // its parallel neighbours did not read as "only this one is on" (reviewed
+  // 2026-09-08). When nothing is running it sits in the gap between rows —
+  // see `nowLineIndex`. It carries no time here: the header's Now button
+  // says it, and a chip beside the cards cost the row a gutter for nothing.
+  // Before all this it was a "next / now" pill on the first unfinished
+  // row's time, which said which row was next and never what time it was.
+  // The Now button and the open-at-now jump scroll to `now-anchor`: the
+  // first running card's line, or the gap line.
+  const nowLabel = nowMin === null ? '' : `Now, ${fmtMin(nowMin)}`;
+  // The first running card, in reading order, carries the anchor.
+  const firstLiveId =
+    nowMin === null
+      ? null
+      : (groups.flatMap((g) => g.items).find((i) => nowMin >= i.startMin && nowMin < i.endMin)
+          ?.session.id ?? null);
+  const nowAt = firstLiveId === null ? nowLineIndex(rows, nowMin) : -1;
   const nowLine =
-    nowMin === null ? null : (
+    nowAt < 0 ? null : (
       <div
         key="now-line"
         id="now-anchor"
         role="separator"
-        aria-label={`Now, ${fmtMin(nowMin)}`}
-        className="mb-4 flex items-center gap-2"
-      >
-        <span className="rounded-sm bg-highlight px-1.5 py-0.5 text-xs font-bold text-stone-900">
-          {fmtMin(nowMin)}
-        </span>
-        <div className="h-0.5 flex-1 bg-highlight" />
-      </div>
+        aria-label={nowLabel}
+        className="mb-4 h-0.5 bg-highlight"
+      />
     );
   const withNowLine = (items: ReactNode[]): ReactNode[] =>
     nowLine === null ? items : [...items.slice(0, nowAt), nowLine, ...items.slice(nowAt)];
@@ -159,8 +167,15 @@ export function ListView({
                         session.type === 'open'
                           ? 'border-dashed border-emerald-400 dark:border-emerald-500'
                           : 'border-stone-200 dark:border-stone-700'
-                      } ${live ? 'ring-2 ring-stone-900/10 dark:ring-stone-100/10' : ''}`}
+                      } ${live ? 'relative isolate overflow-hidden ring-2 ring-stone-900/10 dark:ring-stone-100/10' : ''}`}
                     >
+                      {live && (
+                        <NowLine
+                          progress={(nowMin - startMin) / (endMin - startMin)}
+                          label={nowLabel}
+                          anchor={session.id === firstLiveId}
+                        />
+                      )}
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold">{session.title}</div>
@@ -237,5 +252,40 @@ export function ListView({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * The now line on a running session's card, at the minute: as far down the
+ * card as the session has run, the way the grid's line crosses the block that
+ * is on, and held inside the card's edges so a session in its last minutes
+ * has its line on the card and not under it. It is drawn behind the card's
+ * text — the card is its own stacking context (`isolate`) and the line sits
+ * under everything in it but the background — and paler than the grid's,
+ * because a full-strength stroke through a title read as a strike-out, and
+ * a line under the text does not have to fight it (reviewed 2026-09-08). It
+ * used to snap to a seam between the card's text, which put a session with
+ * seven minutes left a card's border below where it was: a line that says
+ * "now" has to be where now is. `anchor` marks the one line the Now button
+ * scrolls to.
+ */
+function NowLine({
+  progress,
+  label,
+  anchor,
+}: {
+  progress: number;
+  label: string;
+  anchor: boolean;
+}) {
+  const pct = `${(Math.min(Math.max(progress, 0), 1) * 100).toFixed(2)}%`;
+  return (
+    <div
+      id={anchor ? 'now-anchor' : undefined}
+      role="separator"
+      aria-label={label}
+      className="pointer-events-none absolute inset-x-0 -z-10 h-0.5 bg-highlight/50"
+      style={{ top: `clamp(0px, calc(${pct} - 1px), calc(100% - 2px))` }}
+    />
   );
 }

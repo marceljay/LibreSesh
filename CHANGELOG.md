@@ -129,10 +129,22 @@ All notable changes to this project are documented here.
 - **The list has the now line too.** In List view the only trace of the
   current time was a "next / now" pill on one row's clock — no line and no
   time — so switching from the grid on the day of the event lost the one mark
-  that said where you were. The list now draws the grid's yellow line between
-  its rows, carrying the time. It sits before the first row that has not
-  started, so a row that is running keeps its "now" cards above the line; the
-  Now button and opening the schedule mid-event both land on it.
+  that said where you were. The list now draws the grid's yellow line across
+  **every card that is running**, as far down each as that session has run,
+  the way the grid's line crosses every block that is on — a first cut put
+  it under the running row, which read as "now is after this", and a second
+  gave it to one row only, which read as "only this one is on". On each card
+  it is where the minute is — a third cut snapped it to a seam between the
+  card's text, which put a session with seven minutes left a border below its
+  card — held inside the card's edges, drawn behind the card's text and
+  paler than the grid's, so it marks the minute without striking anything
+  through. When nothing is running it sits between two rows. The list's line
+  carries no time: the Now button in the
+  header says it, and a chip beside the cards cost the row a gutter for
+  nothing. In the grid the time has moved into the time gutter: it used to
+  lie over the first column's block and scroll away with it. The Now button
+  and opening the schedule mid-event both land on the first running card's
+  line.
 
 - **The page catches up with the system theme when you come back to it.**
   The 0.3.5 fix listened for the OS switch from the app itself, but a browser
