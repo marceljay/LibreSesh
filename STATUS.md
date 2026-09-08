@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## In Progress
 
@@ -408,6 +408,36 @@ they left behind landed 2026-09-05 as R26).
   days after they were last seen; (c) go or park. It is its own branch and a
   migration on identity, so it should follow the token-hashing work in D3
   rather than precede it.
+
+- **D5 · Should a speaker code keep working after its first use?** Today it
+  does: the code, and the link that carries it, redeem any number of times
+  until an organiser revokes or replaces it (measured 2026-09-08 — one link
+  opened from three fresh browser contexts made all three the same speaker).
+  That was chosen so one code covers a speaker's phone and laptop, but it
+  makes the link a standing credential: forwarded, photographed or left in a
+  mailbox, it signs in whoever has it, indefinitely, and revoking does not
+  evict devices already in. You said (2026-09-08) multi-use is not
+  necessarily the right future. The alternatives, cheapest first:
+  - (a) **single-use** — one condition in the redemption query; the code
+    burns on first redemption like a device phrase does. A second device is
+    then added by the speaker from their menu (**Link another device**, a
+    three-word phrase that lives ten minutes), which already works and needs
+    no organiser. Cost: an organiser who opens the link to check it consumes
+    it, so the "switch or stay" prompt must become "this will use it up".
+  - (b) **single-use plus expiry** — the same, and the code dies unused
+    after a window (say seven days), so a forgotten email is not a live
+    key. Cost: a re-mint for late arrivals.
+  - (c) **multi-use with a device ceiling** — needs the per-device tokens
+    of D4 to count anything; not available before D4 lands.
+  - (d) **keep multi-use**, and document it as the accepted risk it already
+    is in SECURITY.md.
+  I recommend **(b)**, with (a) as the fallback if a window feels like
+  friction. Either way, two things found while measuring should go in the
+  same change: the gate shows *"revoked or replaced"* for a rate-limited
+  attempt too (four wrong codes from one address, then the correct link is
+  refused for fifteen minutes with the wrong reason), and the server's own
+  message still says codes "work once and expire after 10 minutes", which
+  was never true of a speaker code.
 
 ## Blockers
 
