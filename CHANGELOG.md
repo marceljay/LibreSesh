@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-09
+
 ### Added
 
 - **The audit log links to what it names.** A line said *ada deleted session
@@ -32,6 +34,10 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The profile-edit switch is named for everyone.** The Permissions tab
+  called it *Edit their own speaker profile*; since every attendee has a
+  profile, it now reads *Edit their own profile*, and the table in
+  `docs/using.md` says the same.
 - **Link another device wears the devices glyph.** The menu row that mints
   the phrase was plain text between Calendar and Theme, and the one thing in
   the menu nobody found. It now carries the same laptop-and-phone icon as the
