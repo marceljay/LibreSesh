@@ -136,7 +136,7 @@ describe('migrations', () => {
         { identity_id: 3, name: 'linus' },
       ]);
       // The seed-named role holder got an event name too; the nameless one
-      // stays outside until it types one at a gate.
+      // stays outside until it types one at the login page.
       const names = old
         .prepare<[], { identity_id: number }>(
           'SELECT identity_id FROM event_identities WHERE event_id = 1 ORDER BY identity_id',

@@ -22,7 +22,7 @@ import {
   useToast,
 } from './ui';
 
-type Status = 'loading' | 'gate' | 'error' | 'ready';
+type Status = 'loading' | 'login page' | 'error' | 'ready';
 
 /** The unconference pitch board (SPEC §8). A self-contained page: it fetches
  *  the bundle itself and is reached at `/e/:slug/proposals`. */
@@ -48,7 +48,7 @@ export function ProposalBoard() {
       setStatus('ready');
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
-        setStatus('gate');
+        setStatus('login page');
       } else {
         setError(errorText(err));
         setStatus('error');
@@ -187,7 +187,7 @@ export function ProposalBoard() {
   );
 
   if (status === 'loading') return <Spinner label="Loading pitches…" />;
-  if (status === 'gate') {
+  if (status === 'login page') {
     return (
       <EmptyState>
         You need this event&rsquo;s password.{' '}

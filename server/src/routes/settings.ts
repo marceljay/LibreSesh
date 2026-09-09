@@ -46,7 +46,7 @@ export function settingsRoutes(ctx: Ctx): Router {
    * standing at the door. So the panel asks here first and refuses to draw a
    * code for a password no role answers to.
    *
-   * Admin-only, and rate-limited on the same bucket as the gate: it is an
+   * Admin-only, and rate-limited on the same bucket as the login page: it is an
    * oracle over the event's passwords, and an attendee holding the attendee
    * password must not be able to use it to hunt for the organiser one.
    */

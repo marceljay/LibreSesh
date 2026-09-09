@@ -9,7 +9,7 @@ import { newIdentityToken, newPublicId } from './identity.js';
  * phrase survives being read across a room or typed on a phone keyboard.
  * ~500 words × 3 gives about 27 bits — nowhere near password strength, and it
  * does not need to be: a code is single use, dies after ten minutes, and
- * guesses burn the same rate-limit budget as password attempts.
+ * guesses share the same rate limit as password attempts.
  */
 export const LINK_CODE_TTL_MS = 10 * 60_000;
 
@@ -200,7 +200,7 @@ export const WORDS: readonly string[] = [
   'galaxy',
   'garden',
   'garlic',
-  'gate',
+  'login page',
   'gecko',
   'geyser',
   'ginger',

@@ -149,7 +149,7 @@ describe('speaker profiles', () => {
   });
 
   describe('your own profile', () => {
-    it('exists from the gate, named after your username', async () => {
+    it('exists from the login page, named after your username', async () => {
       const bundle = await user.get('/api/e/testconf/bundle').expect(200);
       const mine = bundle.body.people.filter((p: { isMine: boolean }) => p.isMine);
       expect(mine).toHaveLength(1);
@@ -292,7 +292,7 @@ describe('speaker profiles', () => {
 
   /**
    * An organiser types "Ada Lovelace" onto a talk before Ada arrives. When she
-   * enters under that name the gate must not hand the profile over silently —
+   * enters under that name the login page must not hand the profile over silently —
    * the same name can be a different person — but it must offer it.
    */
   describe('arriving under the name of an unclaimed profile', () => {
@@ -447,7 +447,7 @@ describe('speaker profiles', () => {
       await admin.post(`/api/e/testconf/people/${id}/archive`).expect(200);
       expect((await personFrom(admin, id))?.archivedAt).not.toBeNull();
 
-      // The same device coming back through the gate. It already holds a
+      // The same device coming back through the login page. It already holds a
       // username here, so it need not bring one.
       await user.post('/api/e/testconf/auth').send({ password: 'user-pw' }).expect(200);
       expect((await personFrom(admin, id))?.archivedAt).toBeNull();
@@ -487,7 +487,7 @@ describe('speaker profiles', () => {
 
     /**
      * Archiving does not sign anybody out, so somebody still holding a session
-     * from before stays filed until they next come in through the gate — the
+     * from before stays filed until they next come in through the login page — the
      * moment that actually means "I am here again".
      */
     it('leaves a filed profile filed while its holder just keeps browsing', async () => {

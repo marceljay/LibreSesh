@@ -92,7 +92,7 @@ Unknown top-level keys are refused rather than ignored, so `"session"` for
 | `viewerPassword`, `userPassword`, `adminPassword` | | Leave any out and a four-word phrase is generated for it and returned once. All three must differ |
 
 The importer does **not** become an organiser by virtue of importing. Roles are
-earned at the gate, so whoever holds the admin phrase is the organiser — hand it
+earned at the login page, so whoever holds the admin phrase is the organiser — hand it
 over the same way you would for any event.
 
 ### `rooms`

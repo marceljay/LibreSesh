@@ -71,7 +71,7 @@ export function preflight(env: Env): PreflightProblem[] {
     problems.push({
       severity: 'warning',
       problem: `INSTANCE_ADMIN_PASSWORD is shorter than ${INSTANCE_KEY_COMFORTABLE} characters.`,
-      fix: `It works, and \`openssl rand -base64 24\` in ${where} is free. Attempts are budgeted (five a quarter hour per address) and audited, so this is depth rather than a hole.`,
+      fix: `It works, and \`openssl rand -base64 24\` in ${where} is free. Attempts are rate-limited (five a quarter hour per address) and audited, so this is depth rather than a hole.`,
     });
   }
 

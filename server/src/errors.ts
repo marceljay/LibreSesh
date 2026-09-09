@@ -7,7 +7,7 @@ export class HttpError extends Error {
     readonly code: string,
     message: string,
     /** Machine-readable facts a client needs to act on the error — the
-     *  gate's "is that you?" prompt carries the profile it found. */
+     *  login page's "is that you?" prompt carries the profile it found. */
     readonly details?: Record<string, unknown>,
   ) {
     super(message);

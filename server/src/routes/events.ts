@@ -95,7 +95,7 @@ export function eventRoutes(ctx: Ctx): Router {
     if (!source) throw notFound('No such event');
 
     // Either the event's own admin, or the instance password. Only the
-    // second is budgeted and audited, so an admin cloning their own event
+    // second is rate-limited and audited, so an admin cloning their own event
     // spends nothing (`tryInstanceKey`).
     const isEventAdmin = getRole(ctx.db, req.identity.id, source.id) === 'admin';
     if (!isEventAdmin && !tryInstanceKey(ctx, req, res)) {

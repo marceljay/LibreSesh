@@ -166,7 +166,7 @@ export const cloneEventSchema = z
   .superRefine(distinctPasswordsRefinement);
 
 /** Demo instances hand out a role on a click; there is no password to check. */
-/** Answering the gate's "is that you?": adopt the unclaimed profile that
+/** Answering the login page's "is that you?": adopt the unclaimed profile that
  *  carries your name instead of starting a fresh one. */
 const claimProfileSchema = z.boolean().optional();
 

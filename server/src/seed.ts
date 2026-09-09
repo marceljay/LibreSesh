@@ -205,7 +205,7 @@ function createIdentity(db: Db, name: string): number {
 }
 
 /** Everyone who has entered an event holds a username there and is a person
- *  there — the two things the gate writes, done here for seeded attendees. */
+ *  there — the two things the login page writes, done here for seeded attendees. */
 function enterEvent(db: Db, eventId: number, identityId: number, name: string): void {
   db.prepare(
     `INSERT INTO event_identities (event_id, identity_id, display_name, claimed_at)

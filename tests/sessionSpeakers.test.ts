@@ -168,7 +168,7 @@ describe('every speaker on the bill may edit the session', () => {
       .expect(201);
     const graceId = session.body.speakers[1].id as number;
 
-    // Grace arrives under her name — the gate offers the profile typed onto
+    // Grace arrives under her name — the login page offers the profile typed onto
     // the panel and she takes it — and is given the speaker role.
     const grace = agentFor(harness);
     const me = await grace.get('/api/me').expect(200);
@@ -197,7 +197,7 @@ describe('every speaker on the bill may edit the session', () => {
 
 /**
  * The bug this covers: an organiser schedules a talk and types the speaker's
- * name onto it, that person arrives at the gate as an ordinary attendee — the
+ * name onto it, that person arrives at the login page as an ordinary attendee — the
  * role almost every speaker holds, since the speaker role is only handed out
  * by a code somebody has to remember to send — and could not touch their own
  * session. `assertMayMutate` wanted the credits *and* `atLeast('speaker')`.

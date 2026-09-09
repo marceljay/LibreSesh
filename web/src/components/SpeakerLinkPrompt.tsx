@@ -16,7 +16,7 @@ export interface SpeakerLinkPromptProps {
  * holds a role in the event. Redeeming swaps the identity cookie, so
  * continuing signs the device out of whoever it is now — usually the
  * organiser who made the link and opened it to check it works. Same card as
- * the gate, so it reads as part of entering rather than a warning dialog.
+ * the login page, so it reads as part of entering rather than a warning dialog.
  */
 export function SpeakerLinkPrompt({
   eventName,

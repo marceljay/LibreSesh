@@ -8,8 +8,8 @@ export const IDLE_IDENTITY_DAYS = 30;
  * username claimed at any event, no calendar token, no speaker code or device
  * phrase pointing at them, no profile, and last seen more than 30 days ago.
  *
- * The mint budget bounds how fast these appear; this is what stops the ones
- * that do from accumulating forever. A hostile at the budget's ceiling makes
+ * The mint rate limit bounds how fast these appear; this is what stops the ones
+ * that do from accumulating forever. A hostile at that limit's ceiling makes
  * 29,000 rows a day, which is a nuisance rather than a problem, and none of
  * them survives a month.
  *

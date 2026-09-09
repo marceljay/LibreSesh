@@ -321,7 +321,7 @@ export function assertMayMutate(
   // Being on the bill is the qualification, whatever role the person holds.
   // This used to demand `atLeast(role, 'speaker')` as well, which locked a
   // speaker out of their own talk for the ordinary reason that they came in
-  // through the gate as an attendee — the role most speakers hold, since the
+  // through the login page as an attendee — the role most speakers hold, since the
   // speaker role is only handed out by a code an organiser has to remember to
   // send. One of five co-hosts is as credited as the only one, and an official
   // session is exactly the case that matters: it is the one an organiser typed

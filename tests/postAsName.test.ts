@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * The comment box's button said "Post as" and then `Me.displayName` — the
  * seed the instance offers a newcomer, which follows the last name typed at
- * any gate on this instance. Enter another event as "admin" and this one said
+ * any login page on this instance. Enter another event as "admin" and this one said
  * "Post as admin", whatever you are called here (reported 2026-09-08). A name
  * belongs to (event, identity): inside an event the one that counts is
  * `BundleDto.displayName`, and that is what the button names now.

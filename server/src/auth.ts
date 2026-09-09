@@ -46,16 +46,16 @@ export function hasInstanceKey(config: Config, header: unknown): boolean {
 }
 
 /**
- * One attempt at the instance password, budgeted and audited (D3 §2).
+ * One attempt at the instance password, rate-limited and audited (D3 §2).
  *
  * Before this existed the four call sites compared the header inline and sat
- * behind the `write` budget, which allows 43,000 guesses a day per address
- * against a single shared password. Here the `auth` budget applies — five
+ * behind the `write` rate limit, which allows 43,000 guesses a day per address
+ * against a single shared password. Here the `auth` rate limit applies — five
  * wrong keys in a quarter hour — a success refunds its token so a working
  * client is never throttled by its own use, and a failure leaves an audit row
  * with no event id, because the instance is what was attacked, not an event.
  *
- * Throws `429` when the budget is spent. Returns whether the key was right;
+ * Throws `429` when that limit is spent. Returns whether the key was right;
  * the caller decides what a wrong one means, which is why this is not always
  * middleware: cloning accepts *either* the event's admin or the key.
  */
@@ -86,9 +86,9 @@ export function tryInstanceKey(
 }
 
 /**
- * The gate on an operation the instance password alone opens: creating an
+ * The login page on an operation the instance password alone opens: creating an
  * event, importing one, taking a whole-database backup. Middleware rather
- * than a helper so the budget cannot be forgotten at a new call site.
+ * than a helper so the rate limit cannot be forgotten at a new call site.
  */
 export function requireInstanceKey(ctx: { db: Db; config: Config; limiter: RateLimiter }) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -200,8 +200,8 @@ export function loadEvent(db: Db) {
 /** Require at least `min` on `req.event`; 401 when no role at all. */
 export function requireRole(db: Db, min: Role) {
   return (req: Request, _res: Response, next: NextFunction): void => {
-    // Over the mint budget: no row was created, so there is no role to find
-    // and never will be. Say so, rather than sending them to a gate that
+    // Over the limit on minting: no row was created, so there is no role to find
+    // and never will be. Say so, rather than sending them to a login page that
     // cannot let them in.
     if (isAnonymous(req.identity)) {
       next(

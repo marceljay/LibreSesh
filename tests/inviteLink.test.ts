@@ -7,7 +7,7 @@ import {
   parseSpeakerLink,
 } from '../web/src/lib/inviteLink.js';
 
-/** Pure and DOM-free, like `format.ts` — the gate hands it a string. */
+/** Pure and DOM-free, like `format.ts` — the login page hands it a string. */
 describe('invite links', () => {
   it('puts the password in the fragment, never the query', () => {
     const url = buildInviteUrl({
@@ -50,7 +50,7 @@ describe('invite links', () => {
 
   it('treats the role as a label and drops one it does not recognise', () => {
     // The server derives the real role from the password; `r` only decides
-    // what the gate says while you are looking at it, so a forged one is a
+    // what the login page says while you are looking at it, so a forged one is a
     // wrong caption and never a grant.
     expect(parseInvite('#k=p&r=superuser')).toEqual({ password: 'p', role: undefined });
     expect(parseInvite('#k=p')).toEqual({ password: 'p', role: undefined });
@@ -74,7 +74,7 @@ describe('speaker links', () => {
   });
 
   it('is not mistaken for a password invite, and vice versa', () => {
-    // The gate reads one and the speaker-link hook the other; a code must not
+    // The login page reads one and the speaker-link hook the other; a code must not
     // land in the password box, and a password must not be sent to /me/link.
     expect(parseInvite('#c=pine-otter-lantern-bell')).toBeUndefined();
     expect(parseSpeakerLink('#k=let-me-in&r=user')).toBeUndefined();

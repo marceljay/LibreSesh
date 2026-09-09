@@ -30,11 +30,11 @@ rest, which changes one detail here (§Design, step 1).
   token are one identity. There is no account above it and no second factor.
 - An identity holds one **username** per event (`event_identities`, unique
   within the event) and an instance-level display name that is only the
-  default the gate offers at the next event.
+  default the login page offers at the next event.
 - A **profile** (`people`) is what sessions credit and the People tab lists.
   It points at one identity, or at none while it is an organiser-typed shell.
 - **Linking** a device is a voucher: the signed-in device mints a three-word
-  phrase (hashed, ten minutes, one use); the new device types it at the gate;
+  phrase (hashed, ten minutes, one use); the new device types it at the login page;
   the server sets that browser's cookie to the identity's token. A speaker
   code is the same voucher minted by an organiser against a profile, with no
   expiry. Nothing is ever copied from one browser to another.
@@ -77,7 +77,7 @@ A's token so the wrongly adopted device is out.
 into A would move B's work, usernames and roles at every event B entered, and
 the organiser of this event has no standing there. Decided: absorption
 happens only when B holds no role and no username in any other event, which
-is nearly always true of an identity minted at this gate minutes ago.
+is nearly always true of an identity minted at this login page minutes ago.
 Otherwise the merge behaves as today and the dialog says why.
 
 **6. The lost device comes back.** If the token was not rotated, the laptop

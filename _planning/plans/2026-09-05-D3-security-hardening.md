@@ -4,7 +4,7 @@
 This is **D3** in STATUS.md and **LIB-101** in Linear.
 **Decided 2026-09-09:** approved as written, minus lockdown — phases 1, 2 and
 4 are go, phases 3 and 5 are deferred. Both thresholds stand (60 failures an
-hour closes a gate; 300 identities per address per quarter hour). The password
+hour closes a login page; 300 identities per address per quarter hour). The password
 policy in §1d was withdrawn separately: advice, never a refusal, and no live
 instance is ever made to rotate.
 
@@ -16,14 +16,14 @@ first is a morning and closes the worst gap, so it should go first.
 
 Closes §2 and §3. No migration, no UI.
 
-- `server/src/auth.ts`: `requireInstanceKey(ctx)` — `auth` budget on identity
+- `server/src/auth.ts`: `requireInstanceKey(ctx)` — `auth` rate limit on identity
   and IP, header check, refund on success, `instance_key_failed` audit row
   (`eventId: null`) on failure. Replace the four inline `hasInstanceKey` checks
   in `routes/events.ts` (×2), `routes/import.ts`, `routes/backup.ts`.
 - `server/src/preflight.ts`: `INSTANCE_ADMIN_PASSWORD` under 16 characters is a
   problem, under 24 a warning.
-- `server/src/identity.ts` + `ratelimit.ts`: `mint` budget per IP; the anonymous
-  sentinel; `429 too_many_identities` from `requireRole` and the gate when the
+- `server/src/identity.ts` + `ratelimit.ts`: `mint` rate limit per IP; the anonymous
+  sentinel; `429 too_many_identities` from `requireRole` and the login page when the
   identity is the sentinel. `scripts/` or a boot-time job: delete identities
   with no roles, no `event_identities`, no `ics_token` and `last_seen_at` older
   than 30 days.
@@ -34,7 +34,7 @@ Closes §2 and §3. No migration, no UI.
 - Docs: `deploy.md` env table (password length), ARCHITECTURE threat table
   rows for the instance key and minting.
 
-## Phase 2 — the gate (1 day)
+## Phase 2 — the login page (1 day)
 
 Closes §1. No migration; one new limiter, one notice.
 
@@ -43,7 +43,7 @@ Closes §1. No migration; one new limiter, one notice.
   `closedUntil`. Both swept with the buckets.
 - `routes/eventAuth.ts`: check closure first (no bcrypt spent), then backoff,
   then the buckets; on failure bump both; on success reset the backoff and
-  refund. `gate_closed` audit row when the tally trips.
+  refund. `login_closed` audit row when the tally trips.
 - `passwordSchema`: `min(10)` + denylist (`server/src/passwordDenylist.ts`, the
   hundred most common, plus the event's name and slug checked in the route,
   since the schema does not know the event). Applies to `createEventSchema`,
@@ -53,10 +53,10 @@ Closes §1. No migration; one new limiter, one notice.
   and we make one" above the field, not below); the error for a denylisted
   password names the rule. Manage Event → Audit header and Settings notice:
   *N failed attempts in the last hour*, and the closure line, from a new
-  `GET /e/:slug/gate-health` (admin) that reads the audit rows.
-- Tests: `gateBackoff.test.ts` (2nd failure waits 2 s, 5th waits 16 s, success
-  resets, another IP is unaffected); `gateClosure.test.ts` (61st failure in an
-  hour from 61 IPs closes the gate for everyone new, a role-holder still
+  `GET /e/:slug/login-health` (admin) that reads the audit rows.
+- Tests: `loginBackoff.test.ts` (2nd failure waits 2 s, 5th waits 16 s, success
+  resets, another IP is unaffected); `loginClosure.test.ts` (61st failure in an
+  hour from 61 IPs closes the login page for everyone new, a role-holder still
   writes, it reopens after 15 min, one audit row); `passwordPolicy.test.ts`.
 - Docs: `managing.md` (choosing passwords; what the notice means),
   `schedule-import.md` (password rule), ARCHITECTURE threat row.
@@ -111,20 +111,20 @@ Closes §5 first paragraph.
 
 ## Order and branches
 
-**Approved 2026-09-09:** `sec/instance-key-and-minting` → `sec/gate` →
+**Approved 2026-09-09:** `sec/instance-key-and-minting` → `sec/login` →
 `sec/tokens-at-rest`, with the two lockdown phases deferred. Thresholds stand
-as proposed: 60 failures an hour closes a gate, 300 identities per address per
+as proposed: 60 failures an hour closes a login page, 300 identities per address per
 quarter hour. Phase 4 takes migration number 018 with lockdown out of the way;
 nothing else interacts.
 
-The original order was `sec/instance-key-and-minting` → `sec/gate` →
+The original order was `sec/instance-key-and-minting` → `sec/login` →
 `sec/lockdown` → `sec/tokens-at-rest` → `sec/lockdown-2`.
 
 ## Acceptance, whole plan
 
 - An attacker with one address gets fewer than 500 guesses a day at any
   password on the box, including the instance password.
-- An attacker with a hundred addresses closes a gate for a quarter hour and
+- An attacker with a hundred addresses closes a login page for a quarter hour and
   is named in the audit log and on the organiser's screen before they finish.
 - A chosen password shorter than ten characters, or on the list, is refused.
 - An admin can freeze an event in two clicks; the admin password cannot
