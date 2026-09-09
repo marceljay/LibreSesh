@@ -308,7 +308,12 @@ export function SessionModal({
     );
   };
 
-  const heading = session ? 'Edit session' : isAdmin ? 'Add session' : 'Propose a session';
+  /* Not "Propose a session": nothing is proposed and nobody approves it —
+     with the capability and a room open for booking the session goes straight
+     onto the grid, so the word promised a review step that does not exist. It
+     also collided with the pitch board next door, where an idea really does
+     wait to be placed. Same act as an organiser's, so it says the same. */
+  const heading = session ? 'Edit session' : 'Add session';
 
   return (
     // `wide`: the form is mostly two- and three-column FormGrids (day, start,
@@ -319,7 +324,7 @@ export function SessionModal({
       description={
         isAdmin
           ? undefined
-          : 'What you propose lives in a room anyone may book, and stays editable by you.'
+          : 'What you add lives in a room anyone may book, and stays editable by you.'
       }
       onClose={onCancel}
       wide
