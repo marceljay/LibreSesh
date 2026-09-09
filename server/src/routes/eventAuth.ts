@@ -5,6 +5,7 @@ import { isDemoEvent } from '../config.js';
 import type { Ctx } from '../context.js';
 import { claimEventName, eventDisplayName } from '../eventIdentity.js';
 import { HttpError, badRequest, forbidden } from '../errors.js';
+import { requireIdentity } from '../identity.js';
 import { factsFor, toPersonDto } from '../mappers.js';
 import {
   adoptProfile,
@@ -120,7 +121,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       .run(identityId, eventId, role, new Date().toISOString());
   };
 
-  router.post('/auth', (req, res) => {
+  router.post('/auth', requireIdentity, (req, res) => {
     // On a demo *event* the login page is a role picker, not a password prompt.
     // There is no secret to brute-force here, so no rate limiting either.
     // Scoped to the seeded fixtures: a real event on the same instance keeps

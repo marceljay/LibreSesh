@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { LIMITS } from '../server/src/ratelimit.js';
 import { sweepIdleIdentities } from '../server/src/sweepIdentities.js';
 import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
@@ -144,5 +144,57 @@ describe('sweeping identities that never became anybody', () => {
     expect(alive(withRole)).toBe(true);
     expect(alive(withName)).toBe(true);
     expect(alive(withFeed)).toBe(true);
+  });
+});
+
+/**
+ * The sentinel's id is 0 and exists in no table, so any route inserting a row
+ * that references an identity fails on the foreign key. `requireRole` already
+ * answered 429 for this; the routes that run *before* a role exists did not,
+ * and answered 500. Entering an event is the one that matters — it is where
+ * a busy venue meets the limit on minting.
+ */
+describe('routes that need a real identity row', () => {
+  let harness: Harness;
+
+  // One server for the three cases below. None of them writes anything that
+  // the next would see, and standing an Express app and a database up three
+  // times over is enough extra work to push the slow rendering suites past
+  // their timeout when the whole suite runs at once.
+  beforeAll(() => {
+    harness = makeHarness({ trustProxy: true });
+    seedEvent(harness.db, { slug: 'conf' });
+    for (let i = 0; i < LIMITS.mint.capacity; i += 1) {
+      harness.app.ctx.limiter.consume('mint:ip:10.0.0.1', LIMITS.mint);
+    }
+  });
+  afterAll(() => harness.close());
+
+  const anonymous = (method: 'post' | 'patch', path: string) =>
+    request(harness.app.express)[method](path).set('X-Forwarded-For', '10.0.0.1');
+
+  it('answers 429, not 500, when entering an event', async () => {
+    for (const password of ['nope', 'viewer-pw']) {
+      const res = await anonymous('post', '/api/e/conf/auth').send({
+        password,
+        displayName: 'someone',
+      });
+      expect(res.status).toBe(429);
+      expect(res.body.error.code).toBe('too_many_identities');
+    }
+  });
+
+  it('answers 429 for renaming and for minting a device phrase', async () => {
+    expect((await anonymous('patch', '/api/me').send({ displayName: 'someone' })).status).toBe(429);
+    expect((await anonymous('post', '/api/me/link-code').send({})).status).toBe(429);
+  });
+
+  it('still lets a phrase be redeemed, which is the way back in', async () => {
+    // Redeeming does not create anything keyed on this identity — it points
+    // the cookie at another one — and it is the recovery path, so it stays
+    // open even when the address has spent its allowance.
+    const res = await anonymous('post', '/api/me/link').send({ phrase: 'no-such-phrase' });
+    expect(res.status).not.toBe(429);
+    expect(res.status).not.toBe(500);
   });
 });

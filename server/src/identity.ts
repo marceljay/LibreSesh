@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { Db, IdentityRow } from './db.js';
+import { HttpError } from './errors.js';
 import { clientIp, LIMITS, type RateLimiter } from './ratelimit.js';
 
 const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -86,6 +87,29 @@ export const ANONYMOUS_IDENTITY: IdentityRow = Object.freeze({
 
 /** Whether this request never got an identity of its own (see above). */
 export const isAnonymous = (identity: IdentityRow): boolean => identity.id === 0;
+
+/**
+ * Refuse a request that needs a real identity row behind it.
+ *
+ * The sentinel's id is 0, which exists in no table, so anything writing a row
+ * that references an identity — a role, a name at an event, a device phrase —
+ * fails on the foreign key and answers 500. `requireRole` already turns the
+ * sentinel into a clear 429; this is the same answer for the routes that run
+ * *before* any role exists, entering an event chief among them.
+ */
+export function requireIdentity(req: Request, _res: Response, next: NextFunction): void {
+  if (isAnonymous(req.identity)) {
+    next(
+      new HttpError(
+        429,
+        'too_many_identities',
+        'Too many new visitors from this address — try again in a few minutes',
+      ),
+    );
+    return;
+  }
+  next();
+}
 
 /**
  * Resolves `req.identity` from the signed `cid` cookie, minting a new anonymous
