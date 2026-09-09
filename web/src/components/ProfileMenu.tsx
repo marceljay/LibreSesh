@@ -40,8 +40,12 @@ export interface ProfileMenuProps {
   onSignOut: () => void;
   /** Starts the coach-mark tour. It used to hang off its own "?" in the
    *  header; that slot belongs to the notification bell now, and a tour is
-   *  asked for once, which is exactly what a menu is for. */
-  onTour: () => void;
+   *  asked for once, which is exactly what a menu is for. Only the schedule
+   *  has one; the row is left out where there is nothing to start. */
+  onTour?: () => void;
+  /** Asked before the menu takes you to another page. Manage Event's
+   *  Settings tab has unsaved edits to lose; nowhere else objects. */
+  beforeNavigate?: () => Promise<boolean>;
   /** Whether this instance resets its data, shown in About. */
   demo: boolean;
 }
@@ -63,6 +67,7 @@ export function ProfileMenu({
   onCalendar,
   onSignOut,
   onTour,
+  beforeNavigate,
   demo,
 }: ProfileMenuProps) {
   const navigate = useNavigate();
@@ -109,20 +114,25 @@ export function ProfileMenu({
     all[(to + all.length) % all.length]?.focus();
   };
 
+  /** Leave for `to`, unless the page has a reason to keep you. */
+  const go = async (to: string) => {
+    if (beforeNavigate && !(await beforeNavigate())) return;
+    setOpen(false);
+    navigate(to);
+  };
+
   /** Jump to your own profile, creating an empty one first if you have none. */
   const openProfile = async () => {
     if (busy) return;
     const mine = people.find((p) => p.isMine);
     if (mine) {
-      setOpen(false);
-      navigate(`/e/${slug}/p/${mine.id}`);
+      await go(`/e/${slug}/p/${mine.id}`);
       return;
     }
     setBusy(true);
     try {
       const created = await api.updateMyProfile(slug, {});
-      setOpen(false);
-      navigate(`/e/${slug}/p/${created.id}`);
+      await go(`/e/${slug}/p/${created.id}`);
     } catch (err) {
       toast.show(errorText(err));
     } finally {
@@ -179,10 +189,7 @@ export function ProfileMenu({
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              navigate(`/e/${slug}/agenda`);
-            }}
+            onClick={() => void go(`/e/${slug}/agenda`)}
             className={itemClass}
           >
             My agenda
@@ -229,17 +236,19 @@ export function ProfileMenu({
           {/* The two halves of what used to be the header's "?": a tour you
               ask for, and what this thing is. Their own group, because unlike
               everything above they are about the app rather than about you. */}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onTour();
-            }}
-            className={itemClass}
-          >
-            Take the tour
-          </button>
+          {onTour && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onTour();
+              }}
+              className={itemClass}
+            >
+              Take the tour
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

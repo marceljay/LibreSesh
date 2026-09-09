@@ -24,8 +24,13 @@ describe('the tour is asked for, never imposed', () => {
     // "Take the tour" item is handed.
     const opens = schedule.match(/setTourOpen\(true\)/g) ?? [];
     expect(opens).toHaveLength(1);
-    expect(schedule).toMatch(/<ProfileMenu\n\s*onTour=\{\(\) => setTourOpen\(true\)\}/);
+    expect(schedule).toMatch(/<EventBar[\s\S]*?onTour=\{\(\) => setTourOpen\(true\)\}/);
     expect(profileMenu).toContain('Take the tour');
+    // The tour is the schedule's. The menu is on every page of an event now,
+    // and a page with no tour to start leaves the row out rather than
+    // offering one that goes nowhere.
+    expect(profileMenu).toMatch(/onTour\?: \(\) => void;/);
+    expect(profileMenu).toMatch(/\{onTour && \(\s*<button/);
   });
 
   it('has no first-visit rule left to fire', () => {

@@ -18,6 +18,17 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **The event bar is on every page of an event.** The logo, the event's
+  name, the notification bell and the menu behind your name were the
+  schedule's alone. The agenda and search had the logo and the name with no
+  menu; a profile, the pitch board and Manage Event had a *← Schedule* link
+  and nothing else — your agenda, your calendar, another device and the way
+  out all meant finding the schedule first. One bar now, the same on every
+  page, sized to the page under it; under the name it says how to get back
+  to the schedule, or where you came from when the page knows. On Manage
+  Event, everything on the bar asks the Settings tab's *Leave without
+  saving?* first, the way its own tabs do. *Take the tour* stays a schedule
+  row: the menu leaves it out where there is no tour to start.
 - **The audit log links to what it names.** A line said *ada deleted session
   “Opening keynote”* and left you to find both. Now the name opens Ada's
   profile, and the title opens the session — or **Trash**, when that is
@@ -48,6 +59,12 @@ All notable changes to this project are documented here.
   called it *Edit their own speaker profile*; since every attendee has a
   profile, it now reads *Edit their own profile*, and the table in
   `docs/using.md` says the same.
+- **The schedule keeps the event bar through the fold.** Scrolling into the
+  day used to put the whole header away — logo, name, bell and menu along
+  with the weeks, the day strip and the action row. Only those rows fold
+  now; the bar stays, on the schedule as on every other page. The day gets
+  about fifty pixels less back on a phone, which is the price of never
+  losing the way home or the menu behind your name.
 - **Link another device wears the devices glyph.** The menu row that mints
   the phrase was plain text between Calendar and Theme, and the one thing in
   the menu nobody found. It now carries the same laptop-and-phone icon as the

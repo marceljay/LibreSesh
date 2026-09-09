@@ -12,14 +12,21 @@ import { describe, expect, it } from 'vitest';
  * There is no DOM here, so what is pinned is the responsive shape: tightened
  * below `sm`, unchanged from `sm` up, and the same left edge on all three
  * header rows.
+ *
+ * The bar itself is `EventBar` now — one row on every page of an event — so
+ * its classes are read from there, and the schedule's own two rows from the
+ * schedule.
  */
-const schedule = readFileSync(
-  join(import.meta.dirname, '..', 'web', 'src', 'pages', 'SchedulePage.tsx'),
-  'utf8',
-);
+const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
+const schedule = readFileSync(join(WEB_SRC, 'pages', 'SchedulePage.tsx'), 'utf8');
+const bar = readFileSync(join(WEB_SRC, 'components', 'EventBar.tsx'), 'utf8');
 
-/** The three rows stacked inside `<header>`, which share a left edge. */
-const HEADER_ROWS = [...schedule.matchAll(/mx-auto[^"`]*max-w-6xl[^"`]*/g)].map((m) => m[0]);
+/** The three rows stacked inside `<header>`, which share a left edge: the
+ *  bar, at its default width, and the schedule's filter and action rows. */
+const HEADER_ROWS = [
+  ...[...bar.matchAll(/mx-auto[^"`]*\$\{width\}[^"`]*/g)].map((m) => m[0]),
+  ...[...schedule.matchAll(/mx-auto[^"`]*max-w-6xl[^"`]*/g)].map((m) => m[0]),
+];
 
 describe('the header gives its width to the event name on a phone', () => {
   it('tightens the page padding below sm, and only below sm', () => {
@@ -37,11 +44,18 @@ describe('the header gives its width to the event name on a phone', () => {
   });
 
   it('tightens the gaps around the name, and restores them from sm up', () => {
-    expect(schedule).toContain('items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4');
+    expect(bar).toContain('items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4');
   });
 
   it('tightens the gap between the bell and the profile chip', () => {
-    expect(schedule).toContain('ms-auto flex items-center justify-end gap-1.5 sm:gap-2');
+    expect(bar).toContain('ms-auto flex items-center justify-end gap-1.5 sm:gap-2');
+  });
+
+  it('sizes the bar to the page under it', () => {
+    // The schedule is the widest page; every other one hands the bar its own
+    // narrower measure so the logo lines up with the content's left edge.
+    expect(bar).toContain("width = 'max-w-6xl'");
+    expect(schedule).not.toMatch(/<EventBar[\s\S]*?width=/);
   });
 
   it('leaves the grid body full-bleed, which was already right', () => {

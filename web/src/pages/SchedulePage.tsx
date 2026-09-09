@@ -1,5 +1,4 @@
 import { errorText } from '../lib/errorText';
-import { Modal } from '../components/Modal';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 import type {
@@ -33,6 +32,7 @@ import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
 import { DetailSheet } from '../components/DetailSheet';
+import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
 import { Gate } from '../components/Gate';
@@ -44,9 +44,6 @@ import {
   SettingsIcon,
 } from '../components/icons';
 import { ListView } from '../components/ListView';
-import { Logo } from '../components/Logo';
-import { NotificationBell } from '../components/NotificationBell';
-import { ProfileMenu } from '../components/ProfileMenu';
 import { Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
 import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
@@ -67,16 +64,7 @@ import {
   type Viewer,
 } from '../lib/sessionPerms';
 import { Tour, type TourStep } from '../components/Tour';
-import {
-  ControlShell,
-  EmptyState,
-  PrimaryButton,
-  SecondaryButton,
-  Spinner,
-  TextInput,
-  useConfirm,
-  useToast,
-} from '../components/ui';
+import { EmptyState, Spinner, useConfirm, useToast } from '../components/ui';
 
 const NOW_TICK_MS = 30_000;
 
@@ -182,7 +170,6 @@ export function SchedulePage() {
 
   const [tourOpen, setTourOpen] = useState(false);
   const [arrange, setArrange] = useState(false);
-  const [calendar, setCalendar] = useState<'download' | 'subscribe' | null>(null);
   const [clashDismissed, setClashDismissed] = useState<string | null>(null);
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
   // The session whose "Link matching sessions…" picker is open, over the editor.
@@ -626,8 +613,11 @@ export function SchedulePage() {
   }, []);
 
   /**
-   * The header folds itself away once you are into the day, and the ⌄/⌃ button
-   * beside the filters overrides whichever way it went. The two used to fight,
+   * The day rows — weeks, the day strip, the action row — fold themselves away
+   * once you are into the day, and the ⌄/⌃ button beside the filters overrides
+   * whichever way it went. The event bar above them stays: it is the way
+   * home, the bell and the menu, and it is on every other page of the event,
+   * so a schedule that put it away was the one page where you could lose it. The two used to fight,
    * which is what made the button look broken — you pressed it, the header came
    * back, and the next flick of the wheel put it away again. Three rules keep
    * them apart:
@@ -664,7 +654,6 @@ export function SchedulePage() {
   const beenDown = useRef(false);
   /** The fold is mid-animation. A ref because the scroll listener reads it. */
   const foldInFlight = useRef(false);
-  const foldedBar = useRef<HTMLDivElement>(null);
   const foldedRows = useRef<HTMLDivElement>(null);
 
   const folded = foldable && (chromeMode === 'shut' || (chromeMode === 'auto' && autoFolded));
@@ -675,7 +664,7 @@ export function SchedulePage() {
     const top = el.scrollTop;
     setPastTop(top > TOP_BUTTON_AT);
     if (debugFold) {
-      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
+      const gain = foldedRows.current?.offsetHeight ?? 0;
       setFoldStats(
         `${el === calRef.current ? 'grid' : 'main'} top=${Math.round(top)} ` +
           `scrollH=${el.scrollHeight} clientH=${el.clientHeight} ` +
@@ -689,7 +678,7 @@ export function SchedulePage() {
       // Unfolds at the very top, folds at FOLD_AT: one threshold in both
       // directions would flicker, because folding resizes the grid it reads.
       if (was) return top > 0;
-      const gain = (foldedBar.current?.offsetHeight ?? 0) + (foldedRows.current?.offsetHeight ?? 0);
+      const gain = foldedRows.current?.offsetHeight ?? 0;
       // `slack`, not `slack - top`: what folding costs is the same wherever you
       // are in the day — the box keeps its content and gains `gain` of
       // viewport, so what is left to scroll afterwards is `slack - gain`. Ask
@@ -1131,20 +1120,21 @@ export function SchedulePage() {
 
      `grid-cols-[minmax(0,1fr)]` is not decoration. The default single column is
      `auto`, and an auto track grows to its content: a row wider than the phone
-     — the event bar with a long role badge on it, the week rail — made the row
+     — the week rail, the action row with its buttons — made the row
      itself wider than the header instead of being made to fit, so its right
-     end (the profile menu) sat off the edge of the screen with
+     end sat off the edge of the screen with
      `overflow-x: clip` over the top of it. Pinning the column to the width
      that is actually there hands the squeeze back to the rows, which each
      already know how to take it: truncation, or a scroller of their own. */
   const foldRow = `grid grid-cols-[minmax(0,1fr)] transition-[grid-template-rows,opacity] duration-700 ease-in-out motion-reduce:transition-none ${
     folded ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'
   }`;
-  /* Clipped while it moves and while it is away, open once it has settled: the
-     profile menu drops out of the event bar, and a permanent `overflow-hidden`
-     here would cut it off. `invisible` only at the end, because a row that is
-     still on its way out is still on screen, and one that has gone should not
-     be a tab stop. */
+  /* Clipped while it moves and while it is away, open once it has settled: a
+     permanent `overflow-hidden` would cut off anything a row lets spill past
+     its edge — the event bar's profile menu did, when the bar was one of
+     these rows. `invisible` only at the end, because a row that is still on
+     its way out is still on screen, and one that has gone should not be a
+     tab stop. */
   const foldInner = `${folded || foldMoving ? 'overflow-hidden' : ''}${
     folded && !foldMoving ? ' invisible' : ''
   }`;
@@ -1157,68 +1147,27 @@ export function SchedulePage() {
        on a phone `vh` counts the strip behind the address bar. */
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       <header className="relative z-30 shrink-0 border-b border-stone-200 dark:border-stone-700 bg-stone-50/95 dark:bg-stone-900/95 backdrop-blur">
-        <div ref={foldedBar} className={foldRow}>
-          <div className={foldInner}>
-            {/* Tighter below `sm`. The event name is the only thing here that
-                truncates, so every pixel the padding and the gaps give back is
-                a pixel of title — about three characters between them, which
-                is the difference between reading a name and guessing it. The
-                desktop spacing is unchanged: there is nothing to win there. */}
-            <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
-              <Link to="/" className="flex shrink-0 items-center" aria-label="LibreSesh home">
-                {/* Below `sm` the wordmark's width belongs to the event name, so
-                    the phone header gets the near-square mark instead. The swap
-                    lives on wrappers because Logo spends its own display classes
-                    on the theme. */}
-                <span className="flex items-center sm:hidden">
-                  <Logo variant="mark" className="h-6 w-auto" />
-                </span>
-                <span className="hidden items-center sm:flex">
-                  <Logo variant="oneline" className="h-6 w-auto" />
-                </span>
-              </Link>
-              <span
-                aria-hidden="true"
-                className="hidden h-6 w-px shrink-0 bg-stone-300 dark:bg-stone-700 sm:block"
-              />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold tracking-tight">{event.name}</div>
-                <div
-                  data-tour="live"
-                  className="truncate text-xs text-stone-500 dark:text-stone-400"
-                >
-                  {plural(days.length, { one: 'day', other: 'days' })} ·{' '}
-                  {event.archived
-                    ? 'archived — read-only'
-                    : data.connected
-                      ? 'schedule is live'
-                      : 'reconnecting…'}
-                </div>
-              </div>
-              {/* Theme moved into the profile menu and Manage Event down to the
-                  action row, where it belongs beside Add session. On a phone this
-                  header had five controls competing for the width left over after
-                  the event name. */}
-              <div className="ms-auto flex items-center justify-end gap-1.5 sm:gap-2">
-                <NotificationBell slug={slug} ping={data.notificationPing} />
-                <ProfileMenu
-                  onTour={() => setTourOpen(true)}
-                  demo={me?.demoMode === true}
-                  onCalendar={setCalendar}
-                  displayName={bundle.displayName}
-                  slug={slug}
-                  role={role}
-                  userLabel={event.userRoleLabel}
-                  people={bundle.people}
-                  publicId={me?.uid ?? ''}
-                  onSignOut={() => {
-                    void api.logout(slug).then(() => void data.reload());
-                  }}
-                />
-              </div>
+        {/* Outside the fold on purpose. The rows under it give the day their
+            height back when you scroll; the bar is what every page of the
+            event shares, and the schedule is not the page to lose it on. */}
+        <EventBar
+          slug={slug}
+          bundle={bundle}
+          me={me}
+          ping={data.notificationPing}
+          onTour={() => setTourOpen(true)}
+          onSignOut={() => void api.logout(slug).then(() => void data.reload())}
+          sub={
+            <div data-tour="live" className="truncate text-xs text-stone-500 dark:text-stone-400">
+              {plural(days.length, { one: 'day', other: 'days' })} ·{' '}
+              {event.archived
+                ? 'archived — read-only'
+                : data.connected
+                  ? 'schedule is live'
+                  : 'reconnecting…'}
             </div>
-          </div>
-        </div>
+          }
+        />
 
         {/* Everything below the event bar belongs to the grid — weeks,
             filters, the day rail. The full-page session view keeps the bar
@@ -1410,16 +1359,8 @@ export function SchedulePage() {
                   type="button"
                   onClick={toggleChrome}
                   aria-expanded={!folded}
-                  aria-label={
-                    folded
-                      ? 'Show the event bar and the day picker'
-                      : 'Fold the event bar and the day picker away'
-                  }
-                  title={
-                    folded
-                      ? 'Show the event bar and the day picker'
-                      : 'Fold the event bar and the day picker away'
-                  }
+                  aria-label={folded ? 'Show the day picker' : 'Fold the day picker away'}
+                  title={folded ? 'Show the day picker' : 'Fold the day picker away'}
                   className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
                 >
                   {/* A calendar and an arrow, at both states and at every width.
@@ -1843,151 +1784,7 @@ export function SchedulePage() {
         </div>
       )}
 
-      {calendar && (
-        <CalendarExportModal
-          slug={slug}
-          starredCount={starredIds.size}
-          section={calendar}
-          onClose={() => setCalendar(null)}
-        />
-      )}
-
       {tourOpen && <Tour steps={tourSteps} onClose={closeTour} />}
     </div>
-  );
-}
-
-/** Download a one-off .ics, or mint a personal subscription link for the feed
- *  that follows your starred agenda. */
-function CalendarExportModal({
-  slug,
-  starredCount,
-  section,
-  onClose,
-}: {
-  slug: string;
-  starredCount: number;
-  /** Which half the menu asked for. Both are always shown — they are two
-   *  answers to the same question — but the one you picked is scrolled to. */
-  section: 'download' | 'subscribe';
-  onClose: () => void;
-}) {
-  const toast = useToast();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const downloadRef = useRef<HTMLDivElement>(null);
-  const subscribeRef = useRef<HTMLDivElement>(null);
-  const [subUrl, setSubUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const base = `/api/e/${encodeURIComponent(slug)}/calendar.ics`;
-
-  // Both scopes are worth subscribing to: the whole programme, or only what
-  // you starred. The token is the same either way.
-  const subscribe = useCallback(
-    async (mine: boolean) => {
-      setLoading(true);
-      try {
-        const { token } = await api.calendarToken(slug);
-        setSubUrl(
-          `${window.location.origin}${base}?token=${encodeURIComponent(token)}${
-            mine ? '&mine=1' : ''
-          }`,
-        );
-      } catch (err) {
-        toast.show(errorText(err, 'Could not create a subscription link'));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [base, slug, toast],
-  );
-
-  const copy = useCallback(async () => {
-    if (!subUrl) return;
-    try {
-      // Rejects on insecure origins — fall back to a manual selection.
-      await navigator.clipboard.writeText(subUrl);
-      toast.show('Link copied');
-    } catch {
-      inputRef.current?.select();
-      toast.show('Press Ctrl/Cmd+C to copy the selected link');
-    }
-  }, [subUrl, toast]);
-
-  // The modal is short enough to show both halves at once on a desktop; on a
-  // phone it is not, so the half the menu asked for is brought into view.
-  useEffect(() => {
-    const target = section === 'subscribe' ? subscribeRef : downloadRef;
-    target.current?.scrollIntoView({ block: 'nearest' });
-  }, [section]);
-
-  return (
-    <Modal title="Calendar" onClose={onClose}>
-      <div className="space-y-4 text-sm">
-        <div ref={downloadRef}>
-          <p className="font-medium text-stone-800 dark:text-stone-200">Download</p>
-          <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-            A one-off snapshot you can import into any calendar app.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={base}
-              download
-              className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:border-stone-500 dark:hover:border-stone-400"
-            >
-              Whole schedule
-            </a>
-            {starredCount > 0 ? (
-              <a
-                href={`${base}?mine=1`}
-                download
-                className="rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-semibold text-stone-700 dark:text-stone-300 hover:border-stone-500 dark:hover:border-stone-400"
-              >
-                My agenda ({starredCount})
-              </a>
-            ) : (
-              <span className="rounded-lg border border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 px-3 py-2 text-xs font-semibold text-stone-400 dark:text-stone-500">
-                My agenda — star some sessions first
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div ref={subscribeRef} className="border-t border-stone-200 dark:border-stone-700 pt-4">
-          <p className="font-medium text-stone-800 dark:text-stone-200">Subscribe</p>
-          <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-            A live link your calendar app refreshes on its own. It is personal to you — anyone who
-            has it can read the schedule.
-          </p>
-          {subUrl ? (
-            <div className="flex gap-2">
-              <ControlShell className="flex-1">
-                <TextInput
-                  ref={inputRef}
-                  readOnly
-                  value={subUrl}
-                  aria-label="Personal calendar subscription link"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-              </ControlShell>
-              <SecondaryButton className="shrink-0" onClick={() => void copy()}>
-                Copy
-              </SecondaryButton>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <PrimaryButton onClick={() => void subscribe(false)} disabled={loading}>
-                {loading ? 'Creating…' : 'Link to the whole schedule'}
-              </PrimaryButton>
-              <SecondaryButton
-                onClick={() => void subscribe(true)}
-                disabled={loading || starredCount === 0}
-              >
-                Link to my agenda
-              </SecondaryButton>
-            </div>
-          )}
-        </div>
-      </div>
-    </Modal>
   );
 }

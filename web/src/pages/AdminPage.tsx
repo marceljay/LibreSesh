@@ -24,6 +24,8 @@ import { windowLabel } from '@shared/trackHours';
 import { ApiError, api, type BreakWrite, type TrackWrite, type TrashDto } from '../lib/api';
 import { fmtMin, minutesOf, relativeTime, snapMinute } from '../lib/format';
 import { useEventData } from '../lib/useEventData';
+import { useMe } from '../lib/useMe';
+import { EventBar } from '../components/EventBar';
 import {
   BY_NAME,
   NATURAL_DIR,
@@ -490,6 +492,7 @@ export function AdminPage() {
   const confirm = useConfirm();
   const [searchParams, setSearchParams] = useSearchParams();
   const data = useEventData(slug);
+  const { me } = useMe();
 
   const [reordering, setReordering] = useState(false);
   const [editingTag, setEditingTag] = useState<TagDto | null>(null);
@@ -1267,406 +1270,417 @@ export function AdminPage() {
     trash !== null && trash.sessions.length === 0 && trash.contributions.length === 0;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() =>
-            void confirmLeaveSettings().then((ok) => {
-              if (ok) navigate(`/e/${slug}`);
-            })
-          }
-          className={`text-xs ${linkClass}`}
-        >
-          ← Schedule
-        </button>
-        <h1 className="text-lg font-semibold tracking-tight">Manage {event.name}</h1>
-        {/* Above the tabs, because it is the way past them: seven tabs is seven
+    <>
+      <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
+        {/* Every way off this page through the bar — the logo, the way back,
+            the menu — asks the Settings tab's question first, the same one
+            its own tabs ask. */}
+        <EventBar
+          slug={slug}
+          bundle={bundle}
+          me={me}
+          ping={data.notificationPing}
+          width="max-w-3xl"
+          beforeLeave={confirmLeaveSettings}
+          onSignOut={() => void api.logout(slug).then(() => navigate(`/e/${slug}`))}
+        />
+      </header>
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-tight">Manage {event.name}</h1>
+          {/* Above the tabs, because it is the way past them: seven tabs is seven
             places a setting could be, and knowing what you want to change says
             nothing about which. */}
-        <AdminSearch onPick={openSetting} />
-      </div>
+          <AdminSearch onPick={openSetting} />
+        </div>
 
-      {/* Manage is seven unrelated jobs on one page. Tabs keep each of them a
+        {/* Manage is seven unrelated jobs on one page. Tabs keep each of them a
           screenful, and the choice lives in the URL so a reload — or a link
           sent to a co-organiser — lands on the same one. */}
-      <div
-        role="tablist"
-        aria-label="Manage sections"
-        className="mb-6 flex flex-wrap gap-0.5 rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
-      >
-        {TABS.map((t, i) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            id={`admin-tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`admin-panel-${t.id}`}
-            tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => switchTab(t.id)}
-            onKeyDown={(e) => {
-              const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-              if (step === 0) return;
-              e.preventDefault();
-              const next = TABS[(i + step + TABS.length) % TABS.length]!;
-              switchTab(next.id);
-              document.getElementById(`admin-tab-${next.id}`)?.focus();
-            }}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-              tab === t.id
-                ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        <div
+          role="tablist"
+          aria-label="Manage sections"
+          className="mb-6 flex flex-wrap gap-0.5 rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
+        >
+          {TABS.map((t, i) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              id={`admin-tab-${t.id}`}
+              aria-selected={tab === t.id}
+              aria-controls={`admin-panel-${t.id}`}
+              tabIndex={tab === t.id ? 0 : -1}
+              onClick={() => switchTab(t.id)}
+              onKeyDown={(e) => {
+                const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                if (step === 0) return;
+                e.preventDefault();
+                const next = TABS[(i + step + TABS.length) % TABS.length]!;
+                switchTab(next.id);
+                document.getElementById(`admin-tab-${next.id}`)?.focus();
+              }}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                tab === t.id
+                  ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                  : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      {tab === 'programme' && (
-        <div role="tabpanel" id="admin-panel-programme" aria-labelledby="admin-tab-programme">
-          <AdminRooms
-            rooms={bundle.rooms}
-            reordering={reordering}
-            onCreate={addRoom}
-            onPatch={patchRoom}
-            onMove={moveRoom}
-            onDelete={removeRoom}
-          />
+        {tab === 'programme' && (
+          <div role="tabpanel" id="admin-panel-programme" aria-labelledby="admin-tab-programme">
+            <AdminRooms
+              rooms={bundle.rooms}
+              reordering={reordering}
+              onCreate={addRoom}
+              onPatch={patchRoom}
+              onMove={moveRoom}
+              onDelete={removeRoom}
+            />
 
-          <Section
-            title="Tracks"
-            description="Thematic strands running across rooms and days. Optional — with none, the schedule lays its columns out by room and never mentions them. Their order is the order of the columns."
-            className="mb-6"
-          >
-            <FormStack>
-              {bundle.tracks.length > 0 && (
-                <ul className="space-y-2">
-                  {bundle.tracks.map((track, index) => (
-                    <li
-                      key={track.id}
-                      className="flex items-center gap-2 rounded-lg bg-stone-50 px-3 py-2 dark:bg-stone-800"
-                    >
-                      <div className="flex shrink-0">
-                        <IconButton
-                          onClick={() => void moveTrack(index, -1)}
-                          disabled={index === 0 || movingTracks}
-                          aria-label={`Move ${track.name} up`}
-                        >
-                          ↑
-                        </IconButton>
-                        <IconButton
-                          onClick={() => void moveTrack(index, 1)}
-                          disabled={index === bundle.tracks.length - 1 || movingTracks}
-                          aria-label={`Move ${track.name} down`}
-                        >
-                          ↓
-                        </IconButton>
-                      </div>
-                      <span
-                        aria-hidden
-                        className="h-5 w-5 shrink-0 rounded-full border border-stone-300 dark:border-stone-600"
-                        style={{ background: track.color }}
-                      />
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                        {track.name}
-                        {track.description && (
-                          <span className="font-normal text-stone-500 dark:text-stone-400">
-                            {' · '}
-                            {track.description}
+            <Section
+              title="Tracks"
+              description="Thematic strands running across rooms and days. Optional — with none, the schedule lays its columns out by room and never mentions them. Their order is the order of the columns."
+              className="mb-6"
+            >
+              <FormStack>
+                {bundle.tracks.length > 0 && (
+                  <ul className="space-y-2">
+                    {bundle.tracks.map((track, index) => (
+                      <li
+                        key={track.id}
+                        className="flex items-center gap-2 rounded-lg bg-stone-50 px-3 py-2 dark:bg-stone-800"
+                      >
+                        <div className="flex shrink-0">
+                          <IconButton
+                            onClick={() => void moveTrack(index, -1)}
+                            disabled={index === 0 || movingTracks}
+                            aria-label={`Move ${track.name} up`}
+                          >
+                            ↑
+                          </IconButton>
+                          <IconButton
+                            onClick={() => void moveTrack(index, 1)}
+                            disabled={index === bundle.tracks.length - 1 || movingTracks}
+                            aria-label={`Move ${track.name} down`}
+                          >
+                            ↓
+                          </IconButton>
+                        </div>
+                        <span
+                          aria-hidden
+                          className="h-5 w-5 shrink-0 rounded-full border border-stone-300 dark:border-stone-600"
+                          style={{ background: track.color }}
+                        />
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {track.name}
+                          {track.description && (
+                            <span className="font-normal text-stone-500 dark:text-stone-400">
+                              {' · '}
+                              {track.description}
+                            </span>
+                          )}
+                        </p>
+                        {track.startMin !== null && (
+                          <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
+                            {windowLabel({
+                              startMin: track.startMin,
+                              endMin: track.endMin ?? 1440,
+                            })}
+                            {track.windows.length > 0 && ` +${plural(track.windows.length, DAYS)}`}
                           </span>
                         )}
-                      </p>
-                      {track.startMin !== null && (
-                        <span className="shrink-0 tabular-nums text-xs text-stone-500 dark:text-stone-400">
-                          {windowLabel({ startMin: track.startMin, endMin: track.endMin ?? 1440 })}
-                          {track.windows.length > 0 && ` +${plural(track.windows.length, DAYS)}`}
+                        <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
+                          {plural(
+                            bundle.sessions.filter((x) => x.trackId === track.id).length,
+                            SESSIONS,
+                          )}
                         </span>
-                      )}
-                      <span className="shrink-0 text-xs text-stone-500 dark:text-stone-400">
-                        {plural(
-                          bundle.sessions.filter((x) => x.trackId === track.id).length,
-                          SESSIONS,
-                        )}
-                      </span>
-                      <SecondaryButton
-                        className="shrink-0 px-3 py-1.5"
-                        onClick={() => setEditingTrack(track)}
-                      >
-                        Edit
-                      </SecondaryButton>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {bundle.tracks.length === 0 && (
-                <p className="text-sm text-stone-400 dark:text-stone-500">
-                  No tracks. Add one and the schedule gains a Room / Track switch.
-                </p>
-              )}
+                        <SecondaryButton
+                          className="shrink-0 px-3 py-1.5"
+                          onClick={() => setEditingTrack(track)}
+                        >
+                          Edit
+                        </SecondaryButton>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {bundle.tracks.length === 0 && (
+                  <p className="text-sm text-stone-400 dark:text-stone-500">
+                    No tracks. Add one and the schedule gains a Room / Track switch.
+                  </p>
+                )}
 
-              <InlineCreate
-                action="Add a track"
-                fieldLabel="New track"
-                submitLabel="Add track"
-                maxLength={60}
-                onSubmit={addTrack}
+                <InlineCreate
+                  action="Add a track"
+                  fieldLabel="New track"
+                  submitLabel="Add track"
+                  maxLength={60}
+                  onSubmit={addTrack}
+                />
+              </FormStack>
+            </Section>
+
+            {editingTrack && (
+              <TrackEditor
+                track={editingTrack}
+                sessions={bundle.sessions.filter((x) => x.trackId === editingTrack.id).length}
+                days={dayList}
+                dayStartMin={event.dayStartMin}
+                dayEndMin={event.dayEndMin}
+                onPatch={patchTrack}
+                onDelete={removeTrack}
+                onClose={() => setEditingTrack(null)}
               />
-            </FormStack>
-          </Section>
+            )}
 
-          {editingTrack && (
-            <TrackEditor
-              track={editingTrack}
-              sessions={bundle.sessions.filter((x) => x.trackId === editingTrack.id).length}
+            <AdminBreaks
+              breaks={bundle.breaks}
               days={dayList}
               dayStartMin={event.dayStartMin}
               dayEndMin={event.dayEndMin}
-              onPatch={patchTrack}
-              onDelete={removeTrack}
-              onClose={() => setEditingTrack(null)}
+              onCreate={addBreak}
+              onPatch={patchBreak}
+              onDelete={removeBreak}
             />
-          )}
 
-          <AdminBreaks
-            breaks={bundle.breaks}
-            days={dayList}
-            dayStartMin={event.dayStartMin}
-            dayEndMin={event.dayEndMin}
-            onCreate={addBreak}
-            onPatch={patchBreak}
-            onDelete={removeBreak}
-          />
-
-          <Section
-            title="Tags"
-            description="Labels for sessions and pitches. Attendees filter the schedule by them."
-            className="mb-6"
-          >
-            <ul className="mb-4 flex flex-wrap gap-2">
-              {bundle.tags.map((tag) => (
-                <li key={tag.id}>
-                  {/* The tag as it is actually drawn on the schedule, and
+            <Section
+              title="Tags"
+              description="Labels for sessions and pitches. Attendees filter the schedule by them."
+              className="mb-6"
+            >
+              <ul className="mb-4 flex flex-wrap gap-2">
+                {bundle.tags.map((tag) => (
+                  <li key={tag.id}>
+                    {/* The tag as it is actually drawn on the schedule, and
                       pressing it is how you change it. A neutral pill with a
                       colour dot beside it showed the colour at a size nobody
                       could judge it at, and gave no hint that the row was a
                       way in to the editor. */}
-                  <button
-                    type="button"
-                    onClick={() => setEditingTag(tag)}
-                    title={`Edit ${tag.name}`}
-                    style={{ background: tag.color, color: readableInk(tag.color) }}
-                    className="rounded-full px-2.5 py-1 text-xs font-medium ring-offset-2 ring-offset-white hover:ring-2 hover:ring-stone-400 dark:ring-offset-stone-900"
-                  >
-                    {tag.name}
-                    <span className="sr-only">— edit this tag</span>
-                  </button>
-                </li>
-              ))}
-              {bundle.tags.length === 0 && (
-                <li className="text-sm text-stone-400 dark:text-stone-500">No tags yet.</li>
-              )}
-            </ul>
-            <InlineCreate
-              action="Add a tag"
-              fieldLabel="New tag"
-              submitLabel="Add tag"
-              onSubmit={addTag}
-            >
-              {/* Inside, so the colour picker collapses with the tag it is for.
+                    <button
+                      type="button"
+                      onClick={() => setEditingTag(tag)}
+                      title={`Edit ${tag.name}`}
+                      style={{ background: tag.color, color: readableInk(tag.color) }}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium ring-offset-2 ring-offset-white hover:ring-2 hover:ring-stone-400 dark:ring-offset-stone-900"
+                    >
+                      {tag.name}
+                      <span className="sr-only">— edit this tag</span>
+                    </button>
+                  </li>
+                ))}
+                {bundle.tags.length === 0 && (
+                  <li className="text-sm text-stone-400 dark:text-stone-500">No tags yet.</li>
+                )}
+              </ul>
+              <InlineCreate
+                action="Add a tag"
+                fieldLabel="New tag"
+                submitLabel="Add tag"
+                onSubmit={addTag}
+              >
+                {/* Inside, so the colour picker collapses with the tag it is for.
                   Left outside it would sit under a closed button, offering a
                   colour for nothing. */}
-              <div className="mt-3">
-                <ColorPicker
-                  value={newTagColor}
-                  onChange={setTagColor}
-                  palette={TAG_COLORS}
-                  label="New tag colour"
-                  hint="Picked for you from the colours no tag is using yet. Change it here if you would rather choose."
-                />
-              </div>
-            </InlineCreate>
-          </Section>
+                <div className="mt-3">
+                  <ColorPicker
+                    value={newTagColor}
+                    onChange={setTagColor}
+                    palette={TAG_COLORS}
+                    label="New tag colour"
+                    hint="Picked for you from the colours no tag is using yet. Change it here if you would rather choose."
+                  />
+                </div>
+              </InlineCreate>
+            </Section>
 
-          <Section
-            title="Formats"
-            description="What kind of thing a session is — a talk, a workshop, a panel. Picked at the top of the session form. It says what a session is, never how long it runs."
-            className="mb-6"
-          >
-            <ul className="mb-4 flex flex-wrap gap-2">
-              {bundle.formats.map((format) => (
-                <li key={format.id}>
-                  <button
-                    type="button"
-                    onClick={() => setEditingFormat(format)}
-                    title={`Edit ${format.name}`}
-                    style={{ background: format.color, color: readableInk(format.color) }}
-                    className="rounded-full px-2.5 py-1 text-xs font-medium ring-offset-2 ring-offset-white hover:ring-2 hover:ring-stone-400 dark:ring-offset-stone-900"
-                  >
-                    {format.name}
-                    <span className="sr-only">— edit this format</span>
-                  </button>
-                </li>
-              ))}
-              {bundle.formats.length === 0 && (
-                <li className="text-sm text-stone-400 dark:text-stone-500">No formats yet.</li>
-              )}
-            </ul>
+            <Section
+              title="Formats"
+              description="What kind of thing a session is — a talk, a workshop, a panel. Picked at the top of the session form. It says what a session is, never how long it runs."
+              className="mb-6"
+            >
+              <ul className="mb-4 flex flex-wrap gap-2">
+                {bundle.formats.map((format) => (
+                  <li key={format.id}>
+                    <button
+                      type="button"
+                      onClick={() => setEditingFormat(format)}
+                      title={`Edit ${format.name}`}
+                      style={{ background: format.color, color: readableInk(format.color) }}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium ring-offset-2 ring-offset-white hover:ring-2 hover:ring-stone-400 dark:ring-offset-stone-900"
+                    >
+                      {format.name}
+                      <span className="sr-only">— edit this format</span>
+                    </button>
+                  </li>
+                ))}
+                {bundle.formats.length === 0 && (
+                  <li className="text-sm text-stone-400 dark:text-stone-500">No formats yet.</li>
+                )}
+              </ul>
 
-            {/* Suggestions rather than defaults: nothing is created until it is
+              {/* Suggestions rather than defaults: nothing is created until it is
                 clicked, so an event that runs none of these — or invents its
                 own — is not left deleting a dozen rows it never asked for.
                 Each drops off the list once it exists. */}
-            {suggestedFormats.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-                  {bundle.formats.length === 0
-                    ? 'Common ones, if any of them fit. Click to add.'
-                    : 'More to add:'}
-                </p>
-                <ul className="flex flex-wrap gap-1.5">
-                  {suggestedFormats.map((s) => (
-                    <li key={s.name}>
-                      <button
-                        type="button"
-                        title={s.hint}
-                        onClick={() => void addFormat(s.name)}
-                        className="rounded-full border border-dashed border-stone-300 px-2.5 py-1 text-xs text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400 dark:hover:text-stone-100"
-                      >
-                        + {s.name}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <InlineCreate
-              action="Add a format"
-              fieldLabel="New format"
-              submitLabel="Add format"
-              maxLength={40}
-              onSubmit={addFormat}
-            />
-          </Section>
-
-          {editingFormat && (
-            <FormatEditor
-              format={editingFormat}
-              sessions={bundle.sessions.filter((x) => x.formatId === editingFormat.id).length}
-              onPatch={patchFormat}
-              onDelete={removeFormat}
-              onClose={() => setEditingFormat(null)}
-            />
-          )}
-
-          {editingTag && (
-            <TagEditor
-              tag={editingTag}
-              sessions={bundle.sessions.filter((x) => x.tagIds.includes(editingTag.id)).length}
-              pitches={bundle.proposals.filter((x) => x.tagIds.includes(editingTag.id)).length}
-              onPatch={patchTag}
-              onDelete={removeTag}
-              onClose={() => setEditingTag(null)}
-            />
-          )}
-        </div>
-      )}
-
-      {tab === 'people' && (
-        <div role="tabpanel" id="admin-panel-people" aria-labelledby="admin-tab-people">
-          {/* People asking for a profile somebody left for them. Above the
-              list because it is the one thing here that is waiting on you,
-              and it disappears the moment the queue is empty. */}
-          {openClaims.length > 0 && (
-            <Section
-              className="mb-4"
-              title={`Waiting for you (${openClaims.length})`}
-              description="Someone says one of these profiles is them. Approving hands it over and folds their own profile into it, exactly as merging the two by hand would. It cannot be undone, so check the username against who you were expecting."
-            >
-              <ul>
-                {openClaims.map((claim) => {
-                  const theirs = bundle.people.find((p) => p.id === claim.requesterPersonId);
-                  return (
-                    <li
-                      key={claim.id}
-                      className="flex flex-wrap items-center gap-2 border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium">@{claim.username}</span>
-                        {claim.requesterUid != null && (
-                          <span className="ms-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
-                            {claim.requesterUid.toUpperCase()}
-                          </span>
-                        )}
-                        <span className="text-stone-500 dark:text-stone-400"> says they are </span>
-                        <span className="font-medium">{claim.personName}</span>
-                        {theirs && (
-                          <span className="block text-xs text-stone-400 dark:text-stone-500">
-                            Their profile “{theirs.name}” is folded in and removed.
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex shrink-0 gap-1">
+              {suggestedFormats.length > 0 && (
+                <div className="mb-4">
+                  <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+                    {bundle.formats.length === 0
+                      ? 'Common ones, if any of them fit. Click to add.'
+                      : 'More to add:'}
+                  </p>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {suggestedFormats.map((s) => (
+                      <li key={s.name}>
                         <button
                           type="button"
-                          className={peopleActionClass}
-                          onClick={() => void decideClaim(() => api.declineClaim(slug, claim.id))}
+                          title={s.hint}
+                          onClick={() => void addFormat(s.name)}
+                          className="rounded-full border border-dashed border-stone-300 px-2.5 py-1 text-xs text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:border-stone-400 dark:hover:text-stone-100"
                         >
-                          Decline
+                          + {s.name}
                         </button>
-                        <PrimaryButton
-                          className="w-[4.25rem] px-1 py-1 text-xs"
-                          onClick={() => void decideClaim(() => api.approveClaim(slug, claim.id))}
-                        >
-                          Approve
-                        </PrimaryButton>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Section>
-          )}
-          <Section
-            title="People"
-            description="Everyone who has entered this event, plus the people you are expecting. Entering claims a username and creates a profile; a profile nobody holds is one you or a session named, still waiting for them to arrive."
-          >
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <div role="group" aria-label="Filter people" className="flex flex-wrap gap-1">
-                {PEOPLE_FILTERS.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    aria-pressed={peopleFilter === f.id}
-                    onClick={() => setPeopleFilter(f.id)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      peopleFilter === f.id
-                        ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
-                    }`}
-                  >
-                    {f.label} <span className="tabular-nums opacity-60">{peopleCounts[f.id]}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="relative ms-auto w-32 sm:w-48">
-                <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
-                {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
-                <input
-                  type="search"
-                  value={peopleQuery}
-                  onChange={(e) => setPeopleQuery(e.target.value)}
-                  aria-label="Search people"
-                  placeholder="Name, @username or UID"
-                  className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
-                />
-              </div>
-              <PeopleColumnsMenu columns={peopleColumns} />
-            </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
-            {/* Sideways rather than squeezed, which is the bargain the grid
+              <InlineCreate
+                action="Add a format"
+                fieldLabel="New format"
+                submitLabel="Add format"
+                maxLength={40}
+                onSubmit={addFormat}
+              />
+            </Section>
+
+            {editingFormat && (
+              <FormatEditor
+                format={editingFormat}
+                sessions={bundle.sessions.filter((x) => x.formatId === editingFormat.id).length}
+                onPatch={patchFormat}
+                onDelete={removeFormat}
+                onClose={() => setEditingFormat(null)}
+              />
+            )}
+
+            {editingTag && (
+              <TagEditor
+                tag={editingTag}
+                sessions={bundle.sessions.filter((x) => x.tagIds.includes(editingTag.id)).length}
+                pitches={bundle.proposals.filter((x) => x.tagIds.includes(editingTag.id)).length}
+                onPatch={patchTag}
+                onDelete={removeTag}
+                onClose={() => setEditingTag(null)}
+              />
+            )}
+          </div>
+        )}
+
+        {tab === 'people' && (
+          <div role="tabpanel" id="admin-panel-people" aria-labelledby="admin-tab-people">
+            {/* People asking for a profile somebody left for them. Above the
+              list because it is the one thing here that is waiting on you,
+              and it disappears the moment the queue is empty. */}
+            {openClaims.length > 0 && (
+              <Section
+                className="mb-4"
+                title={`Waiting for you (${openClaims.length})`}
+                description="Someone says one of these profiles is them. Approving hands it over and folds their own profile into it, exactly as merging the two by hand would. It cannot be undone, so check the username against who you were expecting."
+              >
+                <ul>
+                  {openClaims.map((claim) => {
+                    const theirs = bundle.people.find((p) => p.id === claim.requesterPersonId);
+                    return (
+                      <li
+                        key={claim.id}
+                        className="flex flex-wrap items-center gap-2 border-b border-stone-100 py-2 text-sm last:border-0 dark:border-stone-800"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="font-medium">@{claim.username}</span>
+                          {claim.requesterUid != null && (
+                            <span className="ms-1.5 font-mono text-xs text-stone-400 dark:text-stone-500">
+                              {claim.requesterUid.toUpperCase()}
+                            </span>
+                          )}
+                          <span className="text-stone-500 dark:text-stone-400">
+                            {' '}
+                            says they are{' '}
+                          </span>
+                          <span className="font-medium">{claim.personName}</span>
+                          {theirs && (
+                            <span className="block text-xs text-stone-400 dark:text-stone-500">
+                              Their profile “{theirs.name}” is folded in and removed.
+                            </span>
+                          )}
+                        </span>
+                        <span className="flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            className={peopleActionClass}
+                            onClick={() => void decideClaim(() => api.declineClaim(slug, claim.id))}
+                          >
+                            Decline
+                          </button>
+                          <PrimaryButton
+                            className="w-[4.25rem] px-1 py-1 text-xs"
+                            onClick={() => void decideClaim(() => api.approveClaim(slug, claim.id))}
+                          >
+                            Approve
+                          </PrimaryButton>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Section>
+            )}
+            <Section
+              title="People"
+              description="Everyone who has entered this event, plus the people you are expecting. Entering claims a username and creates a profile; a profile nobody holds is one you or a session named, still waiting for them to arrive."
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <div role="group" aria-label="Filter people" className="flex flex-wrap gap-1">
+                  {PEOPLE_FILTERS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      aria-pressed={peopleFilter === f.id}
+                      onClick={() => setPeopleFilter(f.id)}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        peopleFilter === f.id
+                          ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+                          : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
+                      }`}
+                    >
+                      {f.label}{' '}
+                      <span className="tabular-nums opacity-60">{peopleCounts[f.id]}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="relative ms-auto w-32 sm:w-48">
+                  <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
+                  {/* eslint-disable-next-line no-restricted-syntax -- compact search box; folds into a ControlShell adornment in a later phase */}
+                  <input
+                    type="search"
+                    value={peopleQuery}
+                    onChange={(e) => setPeopleQuery(e.target.value)}
+                    aria-label="Search people"
+                    placeholder="Name, @username or UID"
+                    className={`w-full rounded-lg border border-stone-500 bg-stone-50 ps-8 pe-2 py-1 text-xs text-stone-700 outline-hidden dark:border-stone-500 dark:bg-stone-950 dark:text-stone-200 ${bareFieldFocusRing}`}
+                  />
+                </div>
+                <PeopleColumnsMenu columns={peopleColumns} />
+              </div>
+
+              {/* Sideways rather than squeezed, which is the bargain the grid
                 already makes on a phone. A table that fits a 375-pixel screen
                 by giving every column 60 pixels is not a table anybody can
                 read; one that scrolls keeps each column at the width its
@@ -1674,9 +1688,9 @@ export function AdminPage() {
                 column is never read under the wrong heading. On a desktop the
                 sum is under the page's own width, so nothing scrolls and the
                 slack goes to the name and the username. */}
-            <div className="overflow-x-auto">
-              <div style={{ minWidth: peopleTableWidth(peopleColumns.shown) }}>
-                {/* A header, because this is a table now: six facts about a
+              <div className="overflow-x-auto">
+                <div style={{ minWidth: peopleTableWidth(peopleColumns.shown) }}>
+                  {/* A header, because this is a table now: six facts about a
                   person, the same six on every row, and an organiser reading
                   down one column should not have to work out which is which.
                   The widths are shared with the rows below.
@@ -1687,70 +1701,70 @@ export function AdminPage() {
                   viewer" had no answer but reading the whole list. The header
                   was `aria-hidden` while it was decoration; now that it is the
                   control, it is not. */}
-                <div className="flex items-center gap-2 border-b border-stone-200 pb-1 text-[0.65rem] font-semibold uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:text-stone-500">
-                  {(
-                    [
-                      ['name', 'Name'],
-                      ['username', 'Username'],
-                      ['uid', 'UID'],
-                      ['role', 'Role'],
-                      ['seen', 'Last seen'],
-                    ] as [PeopleSortColumn, string][]
-                  )
-                    .filter(([column]) => peopleColumns.showing(column))
-                    .map(([column, label]) => (
-                      <PeopleHeader
-                        key={column}
-                        column={column}
-                        label={label}
-                        sort={peopleOrder}
-                        onSort={sortBy}
-                        className={PEOPLE_COL[column].className}
-                      />
-                    ))}
-                  {/* Named, like every column beside it, and not a button:
+                  <div className="flex items-center gap-2 border-b border-stone-200 pb-1 text-[0.65rem] font-semibold uppercase tracking-wide text-stone-400 dark:border-stone-700 dark:text-stone-500">
+                    {(
+                      [
+                        ['name', 'Name'],
+                        ['username', 'Username'],
+                        ['uid', 'UID'],
+                        ['role', 'Role'],
+                        ['seen', 'Last seen'],
+                      ] as [PeopleSortColumn, string][]
+                    )
+                      .filter(([column]) => peopleColumns.showing(column))
+                      .map(([column, label]) => (
+                        <PeopleHeader
+                          key={column}
+                          column={column}
+                          label={label}
+                          sort={peopleOrder}
+                          onSort={sortBy}
+                          className={PEOPLE_COL[column].className}
+                        />
+                      ))}
+                    {/* Named, like every column beside it, and not a button:
                     there is nothing here to order by, because it holds a menu
                     rather than a fact. "Edit" rather than "Actions" — it is
                     two characters cheaper in a column nine wide, and it is
                     what the menu is opened to do. */}
-                  <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
-                </div>
+                    <span className={`${PEOPLE_COL.actions.className} text-end`}>Edit</span>
+                  </div>
 
-                <ul className="mb-4">
-                  {shownPeople.map((person) => (
-                    <li
-                      key={person.id}
-                      className="flex items-center gap-2 border-b border-stone-100 py-1.5 last:border-0 dark:border-stone-800"
-                    >
-                      {/* The name is the way in, at the size a finger is aimed
+                  <ul className="mb-4">
+                    {shownPeople.map((person) => (
+                      <li
+                        key={person.id}
+                        className="flex items-center gap-2 border-b border-stone-100 py-1.5 last:border-0 dark:border-stone-800"
+                      >
+                        {/* The name is the way in, at the size a finger is aimed
                         at. It used to be text with a 56-pixel "Open" button four
                         columns away — the one link on the row that was not where
                         anyone pointed. */}
-                      <span
-                        className={`${PEOPLE_COL.name.className} flex items-baseline gap-1.5`}
-                        title={
-                          (person.sessionCount ?? 0) === 0
-                            ? 'Not credited on any session'
-                            : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
-                        }
-                      >
-                        <PersonLink
-                          slug={slug}
-                          person={person}
-                          className="truncate text-sm font-medium hover:underline"
+                        <span
+                          className={`${PEOPLE_COL.name.className} flex items-baseline gap-1.5`}
+                          title={
+                            (person.sessionCount ?? 0) === 0
+                              ? 'Not credited on any session'
+                              : `Credited on ${plural(person.sessionCount ?? 0, SESSIONS)}`
+                          }
                         >
-                          {person.name}
-                        </PersonLink>
-                        {/* Your own row, pinned to the top by `filterPeople`. */}
-                        {person.isMine && (
-                          <span
-                            title="This device — the profile you are signed in as"
-                            className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[0.65rem] font-semibold text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                          <PersonLink
+                            slug={slug}
+                            person={person}
+                            className="truncate text-sm font-medium hover:underline"
                           >
-                            you
-                          </span>
-                        )}
-                        {/* No "code" badge here. An outstanding speaker code is
+                            {person.name}
+                          </PersonLink>
+                          {/* Your own row, pinned to the top by `filterPeople`. */}
+                          {person.isMine && (
+                            <span
+                              title="This device — the profile you are signed in as"
+                              className="shrink-0 rounded-full bg-stone-200 px-1.5 py-0.5 text-[0.65rem] font-semibold text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                            >
+                              you
+                            </span>
+                          )}
+                          {/* No "code" badge here. An outstanding speaker code is
                           a fact about one person, and it was being read down a
                           column of two hundred rows where it is noise — it
                           says nothing about who they are or what they may do,
@@ -1758,409 +1772,179 @@ export function AdminPage() {
                           page says it, in the place the code is minted and
                           revoked, and says which of the three states it is in
                           rather than only flagging one. */}
-                      </span>
+                        </span>
 
-                      {peopleColumns.showing('username') && (
-                        <span className={`${PEOPLE_COL.username.className} truncate text-xs`}>
-                          {/* An em dash is not a profile to open, so only a real
+                        {peopleColumns.showing('username') && (
+                          <span className={`${PEOPLE_COL.username.className} truncate text-xs`}>
+                            {/* An em dash is not a profile to open, so only a real
                             username is a link. */}
-                          {person.username === null ? (
-                            <span
-                              className="text-stone-500 dark:text-stone-400"
-                              title="Nobody holds this profile, so it has no username"
-                            >
-                              —
-                            </span>
-                          ) : (
-                            <PersonLink
-                              slug={slug}
-                              person={person}
-                              title="Their username in this event — what they post under"
-                              className="text-stone-500 hover:underline dark:text-stone-400"
-                            >
-                              @{person.username}
-                            </PersonLink>
-                          )}
-                        </span>
-                      )}
+                            {person.username === null ? (
+                              <span
+                                className="text-stone-500 dark:text-stone-400"
+                                title="Nobody holds this profile, so it has no username"
+                              >
+                                —
+                              </span>
+                            ) : (
+                              <PersonLink
+                                slug={slug}
+                                person={person}
+                                title="Their username in this event — what they post under"
+                                className="text-stone-500 hover:underline dark:text-stone-400"
+                              >
+                                @{person.username}
+                              </PersonLink>
+                            )}
+                          </span>
+                        )}
 
-                      {peopleColumns.showing('uid') && (
-                        <span
-                          className={`${PEOPLE_COL.uid.className} truncate font-mono text-xs text-stone-400 dark:text-stone-500`}
-                          title="The identity holding this profile — the code the audit log names, and the same one at every event on this instance"
-                        >
-                          {person.holderUid == null ? '—' : person.holderUid.toUpperCase()}
-                        </span>
-                      )}
+                        {peopleColumns.showing('uid') && (
+                          <span
+                            className={`${PEOPLE_COL.uid.className} truncate font-mono text-xs text-stone-400 dark:text-stone-500`}
+                            title="The identity holding this profile — the code the audit log names, and the same one at every event on this instance"
+                          >
+                            {person.holderUid == null ? '—' : person.holderUid.toUpperCase()}
+                          </span>
+                        )}
 
-                      {/* The role *is* the status: the badge everyone else sees,
+                        {/* The role *is* the status: the badge everyone else sees,
                         with a pencil in it for anyone who holds the profile, and
                         a plain badge for a profile nobody holds. */}
-                      {peopleColumns.showing('role') && (
-                        <span className={PEOPLE_COL.role.className}>
-                          {person.claimed ? (
-                            <RoleControl
-                              role={person.role ?? null}
-                              userLabel={event.userRoleLabel}
-                              personName={person.name}
-                              onChange={(role) => void changeRole(person, role)}
-                            />
-                          ) : (
-                            <PersonStatusBadge person={person} userLabel={event.userRoleLabel} />
-                          )}
-                        </span>
-                      )}
+                        {peopleColumns.showing('role') && (
+                          <span className={PEOPLE_COL.role.className}>
+                            {person.claimed ? (
+                              <RoleControl
+                                role={person.role ?? null}
+                                userLabel={event.userRoleLabel}
+                                personName={person.name}
+                                onChange={(role) => void changeRole(person, role)}
+                              />
+                            ) : (
+                              <PersonStatusBadge person={person} userLabel={event.userRoleLabel} />
+                            )}
+                          </span>
+                        )}
 
-                      {peopleColumns.showing('seen') && (
-                        <span
-                          className={`${PEOPLE_COL.seen.className} truncate text-xs text-stone-400 dark:text-stone-500`}
-                          title={
-                            person.lastSeenAt == null
-                              ? 'Nobody holds this profile, so it has never been used'
-                              : `Last seen ${new Date(person.lastSeenAt).toLocaleString()}`
-                          }
-                        >
-                          {person.lastSeenAt == null ? '—' : relativeTime(person.lastSeenAt)}
-                        </span>
-                      )}
+                        {peopleColumns.showing('seen') && (
+                          <span
+                            className={`${PEOPLE_COL.seen.className} truncate text-xs text-stone-400 dark:text-stone-500`}
+                            title={
+                              person.lastSeenAt == null
+                                ? 'Nobody holds this profile, so it has never been used'
+                                : `Last seen ${new Date(person.lastSeenAt).toLocaleString()}`
+                            }
+                          >
+                            {person.lastSeenAt == null ? '—' : relativeTime(person.lastSeenAt)}
+                          </span>
+                        )}
 
-                      {/* One icon, and everything behind it. The column was four
+                        {/* One icon, and everything behind it. The column was four
                         times this wide to hold a button saying "Open" beside a
                         second one saying only "more", and the width it gives
                         back is width the name column now has on the screen with
                         the least of it to spare. */}
-                      <span className={`${PEOPLE_COL.actions.className} flex justify-end`}>
-                        <PersonActions
-                          slug={slug}
-                          person={person}
-                          onMerge={() => setMerging(person)}
-                          onArchive={() => void toggleArchive(person)}
-                        />
-                      </span>
-                    </li>
-                  ))}
-                  {shownPeople.length === 0 && (
-                    <li className="py-2 text-sm text-stone-400 dark:text-stone-500">
-                      {bundle.people.length === 0 ? 'Nobody here yet.' : 'Nobody matches that.'}
-                    </li>
-                  )}
-                </ul>
+                        <span className={`${PEOPLE_COL.actions.className} flex justify-end`}>
+                          <PersonActions
+                            slug={slug}
+                            person={person}
+                            onMerge={() => setMerging(person)}
+                            onArchive={() => void toggleArchive(person)}
+                          />
+                        </span>
+                      </li>
+                    ))}
+                    {shownPeople.length === 0 && (
+                      <li className="py-2 text-sm text-stone-400 dark:text-stone-500">
+                        {bundle.people.length === 0 ? 'Nobody here yet.' : 'Nobody matches that.'}
+                      </li>
+                    )}
+                  </ul>
+                </div>
               </div>
-            </div>
 
-            {merging && (
-              <MergeModal
-                slug={slug}
-                survivor={merging}
-                people={bundle.people}
-                userLabel={event.userRoleLabel}
-                onClose={() => setMerging(null)}
-                onMerged={(updated, loserId) => {
-                  data.apply({ type: 'person.deleted', entity: { id: loserId } });
-                  data.apply({ type: 'person.updated', entity: updated });
-                  // Sessions and pitches moved too, so the rest of the bundle
-                  // is stale in ways no single change frame describes.
-                  void data.reload();
-                  setMerging(null);
-                }}
+              {merging && (
+                <MergeModal
+                  slug={slug}
+                  survivor={merging}
+                  people={bundle.people}
+                  userLabel={event.userRoleLabel}
+                  onClose={() => setMerging(null)}
+                  onMerged={(updated, loserId) => {
+                    data.apply({ type: 'person.deleted', entity: { id: loserId } });
+                    data.apply({ type: 'person.updated', entity: updated });
+                    // Sessions and pitches moved too, so the rest of the bundle
+                    // is stale in ways no single change frame describes.
+                    void data.reload();
+                    setMerging(null);
+                  }}
+                />
+              )}
+
+              <InlineCreate
+                action="Expect someone"
+                fieldLabel="Name of the person to expect"
+                submitLabel="Add person"
+                hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the gate, or with a speaker code."
+                maxLength={120}
+                onSubmit={addPerson}
               />
-            )}
+            </Section>
+          </div>
+        )}
 
-            <InlineCreate
-              action="Expect someone"
-              fieldLabel="Name of the person to expect"
-              submitLabel="Add person"
-              hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the gate, or with a speaker code."
-              maxLength={120}
-              onSubmit={addPerson}
+        {tab === 'permissions' && (
+          <div role="tabpanel" id="admin-panel-permissions" aria-labelledby="admin-tab-permissions">
+            <AdminPermissions
+              permissions={bundle.permissions as never}
+              userRoleLabel={event.userRoleLabel}
+              onChange={savePermissions}
+              onUnlock={confirmAdmin}
             />
-          </Section>
-        </div>
-      )}
+          </div>
+        )}
 
-      {tab === 'permissions' && (
-        <div role="tabpanel" id="admin-panel-permissions" aria-labelledby="admin-tab-permissions">
-          <AdminPermissions
-            permissions={bundle.permissions as never}
-            userRoleLabel={event.userRoleLabel}
-            onChange={savePermissions}
-            onUnlock={confirmAdmin}
-          />
-        </div>
-      )}
-
-      {tab === 'settings' && (
-        <div role="tabpanel" id="admin-panel-settings" aria-labelledby="admin-tab-settings">
-          <Section title="Event settings" className="mb-6">
-            <FormStack>
-              <SettingAnchor id="name" flashed={flashed}>
-                <Field label="Name">
-                  <ControlShell>
-                    <TextInput value={name} onChange={(e) => setName(e.target.value)} />
-                  </ControlShell>
-                </Field>
-              </SettingAnchor>
-              {/* Renaming an event is renaming its address, which sounds more
+        {tab === 'settings' && (
+          <div role="tabpanel" id="admin-panel-settings" aria-labelledby="admin-tab-settings">
+            <Section title="Event settings" className="mb-6">
+              <FormStack>
+                <SettingAnchor id="name" flashed={flashed}>
+                  <Field label="Name">
+                    <ControlShell>
+                      <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+                    </ControlShell>
+                  </Field>
+                </SettingAnchor>
+                {/* Renaming an event is renaming its address, which sounds more
                 dangerous than it is: roles are held against the event itself,
                 not its slug, so nobody is signed out or demoted — and the old
                 address goes on working rather than 404ing. The hint says both,
                 because an organiser who does not know that will not touch
                 this field. */}
-              <SettingAnchor id="slug" flashed={flashed}>
-                <Field
-                  label="Slug"
-                  hint={
-                    slugField && slugField !== event?.slug
-                      ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
-                      : `Used in the URL: /e/${slugField || event?.slug}`
-                  }
-                >
-                  <ControlShell>
-                    <TextInput
-                      value={slugField}
-                      onChange={(e) => setSlugField(slugify(e.target.value))}
-                    />
-                  </ControlShell>
-                </Field>
-              </SettingAnchor>
-              <SettingAnchor id="when" flashed={flashed}>
-                <FormGrid>
-                  <Field label="Start date">
-                    <ControlShell>
-                      <TextInput
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                  <Field label="End date">
-                    <ControlShell>
-                      <TextInput
-                        type="date"
-                        value={endDate}
-                        min={startDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                  <Field label="Day starts">
-                    <TimeField
-                      aria-label="Day starts"
-                      className="w-full"
-                      value={dayStart}
-                      onChange={setDayStart}
-                    />
-                  </Field>
-                  <Field label="Day ends">
-                    <TimeField
-                      aria-label="Day ends"
-                      className="w-full"
-                      value={dayEnd}
-                      onChange={setDayEnd}
-                    />
-                  </Field>
-                </FormGrid>
-              </SettingAnchor>
-              <SettingAnchor id="week-rail" flashed={flashed}>
-                <NumberField
-                  label="Group days into weeks past"
-                  hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
-                  spec={weekRailFromField}
-                  value={weekRailFrom}
-                  onChange={setWeekRailFrom}
-                  suffix={
-                    parsedWeekRail.value === null
-                      ? 'days'
-                      : eventDays > parsedWeekRail.value
-                        ? 'days · the rail is on for this event'
-                        : 'days · one row of tabs for this event'
-                  }
-                />
-              </SettingAnchor>
-              <SettingAnchor id="default-view" flashed={flashed}>
-                <Field
-                  label="Default view"
-                  hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
-                >
-                  <Select
-                    value={defaultView}
-                    onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
-                  >
-                    {/* Wide enough for the longest option in full: at w-48 both
-                      ran under the chevron. */}
-                    <SelectTrigger aria-label="Default view" className="w-72">
-                      <SelectValue>
-                        {(v: string | null) =>
-                          v === 'cal'
-                            ? 'Calendar — a grid of rooms'
-                            : 'List — one column, in time order'
-                        }
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="list">List — one column, in time order</SelectItem>
-                      <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </SettingAnchor>
-              <SettingAnchor id="official-badge" flashed={flashed}>
-                <Field
-                  label="Mark the official programme"
-                  hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
-                >
-                  <Toggle
-                    checked={showOfficialBadge}
-                    onChange={setShowOfficialBadge}
-                    label="Show an “Official” tag on grid blocks and list cards"
-                  />
-                </Field>
-              </SettingAnchor>
-              <SettingAnchor id="pitches" flashed={flashed}>
-                <Field
-                  label="Pitch board"
-                  hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
-                >
-                  <Toggle
-                    checked={pitchesEnabled}
-                    onChange={setPitchesEnabled}
-                    label="Let people pitch sessions"
-                  />
-                  {!pitchesEnabled && openPitches > 0 && (
-                    <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-                      {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the board
-                      and will be hidden, not deleted.
-                    </p>
-                  )}
-                </Field>
-              </SettingAnchor>
-              <SettingAnchor id="audit-keep" flashed={flashed}>
-                <NumberField
-                  label="Audit entries to keep"
-                  hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
-                  spec={auditKeepField}
-                  value={auditKeep}
-                  onChange={setAuditKeep}
-                  className="w-32"
-                  suffix={
-                    parsedAuditKeep.value === 0
-                      ? 'entries · keeping everything'
-                      : 'entries · older ones are dropped'
-                  }
-                />
-              </SettingAnchor>
-              <SettingAnchor id="role-label" flashed={flashed}>
-                <Field
-                  label="What you call your participants"
-                  hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
-                >
-                  <ControlShell>
-                    <TextInput
-                      value={userRoleLabel}
-                      onChange={(e) => setUserRoleLabel(e.target.value)}
-                      maxLength={24}
-                    />
-                  </ControlShell>
-                </Field>
-              </SettingAnchor>
-
-              <SettingAnchor id="passwords" flashed={flashed}>
-                <div className="mt-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                    Change passwords
-                  </p>
-                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                    Leave blank to keep the current one.
-                  </p>
-                </div>
-                <FormGrid cols={3}>
-                  <Field label="Viewer">
-                    <ControlShell>
-                      <TextInput
-                        value={viewerPassword}
-                        onChange={(e) => setViewerPassword(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                  <Field label={userRoleLabel.trim() || 'User'}>
-                    <ControlShell>
-                      <TextInput
-                        value={userPassword}
-                        onChange={(e) => setUserPassword(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                  <Field label="Admin">
-                    <ControlShell>
-                      <TextInput
-                        value={adminPassword}
-                        onChange={(e) => setAdminPassword(e.target.value)}
-                      />
-                    </ControlShell>
-                  </Field>
-                </FormGrid>
-              </SettingAnchor>
-              <div>
-                {settingsProblem && <FormError className="mb-2">{settingsProblem}</FormError>}
-                <PrimaryButton
-                  onClick={() => void saveSettings()}
-                  disabled={settingsProblem !== null}
-                >
-                  Save settings
-                </PrimaryButton>
-              </div>
-            </FormStack>
-          </Section>
-
-          <SettingAnchor id="invite" flashed={flashed}>
-            <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
-          </SettingAnchor>
-
-          <SettingAnchor id="duplicate" flashed={flashed}>
-            <Section
-              title="Duplicate Event/Conf"
-              description="Rooms and tags carry over to the new event; sessions and contributions do not."
-              className="mb-6"
-              actions={
-                <SecondaryButton
-                  className="shrink-0 py-1.5"
-                  onClick={() => setCloneOpen(!cloneOpen)}
-                  aria-expanded={cloneOpen}
-                >
-                  {cloneOpen ? 'Close' : 'Duplicate…'}
-                </SecondaryButton>
-              }
-            >
-              {cloneOpen && (
-                <FormStack>
-                  <Field label="New name">
-                    <ControlShell>
-                      <TextInput value={cloneName} onChange={(e) => setCloneName(e.target.value)} />
-                    </ControlShell>
-                  </Field>
+                <SettingAnchor id="slug" flashed={flashed}>
                   <Field
-                    label="New slug"
-                    hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
+                    label="Slug"
+                    hint={
+                      slugField && slugField !== event?.slug
+                        ? `The event moves to /e/${slugField}. Everyone stays signed in with the role they have, and /e/${event?.slug} keeps working for links already shared.`
+                        : `Used in the URL: /e/${slugField || event?.slug}`
+                    }
                   >
                     <ControlShell>
                       <TextInput
-                        value={cloneSlug}
-                        onChange={(e) => setCloneSlug(slugify(e.target.value))}
-                        placeholder={slugify(cloneName) || 'your-event'}
+                        value={slugField}
+                        onChange={(e) => setSlugField(slugify(e.target.value))}
                       />
                     </ControlShell>
                   </Field>
+                </SettingAnchor>
+                <SettingAnchor id="when" flashed={flashed}>
                   <FormGrid>
                     <Field label="Start date">
                       <ControlShell>
                         <TextInput
                           type="date"
-                          value={cloneStart}
-                          onChange={(e) => {
-                            setCloneStart(e.target.value);
-                            if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
-                          }}
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
                         />
                       </ControlShell>
                     </Field>
@@ -2168,166 +1952,400 @@ export function AdminPage() {
                       <ControlShell>
                         <TextInput
                           type="date"
-                          value={cloneEnd}
-                          min={cloneStart}
-                          onChange={(e) => setCloneEnd(e.target.value)}
+                          value={endDate}
+                          min={startDate}
+                          onChange={(e) => setEndDate(e.target.value)}
                         />
                       </ControlShell>
                     </Field>
+                    <Field label="Day starts">
+                      <TimeField
+                        aria-label="Day starts"
+                        className="w-full"
+                        value={dayStart}
+                        onChange={setDayStart}
+                      />
+                    </Field>
+                    <Field label="Day ends">
+                      <TimeField
+                        aria-label="Day ends"
+                        className="w-full"
+                        value={dayEnd}
+                        onChange={setDayEnd}
+                      />
+                    </Field>
                   </FormGrid>
+                </SettingAnchor>
+                <SettingAnchor id="week-rail" flashed={flashed}>
+                  <NumberField
+                    label="Group days into weeks past"
+                    hint={`Up to this many days the schedule shows one row of day tabs. Longer than this and they split into a rail of weeks. This event runs ${plural(eventDays, DAYS)}.`}
+                    spec={weekRailFromField}
+                    value={weekRailFrom}
+                    onChange={setWeekRailFrom}
+                    suffix={
+                      parsedWeekRail.value === null
+                        ? 'days'
+                        : eventDays > parsedWeekRail.value
+                          ? 'days · the rail is on for this event'
+                          : 'days · one row of tabs for this event'
+                    }
+                  />
+                </SettingAnchor>
+                <SettingAnchor id="default-view" flashed={flashed}>
+                  <Field
+                    label="Default view"
+                    hint="What someone sees before they pick a view. Everybody can still switch, and a chosen view travels in the link they share."
+                  >
+                    <Select
+                      value={defaultView}
+                      onValueChange={(v) => setDefaultView(v === 'cal' ? 'cal' : 'list')}
+                    >
+                      {/* Wide enough for the longest option in full: at w-48 both
+                      ran under the chevron. */}
+                      <SelectTrigger aria-label="Default view" className="w-72">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v === 'cal'
+                              ? 'Calendar — a grid of rooms'
+                              : 'List — one column, in time order'
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="list">List — one column, in time order</SelectItem>
+                        <SelectItem value="cal">Calendar — a grid of rooms</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </SettingAnchor>
+                <SettingAnchor id="official-badge" flashed={flashed}>
+                  <Field
+                    label="Mark the official programme"
+                    hint="Off by default. Turn it on where the schedule mixes an organiser's programme with sessions attendees put up themselves, and the difference is worth seeing at a glance. On an event where everything is official the badge says nothing, and on an open floor it is noise. A session's own panel always says which it is, either way."
+                  >
+                    <Toggle
+                      checked={showOfficialBadge}
+                      onChange={setShowOfficialBadge}
+                      label="Show an “Official” tag on grid blocks and list cards"
+                    />
+                  </Field>
+                </SettingAnchor>
+                <SettingAnchor id="pitches" flashed={flashed}>
+                  <Field
+                    label="Pitch board"
+                    hint="The unconference half: anyone proposes a session with no room or time, the room registers interest, and you place the popular ones on the grid. An event with a fixed programme turns it off and the button, the page and the pitch form all go. Turning it off hides the board, it never deletes it — the pitches, their interest and anything already placed from them keep, and come back untouched if you turn it on again."
+                  >
+                    <Toggle
+                      checked={pitchesEnabled}
+                      onChange={setPitchesEnabled}
+                      label="Let people pitch sessions"
+                    />
+                    {!pitchesEnabled && openPitches > 0 && (
+                      <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
+                        {plural(openPitches, { one: 'pitch is', other: 'pitches are' })} on the
+                        board and will be hidden, not deleted.
+                      </p>
+                    )}
+                  </Field>
+                </SettingAnchor>
+                <SettingAnchor id="audit-keep" flashed={flashed}>
+                  <NumberField
+                    label="Audit entries to keep"
+                    hint="The log in the Audit tab is append-only and nothing else prunes it. Past this many entries the oldest are dropped as new ones arrive. 0 keeps every entry forever."
+                    spec={auditKeepField}
+                    value={auditKeep}
+                    onChange={setAuditKeep}
+                    className="w-32"
+                    suffix={
+                      parsedAuditKeep.value === 0
+                        ? 'entries · keeping everything'
+                        : 'entries · older ones are dropped'
+                    }
+                  />
+                </SettingAnchor>
+                <SettingAnchor id="role-label" flashed={flashed}>
+                  <Field
+                    label="What you call your participants"
+                    hint="Shown on role badges and in prompts. “attendee”, “participant”, “member”…"
+                  >
+                    <ControlShell>
+                      <TextInput
+                        value={userRoleLabel}
+                        onChange={(e) => setUserRoleLabel(e.target.value)}
+                        maxLength={24}
+                      />
+                    </ControlShell>
+                  </Field>
+                </SettingAnchor>
+
+                <SettingAnchor id="passwords" flashed={flashed}>
                   <div className="mt-1">
                     <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                      New passwords
+                      Change passwords
                     </p>
                     <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                      At least 6 characters each.
+                      Leave blank to keep the current one.
                     </p>
                   </div>
                   <FormGrid cols={3}>
                     <Field label="Viewer">
                       <ControlShell>
                         <TextInput
-                          value={cloneViewer}
-                          onChange={(e) => setCloneViewer(e.target.value)}
+                          value={viewerPassword}
+                          onChange={(e) => setViewerPassword(e.target.value)}
                         />
                       </ControlShell>
                     </Field>
-                    <Field label="User">
+                    <Field label={userRoleLabel.trim() || 'User'}>
                       <ControlShell>
                         <TextInput
-                          value={cloneUser}
-                          onChange={(e) => setCloneUser(e.target.value)}
+                          value={userPassword}
+                          onChange={(e) => setUserPassword(e.target.value)}
                         />
                       </ControlShell>
                     </Field>
                     <Field label="Admin">
                       <ControlShell>
                         <TextInput
-                          value={cloneAdmin}
-                          onChange={(e) => setCloneAdmin(e.target.value)}
+                          value={adminPassword}
+                          onChange={(e) => setAdminPassword(e.target.value)}
                         />
                       </ControlShell>
                     </Field>
                   </FormGrid>
-                  <div>
-                    <PrimaryButton
-                      onClick={() => void cloneEvent()}
-                      disabled={!cloneReady || cloning}
+                </SettingAnchor>
+                <div>
+                  {settingsProblem && <FormError className="mb-2">{settingsProblem}</FormError>}
+                  <PrimaryButton
+                    onClick={() => void saveSettings()}
+                    disabled={settingsProblem !== null}
+                  >
+                    Save settings
+                  </PrimaryButton>
+                </div>
+              </FormStack>
+            </Section>
+
+            <SettingAnchor id="invite" flashed={flashed}>
+              <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
+            </SettingAnchor>
+
+            <SettingAnchor id="duplicate" flashed={flashed}>
+              <Section
+                title="Duplicate Event/Conf"
+                description="Rooms and tags carry over to the new event; sessions and contributions do not."
+                className="mb-6"
+                actions={
+                  <SecondaryButton
+                    className="shrink-0 py-1.5"
+                    onClick={() => setCloneOpen(!cloneOpen)}
+                    aria-expanded={cloneOpen}
+                  >
+                    {cloneOpen ? 'Close' : 'Duplicate…'}
+                  </SecondaryButton>
+                }
+              >
+                {cloneOpen && (
+                  <FormStack>
+                    <Field label="New name">
+                      <ControlShell>
+                        <TextInput
+                          value={cloneName}
+                          onChange={(e) => setCloneName(e.target.value)}
+                        />
+                      </ControlShell>
+                    </Field>
+                    <Field
+                      label="New slug"
+                      hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
                     >
-                      {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
-                    </PrimaryButton>
-                  </div>
-                </FormStack>
-              )}
-            </Section>
-          </SettingAnchor>
+                      <ControlShell>
+                        <TextInput
+                          value={cloneSlug}
+                          onChange={(e) => setCloneSlug(slugify(e.target.value))}
+                          placeholder={slugify(cloneName) || 'your-event'}
+                        />
+                      </ControlShell>
+                    </Field>
+                    <FormGrid>
+                      <Field label="Start date">
+                        <ControlShell>
+                          <TextInput
+                            type="date"
+                            value={cloneStart}
+                            onChange={(e) => {
+                              setCloneStart(e.target.value);
+                              if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
+                            }}
+                          />
+                        </ControlShell>
+                      </Field>
+                      <Field label="End date">
+                        <ControlShell>
+                          <TextInput
+                            type="date"
+                            value={cloneEnd}
+                            min={cloneStart}
+                            onChange={(e) => setCloneEnd(e.target.value)}
+                          />
+                        </ControlShell>
+                      </Field>
+                    </FormGrid>
+                    <div className="mt-1">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                        New passwords
+                      </p>
+                      <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                        At least 6 characters each.
+                      </p>
+                    </div>
+                    <FormGrid cols={3}>
+                      <Field label="Viewer">
+                        <ControlShell>
+                          <TextInput
+                            value={cloneViewer}
+                            onChange={(e) => setCloneViewer(e.target.value)}
+                          />
+                        </ControlShell>
+                      </Field>
+                      <Field label="User">
+                        <ControlShell>
+                          <TextInput
+                            value={cloneUser}
+                            onChange={(e) => setCloneUser(e.target.value)}
+                          />
+                        </ControlShell>
+                      </Field>
+                      <Field label="Admin">
+                        <ControlShell>
+                          <TextInput
+                            value={cloneAdmin}
+                            onChange={(e) => setCloneAdmin(e.target.value)}
+                          />
+                        </ControlShell>
+                      </Field>
+                    </FormGrid>
+                    <div>
+                      <PrimaryButton
+                        onClick={() => void cloneEvent()}
+                        disabled={!cloneReady || cloning}
+                      >
+                        {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
+                      </PrimaryButton>
+                    </div>
+                  </FormStack>
+                )}
+              </Section>
+            </SettingAnchor>
 
-          <SettingAnchor id="archive" flashed={flashed}>
+            <SettingAnchor id="archive" flashed={flashed}>
+              <Section
+                title="Archive"
+                description="An archived event stays readable with the viewer password, but nobody can change anything."
+              >
+                {event.archived ? (
+                  <SecondaryButton onClick={() => void setArchived(false)}>
+                    Un-archive event
+                  </SecondaryButton>
+                ) : (
+                  <SecondaryButton onClick={() => void setArchived(true)}>
+                    Archive event
+                  </SecondaryButton>
+                )}
+              </Section>
+            </SettingAnchor>
+          </div>
+        )}
+
+        {tab === 'backup' && (
+          <div role="tabpanel" id="admin-panel-backup" aria-labelledby="admin-tab-backup">
+            <AdminBackup slug={slug} eventName={event.name} />
+          </div>
+        )}
+
+        {tab === 'trash' && (
+          <div role="tabpanel" id="admin-panel-trash" aria-labelledby="admin-tab-trash">
             <Section
-              title="Archive"
-              description="An archived event stays readable with the viewer password, but nobody can change anything."
+              title="Trash"
+              description="Deleted sessions and contributions. Restoring puts them back for everyone."
             >
-              {event.archived ? (
-                <SecondaryButton onClick={() => void setArchived(false)}>
-                  Un-archive event
-                </SecondaryButton>
+              {trash === null ? (
+                <p className="text-sm text-stone-400 dark:text-stone-500">Loading…</p>
+              ) : trashEmpty ? (
+                <p className="text-sm text-stone-400 dark:text-stone-500">
+                  Nothing has been deleted.
+                </p>
               ) : (
-                <SecondaryButton onClick={() => void setArchived(true)}>
-                  Archive event
-                </SecondaryButton>
+                <div className="space-y-4">
+                  {trash.sessions.length > 0 && (
+                    <div>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                        Sessions
+                      </h3>
+                      <ul className="space-y-2">
+                        {trash.sessions.map((s) => (
+                          <li
+                            key={s.id}
+                            className="flex flex-wrap items-center gap-2 rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2"
+                          >
+                            <span className="min-w-32 flex-1 text-sm font-medium">{s.title}</span>
+                            <span className="text-xs text-stone-400 dark:text-stone-500">
+                              deleted {relativeTime(s.deletedAt)} · {s.deletedByName}
+                            </span>
+                            <SecondaryButton
+                              className="py-1"
+                              onClick={() => void restoreSession(s.id)}
+                            >
+                              Restore
+                            </SecondaryButton>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {trash.contributions.length > 0 && (
+                    <div>
+                      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                        Contributions
+                      </h3>
+                      <ul className="space-y-2">
+                        {trash.contributions.map((c) => (
+                          <li
+                            key={c.id}
+                            className="flex flex-wrap items-center gap-2 rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2"
+                          >
+                            <span className="min-w-32 flex-1 truncate text-sm">
+                              <span className="text-stone-400 dark:text-stone-500">{c.kind}: </span>
+                              {c.body}
+                            </span>
+                            <span className="text-xs text-stone-400 dark:text-stone-500">
+                              deleted {relativeTime(c.deletedAt)} · {c.createdByName}
+                            </span>
+                            <SecondaryButton
+                              className="py-1"
+                              onClick={() => void restoreContribution(c.id)}
+                            >
+                              Restore
+                            </SecondaryButton>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               )}
             </Section>
-          </SettingAnchor>
-        </div>
-      )}
+          </div>
+        )}
 
-      {tab === 'backup' && (
-        <div role="tabpanel" id="admin-panel-backup" aria-labelledby="admin-tab-backup">
-          <AdminBackup slug={slug} eventName={event.name} />
-        </div>
-      )}
-
-      {tab === 'trash' && (
-        <div role="tabpanel" id="admin-panel-trash" aria-labelledby="admin-tab-trash">
-          <Section
-            title="Trash"
-            description="Deleted sessions and contributions. Restoring puts them back for everyone."
-          >
-            {trash === null ? (
-              <p className="text-sm text-stone-400 dark:text-stone-500">Loading…</p>
-            ) : trashEmpty ? (
-              <p className="text-sm text-stone-400 dark:text-stone-500">
-                Nothing has been deleted.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {trash.sessions.length > 0 && (
-                  <div>
-                    <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                      Sessions
-                    </h3>
-                    <ul className="space-y-2">
-                      {trash.sessions.map((s) => (
-                        <li
-                          key={s.id}
-                          className="flex flex-wrap items-center gap-2 rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2"
-                        >
-                          <span className="min-w-32 flex-1 text-sm font-medium">{s.title}</span>
-                          <span className="text-xs text-stone-400 dark:text-stone-500">
-                            deleted {relativeTime(s.deletedAt)} · {s.deletedByName}
-                          </span>
-                          <SecondaryButton
-                            className="py-1"
-                            onClick={() => void restoreSession(s.id)}
-                          >
-                            Restore
-                          </SecondaryButton>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {trash.contributions.length > 0 && (
-                  <div>
-                    <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                      Contributions
-                    </h3>
-                    <ul className="space-y-2">
-                      {trash.contributions.map((c) => (
-                        <li
-                          key={c.id}
-                          className="flex flex-wrap items-center gap-2 rounded-lg bg-stone-50 dark:bg-stone-800 px-3 py-2"
-                        >
-                          <span className="min-w-32 flex-1 truncate text-sm">
-                            <span className="text-stone-400 dark:text-stone-500">{c.kind}: </span>
-                            {c.body}
-                          </span>
-                          <span className="text-xs text-stone-400 dark:text-stone-500">
-                            deleted {relativeTime(c.deletedAt)} · {c.createdByName}
-                          </span>
-                          <SecondaryButton
-                            className="py-1"
-                            onClick={() => void restoreContribution(c.id)}
-                          >
-                            Restore
-                          </SecondaryButton>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </Section>
-        </div>
-      )}
-
-      {tab === 'audit' && (
-        <div role="tabpanel" id="admin-panel-audit" aria-labelledby="admin-tab-audit">
-          <AdminAudit slug={slug} auditKeep={event.auditKeep} />
-        </div>
-      )}
-    </div>
+        {tab === 'audit' && (
+          <div role="tabpanel" id="admin-panel-audit" aria-labelledby="admin-tab-audit">
+            <AdminAudit slug={slug} auditKeep={event.auditKeep} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

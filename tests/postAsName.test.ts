@@ -22,7 +22,12 @@ describe('the comment box posts as who you are in this event', () => {
 
   it('is handed the bundle name by both the panel and the full page', () => {
     const page = read('pages', 'SchedulePage.tsx');
-    expect(page.match(/displayName=\{bundle\.displayName\}/g)?.length).toBeGreaterThanOrEqual(4);
+    // Two mounts of the detail — the panel over the grid and the full page —
+    // and each hands the name in beside the contributions it will post to.
+    const handed = page.match(
+      /contributions=\{data\.contributions\[selected\.id\]\}\n\s*displayName=\{bundle\.displayName\}/g,
+    );
+    expect(handed).toHaveLength(2);
     const sheet = read('components', 'DetailSheet.tsx');
     expect(sheet).toContain('displayName: string;');
   });
