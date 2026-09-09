@@ -711,12 +711,15 @@ export function mintSpeakerCode(db: Db, eventId: number, person: PersonRow): { p
   const phrase = db.transaction(() => {
     let identityId = person.identity_id;
     if (identityId === null) {
+      // No last_seen_at: this row is made by the organiser's request, for a
+      // person who has not been here. The first request carrying the
+      // redeemed cookie stamps it, as for every other visitor.
       identityId = Number(
         db
           .prepare(
-            'INSERT INTO identities (public_id, token, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO identities (public_id, token, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, NULL)',
           )
-          .run(newPublicId(db), newIdentityToken(), person.name, now, now).lastInsertRowid,
+          .run(newPublicId(db), newIdentityToken(), person.name, now).lastInsertRowid,
       );
       db.prepare('UPDATE people SET identity_id = ? WHERE id = ?').run(identityId, person.id);
     }

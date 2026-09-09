@@ -59,6 +59,15 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Minting a speaker code no longer counts as a visit.** The People tab
+  showed *seen just now* beside a speaker the moment an organiser generated
+  their code, before the speaker had opened anything. The record that the
+  code hands out was being created with a last-seen time. It now starts
+  without one, and gets it on the first request the speaker's device makes.
+  Existing rows are repaired on upgrade: a profile whose code is still
+  unredeemed, and which was never seen after the minute it was created,
+  goes back to a dash.
+
 - **The comment box posts as who you are here.** Its button said *Post as*
   and then the name the instance offers a newcomer, which follows the last
   name typed at any gate on this instance: enter another event as *admin*
