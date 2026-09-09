@@ -21,40 +21,26 @@ queue: finished work goes to CHANGELOG.md and leaves this file.
 ## Open
 
 - **A lost account cannot be merged back under its old username.**
-  Reported 2026-09-09. Scenario: a person held `@username` (identity A,
-  device lost), re-enters as `@username2` (identity B, the device they now
-  use), and an organiser merges the two.
-  - Merge `@username2` *into* `@username`: identity A survives, identity B
-    is signed out, and the person's live device lands on the gate with no
-    role. The old identity's cookie is on the lost device, so they have no
-    way back in; a speaker code would adopt the device into identity A but
-    also raises them to speaker, which is wrong for an attendee.
-  - Merge `@username` *into* `@username2`, the only usable direction: the
-    person keeps access but is `@username2`, and `@username` stays held by
-    the signed-out identity A, so `PATCH /me` refuses the rename with
-    *Someone at this event is already called "username"*
-    (`claimEventName`, `server/src/eventIdentity.ts:32`). The old username
-    is not "edit it later" — it is unreachable.
-  - **Proposed fix, buildable now.** In the both-claimed confirm step of
-    `MergeModal`, add *Keep the name they used before* (username, and the
-    full name with it), default off. Server: `mergePersonSchema` takes
-    `keepLoserNames?: boolean`; inside the merge transaction the two
-    `event_identities.display_name` values are **swapped** (a swap keeps
-    both rows, both labels and the unique index intact — the lost identity
-    now carries `@username2`, which is what it would show as anyway if it
-    ever came back), and `people.name` is copied from the loser when the
-    flag is set. The audit `merge` row records the flag. Tests in
-    `tests/mergePeople.test.ts`: both directions, the rename afterwards
-    succeeding, and the swap leaving the unique index whole.
-  - **After D4** (per-device tokens) the direction problem itself goes
-    away: the loser identity's devices can be adopted by the surviving
-    identity instead of signed out, so either direction keeps the person
-    in. The name choice is still wanted then.
-  - **Open policy question:** should a name held by an identity with no
-    role in the event be claimable at all (by rename or at the gate), with
-    the old row suffixed to keep its audit label? Today it is reserved
-    forever; that protects against impersonation but is also what makes
-    this scenario a dead end without organiser help.
+  Reported 2026-09-09; the analysis and the agreed design are in
+  `_planning/specs/account-recovery-merge-and-link.md`. Short form: in a
+  both-claimed merge the losing identity is absorbed into the survivor when
+  it exists at no other event, its device is redirected to the survivor's
+  token on its next request, and the survivor's token is rotated by default
+  so a lost or stolen device is out. The earlier idea of swapping the two
+  usernames is withdrawn: absorption keeps the old username without a swap.
+  Waits on: nothing. Builds cleanly before D4 and is simplified by it.
+
+- **Blocked cookies loop at the gate.** Noticed 2026-09-09. A browser that
+  refuses the `cid` cookie is minted a new identity on every request, so it
+  passes the gate and lands back on it, forever, and every attempt leaves a
+  row (D3 §3 bounds the rows, not the loop). Nothing detects the case: the
+  cookie is httpOnly, so the page cannot look for it. Wanted: the gate
+  fetches `/api/me` twice before offering a name and compares the UID; two
+  different UIDs mean cookies are blocked, and the gate says so instead of
+  asking for a name. First-party `SameSite=Lax` cookies survive every
+  browser's third-party blocking, so this is the all-cookies-off setting
+  and private windows that drop the cookie on close — the latter is the
+  usual origin of the duplicate the spec above merges.
 
 - **The gate doesn't suggest device linking to a merged-out device.** After
   a both-claimed merge the losing device is signed out; when it next hits

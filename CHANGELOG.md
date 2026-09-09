@@ -16,11 +16,6 @@ All notable changes to this project are documented here.
   schema:pdf` prints the same page to `docs/schema.pdf`, A3 landscape, using
   the Chromium the browser pass already drives and a bundled copy of Mermaid,
   so it works without network.
-
-## [0.4.0] — 2026-09-09
-
-### Added
-
 - **The event bar is on every page of an event.** The logo, the event's
   name, the notification bell and the menu behind your name were the
   schedule's alone. The agenda and search had the logo and the name with no
@@ -32,6 +27,20 @@ All notable changes to this project are documented here.
   Event, everything on the bar asks the Settings tab's *Leave without
   saving?* first, the way its own tabs do. *Take the tour* stays a schedule
   row: the menu leaves it out where there is no tour to start.
+
+### Changed
+
+- **The schedule keeps the event bar through the fold.** Scrolling into the
+  day used to put the whole header away — logo, name, bell and menu along
+  with the weeks, the day strip and the action row. Only those rows fold
+  now; the bar stays, on the schedule as on every other page. The day gets
+  about fifty pixels less back on a phone, which is the price of never
+  losing the way home or the menu behind your name.
+
+## [0.4.0] — 2026-09-09
+
+### Added
+
 - **The audit log links to what it names.** A line said *ada deleted session
   “Opening keynote”* and left you to find both. Now the name opens Ada's
   profile, and the title opens the session — or **Trash**, when that is
@@ -62,12 +71,6 @@ All notable changes to this project are documented here.
   called it *Edit their own speaker profile*; since every attendee has a
   profile, it now reads *Edit their own profile*, and the table in
   `docs/using.md` says the same.
-- **The schedule keeps the event bar through the fold.** Scrolling into the
-  day used to put the whole header away — logo, name, bell and menu along
-  with the weeks, the day strip and the action row. Only those rows fold
-  now; the bar stays, on the schedule as on every other page. The day gets
-  about fifty pixels less back on a phone, which is the price of never
-  losing the way home or the menu behind your name.
 - **Link another device wears the devices glyph.** The menu row that mints
   the phrase was plain text between Calendar and Theme, and the one thing in
   the menu nobody found. It now carries the same laptop-and-phone icon as the
@@ -1590,7 +1593,6 @@ All notable changes to this project are documented here.
     credential: it carries every identity token in clear and the hashes of
     every device and speaker code.
 
-
 - **Event passwords can be left blank.** Inventing three passwords at the
   moment of creating an event is a chore that invites bad ones, so a blank
   field is filled in rather than rejected. A real instance generates a
@@ -1600,7 +1602,6 @@ All notable changes to this project are documented here.
   and predictable ones keep the docs and screenshots honest; it falls back to
   generating one if a published value would collide with something the
   creator typed.
-
 
 - **The demo event ships in production.** The DemoConf fixture moved from
   `scripts/seed.ts` into `server/src/seed.ts`, so it is compiled into the
@@ -1790,7 +1791,6 @@ All notable changes to this project are documented here.
   `sm`, which is what actually buys the space; every one carries a real label
   for assistive tech and a tooltip. The events list keeps its own theme
   switcher, having no profile menu to hide it in.
-
 
 - **The event-creation form explains the instance password.** It is the
   server's password, not an event's, and the page never said so — a new
@@ -2125,7 +2125,6 @@ All notable changes to this project are documented here.
   weekends — was missing from deployed demos, and with it every screen only
   that event reaches. `DEMO_MODE=1` now seeds both.
 
-
 - **A production instance checks its whole deployment at boot, once.**
   `loadConfig` threw on the first missing variable it met, so a fresh deploy
   with three things wrong took three rounds of edit-redeploy-read-the-log,
@@ -2151,7 +2150,6 @@ All notable changes to this project are documented here.
   the database's directory is a mount point (its `st_dev` differs from its
   parent's) and exits with instructions if it is not. `ALLOW_EPHEMERAL_DB=1`
   opts a deliberately disposable instance out; development is unaffected.
-
 
 - **An event's three passwords must now be different from each other.** They
   are the only thing telling the roles apart, and `roleForPassword` checks
@@ -2208,7 +2206,6 @@ All notable changes to this project are documented here.
   events that are not yours. The "back to all events" links in the error
   states and the back links on Import and New event are about the list, not
   about home, and still point at `/events`.
-
 
 ## [0.2.0] — 2026-08-30
 
