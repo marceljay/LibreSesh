@@ -998,6 +998,30 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
+- **Day navigation on a phone.** [LIB-189] Raised 2026-09-09. The week rail
+  sits above the day strip as a line of chips of its own
+  (`SchedulePage.tsx:1179`), and on a phone those two rows are most of what
+  stands between the event bar and the day's first session. Collapse it into a
+  `W2 ▾` dropdown at the head of the strip, carrying the range label, session
+  count and today-dot the chips carry now; the strip gives up about a day of
+  width and the page gets a row back. Only above `weekRailFrom` (default 8
+  days). Two smaller faults in the same chunking to take with it: a
+  Sunday-start event splits every weekend, because the boundaries fall every
+  seven days from day one; and a tail chunk can be a single day (15 days
+  → 7 / 7 / 1), so "Week 3" labels one date. A configurable week start is
+  explicitly *not* wanted — chunking from the start date already gives the
+  fewest chips possible, and calendar alignment is what would turn a Wednesday
+  fortnight into three of them.
+
+  The day strip wants the rail's arrows as well: it is a bare
+  `overflow-x-auto no-scrollbar` box, so the hidden scrollbar leaves nothing
+  saying the line goes on — the very gap `Rail` was written to close for the
+  weeks, and it matters more once the strip is the only day navigation left.
+  `Rail` does not drop straight in: its fade is hardcoded to the page's ground
+  (`stone-50`) and the strip's is `white`, its arrows would sit on the strip's
+  border and past its radius, and it has to shrink or the view toggle wraps to
+  the second line this item exists to save.
+
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
   format and expected-person rows): typing a name the event does not know into
