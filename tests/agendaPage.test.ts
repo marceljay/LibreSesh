@@ -21,7 +21,9 @@ describe('my agenda is the whole event, not a day of it', () => {
   it('is a page of its own, reached from the personal menu', () => {
     expect(app).toMatch(/<Route path="\/e\/:slug\/agenda" element=\{<AgendaPage \/>\} \/>/);
     expect(profile).toContain('My agenda');
-    expect(profile).toMatch(/navigate\(`\/e\/\$\{slug\}\/agenda`\)/);
+    // Through `go`, which asks the page first: Manage Event's Settings tab
+    // has edits to lose, and the menu is on that page now too.
+    expect(profile).toMatch(/go\(`\/e\/\$\{slug\}\/agenda`\)/);
   });
 
   it('takes every starred session, in programme order', () => {

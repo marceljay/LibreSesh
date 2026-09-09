@@ -51,6 +51,17 @@ every failure as `{ error: { code, message } }`.
 
 ## Data model
 
+What each table is *for* is below. What each one *contains*, and which
+columns point at which, is drawn from the migrations themselves in
+[`docs/schema.md`](docs/schema.md) — an entity diagram plus, per table, what
+it references and what references it. `npm run schema` regenerates it and a
+test fails when it is behind, so it is always the schema this build produces;
+`npm run schema:pdf` prints the same page to `docs/schema.pdf` (A3 landscape,
+through the container's Chromium, no network).
+The schema is the same on every deployment; only the rows differ. To look at
+rows, open the database file in a read-only viewer (a copy for production:
+`identities.token` is a bearer credential, see §What a cookie is, exactly).
+
 | Table | Notes |
 | --- | --- |
 | `events` | Three bcrypt password hashes, timezone, day viewport, archive flag |

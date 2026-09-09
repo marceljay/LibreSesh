@@ -99,10 +99,20 @@ describe('every way off the Settings tab asks first', () => {
     );
   });
 
-  it('the way back to the schedule', () => {
-    expect(page).toMatch(
-      /void confirmLeaveSettings\(\)\.then\(\(ok\) => \{\s*if \(ok\) navigate\(`\/e\/\$\{slug\}`\);/,
-    );
+  it('the way back to the schedule, and everything else on the event bar', () => {
+    // The bar carries the logo, the way back and the profile menu, and every
+    // one of them leaves the page. The question is handed to the bar once and
+    // the bar asks it for all of them.
+    expect(page).toMatch(/<EventBar[\s\S]*?beforeLeave=\{confirmLeaveSettings\}/);
+    const bar = readFileSync('web/src/components/EventBar.tsx', 'utf8');
+    expect(bar).toMatch(/onClick=\{guardLink\(`\/e\/\$\{slug\}`\)\}/);
+    expect(bar).toMatch(/onClick=\{guardLink\('\/'\)\}/);
+    expect(bar).toMatch(/beforeNavigate=\{beforeLeave\}/);
+    expect(bar).toMatch(/onSignOut=\{\(\) => guarded\(onSignOut\)\}/);
+    // A modifier click opens a new tab and loses nothing, so it is not asked.
+    expect(bar).toMatch(/e\.metaKey \|\| e\.ctrlKey \|\| e\.shiftKey/);
+    const menu = readFileSync('web/src/components/ProfileMenu.tsx', 'utf8');
+    expect(menu).toMatch(/if \(beforeNavigate && !\(await beforeNavigate\(\)\)\) return;/);
   });
 
   it('only when there is something to lose, and leaving drops it', () => {

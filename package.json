@@ -31,7 +31,9 @@
     "lint": "prettier --check . && eslint . && tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "schema": "tsx scripts/schema.ts",
+    "schema:pdf": "tsx scripts/schemaPdf.ts"
   },
   "overrides": {
     "qs": "^6.16.0"
@@ -76,6 +78,7 @@
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "29.1.1",
+    "mermaid": "11.17.2",
     "node-gyp": "12.4.0",
     "playwright-core": "1.63.0",
     "postcss": "^8.4.49",

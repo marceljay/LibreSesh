@@ -1,9 +1,12 @@
 # Plan: security hardening
 
-**Spec:** [`specs/security-hardening.md`](../specs/security-hardening.md).
-**Decision needed:** the order below, and the two thresholds (60 failures an
-hour closes a gate; 300 identities per address per quarter hour). Everything
-else is settled by the spec.
+**Spec:** [`specs/D3-security-hardening.md`](../specs/D3-security-hardening.md).
+This is **D3** in STATUS.md and **LIB-101** in Linear.
+**Decided 2026-09-09:** approved as written, minus lockdown — phases 1, 2 and
+4 are go, phases 3 and 5 are deferred. Both thresholds stand (60 failures an
+hour closes a gate; 300 identities per address per quarter hour). The password
+policy in §1d was withdrawn separately: advice, never a refusal, and no live
+instance is ever made to rotate.
 
 Five phases, cheapest and most valuable first. Each is its own branch and PR
 off `dev`; none depends on another, so they can land in any order — but the
@@ -58,7 +61,12 @@ Closes §1. No migration; one new limiter, one notice.
 - Docs: `managing.md` (choosing passwords; what the notice means),
   `schedule-import.md` (password rule), ARCHITECTURE threat row.
 
-## Phase 3 — lockdown, first cut (1 day)
+## Phase 3 — lockdown, first cut (1 day) — DEFERRED 2026-09-09
+
+**Not being built now, by the user's decision:** D3 is approved without
+lockdown. Phases 1, 2 and 4 go ahead; this phase and phase 5 wait. Kept here
+in full because the design is settled and only the timing changed. Tracked
+separately in Linear so it does not sit inside an approved plan as open work.
 
 Closes §4 except the instance-wide switch and Evict.
 
@@ -92,7 +100,7 @@ Closes §5 first paragraph.
   material" keeps passing; add "a token copied from the DB does not sign in".
 - Backup warning shrinks to what remains; threat-model row updated.
 
-## Phase 5 — lockdown, second cut (½ day)
+## Phase 5 — lockdown, second cut (½ day) — DEFERRED 2026-09-09
 
 - `LOCKDOWN=1` and the `.lockdown` file beside the database, checked in
   `requireWritable` (cached one second).
@@ -103,9 +111,14 @@ Closes §5 first paragraph.
 
 ## Order and branches
 
-`sec/instance-key-and-minting` → `sec/gate` → `sec/lockdown` →
-`sec/tokens-at-rest` → `sec/lockdown-2`. Phase 4's migration number moves
-if Phase 3 lands first; nothing else interacts.
+**Approved 2026-09-09:** `sec/instance-key-and-minting` → `sec/gate` →
+`sec/tokens-at-rest`, with the two lockdown phases deferred. Thresholds stand
+as proposed: 60 failures an hour closes a gate, 300 identities per address per
+quarter hour. Phase 4 takes migration number 018 with lockdown out of the way;
+nothing else interacts.
+
+The original order was `sec/instance-key-and-minting` → `sec/gate` →
+`sec/lockdown` → `sec/tokens-at-rest` → `sec/lockdown-2`.
 
 ## Acceptance, whole plan
 

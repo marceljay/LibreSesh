@@ -1,1 +1,8 @@
 * text=auto
+
+# Two branches that each add an entry under the same heading conflict on
+# every merge, because git sees two insertions between the same two lines
+# and will not guess the order. For a changelog both are wanted: keep both,
+# ours first. The cost is that a genuine two-sided edit of one entry is
+# concatenated rather than flagged — rare here, and visible on read.
+CHANGELOG.md merge=union

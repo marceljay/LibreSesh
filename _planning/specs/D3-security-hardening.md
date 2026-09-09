@@ -1,8 +1,16 @@
 # Security hardening
 
-**Status:** proposed, 2026-09-05. Companion plan:
-[`plans/2026-09-05-security-hardening.md`](../plans/2026-09-05-security-hardening.md).
+**Status:** proposed, 2026-09-05. This is **D3** in STATUS.md and **LIB-101**
+in Linear; "D3 go" means approving the order in the plan and the two
+thresholds. Companion plan:
+[`plans/2026-09-05-D3-security-hardening.md`](../plans/2026-09-05-D3-security-hardening.md).
 Threat model and the decisions already taken: SECURITY.md.
+
+**What is in D3, in one list:** the instance key behind the `auth` budget
+(§2), a per-IP mint budget (§3), per-IP backoff and the per-event door closure
+with its organiser notice (§1), **lockdown** (§4), and hashing
+`identities.token` and `ics_token` at rest (§5). Password strength is *not*
+in it — see §1d.
 
 The threat model stands — public-ish, low-stakes, high-trust; the host is
 trusted; identity is a cookie. This spec does not change it. It closes the gaps
@@ -87,21 +95,43 @@ attempts in the last hour"* whenever N > 10, and *"The door was closed at
 HH:MM after N attempts"* when it was, with **Rotate the passwords** one click
 away. A quiet event shows nothing.
 
-**d. Chosen passwords.** `passwordSchema` goes from `min(6)` to **`min(10)`**,
-plus a denylist of the hundred most common passwords and the event's own name
-and slug (case-insensitive, whitespace-stripped). The generated phrases stay
-the default and stay ~37 bits; the New Event and Settings forms lead with
-"leave blank and we make one" rather than with an empty field. This is the
-change that matters most and costs least: the limiter buys time, the password
-is what has to survive it.
+**d. Chosen passwords — advice, never a refusal (decided 2026-09-09).**
+`passwordSchema` keeps `min(6)`. The length of an event's passwords is the
+organiser's decision: they know whether a password is read out to a room,
+printed on a badge, or guarding a programme under embargo, and the server
+does not. So the change is presentational, in three parts:
+
+- The New Event and Settings forms lead with **leave blank and we make one**
+  rather than with an empty field. The generated phrases stay the default and
+  stay ~37 bits, which is the setting most events will never leave.
+- A typed password gets an inline note beside the field, per tier: the admin
+  password changes the event and is worth the most length; the viewer and
+  attendee passwords are usually shared aloud, and a shorter one is a
+  reasonable trade. Wording, not validation.
+- The hundred most common passwords, and the event's own name and slug, raise
+  a **warning** under the field — *"this is one of the first things an
+  attacker tries"* — and the form still submits.
+
+**No forced rotation, ever.** No migration touches an existing hash, no
+existing event is nagged, and no live instance is required to change a
+password it is already running on. Whatever an organiser chose stays working
+until they choose otherwise.
+
+The consequence, stated plainly: with the floor left at 6 characters, the
+per-target closure in **b** and the notice in **c** are the whole defence
+against a distributed guesser. That raises rather than lowers the case for
+the 60-an-hour threshold being firm, and makes **c** the feature that matters
+most in this section — an organiser who chose a weak password finds out that
+it is being hammered.
 
 ### What this does not do
 
 It does not stop a patient attacker with many addresses and a weak password —
 it makes them slow and visible, and it gets the organiser to a rotation before
-they finish. A captcha or an edge proxy would raise the cost further and are
-out of scope (below). Against generated phrases none of it is needed; it is
-here because people type "summer2026".
+they finish. Since **d** no longer refuses a weak password, that is the whole
+of the answer to "summer2026": the door shuts for a quarter hour at a time and
+the organiser is told. A captcha or an edge proxy would raise the cost further
+and are out of scope (below). Against generated phrases none of it is needed.
 
 ---
 
@@ -159,7 +189,10 @@ names and no `last_seen_at` in 30 days.
 
 ---
 
-## 4. Lockdown
+## 4. Lockdown — deferred 2026-09-09
+
+**Designed, not being built.** D3 was approved without it; the rest of this
+section stands as the design for when it is picked up.
 
 The brainstorm of 2026-09-05, condensed. A compromise here is a leaked
 password (admin or attendee), a stolen admin cookie, or the instance password.

@@ -8,6 +8,8 @@ import { dayLabel, fmtMin, place, todayInZone } from '../lib/format';
 import { buildSpeakerLinkUrl, readLinkBase } from '../lib/inviteLink';
 import { renderMarkdown } from '../lib/markdown';
 import { useEventData } from '../lib/useEventData';
+import { useMe } from '../lib/useMe';
+import { EventBar } from '../components/EventBar';
 import { EditIcon, SpeakerIcon } from '../components/icons';
 import { QrCode } from '../components/QrCode';
 import { personByUsername } from '../components/MentionText';
@@ -53,6 +55,7 @@ export function ProfilePage() {
   const from = (useLocation().state as { back?: { to: string; label: string } } | null)?.back;
   // The bundle gives us the viewer's role, the timezone and live edits.
   const data = useEventData(slug);
+  const { me } = useMe();
   const toast = useToast();
 
   const [detail, setDetail] = useState<PersonDetailDto | null>(null);
@@ -259,26 +262,46 @@ export function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
+      {/* A profile can be read on the person's own detail alone — the bundle
+          arrives a moment later, or not at all through a link that skipped
+          the gate — and the bar needs the bundle. */}
+      {bundle && (
+        <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
+          <EventBar
+            slug={slug}
+            bundle={bundle}
+            me={me}
+            ping={data.notificationPing}
+            width="max-w-2xl"
+            onSignOut={() => void api.logout(slug).then(() => navigate(`/e/${slug}`))}
+            sub={
+              /* Whoever linked here said where here was; the line under the
+                 event name takes you back there rather than to the schedule
+                 regardless. */
+              from && (
+                <Link
+                  to={from.to}
+                  className="text-xs text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+                >
+                  ← {from.label}
+                </Link>
+              )
+            }
+          />
+        </header>
+      )}
       <div className="mx-auto max-w-2xl px-4 py-8">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        {/* A deep link into a profile arrives with no history to speak of,
+            so an organiser gets the tab named outright rather than only as
+            a back arrow they may not have. */}
+        {isAdmin && from === undefined && (
           <Link
-            to={from?.to ?? `/e/${slug}`}
+            to={`/e/${slug}/admin?tab=people`}
             className="text-xs text-stone-500 dark:text-stone-400 underline"
           >
-            ← {from?.label ?? 'Schedule'}
+            Manage → People
           </Link>
-          {/* A deep link into a profile arrives with no history to speak of,
-              so an organiser gets the tab named outright rather than only as
-              a back arrow they may not have. */}
-          {isAdmin && from === undefined && (
-            <Link
-              to={`/e/${slug}/admin?tab=people`}
-              className="text-xs text-stone-500 dark:text-stone-400 underline"
-            >
-              Manage → People
-            </Link>
-          )}
-        </div>
+        )}
 
         <div className="mt-4 rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-5 shadow-xs">
           <div className="flex items-start gap-3">

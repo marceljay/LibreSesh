@@ -5,13 +5,32 @@ Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
 Last updated: 2026-09-09
 
+Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
+issue holds the same text. Linear is the shared view; this file stays the
+working queue, so an item that moves here moves there in the same edit, and a
+new item is filed in both. Issues live in the LibreSesh team, one project per
+group below. Unbracketed items have no issue on purpose: they are prose about
+the state of a branch, not work to pick up.
+
 ## In Progress
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
 nothing local is unsaved. Suite at **1146**, lint clean, build clean.
 
-- **UI pass from your checklist** (live, 2026-09-04). You are walking the app
+- **D3 · Security hardening, approved 2026-09-09 — building.** [LIB-101]
+  Approved as written minus lockdown, with both thresholds standing (60 gate
+  failures an hour closes a door for 15 minutes; 300 identities per address
+  per quarter hour). Three phases, each its own branch off `dev`, in this
+  order: `sec/instance-key-and-minting` (the instance key behind the `auth`
+  budget, a per-IP mint budget, the idle-identity sweep), `sec/gate` (per-IP
+  backoff, the per-event closure, the organiser notice, and the password
+  *advice* that replaced the withdrawn policy), then `sec/tokens-at-rest`
+  (`identities.token` and `ics_token` hashed, migration 018). Spec
+  `_planning/specs/D3-security-hardening.md`, plan
+  `_planning/plans/2026-09-05-D3-security-hardening.md`.
+
+- **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
   CHANGELOG line. Landed today: the hold band's label centred and the band
   sized to the block inside it; the day strip, week rail and Next-day button
@@ -42,7 +61,7 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
   shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
 
-- **Permissions, page side** (2026-09-08, on `dev`): you found a viewer
+- **Permissions, page side** [LIB-182] (2026-09-08, on `dev`): you found a viewer
   could not add notes in production despite the matrix allowing it. Every
   control the page gated by the role's *name* now reads the matrix instead —
   see CHANGELOG `[Unreleased]` → Fixed — and `tests/permissionParity.test.ts`
@@ -60,7 +79,7 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   so the work went on a branch; land it with `git branch -f dev origin/dev`
   then `git merge chore/react-19` on `dev`.
 
-- **Branch `fix/now-line-placement`** (2026-09-08, worktree
+- **Branch `fix/now-line-placement`** [LIB-157] (2026-09-08, worktree
   `.claude/worktrees/review`, off `dev` at `5255ae7`): the two fixes from the
   2026-09-08 review, one commit each, both in CHANGELOG `[Unreleased]`. The
   **R31 verdict** — the list's now line crosses every running card instead
@@ -95,7 +114,7 @@ cap, the eye, the calmer tags, help folded into the profile menu, and the
 drag-hold, system-theme, phone-header and demo-gate fixes — all on `dev`,
 merged to `main` up to the bell (PR #50) and untagged. Only v0.1.0 and v0.2.0
 carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling before the
-next cut.
+next cut [LIB-156]. (v0.3.5, v0.3.6 and v0.4.0 were tagged on `main` since.)
 
 The 2026-08-29 UI-overhaul/permissions/pitches plan was **retired on
 2026-09-04**: of its 28 open boxes, 25 had shipped without being ticked (every
@@ -104,7 +123,7 @@ whole capability system, livestream URLs, the pitch creator) and one was
 withdrawn (up/down votes — see §Voting below). What genuinely survived it is
 here:
 
-- **Whole-app UI sweep.** The primitives landed, the admin page is done, and
+- **Whole-app UI sweep.** [LIB-153] The primitives landed, the admin page is done, and
   as of 2026-08-31 every modal is on the `Modal` primitive (`fb5c759`).
   **Recounted against the tree on 2026-09-05: 51 bare `underline` usages**, up
   from 49 on 2026-09-04 and 38 on 2026-09-03 — the bell, the landing page and
@@ -123,11 +142,11 @@ here:
   AdminAudit 1, NotificationBell 1, Tour 1, Gate 1.
   Count the tree, not the files this entry happens to name.
 
-- **ARCHITECTURE.md concurrency paragraph.** §Realtime documents broadcast and
+- **ARCHITECTURE.md concurrency paragraph.** [LIB-154] §Realtime documents broadcast and
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
 
-- **The two files that keep growing.** `SchedulePage.tsx` is **2,022 lines**
+- **The two files that keep growing.** [LIB-155] `SchedulePage.tsx` is **2,022 lines**
   and `AdminPage.tsx` **2,665** (2026-09-05). The retired plan flagged
   SchedulePage at 989 on 2026-08-29 and this entry said 2,018 and 2,657 a day
   ago — both grew again with the bell and the header, which is the argument for
@@ -185,7 +204,7 @@ cover a title — and is fixed on `fix/now-line-placement`, reworded on the
 sheet for a second look. Verdicts live in the sheet's own store, so ticking
 there is enough — nothing needs pasting back.
 
-0. **R26 · Export what you choose, and import it back.** Manage Event → Backup:
+0. **R26 · Export what you choose, and import it back.** [LIB-158] Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
    greys out **Contributions** with a note saying why; the download link
    carries `?include=…` for what is ticked (hover it); the file has no key for
@@ -198,91 +217,91 @@ there is enough — nothing needs pasting back.
    the two events' grids side by side — speakers, tags, streams, breaks, track
    hours. While there: the Backup tab's amber warning now runs to feeds, codes
    and names — check it still reads as one paragraph on a phone.
-1. **R25 again · The landing page on a phone.** Open `/` on the phone that
+1. **R25 again · The landing page on a phone.** [LIB-159] Open `/` on the phone that
    needed the zoom-out. *Pass:* the page is the width of the screen — no
    zooming out, no right edge cut off; the preview's address bar ends in an
    ellipsis instead of pushing the frame wider; the two buttons sit on their
    own lines if they must. This one was reasoned, not measured — there is
    still no browser in the container — so if it still overflows, say by how
    much and which phone.
-2. **R21 · Search everywhere.** Set a tag (or a room, or ★) in Filter, then press
+2. **R21 · Search everywhere.** [LIB-160] Set a tag (or a room, or ★) in Filter, then press
    **Search everywhere** at the foot of the panel. *Pass:* the results page opens
    with the same chips still on, showing every matching session grouped by day;
    the chips can be taken off there; the URL carries the whole question. Then
    re-run the query from the box on that page and check the chips survive it.
    *Also:* **Now / next** on that page means "has not ended yet" across dates,
    where on the grid it means a minute of the day on screen.
-3. **R22 · Default view field** (Manage Event → Settings). *Pass:* the label
+3. **R22 · Default view field** [LIB-161] (Manage Event → Settings). *Pass:* the label
    reads **Default view**, the hint is two sentences, and the select is wide
    enough to show "List — one column, in time order" without it running under
    the chevron.
-4. **R1 · Forms overhaul — fields, focus, buttons** (Phases 2–3). Open a form
+4. **R1 · Forms overhaul — fields, focus, buttons** [LIB-162] (Phases 2–3). Open a form
    (Add session, Manage Event → Settings). *Pass:* field borders read a touch
    darker and even; **clicking into a field shows one clean focus ring, not a
    doubled/inner border** — check the **speaker/host** field especially, in
    **both themes**; a text field does **not** zoom the page on a phone; tabbing
    to a button shows a focus ring; hint text under a field is legible; native
    selects (day, duration) match the text fields.
-5. **R2 · Grid block padding.** On the calendar grid, a session block's tags sit
+5. **R2 · Grid block padding.** [LIB-163] On the calendar grid, a session block's tags sit
    near the top edge and a short (15–20 min) block still shows its time row.
    *Pass:* nothing is clipped at the bottom of a short block; tags aren't
    floating with a gap above them.
-6. **R5 · Link after the fact, and the edit reach.** On a saved session,
+6. **R5 · Link after the fact, and the edit reach.** [LIB-164] On a saved session,
    *Link matching sessions…* lists your other same-titled runs (with select-all)
    and links the ones you tick. Editing a linked session then offers *this only*
    / *this and later* / *all in the series*. *Pass:* the default is this-only;
    changing a description with *all* updates the rest but **never the time**; an
    occurrence that isn't yours is skipped and reported ("applied to four of
    five"); *Unlink this one* drops a session back out.
-7. **R6 · A clash narrows only the clashing sessions.** Put two sessions
+7. **R6 · A clash narrows only the clashing sessions.** [LIB-165] Put two sessions
    overlapping in one room, with a third alone elsewhere in that room's column.
    *Pass:* only the overlapping pair split into lanes; the lone 09:00 talk keeps
    full width even though an unrelated 15:00 pair clashes (the `4f9afdb` fix).
    While here, R6b: open a session from **search** and confirm the detail panel
    now leads with the weekday and date, not just the time (`2c4a542`).
-8. **R7 · Star & ring on the grid.** Tap a session block's corner star: it
+8. **R7 · Star & ring on the grid.** [LIB-98] Tap a session block's corner star: it
    should toggle without opening the sheet or dragging the block. Open a
    session: its block gains a ring. *Pass:* both work; the ring shows in both
    themes.
 9. **R8 · Break label on a wide grid.** With 3+ rooms, a lunch/dinner band
    shows its name+time bottom-right as well as top-left. *Pass:* both corners
    labelled, and a short break doesn't stack them on top of each other.
-10. **R9 · Placement row (phone).** Add session, narrow window. *Pass:* the
+10. **R9 · Placement row (phone).** [LIB-166] Add session, narrow window. *Pass:* the
    "Non-official: allow parallel sessions" chip + "?" wrap to a second line
    instead of clipping off the edge.
-11. **R10 · People table.** *Pass:* headings line up with the rows; the active
+11. **R10 · People table.** [LIB-167] *Pass:* headings line up with the rows; the active
     sort column shows an arrow; the Columns button toggles UID / Last seen; on a
     phone the table scrolls sideways rather than crushing the name; name and
     username share the width.
-12. **R11 · Role tag & archiving.** Role is a coloured badge with a pencil,
+12. **R11 · Role tag & archiving.** [LIB-168] Role is a coloured badge with a pencil,
     opening a menu; the ⋯ menu holds Merge / Archive. *Pass:* the badge fits the
     role column at the longest role word an event can set; both menus open over
     the row (and the ⋯ menu flips *up* on the last row of a long list, not
     off-screen); an archived profile shows its amber notice; re-entering the
     event un-archives.
-13. **R12 · The gate — highest stakes, a mistake locks people out.** *Pass:* an
+13. **R12 · The gate — highest stakes, a mistake locks people out.** [LIB-169] *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
-14. **R13 · Claim & queue.** The "This is me" button on an unclaimed profile, and
+14. **R13 · Claim & queue.** [LIB-170] The "This is me" button on an unclaimed profile, and
     the approval queue above the People list. *Pass:* asking to be a profile
     shows in the queue; approving hands it over. Also: the next-day button at the
     end of a day's list, and several stream links on one session.
-15. **R14 · Top of the session form.** Format chips, then Placement, then the
+15. **R14 · Top of the session form.** [LIB-171] Format chips, then Placement, then the
     title. *Pass:* a dozen formats wrap to ≤3 tidy lines above the title;
     picking a format visibly moves the Duration select below it.
-16. **R15 · Speaker edits their own session** (the reported flow). As an attendee
+16. **R15 · Speaker edits their own session** [LIB-172] (the reported flow). As an attendee
     credited on an official session. *Pass:* Edit appears; Room / Day / Start /
     Duration are disabled under the grey notice; Delete is absent; saving a
     changed description goes through.
-17. **R17 · Official badge & Formats.** With the badge off (default) the grid
+17. **R17 · Official badge & Formats.** [LIB-173] With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
     Programme, the Formats suggestion chips (dashed row) and the "no formats
     yet" empty state render.
-18. **R18 · Number fields** (capacity, audit-keep, week-rail) after the Phase 1
+18. **R18 · Number fields** [LIB-184] (capacity, audit-keep, week-rail) after the Phase 1
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
-19. **R28 · Forms close-out** (2026-09-05, on `docs/forms-overhaul-close-out`,
+19. **R28 · Forms close-out** [LIB-174] (2026-09-05, on `docs/forms-overhaul-close-out`,
     the eight leftovers from `_planning/forms-overhaul-review.md`). At the
     gate: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
@@ -309,17 +328,17 @@ there is enough — nothing needs pasting back.
     **Progress 2026-09-07:** 2 of the 17 checks ticked on the review sheet
     (the password-manager save, and the eye) — the time fields and the two
     2026-09-05 notes are still unseen.
-20. **R31 · The now line in List view.** On the day of the event, switch to
+20. **R31 · The now line in List view.** [LIB-175] On the day of the event, switch to
     List. *Pass:* the same yellow line as the grid, with the time on it, sits
     between the rows — after a session that is running (its cards say *now*)
     and before the next one to start; after the last row once everything has
     started; nowhere on any other day. **Now** in the header scrolls to it;
     opening the schedule mid-event lands on it.
-21. **R32 · Dark mode catches up.** Theme on *System*. Put the app in the
+21. **R32 · Dark mode catches up.** [LIB-176] Theme on *System*. Put the app in the
     background (another tab, or the phone's home screen), flip the OS to
     dark, come back. *Pass:* the page is dark the moment it is on screen,
     with the profile menu closed. Also try the browser's Back into the app.
-22. **R33 · Leave without saving.** Manage Event → Settings, change the name,
+22. **R33 · Leave without saving.** [LIB-177] Manage Event → Settings, change the name,
     then click another tab. *Pass:* a dialog asks *Leave without saving?*;
     **Cancel** keeps you and your edit; **Leave without saving** switches tab
     and, back on Settings, the name is the saved one. The same for a
@@ -327,7 +346,7 @@ there is enough — nothing needs pasting back.
     **Save settings** and switch tab: no dialog. A reload with an edit
     pending gets the browser's own warning. The browser's Back button does
     not ask — known, not covered.
-23. **R34 · A mention in a description.** Add or edit a session, type `@` in
+23. **R34 · A mention in a description.** [LIB-178] Add or edit a session, type `@` in
     **Description**. *Pass:* the same menu as the comment box; pick a name;
     save. On the session panel the name is a link that opens the profile
     without a page reload; a `@name` inside backticks stays plain. The named
@@ -338,7 +357,7 @@ there is enough — nothing needs pasting back.
     **profile → Bio**: the same menu; on the profile the name links; the
     named person's entry reads *ada mentioned you in their bio* and opens
     that profile.
-24. **R35 · The time box knows its hour from its minutes.** Any time field.
+24. **R35 · The time box knows its hour from its minutes.** [LIB-179] Any time field.
     *Empty:* type `0` `7` `2` `5` — the box reads `0`, `07:`, `07:2`,
     `07:25` and nothing else. *Already filled:* click on the hour — it
     highlights; type `0` `9` — the box reads `09:` with the old minutes still
@@ -358,13 +377,13 @@ there is enough — nothing needs pasting back.
     a real DOM in `tests/timeField.test.tsx`, and driven through the
     container's headless Chromium before it was committed.)
 
-25. **R36 · The gate has a way out.** Open an event link logged out, so the
+25. **R36 · The gate has a way out.** [LIB-180] Open an event link logged out, so the
     password card shows. *Pass:* above the card, the LibreSesh mark on the
     left and **All events** on the right; the mark opens `/`, the link opens
     `/events`; in **both themes** and on a **phone** the header fits the
     card's width.
 
-26. **R37 · The audit log links.** Manage Event → Audit, on an event with
+26. **R37 · The audit log links.** [LIB-181] Manage Event → Audit, on an event with
     some history. *Pass:* an actor's name opens their profile; a session's
     title opens the session, and a deleted session's title opens **Trash**
     (hover: *Open in Trash*); a deleted note also opens Trash, a live one
@@ -376,7 +395,13 @@ there is enough — nothing needs pasting back.
 
 ### Decisions I need from you
 
-- **D1 · Purge the local dangling git objects?** The accidental Valley-export
+_`D<n>` ids only ever increment: a settled decision keeps its number for good,
+none is ever reused or renumbered, and a new one takes the next free number
+(highest used: D5). Documents are named after the decision they carry, so a
+reused number would repoint a filename and every link to it. Rule recorded in
+`.claude/CUSTOM.md`._
+
+- **D1 · Purge the local dangling git objects?** [LIB-99] The accidental Valley-export
   commit never left this machine (verified across every ref, both worktrees,
   stashes and the object store); it lingers only in this clone's reflog for
   ~90 days. On your word I run
@@ -385,7 +410,7 @@ there is enough — nothing needs pasting back.
   `_planning/valley-2026-09-02.json` and its `.import.json` twin are gone from
   disk (`export-to-import.py` remains); if that wasn't deliberate, an editor
   buffer may be the last copy.
-- **D2 · The pitch board's server guard.** You said deactivation is "a simple
+- **D2 · The pitch board's server guard.** [LIB-100] You said deactivation is "a simple
   hide from UI and route". I went one step further: `POST /proposals` returns
   403 while the board is off, because hiding a form does not stop a tab that was
   open before the switch. Everything else on the board — reading, interest,
@@ -396,23 +421,7 @@ its reflog shows a push after each commit) and **start forms Phase 2** (phases
 0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
 they left behind landed 2026-09-05 as R26).
 
-- **D3 · Security hardening — order and two thresholds.** Written up
-  2026-09-05 as `_planning/specs/security-hardening.md` with a five-phase plan
-  in `_planning/plans/2026-09-05-security-hardening.md`. What it found: the
-  instance password sits behind the `write` budget on three of its four routes
-  (43,000 guesses a day per address); a cookieless request mints an identity
-  row with no limit; chosen event passwords may be 6 characters and nothing
-  counts attempts per event or tells the organiser. What it proposes: the
-  `auth` budget on every instance-key route; a per-IP mint budget; per-IP
-  backoff and a per-event closure of the door (60 failures an hour → shut for
-  15 minutes to new entrants only, audit row, organiser notice); passwords of
-  10+ off a denylist; lockdown (any admin freezes, only the instance password
-  lifts); tokens hashed at rest. I need: `D3 go` for the order as written, or
-  a reorder; and the two numbers if 60/hour and 300/quarter-hour look wrong.
-  No captcha or edge proxy assumed — the question was whether the server can
-  do this alone, and it can, up to "slow and visible" rather than "impossible".
-
-- **D4 · Per-device sign-in, decided — build behind D3.** Settled
+- **D4 · Per-device sign-in, decided — build behind D3.** [LIB-103] Settled
   2026-09-09. Approach **B**: one random token per device, issued at
   redemption, stored hashed in a `devices` table (identity, hashed token,
   origin `gate|phrase|code|link`, first seen, last seen), the cookie carrying
@@ -430,7 +439,7 @@ they left behind landed 2026-09-05 as R26).
   audited event, so "how many devices joined this account" is already exact;
   telling them *apart* is what B adds.
 
-- **D5 · Should a speaker code keep working after its first use?** Today it
+- **D5 · Should a speaker code keep working after its first use?** [LIB-102] Today it
   does: the code, and the link that carries it, redeem any number of times
   until an organiser revokes or replaces it (measured 2026-09-08 — one link
   opened from three fresh browser contexts made all three the same speaker).
@@ -473,7 +482,17 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
-- **Account notices, and account history on the profile.** Endorsed
+- **Lockdown, deferred out of D3 on 2026-09-09.** [LIB-188] Designed in full
+  as §4 of the D3 spec and phases 3 and 5 of its plan; not being built now.
+  The principle: any admin may freeze an event, and only the instance
+  password lifts it, which closes today's hole where anyone holding the admin
+  password can undo an archive. Wants migration `018_lockdown.sql` (three
+  columns), `requireWritable` refusing `409 locked`, a freeze and lift route
+  pair, the red band and a Security section in Settings; the second cut adds
+  a `LOCKDOWN=1` env switch, a `.lockdown` file beside the database and
+  **Evict everyone**. Nothing in the three approved phases depends on it.
+
+- **Account notices, and account history on the profile.** [LIB-104] Endorsed
   2026-09-09; buildable now, needs none of D4's model change. Two parts.
   (1) **Notify the person** whenever someone becomes them or their profile
   moves under them, intended or not: a device signed in via speaker code,
@@ -492,7 +511,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   device *count* shown here is exact today; the per-device list and sign-out
   are D4.
 
-- **Finer permissions** (your words, 2026-09-08: "there should maybe be a
+- **Finer permissions** [LIB-105] (your words, 2026-09-08: "there should maybe be a
   few more granular permissions"). First, what is already true, because it
   was not what you thought: a speaker credited on an official session — a
   keynote an organiser typed their name onto — **can edit its words** today,
@@ -525,7 +544,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   bug you saw in a real browser, so they go before anything reasoned). One
   commit each; when one lands, its line leaves here and the CHANGELOG gets
   it.
-  - **R24 · Find a setting only rings some settings, and knows too few.**
+  - **R24 · Find a setting only rings some settings, and knows too few.** [LIB-95]
     Your words: *"The picking and finding with yellow ring only works for
     some items. Also, not enough settings are indexed."* Two faults in
     `lib/adminSearch.ts` and the scroll-and-ring hand-off: the index is
@@ -534,13 +553,13 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     are not the ones rendered, or sit inside a tab section that mounts
     lazily — check each index entry against a real element.
   - **R27 · The `@` menu does not narrow as you type, and drops the phone
-    keyboard.** Your words: *"It's not as narrow as you type. Also keyboard
+    keyboard.** [LIB-96] Your words: *"It's not as narrow as you type. Also keyboard
     doesn't stay up on phone!"* In `MentionTextArea.tsx`: the filter is not
     applied (or is applied to the wrong query — `findMentionQuery` vs. what
     is rendered), and a tap on a row blurs the textarea before the insert —
     the row needs `onPointerDown` + `preventDefault`, or focus restored
     after the insert.
-  - **R30a · The format beside the title wraps too early.** Your words:
+  - **R30a · The format beside the title wraps too early.** [LIB-97] Your words:
     *"Format is shown but line breaks too early, there is space left."* The
     format chip beside the title breaks onto its own line while the title
     row still has room — a `flex-wrap`/`min-width` interaction on the title
@@ -552,7 +571,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     that signs the opening device in as the speaker. ARCHITECTURE §One
     person, many devices.
 
-- **Hash identity and calendar tokens at rest.** From your security question
+- **Hash identity and calendar tokens at rest.** [LIB-112] From your security question
   (2026-09-05): a copy of the database — a backup, a volume snapshot, a
   screenshot of a `SELECT` — should not be a sign-in credential. The tokens
   are random (~131 bits), so a plain `SHA-256` at rest is enough: cookie and
@@ -565,7 +584,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   user* — and the file still needs encrypting for the names in it and the
   crackable speaker-code hashes. Its own branch: it is a migration on identity.
 
-- **Search cannot find a person.** Phases 2–4 of
+- **Search cannot find a person.** [LIB-106] Phases 2–4 of
   `_planning/specs/search.md`, which is written and settled — phase 1
   (event-wide filters and the "Search everywhere" hand-off) shipped
   2026-09-04. `@ada` resolves in a comment and a speaker's name opens a
@@ -592,7 +611,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   open), and there is no separate "Advanced search" mode, because the
   search page is it.
 
-- **The format exists; three places still do not use it.** Landed 2026-09-02
+- **The format exists; three places still do not use it.** [LIB-107, LIB-108, LIB-109] Landed 2026-09-02
   (migrations 014 and 015, `session_formats`): defined per event in Manage
   Event, picked at the top of the session form, shown on the session sheet,
   carried by clones, the export and the importer. It carries no length —
@@ -631,7 +650,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentions in pitches.** Delivery landed 2026-09-05 (the bell, R29);
+- **Mentions in pitches.** [LIB-110] Delivery landed 2026-09-05 (the bell, R29);
   descriptions and bios followed on 2026-09-07 (`fix/review-round-2`, R34):
   `renderMarkdown` takes the event's names and links a mention in the
   rendered prose (`linkMentionsInHtml`, skipping code and links), the
@@ -647,7 +666,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   picked up.
 
 - **A production event export is sitting untracked in a directory git will
-  happily commit.** Noticed 2026-09-02 when a `git add -A` swept
+  happily commit.** [LIB-111] Noticed 2026-09-02 when a `git add -A` swept
   `_planning/valley-2026-09-02.json` (72 KB, 2447 lines), its `.import.json`
   twin and `export-to-import.py` into a commit; they were taken back out
   before it was pushed, but nothing stops it happening again. `.gitignore`
@@ -667,7 +686,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   meant to be shared. Decide which way round, because the inverted form is
   the one that stays safe as new working files appear.
 
-- **The permissions matrix still flicks on a switch.** Reported 2026-08-31
+- **The permissions matrix still flicks on a switch.** [LIB-113] Reported 2026-08-31
   together with the grid's drop flicker. The grid half is **found and fixed**
   (2026-09-05, `91a497e`, CHANGELOG `[Unreleased]` → Fixed, R28): the hold
   was never handed the save to wait for, so it let go on the next tick — the
@@ -682,7 +701,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   and a disabled `Toggle` restyles, which is a visible change that is not a
   revert and could easily read as one.
 
-- **Pitch board.** Showing the creator is done — a card reads "pitched by
+- **Pitch board.** [LIB-114, LIB-115] Showing the creator is done — a card reads "pitched by
   {name}" (`ProposalBoard.tsx:332`). What is left is defaulting the creator as
   host (a new pitch starts with an empty speaker field,
   `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan that
@@ -693,7 +712,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   up-arrow rather than a star, which was only ever about the glyph colliding
   with "on my agenda".
 
-- **Instance-level audit rows have no screen — and no pruning.** A
+- **Instance-level audit rows have no screen — and no pruning.** [LIB-116] A
   whole-database backup, an event created from the landing page, or any
   device-link mint/redeem/failure carries no `event_id`, so those rows are
   invisible in Manage Event → Audit, which is per-event by design. They are the
@@ -701,7 +720,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   Noticed 2026-08-31: `pruneAudit` deletes by `event_id`, so these rows also
   grow without limit — slowly (they are all rare actions), but forever.
 
-- **The importer still only creates an event, and is still curl-only.**
+- **The importer still only creates an event, and is still curl-only.** [LIB-117, LIB-118, LIB-119, LIB-120]
   Repeats landed 2026-08-31 in both front doors — a `repeat` key on a document
   row, and the **Repeat** control in the session form — so a long programme's
   daily officials and fixed track hours are a few rows or a few clicks rather
@@ -728,7 +747,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   bigger version and changes what a track means in the session form, the grid
   and the filters — worth doing only to make the app _enforce_ track hours.
 
-- **Compact button overrides do nothing.** `SecondaryButton className="py-1"`
+- **Compact button overrides do nothing.** [LIB-121] `SecondaryButton className="py-1"`
   and the `py-1.5` variants in DetailSheet, ProfilePage, ProposalBoard and
   AdminPermissions are dead: Tailwind emits `.py-1` and `.py-1.5` _before_ the
   primitives' `.py-2.5`, so the base always wins and those buttons are full
@@ -737,15 +756,17 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   either a real `size` prop on the button primitives or `tailwind-merge`; a
   call site cannot win this with a class name.
 
-- **The gate doesn't suggest device linking to a merged-out device.** After a
-  both-claimed merge the losing device is signed out; when it next hits the
-  gate, nothing says "if this is you, link this device instead of re-entering".
-  A person who re-enters recreates the two-identity split the organiser just
-  merged away. Wants one line on the gate (likely only when the arriving
-  identity holds no role but does hold an event name here — exactly the
-  signed-out shape). Scenario documented in ARCHITECTURE §Merging two people. @claude: this should go into a separate to-do file for profile/user related data modelling issues and improvements.
+- **Profile and identity data-model items** [LIB-122, LIB-123, LIB-185] live in
+  `_planning/profile-and-identity-todo.md` (split out 2026-09-09 at your
+  request): the gate not suggesting device linking to a merged-out device,
+  and the new one — a lost account cannot be merged back under its old
+  username, because the username is held by the signed-out identity and the
+  rename is refused. Design agreed 2026-09-09 in
+  `_planning/specs/account-recovery-merge-and-link.md`: the merge absorbs
+  the losing identity and redirects its device, rotating the survivor's
+  token by default.
 
-- **No write path under flaky connectivity.** Reads recover well — `EventSource`
+- **No write path under flaky connectivity.** [LIB-124] Reads recover well — `EventSource`
   auto-reconnects and `useEventData` refetches the whole bundle on reopen, and
   the header shows "reconnecting…". Writes do not: every mutation is a bare
   `fetch` with no queue or retry, so a star/note/edit attempted while offline
@@ -754,7 +775,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   v1 non-goal (SPEC §Non-goals — no CRDT), but a small outbox that retries
   queued writes on reconnect would cover the hallway-wifi case without one.
 
-- **Dependency bumps — phases 0–3 done, 4–6 open.** Plan and reasoning in
+- **Dependency bumps — phases 0–3 done, 4–6 open.** [LIB-125] Plan and reasoning in
   `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
   the vitest critical, the vite high and the esbuild/qs moderates are cleared,
   by the versions that actually fix them rather than by `latest`. What is left:
@@ -778,7 +799,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     blocked on is done: production is on `node:22-bookworm-slim`, `engines` is
     `>=22.13` and `@types/node` is 22.x. No advisory is behind either bump now,
     so they can wait behind Phase 4.
-- **Cloning still demands all three passwords.** Creating an event lets you
+- **Cloning still demands all three passwords.** [LIB-126] Creating an event lets you
   leave any of them blank — a four-word phrase is generated and shown once on
   a confirmation screen — but `POST /events/:slug/clone` kept the old
   all-required schema. Deliberate for now: the clone UI has nowhere to reveal
@@ -786,7 +807,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   Wants the same reveal screen, then `resolveEventPasswords` wired into the
   clone route so the two creation paths stop disagreeing.
 
-- **Manual browser pass — now with a specific backlog.** Automated coverage is
+- **Manual browser pass — now with a specific backlog.** [LIB-183] Automated coverage is
   server-side, so everything below shipped on a read-through alone (no browser
   in this dev container, no component tests). Each wants a real look, ideally
   on a phone. From 2026-09-01:
@@ -882,7 +903,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     it;
   - the drag, now-line and 360px checks that were already outstanding.
 
-- **Deploy paths, and what is actually proven.** Railway builds from
+- **Deploy paths, and what is actually proven.** [LIB-127] Railway builds from
   `deploy/Dockerfile` (`railway.json` pins the builder — Railway's Node
   autodetection runs a plain `npm ci`, which honours our `ignore-scripts=true`
   and so never builds better-sqlite3). Two failures found the hard way on
@@ -897,7 +918,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
   VPS deploy as their test. Railway notes: `docs/hosting.md` §10.
-- **No component test coverage, and no error boundary.** 703 tests as of
+- **No component test coverage, and no error boundary.** [LIB-128] 703 tests as of
   2026-09-01, and the web-side ones cover pure functions or assert on source
   text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a
   component. The drag maths, the SSE reducer and the clash detection are the
@@ -907,7 +928,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   whole suite stayed green — is what the gap costs. A React error boundary
   would have contained it; there is still none.
 
-- **Brute-forcing an event password costs an attacker one cookie.** The gate
+- **Brute-forcing an event password costs an attacker one cookie.** [LIB-129] The gate
   spends a token from `LIMITS.auth` (5 attempts / 15 min) on two buckets, the
   identity and the IP, refunding both when a password is right
   (`eventAuth.ts:62-86`). The identity half is keyed on `req.identity.id`,
@@ -927,7 +948,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   the fix and would only hurt the typo case; bcrypt already makes each guess
   cost something, which is why this is a real backlog item and not a fire.
 
-- **27 React Compiler findings, surfaced by eslint-plugin-react-hooks 7.**
+- **27 React Compiler findings, surfaced by eslint-plugin-react-hooks 7.** [LIB-130]
   The flat-config migration brought fourteen new rules with it. Eleven pass and
   are on. Three are switched off in `eslint.config.js`, named, because they flag
   existing code: `react-hooks/refs` (13 sites — reading a ref during render),
@@ -941,7 +962,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
-- **Inline create inside `SpeakerCombobox`.** The other half of the affordance
+- **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
   format and expected-person rows): typing a name the event does not know into
   the speaker field should offer to create that person there, rather than
@@ -949,7 +970,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   the combobox already has a listbox, a create-a-person row and the
   `onlySelf`/`isAdmin`/archived rules to respect.
 
-- **A real date/time picker for the session modal.** The native
+- **A real date/time picker for the session modal.** [LIB-132] The native
   `<input type="date">`/`<input type="time">` are the last controls not wearing
   the app's own field styling, and the browser's popup cannot be themed — the
   same complaint that moved every `<select>` to Base UI. Deferred out of the
@@ -959,7 +980,19 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   calendar means `react-day-picker` (~12 kB gz) on top of Base UI, which is a
   bundle question as much as a design one. Decide the shape first, then build.
 
-- **Publishing a session: a link that works without the gate.** A published
+- **A calendar token is minted once and can never be revoked.** [LIB-187]
+  Noticed 2026-09-09. `POST /calendar-token` writes 24 random bytes into
+  `identities.ics_token` the first time somebody subscribes a calendar app and
+  returns the same value forever; the feed route looks the identity up by it
+  and serves the schedule as long as that identity still holds a role. No
+  route nulls the column and nothing offers to, so a URL pasted into a shared
+  team calendar keeps working indefinitely — and because the token sits on the
+  identity rather than the event, one leaked link reads every event that
+  person can see. Wants a *Reset my calendar link* action first (one route,
+  one button); scoping the token per event is the larger fix. Hashing it at
+  rest (D3 §5) protects a stolen backup and does nothing about a leaked URL.
+
+- **Publishing a session: a link that works without the gate.** [LIB-133] A published
   session would be the app's first genuinely unauthenticated read — sharing one
   talk without sharing the event or handing over a role. No commit yet. Design
   is done and lives in `_planning/specs/publishing-a-session.md`: the **snapshot**
@@ -971,7 +1004,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   from High on 2026-09-04: worth doing, but nothing is blocked on it and it wants
   its questions answered before code.
 
-- **Linked sessions: auto-detect matches instead of an always-on link.** Today
+- **Linked sessions: auto-detect matches instead of an always-on link.** [LIB-134] Today
   the session editor shows "Link matching sessions…" on every saved session,
   even when the actor has no other same-titled session — a click that dead-ends
   on "no matches". Detect matches up front (the `link-candidates` query already
@@ -985,7 +1018,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 _A group, so form work is not scattered through the priorities._
 
-- **The same pass over every other form on the site.** This is the first of
+- **The same pass over every other form on the site.** [LIB-135] This is the first of
   them, not the only one — sessions, rooms, tracks, tags, formats, breaks and
   the event settings all have forms that have grown by addition. Worth doing
   as one considered sweep once the pattern above has been used in anger:
@@ -993,7 +1026,7 @@ _A group, so form work is not scattered through the priorities._
   what a form looks like at rest. Not yet specified — this is the placeholder
   that stops it being rediscovered from scratch.
 
-- **Two judgement calls from 2026-09-02 that nobody has pushed back on yet.**
+- **Two judgement calls from 2026-09-02 that nobody has pushed back on yet.** [LIB-136, LIB-137]
   Both were made deliberately and flagged; neither is a bug, and either could
   reasonably be reversed once the screens have been used.
 
@@ -1011,7 +1044,7 @@ _A group, so form work is not scattered through the priorities._
     where a reader goes to find out — but an organiser who switched the badge
     off may expect it off everywhere.
 
-- **Goal: one database per event, and identity that lives inside the event.**
+- **Goal: one database per event, and identity that lives inside the event.** [LIB-138]
   Stated 2026-09-02. Cross-event identity — one cookie is one person across
   the instance, `GET /me` lists roles in every event, a UID that is "the same
   at every event" — is judged a feature nobody needs, and it is the source of
@@ -1042,7 +1075,7 @@ _A group, so form work is not scattered through the priorities._
   first half of this goal — once `people` is the primary human record, the
   only instance-wide thing left is the token, and moving it is the split.
 
-- **Put the last two popdowns on `usePopover`.** `ProfileMenu` and
+- **Put the last two popdowns on `usePopover`.** [LIB-139] `ProfileMenu` and
   `SpeakerCombobox` still position themselves and still carry their own
   outside-click/Escape effects. Neither can overhang today — one is `right-0
 w-48`, the other `w-full` — so they are exempted by name in
@@ -1050,7 +1083,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   Moving them over would delete the last two copies of the dismiss effect and
   let that allowlist go away.
 
-- **Revisit what Floating UI costs the first paint.** Adopting
+- **Revisit what Floating UI costs the first paint.** [LIB-140] Adopting
   `@floating-ui/react` for the popover fix (`3c3030c`) took the bundle from
   134.3 to 152.5 kB gzipped — **+18.2 kB, about 13%** — on a single JS chunk
   that is already 489 kB raw. Worth asking whether that is the right trade on a
@@ -1075,7 +1108,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   alike, and a route-level `React.lazy` on the admin section would likely dwarf
   18 kB. Check that first; the popover dep may not be the thing worth cutting.
 
-- **A track window cannot close a day.** Noted 2026-09-01 when track hours
+- **A track window cannot close a day.** [LIB-141] Noted 2026-09-01 when track hours
   landed. An override row is a window and a window must end after it starts, so
   "the workshops track does not run on the last day" cannot be said — the
   nearest thing is a one-minute window nobody can book, which is a trick rather
@@ -1084,7 +1117,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   someone to actually want it: a track that skips a day is often better said by
   not scheduling anything on it.
 
-- **Strip the `Claude-Session:` links out of the git history.** Every commit
+- **Strip the `Claude-Session:` links out of the git history.** [LIB-142] Every commit
   Claude Code made carries a `Claude-Session: https://claude.ai/code/session_…`
   trailer, added by the harness unless told otherwise. Audited 2026-08-31:
   **158 commits across all refs** — 140 of 169 on `main`, 141 of 170 on `dev` —
@@ -1111,7 +1144,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   New commits are already clean: `.claude/CLAUDE.md` §Git Conventions now
   forbids the trailer.
 
-- **A track that closes at midnight reads as `18:00–00:00`.** Found 2026-09-01
+- **A track that closes at midnight reads as `18:00–00:00`.** [LIB-143] Found 2026-09-01
   by the cloud review, verified in the source. `fmtMinute`
   (`server/src/shared/trackHours.ts:35`) and its twin `fmtMin`
   (`web/src/lib/format.ts:20`) both take the hour as
@@ -1133,7 +1166,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   each other, which is the reason to do them in the same commit rather than
   fixing whichever one is noticed first.
 
-- **The People list cannot put somebody out of the event.** Left undone
+- **The People list cannot put somebody out of the event.** [LIB-144] Left undone
   deliberately in the identity work (2026-09-02, spec
   `self-as-speaker-and-merge-ux.md` §What was built). The role control
   moves a person between viewer, attendee, speaker and organiser, and a row
@@ -1159,7 +1192,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   major React bump on a working app is risk bought for nothing. Revisit when a
   dependency actually asks for it.
 
-- **Show an organiser the old addresses an event still answers to.** Renaming
+- **Show an organiser the old addresses an event still answers to.** [LIB-145] Renaming
   an event landed 2026-09-01 and every former slug goes on resolving, but
   nothing in the UI lists them — the only trail is the _renamed_ rows in the
   audit log. `formerSlugs` was written for this and then removed rather than
@@ -1168,7 +1201,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   actually care about — the old link still works — is already in the Slug
   field's hint.
 
-- **A real series, and a root event other events inherit from.** Deferred
+- **A real series, and a root event other events inherit from.** [LIB-146] Deferred
   2026-08-31, deliberately and not for want of time. `repeat` expands to
   ordinary rows precisely because the event it was built for is one whose
   sessions _drift_ — the planned 14:00 becomes 14:20 on the day, and a series
@@ -1191,12 +1224,12 @@ w-48`, the other `w-full` — so they are exempted by name in
   rather than building them keeps the current answer honest: repetition is an
   authoring convenience and it stops at the door.
 
-- **Quadratic voting on pitches.** Floated 2026-08-31 for a future instance,
+- **Quadratic voting on pitches.** [LIB-147] Floated 2026-08-31 for a future instance,
   explicitly not for this one: it changes what a vote _is_ (a budget spent
   across pitches, not a click per pitch), so it wants its own schema and its
   own thinking rather than a column bolted onto `proposal_interest`.
 
-- **A one-line reset for the local database.** Wiping a dev instance is
+- **A one-line reset for the local database.** [LIB-148] Wiping a dev instance is
   currently three commands: stop the api, `rm -f data/app.db data/app.db-wal
 data/app.db-shm`, restart and let boot reseed. Easy to get wrong in the
   direction that hurts — `rm data/app.db*` also takes the `app.db.backup-*`
@@ -1209,7 +1242,7 @@ data/app.db-shm`, restart and let boot reseed. Easy to get wrong in the
   "seed" becomes "mock", this is `db:reset` either way, but its reseed step
   changes name.
 
-- **Rename "seed" to "mock".** Floated 2026-08-31. Worth knowing before
+- **Rename "seed" to "mock".** [LIB-149] Floated 2026-08-31. Worth knowing before
   starting that the word means three unrelated things in this tree, and only
   the first is a mock: the demo fixture generator (`scripts/seed.ts`,
   `server/src/seed.ts`, `npm run seed` / `seed:long`, the `SEED_*` env vars,
@@ -1222,15 +1255,29 @@ data/app.db-shm`, restart and let boot reseed. Easy to get wrong in the
   find-and-replace: 222 identifier hits across the TypeScript alone, plus
   README, ARCHITECTURE, CHANGELOG and the SPEC.
 
-- **`HelpMenu` falls back with `??`, which only catches `undefined`.** So an
+- **`HelpMenu` falls back with `??`, which only catches `undefined`.** [LIB-150] So an
   empty `VITE_BUILD_COMMIT` prints blank rather than `unknown`
   (`HelpMenu.tsx:26-27`); `||` fixes it. All that is left of the "About shows
   no commit" report from 2026-09-01 — the cause was a stale dev server, not
   the stamping, and a fresh one stamps correctly. Two characters.
 
-- **Print / PDF grid.** Unconferences put the grid on a wall. A print
+- **Print / PDF grid.** [LIB-151] Unconferences put the grid on a wall. A print
   stylesheet would cover most of it.
-- **Restore for rooms and tags.** `/trash` covers sessions and contributions,
+- **Self-hosting a single event without being a sysadmin.** [LIB-186] Floated
+  2026-09-09 out of the "what if the host is not trusted" question. A shared
+  instance cannot offer that guarantee, because the host serves the
+  JavaScript and could serve a build that takes the key; encrypting content
+  client-side protects a stolen backup, not the operator, and costs the
+  server-side search, filters, mentions, calendar feed and the permission
+  matrix as a real boundary. The honest answer is that the event runs its own
+  instance, which makes this packaging rather than cryptography: one command
+  to stand up, a generated and persisted `COOKIE_SECRET`, backup and restore
+  a non-expert can perform, an upgrade that is not a terminal session, and
+  docs for someone who has never used Docker. `deploy/` has all the pieces
+  and none has been run end to end — that is the deploy-coverage item above,
+  and it comes first.
+
+- **Restore for rooms and tags.** [LIB-152] `/trash` covers sessions and contributions,
   which are the vandalism targets; rooms and tags soft-delete too but have no
   restore path.
 

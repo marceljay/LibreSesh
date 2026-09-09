@@ -72,8 +72,9 @@ describe('the header folds once you are into the day', () => {
     // rather than as long as the day — almost everywhere.
     expect(schedule).toMatch(/const slack = el\.scrollHeight - el\.clientHeight;/);
     expect(schedule).toMatch(/return top > FOLD_AT && slack > gain \+ FOLD_AT;/);
-    expect(schedule).toMatch(/foldedBar\.current\?\.offsetHeight \?\? 0/);
-    expect(schedule).toMatch(/foldedRows\.current\?\.offsetHeight \?\? 0/);
+    // `gain` is the rows alone: the event bar is not part of the fold.
+    expect(schedule).toMatch(/const gain = foldedRows\.current\?\.offsetHeight \?\? 0;/);
+    expect(schedule).not.toContain('foldedBar');
   });
 
   it('ignores the scroll events the fold itself causes', () => {
@@ -87,7 +88,7 @@ describe('the header folds once you are into the day', () => {
 
   it('keeps a way back that does not cost you your place in the day', () => {
     expect(schedule).toMatch(
-      /aria-label=\{\n\s*folded\n\s*\? 'Show the event bar and the day picker'/,
+      /aria-label=\{folded \? 'Show the day picker' : 'Fold the day picker away'\}/,
     );
     expect(schedule).toMatch(/onClick=\{toggleChrome\}/);
     // The toggle is in the row that never folds, and is rendered in both
@@ -116,6 +117,20 @@ describe('the header folds once you are into the day', () => {
     // short enough not to be waited on.
     expect(schedule).toMatch(/const FOLD_MS = 700;/);
     expect(schedule).toContain('duration-700');
+  });
+
+  it('keeps the event bar out of the fold', () => {
+    // The bar — logo, name, bell, the menu behind your name — is on every
+    // page of the event; the schedule used to be the one page that put it
+    // away. Only the rows under it fold now: it sits directly inside the
+    // header, before the first folding grid.
+    expect(schedule).toMatch(/<header className[^>]*>\s*\{\/\*[\s\S]*?\*\/\}\s*<EventBar\n/);
+    const bar = schedule.indexOf('<EventBar');
+    const firstFold = schedule.indexOf('className={foldRow}');
+    expect(bar).toBeGreaterThan(-1);
+    expect(firstFold).toBeGreaterThan(bar);
+    // And there is one folding grid, the rows'; the bar was the other.
+    expect(schedule.match(/className=\{foldRow\}/g)).toHaveLength(1);
   });
 
   it('animates a height that nothing had to guess', () => {

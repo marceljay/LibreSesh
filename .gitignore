@@ -43,3 +43,6 @@ _scratch/
 # Dot-free copy of the build for the browser pass (a `.claude` path segment
 # breaks static serving from a worktree)
 lsbuild-scratch/
+
+# Printed from docs/schema.md by `npm run schema:pdf`; regenerated, not tracked.
+docs/schema.pdf
