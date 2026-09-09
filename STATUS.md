@@ -737,13 +737,13 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   either a real `size` prop on the button primitives or `tailwind-merge`; a
   call site cannot win this with a class name.
 
-- **The gate doesn't suggest device linking to a merged-out device.** After a
-  both-claimed merge the losing device is signed out; when it next hits the
-  gate, nothing says "if this is you, link this device instead of re-entering".
-  A person who re-enters recreates the two-identity split the organiser just
-  merged away. Wants one line on the gate (likely only when the arriving
-  identity holds no role but does hold an event name here — exactly the
-  signed-out shape). Scenario documented in ARCHITECTURE §Merging two people. @claude: this should go into a separate to-do file for profile/user related data modelling issues and improvements.
+- **Profile and identity data-model items** live in
+  `_planning/profile-and-identity-todo.md` (split out 2026-09-09 at your
+  request): the gate not suggesting device linking to a merged-out device,
+  and the new one — a lost account cannot be merged back under its old
+  username, because the username is held by the signed-out identity and the
+  rename is refused. Proposed fix there: a *keep their names* choice in the
+  merge confirm step that swaps the two event names.
 
 - **No write path under flaky connectivity.** Reads recover well — `EventSource`
   auto-reconnects and `useEventData` refetches the whole bundle on reopen, and
