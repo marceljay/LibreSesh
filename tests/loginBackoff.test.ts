@@ -80,7 +80,7 @@ describe('per-address backoff', () => {
   });
 });
 
-describe('the block curve itself', () => {
+describe('how long each failure costs', () => {
   it('is five free, two minutes, five free, then a quarter of an hour', () => {
     expect([1, 2, 3, 4].map(loginBlockSeconds)).toEqual([0, 0, 0, 0]);
     expect(loginBlockSeconds(5)).toBe(120);

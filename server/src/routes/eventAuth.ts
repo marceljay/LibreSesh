@@ -155,7 +155,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     //
     //    This is the only limit here. The `auth` token bucket used to sit
     //    below it and would impose three minutes at the sixth attempt
-    //    whatever the curve said, which is a second lockout with numbers
+    //    whatever the steps above said, which is a second lockout with numbers
     //    nobody chose. The backoff is strictly better for this route: it is
     //    keyed per event as well as per address, it escalates, and a correct
     //    password clears it outright.

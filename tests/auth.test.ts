@@ -138,11 +138,11 @@ describe('event auth endpoint', () => {
     expect((await agent.get('/api/me')).body.roles.testconf).toBe('viewer');
   });
 
-  // The login route's only limit is the per-address curve (D3 §1a): five
+  // The login route's only limit is per address (D3 §1a): five
   // free attempts, two minutes, five more, a quarter of an hour. The `auth`
   // token bucket that used to sit here as well imposed three minutes at the
-  // sixth attempt whatever the curve said, and its per-identity half never
-  // bound an attacker anyway — a cookie is free to discard. The curve itself
+  // sixth attempt whatever those waits said, and its per-identity half never
+  // bound an attacker anyway — a cookie is free to discard. The waits itself
   // is pinned in loginBackoff.test.ts; these two are about the route.
   it('holds the sixth wrong password from one address', async () => {
     const agent = agentFor(harness);

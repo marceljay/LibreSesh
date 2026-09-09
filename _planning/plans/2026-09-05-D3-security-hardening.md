@@ -40,7 +40,7 @@ Closes §1. No migration; one new limiter, one notice.
 
 - `server/src/ratelimit.ts`: `Backoff` — `failures` map keyed `<event>:<ip>`
   with count and `notBefore`, applying `loginBlockSeconds` (5 free, 120 s, 5
-  free, 900 s — curve chosen 2026-09-09); `Tally` — per-target sliding-hour
+  free, 900 s — chosen 2026-09-09); `Tally` — per-target sliding-hour
   counter with `closedUntil`. Both swept with the buckets.
 - `routes/eventAuth.ts`: check closure first (no bcrypt spent), then backoff,
   then the buckets; on failure bump both; on success reset the backoff and

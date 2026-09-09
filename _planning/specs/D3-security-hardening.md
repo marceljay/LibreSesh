@@ -70,7 +70,7 @@ and a slot, the attacker runs requests in parallel so the delay does not bound
 throughput, and legitimate users wait for nothing. Keep refusing fast with
 `Retry-After`; make the refusals smarter.
 
-**a. Per-address backoff, per target (curve chosen 2026-09-09).** Failures
+**a. Per-address backoff, per target (waits chosen 2026-09-09).** Failures
 against event *E* from address *A* are counted. The first five cost nothing at
 all; the sixth is refused for **two minutes**; five more cost nothing; the
 eleventh and every failure after it is refused for **fifteen minutes**. A
@@ -87,7 +87,7 @@ steps do not.
 
 **This replaces the `auth` token bucket on the login route rather than joining
 it.** That bucket allowed five attempts per quarter hour and then imposed
-three minutes at the sixth, which would have overridden the curve above with
+three minutes at the sixth, which would have overridden the waits above with
 numbers nobody chose. Its per-identity half never bound an attacker either: a
 cookie is free to discard, which is the same finding as §3. The bucket stays
 on the instance password, where the caller cannot shed identity so cheaply.

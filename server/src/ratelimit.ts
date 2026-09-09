@@ -74,7 +74,7 @@ export const LOGIN_LONG_BLOCK_S = 900;
 
 /**
  * How long this address waits after its nth failed password at one event
- * (D3 §1a, curve chosen 2026-09-09).
+ * (D3 §1a, chosen 2026-09-09).
  *
  * Five attempts cost nothing at all, because the common case is a person
  * misreading a four-word phrase off a slide, and making them wait for that is
@@ -82,7 +82,7 @@ export const LOGIN_LONG_BLOCK_S = 900;
  * minutes, five more cost nothing, and the eleventh costs a quarter of an
  * hour, as does every failure after it.
  *
- * A doubling curve from one second was the earlier proposal. It was rejected
+ * Doubling from one second was the earlier proposal. It was rejected
  * as too fussy at the top of the range — the difference between one second
  * and four is noise to a person and to an attacker alike, so the whole ramp
  * bought nothing that the two flat steps do not.
@@ -101,7 +101,7 @@ export function loginBlockSeconds(failures: number): number {
  * another, and a correct password forgets everything that came before it.
  * This is the *only* limit on the login route: the token bucket that used to
  * sit there imposed three minutes at the sixth attempt whatever this said,
- * which would have silently overridden the curve above.
+ * which would have silently overridden the waits above.
  */
 export class Backoff {
   private readonly failures = new Map<string, { count: number; notBefore: number }>();
@@ -118,7 +118,7 @@ export class Backoff {
     return Math.ceil((entry.notBefore - t) / 1000);
   }
 
-  /** Record a failure and apply the curve. */
+  /** Record a failure and set how long this address now waits. */
   fail(key: string): void {
     const t = this.now();
     const entry = this.failures.get(key) ?? { count: 0, notBefore: 0 };
