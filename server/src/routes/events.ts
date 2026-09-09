@@ -3,7 +3,8 @@ import type { EventRow } from '../db.js';
 import {
   getEventBySlug,
   getRole,
-  hasInstanceKey,
+  requireInstanceKey,
+  tryInstanceKey,
   hashPassword,
   pathParam,
   setRole,
@@ -28,10 +29,7 @@ export function eventRoutes(ctx: Ctx): Router {
     res.json(rows.map(toEventSummary));
   });
 
-  router.post('/events', limit(ctx.limiter, 'write'), (req, res) => {
-    if (!hasInstanceKey(ctx.config, req.get('X-Instance-Key'))) {
-      throw forbidden('Wrong instance password');
-    }
+  router.post('/events', requireInstanceKey(ctx), limit(ctx.limiter, 'write'), (req, res) => {
     const body = parse(createEventSchema, req.body);
     if (getEventBySlug(ctx.db, body.slug))
       throw conflict('That slug is already taken', 'slug_taken');
@@ -96,8 +94,11 @@ export function eventRoutes(ctx: Ctx): Router {
     const source = getEventBySlug(ctx.db, pathParam(req, 'slug'));
     if (!source) throw notFound('No such event');
 
+    // Either the event's own admin, or the instance password. Only the
+    // second is budgeted and audited, so an admin cloning their own event
+    // spends nothing (`tryInstanceKey`).
     const isEventAdmin = getRole(ctx.db, req.identity.id, source.id) === 'admin';
-    if (!isEventAdmin && !hasInstanceKey(ctx.config, req.get('X-Instance-Key'))) {
+    if (!isEventAdmin && !tryInstanceKey(ctx, req, res)) {
       throw forbidden('Only this event’s admins can clone it');
     }
 

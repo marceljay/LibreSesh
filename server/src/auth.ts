@@ -4,7 +4,10 @@ import type { NextFunction, Request, Response } from 'express';
 import type { Role } from './shared/types.js';
 import type { Config } from './config.js';
 import type { Db, EventRow } from './db.js';
-import { conflict, forbidden, notFound, unauthorized } from './errors.js';
+import { conflict, forbidden, notFound, tooManyRequests, unauthorized } from './errors.js';
+import { keysFor, LIMITS, type RateLimiter } from './ratelimit.js';
+import { audit } from './audit.js';
+import { isAnonymous } from './identity.js';
 
 /** Cost 10 is right at this scale; tests lower it so suites stay fast. */
 export const BCRYPT_COST = Number(process.env.BCRYPT_COST ?? 10);
@@ -40,6 +43,66 @@ function constantTimeEquals(a: string, b: string): boolean {
  */
 export function hasInstanceKey(config: Config, header: unknown): boolean {
   return typeof header === 'string' && constantTimeEquals(header, config.instanceAdminPassword);
+}
+
+/**
+ * One attempt at the instance password, budgeted and audited (D3 §2).
+ *
+ * Before this existed the four call sites compared the header inline and sat
+ * behind the `write` budget, which allows 43,000 guesses a day per address
+ * against a single shared password. Here the `auth` budget applies — five
+ * wrong keys in a quarter hour — a success refunds its token so a working
+ * client is never throttled by its own use, and a failure leaves an audit row
+ * with no event id, because the instance is what was attacked, not an event.
+ *
+ * Throws `429` when the budget is spent. Returns whether the key was right;
+ * the caller decides what a wrong one means, which is why this is not always
+ * middleware: cloning accepts *either* the event's admin or the key.
+ */
+export function tryInstanceKey(
+  ctx: { db: Db; config: Config; limiter: RateLimiter },
+  req: Request,
+  res: Response,
+): boolean {
+  const keys = keysFor('auth', req);
+  let retryAfter = 0;
+  for (const key of keys) retryAfter = Math.max(retryAfter, ctx.limiter.consume(key, LIMITS.auth));
+  if (retryAfter > 0) {
+    res.setHeader('Retry-After', String(retryAfter));
+    throw tooManyRequests('Too many attempts with the instance password — wait a moment');
+  }
+  if (!hasInstanceKey(ctx.config, req.get('X-Instance-Key'))) {
+    audit(ctx.db, {
+      identityId: isAnonymous(req.identity) ? null : req.identity.id,
+      eventId: null,
+      action: 'instance_key_failed',
+      entity: 'instance',
+      entityId: null,
+    });
+    return false;
+  }
+  for (const key of keys) ctx.limiter.refund(key, LIMITS.auth);
+  return true;
+}
+
+/**
+ * The gate on an operation the instance password alone opens: creating an
+ * event, importing one, taking a whole-database backup. Middleware rather
+ * than a helper so the budget cannot be forgotten at a new call site.
+ */
+export function requireInstanceKey(ctx: { db: Db; config: Config; limiter: RateLimiter }) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      if (!tryInstanceKey(ctx, req, res)) {
+        next(forbidden('Wrong instance password'));
+        return;
+      }
+    } catch (err) {
+      next(err);
+      return;
+    }
+    next();
+  };
 }
 
 declare global {
@@ -137,6 +200,18 @@ export function loadEvent(db: Db) {
 /** Require at least `min` on `req.event`; 401 when no role at all. */
 export function requireRole(db: Db, min: Role) {
   return (req: Request, _res: Response, next: NextFunction): void => {
+    // Over the mint budget: no row was created, so there is no role to find
+    // and never will be. Say so, rather than sending them to a gate that
+    // cannot let them in.
+    if (isAnonymous(req.identity)) {
+      next(
+        tooManyRequests(
+          'Too many new visitors from this address — try again in a few minutes',
+          'too_many_identities',
+        ),
+      );
+      return;
+    }
     const role = getRole(db, req.identity.id, req.event.id);
     if (!role) {
       next(unauthorized());

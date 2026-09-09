@@ -30,6 +30,8 @@ export const notFound = (message = 'Not found') => new HttpError(404, 'not_found
  */
 export const conflict = (message: string, code = 'conflict', details?: Record<string, unknown>) =>
   new HttpError(409, code, message, details);
+export const tooManyRequests = (message: string, code = 'rate_limited') =>
+  new HttpError(429, code, message);
 
 /**
  * body-parser's own refusal, thrown before any route runs. It is a plain

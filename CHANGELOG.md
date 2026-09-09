@@ -4,6 +4,26 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Security
+
+- **The instance password is no longer guessable at write speed.** It opens
+  event creation, import and the whole-database backup, and every instance
+  shares one. It sat behind the ordinary write budget, which allows tens of
+  thousands of guesses a day from a single address. It now sits behind the
+  same budget as an event password: five attempts per address and per visitor
+  every quarter hour, with a refund when the password is right, so a working
+  client is never slowed by its own use. Every miss is recorded in the audit
+  log. In production the server refuses to start on a password under sixteen
+  characters and says so on the console under twenty-four.
+- **A visitor who sends no cookie can no longer fill the database.** Every
+  such request used to create a row before any limit ran, which is why the
+  limits keyed on that row never bit. Creating one is now budgeted by address,
+  three hundred every quarter hour, a figure set by a venue whose whole wifi
+  shares one address. Past it the request simply carries no identity: reading
+  a public page still works, and anything that needs a role says so plainly
+  and names the wait. Rows that never became anybody — no role, no name, no
+  profile, no calendar subscription — are deleted after thirty days.
+
 ### Added
 
 - **A schema page generated from the migrations.** `docs/schema.md` draws

@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { Db, IdentityRow } from './db.js';
+import { clientIp, LIMITS, type RateLimiter } from './ratelimit.js';
 
 const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
@@ -63,11 +64,40 @@ export function findIdentityByToken(db: Db, token: string): IdentityRow | undefi
 }
 
 /**
+ * The identity a request gets when it has no valid cookie *and* its address
+ * has spent the `mint` budget (D3 §3). Row id 0 exists in no table, so it
+ * holds no role anywhere and can be granted none; `requireRole` and the gate
+ * turn it into `429 too_many_identities`. Public reads that need no identity
+ * — `/api/me`, the landing page's event list — still work.
+ *
+ * A sentinel rather than a thrown error because the limit is on *creating* a
+ * row, not on making a request: an address over the budget should still be
+ * able to read, and a returning visitor with a cookie is never affected.
+ */
+export const ANONYMOUS_IDENTITY: IdentityRow = Object.freeze({
+  id: 0,
+  public_id: '00000',
+  token: '',
+  display_name: '',
+  created_at: '1970-01-01T00:00:00.000Z',
+  last_seen_at: null,
+  ics_token: null,
+});
+
+/** Whether this request never got an identity of its own (see above). */
+export const isAnonymous = (identity: IdentityRow): boolean => identity.id === 0;
+
+/**
  * Resolves `req.identity` from the signed `cid` cookie, minting a new anonymous
  * identity (and setting the cookie) on first contact. Runs before everything
  * else so even rate-limit rejections are attributable.
+ *
+ * Minting is budgeted per source address, because it is the one write any
+ * stranger can make: without the budget a `curl` loop is an unbounded
+ * `INSERT`, and the identity half of every other bucket is decorative, since
+ * an attacker simply never sends a cookie.
  */
-export function identityMiddleware(db: Db, isProd: boolean) {
+export function identityMiddleware(db: Db, isProd: boolean, limiter: RateLimiter) {
   const insert = db.prepare(
     'INSERT INTO identities (public_id, token, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)',
   );
@@ -83,6 +113,11 @@ export function identityMiddleware(db: Db, isProd: boolean) {
     let identity = cookieToken ? findIdentityByToken(db, cookieToken) : undefined;
 
     if (!identity) {
+      if (limiter.consume(`mint:ip:${clientIp(req)}`, LIMITS.mint) > 0) {
+        req.identity = ANONYMOUS_IDENTITY;
+        next();
+        return;
+      }
       const token = newIdentityToken();
       const publicId = newPublicId(db);
       // No seed name: a username is typed at the first gate, never handed

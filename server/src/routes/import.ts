@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import { hasInstanceKey } from '../auth.js';
+import { requireInstanceKey } from '../auth.js';
 import type { Ctx } from '../context.js';
-import { forbidden } from '../errors.js';
 import { importEvent } from '../importEvent.js';
 import { readImportDocument } from '../importDocument.js';
 import { limit } from '../ratelimit.js';
@@ -27,19 +26,21 @@ import { limit } from '../ratelimit.js';
 export function importRoutes(ctx: Ctx): Router {
   const router = Router();
 
-  router.post('/events/import', limit(ctx.limiter, 'write'), (req, res) => {
-    if (!hasInstanceKey(ctx.config, req.get('X-Instance-Key'))) {
-      throw forbidden('Wrong instance password');
-    }
-    const { doc, warnings } = readImportDocument(req.body);
-    const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
-    const result = importEvent(ctx.db, ctx.config, doc, {
-      actorIdentityId: req.identity.id,
-      dryRun,
-      warnings,
-    });
-    res.status(dryRun ? 200 : 201).json(result);
-  });
+  router.post(
+    '/events/import',
+    requireInstanceKey(ctx),
+    limit(ctx.limiter, 'write'),
+    (req, res) => {
+      const { doc, warnings } = readImportDocument(req.body);
+      const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
+      const result = importEvent(ctx.db, ctx.config, doc, {
+        actorIdentityId: req.identity.id,
+        dryRun,
+        warnings,
+      });
+      res.status(dryRun ? 200 : 201).json(result);
+    },
+  );
 
   return router;
 }

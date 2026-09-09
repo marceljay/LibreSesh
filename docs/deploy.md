@@ -31,7 +31,7 @@ it, and operating it afterwards, see [hosting.md](hosting.md).
 | `PORT` | `3000` | |
 | `DATABASE_PATH` | `data/app.db` | `-wal`/`-shm` sidecars sit next to it |
 | `COOKIE_SECRET` | generated once | **Required in production.** Elsewhere a generated one is kept in `.cookie-secret` beside the database, so restarts do not sign everyone out. Changing it logs everyone out |
-| `INSTANCE_ADMIN_PASSWORD` | dev placeholder | **Required in production**; gates event creation |
+| `INSTANCE_ADMIN_PASSWORD` | dev placeholder | **Required in production**, and at least 16 characters or the boot stops (24 recommended: `openssl rand -base64 24`). Gates event creation, import and the whole-database backup. Five wrong attempts per address per quarter hour, and every miss is audited |
 | `TRUST_PROXY` | off | Set `1` behind Caddy so rate limits see real IPs |
 | `SERVE_STATIC` | on in production | Serves `web/dist` from the API process |
 | `DEMO_MODE` | off | Set `1` and the gate becomes a role picker **on the seeded demo events only** — every other event on the instance keeps its passwords |
