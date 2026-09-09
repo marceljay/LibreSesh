@@ -7,6 +7,7 @@ import type {
   EventDto,
   EventSummary,
   LoginDto,
+  LoginHealthDto,
   GeneratedPasswords,
   ImportResult,
   LinkCodeDto,
@@ -145,6 +146,8 @@ export const api = {
    *  ask again. */
   /** The username this device already holds here, before it is in. */
   login: (slug: string) => request<LoginDto>('GET', `/e/${encode(slug)}/login`),
+  /** Admin only: what to tell the organiser about failed logins (D3 §1c). */
+  loginHealth: (slug: string) => request<LoginHealthDto>('GET', `/e/${encode(slug)}/login-health`),
   authenticate: (slug: string, password: string, displayName?: string, claimProfile?: boolean) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/auth`, {
       password,

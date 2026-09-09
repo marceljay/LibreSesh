@@ -65,6 +65,117 @@ export class RateLimiter {
   }
 }
 
+/**
+ * Per-address backoff on failed password attempts at one event (D3 §1a).
+ *
+ * The token buckets alone make the first mistake as expensive as the
+ * fiftieth. This makes the first few cheap — a typo at a door costs a
+ * second, not a lockout — and sustained failure expensive, doubling to a
+ * quarter of an hour. Keyed on the pair, so an attacker cannot spend one
+ * event's patience on another, and a success clears the count.
+ */
+export class Backoff {
+  private readonly failures = new Map<string, { count: number; notBefore: number }>();
+  private lastSweep = 0;
+
+  constructor(private readonly now: () => number = Date.now) {}
+
+  /** Seconds still to wait, or 0. */
+  check(key: string): number {
+    const t = this.now();
+    this.sweep(t);
+    const entry = this.failures.get(key);
+    if (!entry || entry.notBefore <= t) return 0;
+    return Math.ceil((entry.notBefore - t) / 1000);
+  }
+
+  /** Record a failure and set the next window: 1 s, 2 s, 4 s … 15 minutes. */
+  fail(key: string): void {
+    const t = this.now();
+    const entry = this.failures.get(key) ?? { count: 0, notBefore: 0 };
+    entry.count += 1;
+    entry.notBefore = t + Math.min(2 ** (entry.count - 1), 900) * 1000;
+    this.failures.set(key, entry);
+  }
+
+  /** A correct password forgets the misses that came before it. */
+  succeed(key: string): void {
+    this.failures.delete(key);
+  }
+
+  private sweep(t: number): void {
+    if (t - this.lastSweep < 60_000) return;
+    this.lastSweep = t;
+    for (const [key, entry] of this.failures) {
+      if (t - entry.notBefore > 60 * 60_000) this.failures.delete(key);
+    }
+  }
+
+  reset(): void {
+    this.failures.clear();
+  }
+}
+
+/** Failures an event tolerates in a sliding hour before its login closes. */
+export const LOGIN_FAILURES_PER_HOUR = 60;
+/** How long it stays closed to people who are not already in. */
+export const LOGIN_CLOSED_MS = 15 * 60_000;
+
+/**
+ * Failed attempts against one event from *every* source (D3 §1b).
+ *
+ * Per-address limits do nothing against a hundred addresses, which a cheap
+ * proxy list buys. Counting per target does: past the threshold the login
+ * closes to new entrants for a quarter of an hour, no password is checked
+ * (so no bcrypt is spent on an attacker), and everyone already holding a
+ * role is untouched — the schedule stays up, only the door shuts.
+ *
+ * The worst a hostile can do with this is keep a door shut a quarter hour at
+ * a time, which is loud: the organiser is told, and it is in the audit log.
+ */
+export class Tally {
+  private readonly events = new Map<number, { at: number[]; closedUntil: number }>();
+
+  constructor(private readonly now: () => number = Date.now) {}
+
+  /** Seconds until the login reopens, or 0 when it is open. */
+  closedFor(eventId: number): number {
+    const t = this.now();
+    const entry = this.events.get(eventId);
+    if (!entry || entry.closedUntil <= t) return 0;
+    return Math.ceil((entry.closedUntil - t) / 1000);
+  }
+
+  /**
+   * Record a failure. Returns the count in the last hour when this one closed
+   * the login, and 0 otherwise — so the caller writes exactly one audit row
+   * per closure.
+   */
+  fail(eventId: number): number {
+    const t = this.now();
+    const entry = this.events.get(eventId) ?? { at: [], closedUntil: 0 };
+    entry.at = entry.at.filter((when) => t - when < 60 * 60_000);
+    entry.at.push(t);
+    this.events.set(eventId, entry);
+    if (entry.at.length < LOGIN_FAILURES_PER_HOUR || entry.closedUntil > t) return 0;
+    entry.closedUntil = t + LOGIN_CLOSED_MS;
+    return entry.at.length;
+  }
+
+  /** How many failures this event has seen in the last hour. */
+  recentFailures(eventId: number): number {
+    const t = this.now();
+    const entry = this.events.get(eventId);
+    if (!entry) return 0;
+    entry.at = entry.at.filter((when) => t - when < 60 * 60_000);
+    return entry.at.length;
+  }
+
+  reset(): void {
+    this.events.clear();
+  }
+}
+
 export const LIMITS = {
   auth: { capacity: 5, windowMs: 15 * 60_000 },
   /**

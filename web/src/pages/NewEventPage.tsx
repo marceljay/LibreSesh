@@ -1,4 +1,6 @@
 import { errorText } from '../lib/errorText';
+import { PasswordNote } from '../components/PasswordNote';
+import { BLANK_GENERATES, TIER_NOTE } from '../../../server/src/shared/passwordAdvice';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -218,29 +220,31 @@ export function NewEventPage() {
             Event passwords
           </p>
           <p className="-mt-2 text-xs text-stone-500 dark:text-stone-400">
-            Leave any of them blank and one is generated for you, shown once on the next screen. All
-            three must differ — they are what tell the roles apart.
+            {BLANK_GENERATES} All three must differ — they are what tell the roles apart.
           </p>
-          <Field label="Viewer — read the schedule" hint="Optional — blank generates one.">
+          <Field label="Viewer — read the schedule" hint={TIER_NOTE.viewer}>
             <ControlShell>
               <TextInput
                 value={viewerPassword}
                 onChange={(e) => setViewerPassword(e.target.value)}
               />
             </ControlShell>
+            <PasswordNote password={viewerPassword} name={name} slug={slug} />
           </Field>
           <Field
             label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and propose sessions`}
-            hint="Optional — blank generates one."
+            hint={TIER_NOTE.user}
           >
             <ControlShell>
               <TextInput value={userPassword} onChange={(e) => setUserPassword(e.target.value)} />
             </ControlShell>
+            <PasswordNote password={userPassword} name={name} slug={slug} />
           </Field>
-          <Field label="Admin — full control" hint="Optional — blank generates one.">
+          <Field label="Admin — full control" hint={TIER_NOTE.admin}>
             <ControlShell>
               <TextInput value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
             </ControlShell>
+            <PasswordNote password={adminPassword} name={name} slug={slug} />
           </Field>
         </FormStack>
 

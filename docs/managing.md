@@ -25,6 +25,36 @@ ones arrive. Settings changes the number, and 0 keeps everything. That is a
 real trade rather than a detail: a low cap means someone making a great
 many edits can push an earlier action off the end.
 
+## When people are guessing at your passwords
+
+Above the audit log you will sometimes find a line saying how many password
+attempts failed in the last hour. It appears only when there have been more
+than a handful, so a quiet event shows nothing.
+
+Two things happen on their own. An address that keeps getting the password
+wrong is made to wait longer each time, from a second up to a quarter of an
+hour, and the wait clears the moment it gets one right — so a mistyped
+password costs an attendee a second and nothing more. And if the event as a
+whole sees sixty failures in an hour, from however many addresses, it stops
+letting *new* people in for fifteen minutes. Everyone already here keeps
+working normally: the schedule stays up, contributions still post, only the
+door is shut. The audit log records the closure.
+
+If the attempts are not your own attendees mistyping, change the passwords in
+Settings. Nobody is signed out by that — roles already granted are kept
+deliberately, so a rotation does not empty the room mid-event.
+
+## Choosing passwords
+
+Leave a password blank and one is generated: four random words, which is
+stronger than anything worth typing and is the recommended answer. If you
+type your own, the form says what that password is worth. The viewer password
+is usually read out or put on a slide, so a short one is a fair trade. The
+admin password changes the event and deserves more length. If you pick one of
+the handful anybody would guess first, or the event's own name, the form says
+so — and still lets you save it. The length is your call, because only you
+know whether the password is about to be shouted across a room.
+
 ## Renaming an event
 
 An event's address is its slug — `/e/valley-2026` — and Settings can

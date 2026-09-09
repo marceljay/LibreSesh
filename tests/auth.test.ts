@@ -138,27 +138,54 @@ describe('event auth endpoint', () => {
     expect((await agent.get('/api/me')).body.roles.testconf).toBe('viewer');
   });
 
+  // These two are about the token bucket, which counts per identity as well
+  // as per address. Each attempt comes from a different address so the
+  // per-address backoff (D3 §1a, its own suite) stays out of the way; the
+  // agent keeps one cookie, so the identity half of the bucket still counts.
   it('rate limits the 6th failed attempt with Retry-After', async () => {
+    harness.close();
+    harness = makeHarness({ trustProxy: true });
+    seedEvent(harness.db);
     const agent = agentFor(harness);
     for (let i = 0; i < 5; i++) {
-      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+      await agent
+        .post('/api/e/testconf/auth')
+        .set('X-Forwarded-For', `10.0.0.${i}`)
+        .send({ password: 'wrong' })
+        .expect(403);
     }
-    const res = await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(429);
+    const res = await agent
+      .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.0.99')
+      .send({ password: 'wrong' })
+      .expect(429);
     expect(res.body.error.code).toBe('rate_limited');
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
   });
 
-  it('refunds the attempt budget when a password is correct', async () => {
+  it('refunds the attempt allowance when a password is correct', async () => {
+    harness.close();
+    harness = makeHarness({ trustProxy: true });
+    seedEvent(harness.db);
     const agent = agentFor(harness);
     for (let i = 0; i < 4; i++) {
-      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+      await agent
+        .post('/api/e/testconf/auth')
+        .set('X-Forwarded-For', `10.0.1.${i}`)
+        .send({ password: 'wrong' })
+        .expect(403);
     }
     // A success returns its token, so the next wrong guess is still the 5th.
     await agent
       .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.1.50')
       .send({ password: 'user-pw', displayName: nextUsername() })
       .expect(200);
-    await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+    await agent
+      .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.1.51')
+      .send({ password: 'wrong' })
+      .expect(403);
   });
 
   it('viewing requires a role', async () => {
@@ -296,7 +323,14 @@ describe('demo mode', () => {
    * that event's organiser password has to mean something.
    */
   it('leaves every other event on the instance alone', async () => {
-    harness = makeHarness({ demoMode: true, demoEventSlugs: ['democonf-2026'] });
+    harness = makeHarness({
+      demoMode: true,
+      demoEventSlugs: ['democonf-2026'],
+      // The wrong password below starts this address's backoff, and the
+      // correct one follows within the second. Different addresses keep this
+      // test about demo mode rather than about D3 §1a.
+      trustProxy: true,
+    });
     seedEvent(harness.db);
     const agent = agentFor(harness);
     await agent.get('/api/me').expect(200);
@@ -304,13 +338,19 @@ describe('demo mode', () => {
     // No role picker here — the login page wants a password.
     await agent
       .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.1')
       .send({ role: 'admin', displayName: nextUsername() })
       .expect(400);
-    await agent.post('/api/e/testconf/auth').send({ password: 'nope' }).expect(403);
-    await agent.get('/api/e/testconf/bundle').expect(401);
+    await agent
+      .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.2')
+      .send({ password: 'nope' })
+      .expect(403);
+    await agent.get('/api/e/testconf/bundle').set('X-Forwarded-For', '10.0.2.3').expect(401);
 
     const ok = await agent
       .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.4')
       .send({ password: 'admin-pw', displayName: nextUsername() })
       .expect(200);
     expect(ok.body.role).toBe('admin');

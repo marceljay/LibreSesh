@@ -6,6 +6,23 @@ All notable changes to this project are documented here.
 
 ### Security
 
+- **An event stops letting new people in when it is being guessed at.** A
+  wrong password now costs the address that sent it a moment before the next
+  try — a second, then two, then four, up to a quarter of an hour, cleared the
+  moment a password is right, so a typo costs almost nothing. That alone does
+  nothing against someone with a hundred addresses, so failures are also
+  counted per event: past sixty in an hour the event stops admitting new
+  people for fifteen minutes. Nobody already here is affected, the schedule
+  stays up, and no password is checked while the door is shut. The organiser
+  finds a line above the audit log saying how many attempts there have been
+  and whether the door closed.
+- **The password fields say what they are worth.** All three lead with the
+  offer to make one for you, four random words, which is stronger than
+  anything worth typing. Type your own and the field says what that password
+  opens: the viewer one is usually read out to a room, the admin one changes
+  the event. Choose one of the handful anybody would guess first, or the
+  event's own name, and it says so. It never refuses, and nothing asks an
+  event already running to change a password it is using.
 - **The instance password is no longer guessable at write speed.** It opens
   event creation, import and the whole-database backup, and every instance
   shares one. It sat behind the ordinary rate limit for changes, which allows tens of

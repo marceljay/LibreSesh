@@ -13,7 +13,7 @@ import {
   ownProfile,
   restoreOnEntry,
 } from '../people.js';
-import { LIMITS, keysFor, limit } from '../ratelimit.js';
+import { LIMITS, clientIp, keysFor, limit } from '../ratelimit.js';
 import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
 
@@ -133,8 +133,35 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       return;
     }
 
-    // Hand-rolled instead of the `limit` middleware so a correct password can
-    // refund its token — switching roles shouldn't burn the lockout allowance.
+    // Three checks, cheapest first, before any password is compared.
+    //
+    // 1. Is this event's login closed? A hundred addresses defeat any per-
+    //    address limit, so failures are also counted per target. While it is
+    //    shut, nothing is checked and no bcrypt is spent on the attacker.
+    //    Everyone already holding a role is unaffected.
+    const closedFor = ctx.tally.closedFor(req.event.id);
+    if (closedFor > 0) {
+      res.setHeader('Retry-After', String(closedFor));
+      throw new HttpError(
+        429,
+        'login_closed',
+        'Too many wrong passwords here recently — this event is not letting new people in for a few minutes',
+      );
+    }
+
+    // 2. Has this address been failing at *this* event? Doubling from a
+    //    second, so a typo costs almost nothing and a run of guesses costs a
+    //    quarter of an hour.
+    const backoffKey = `${req.event.id}:${clientIp(req)}`;
+    const waitFor = ctx.backoff.check(backoffKey);
+    if (waitFor > 0) {
+      res.setHeader('Retry-After', String(waitFor));
+      throw new HttpError(429, 'rate_limited', 'Too many password attempts — try again shortly');
+    }
+
+    // 3. The ordinary limit. Hand-rolled instead of the `limit` middleware so
+    //    a correct password can refund its token — switching roles shouldn't
+    //    burn the lockout allowance.
     const keys = keysFor('auth', req);
     let retryAfter = 0;
     for (const key of keys) {
@@ -148,6 +175,8 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     const { password, displayName, claimProfile } = parse(authSchema, req.body);
     const role = roleForPassword(req.event, password);
     if (!role) {
+      ctx.backoff.fail(backoffKey);
+      const closedAfter = ctx.tally.fail(req.event.id);
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
@@ -155,9 +184,21 @@ export function eventAuthRoutes(ctx: Ctx): Router {
         entity: 'event',
         entityId: req.event.id,
       });
+      // Exactly one row per closure, carrying the count that caused it: this
+      // is what the organiser's notice and the audit log read.
+      if (closedAfter > 0) {
+        audit(ctx.db, {
+          identityId: null,
+          eventId: req.event.id,
+          action: 'login_closed',
+          entity: 'event',
+          entityId: closedAfter,
+        });
+      }
       throw forbidden('That password does not match');
     }
 
+    ctx.backoff.succeed(backoffKey);
     for (const key of keys) ctx.limiter.refund(key, LIMITS.auth);
     claim(req, displayName, claimProfile);
     grant(req.identity.id, req.event.id, role);

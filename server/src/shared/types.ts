@@ -671,3 +671,13 @@ export interface ChangeEvent {
 export interface ApiError {
   error: { code: string; message: string };
 }
+
+/** What `GET /e/:slug/login-health` answers (D3 §1c). */
+export interface LoginHealthDto {
+  /** Failed password attempts at this event in the last hour, from the log. */
+  failuresLastHour: number;
+  /** 0 unless the login is currently closed to people who are not already in. */
+  closedSecondsRemaining: number;
+  /** The most recent closure in the last hour, and what triggered it. */
+  lastClosure: { at: string; afterFailures: number | null } | null;
+}

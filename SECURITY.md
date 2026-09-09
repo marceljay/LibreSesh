@@ -17,6 +17,8 @@ explicitly *not* built to withstand a targeted attacker with time.
 
 | Threat | Mitigation |
 | --- | --- |
+| A hundred addresses guessing one event's password | Failures are counted per event as well as per address: past 60 in a sliding hour the event stops letting *new* people in for 15 minutes, no password is checked while it is shut (so no bcrypt is spent on the attacker), everyone already holding a role is unaffected, and one audit row records it. The organiser sees a notice above the audit log |
+| Repeated guesses from one address | Doubling backoff per address per event, from 1 second to 15 minutes; a correct password clears it. A typo costs a second |
 | Guessing an event password | bcrypt (cost 10); 5 attempts per 15 min per identity **and** per IP, `Retry-After` on the 6th |
 | Guessing a link phrase | Same 5-per-15-min rate limit as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
 | Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |
