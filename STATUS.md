@@ -204,6 +204,30 @@ cover a title — and is fixed on `fix/now-line-placement`, reworded on the
 sheet for a second look. Verdicts live in the sheet's own store, so ticking
 there is enough — nothing needs pasting back.
 
+**Machine-checked since 2026-09-09 (`test/review-queue-jsdom`).** The part of
+this queue that did not actually need eyes is walked by the suite now, in a
+real DOM against the real server — `tests/reviewFlows.test.tsx`. Covered in
+full: **R33** [LIB-177] (the leave guard both ways, and no dialog after Save),
+**R13** [LIB-170] (claim and queue), **R32** [LIB-176] (the page re-themes on
+`visibilitychange` and on a bfcache `pageshow`, menu closed), **R34** [LIB-178]
+(the `@` menu in a session description, and the saved name linking), **R37**
+[LIB-181] (the audit log's session and actor links). Covered in the part that
+is not layout: **R21** [LIB-160] (the chips reach the search page and the URL;
+both days answer), **R26** [LIB-158] (the checkbox interlock and the
+`?include=` link — *not* the import walk-through or the phone paragraph),
+**R5** [LIB-164] (the picker's list and select-all; this-only the default;
+*all* carries the words and not the times), **R7** [LIB-98] (starring a block
+without opening it), **R10** [LIB-167] (the sorted column's arrow, and Columns
+adding UID), **R11** [LIB-168] (the badge's menu, with the held role ticked),
+**R22** [LIB-161] (the label, the hint and the long option).
+
+**Still yours, and only yours:** R25, R2, R8, R9, R1, R14, R6, R18, R28's
+screen-reader and phone-keyboard checks and the Arrange drag, R35 on a phone,
+R36, and R26's import walk-through. There is **no browser in this container** —
+Debian's chromium is not installed and Playwright's download host is
+unreachable from here — so `npm run browser-pass` cannot stand in for any of
+them.
+
 0. **R26 · Export what you choose, and import it back.** [LIB-158] Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
    greys out **Contributions** with a note saying why; the download link

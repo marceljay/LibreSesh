@@ -67,6 +67,14 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The review queue is walked by machine now.** The flows that used to wait
+  on somebody clicking through them are clicked through by the suite instead,
+  against the real server: taking the day's filters to the search page, the
+  export checkboxes, the leave-without-saving guard, starring from a grid
+  block, the role menu, the People table's columns, a claimed profile, an `@`
+  in a description, the audit log's links, and the page re-theming when it
+  comes back on screen. What still needs eyes is what no simulated browser
+  has: layout, paint, drag, both themes, and a phone.
 - **The profile-edit switch is named for everyone.** The Permissions tab
   called it *Edit their own speaker profile*; since every attendee has a
   profile, it now reads *Edit their own profile*, and the table in
