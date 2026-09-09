@@ -38,9 +38,10 @@ Closes §2 and §3. No migration, no UI.
 
 Closes §1. No migration; one new limiter, one notice.
 
-- `server/src/ratelimit.ts`: `Backoff` — `failures` map keyed `auth:<event>:<ip>`
-  with count and `notBefore`; `Tally` — per-target sliding-hour counter with
-  `closedUntil`. Both swept with the buckets.
+- `server/src/ratelimit.ts`: `Backoff` — `failures` map keyed `<event>:<ip>`
+  with count and `notBefore`, applying `loginBlockSeconds` (5 free, 120 s, 5
+  free, 900 s — curve chosen 2026-09-09); `Tally` — per-target sliding-hour
+  counter with `closedUntil`. Both swept with the buckets.
 - `routes/eventAuth.ts`: check closure first (no bcrypt spent), then backoff,
   then the buckets; on failure bump both; on success reset the backoff and
   refund. `login_closed` audit row when the tally trips.
@@ -54,8 +55,9 @@ Closes §1. No migration; one new limiter, one notice.
   password names the rule. Manage Event → Audit header and Settings notice:
   *N failed attempts in the last hour*, and the closure line, from a new
   `GET /e/:slug/login-health` (admin) that reads the audit rows.
-- Tests: `loginBackoff.test.ts` (2nd failure waits 2 s, 5th waits 16 s, success
-  resets, another IP is unaffected); `loginClosure.test.ts` (61st failure in an
+- Tests: `loginBackoff.test.ts` (five free, the sixth waits 120 s, five more
+  free, the eleventh waits 900 s, success resets the count, another address
+  and another event are unaffected); `loginClosure.test.ts` (61st failure in an
   hour from 61 IPs closes the login page for everyone new, a role-holder still
   writes, it reopens after 15 min, one audit row); `passwordPolicy.test.ts`.
 - Docs: `managing.md` (choosing passwords; what the notice means),

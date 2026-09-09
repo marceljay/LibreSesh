@@ -28,20 +28,34 @@ describe('minting an identity is budgeted per address', () => {
   const countIdentities = (): number =>
     harness.db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM identities').get()!.n;
 
-  it('stops creating rows past the budget, and stays readable', async () => {
-    for (let i = 0; i < 300; i += 1) await cookieless();
-    expect(countIdentities()).toBe(300);
+  /**
+   * Spend the address's mint allowance without making 300 requests. Doing it
+   * over HTTP took seconds, and the bucket refills continuously — under a
+   * loaded suite enough tokens came back mid-run to mint again, which made
+   * these tests fail for a reason that had nothing to do with what they
+   * assert.
+   */
+  const drain = (ip: string): void => {
+    for (let i = 0; i < LIMITS.mint.capacity; i += 1) {
+      harness.app.ctx.limiter.consume(`mint:ip:${ip}`, LIMITS.mint);
+    }
+  };
 
+  it('stops creating rows once the allowance is spent, and stays readable', async () => {
+    expect((await cookieless()).status).toBe(200);
+    expect(countIdentities()).toBe(1);
+
+    drain('10.0.0.1');
     const res = await cookieless();
     expect(res.status).toBe(200);
-    expect(countIdentities()).toBe(300);
-    // No cookie is set for an identity that was never created.
+    // No row, and no cookie for an identity that was never created.
+    expect(countIdentities()).toBe(1);
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('answers 429 too_many_identities where a role is needed', async () => {
     seedEvent(harness.db, { slug: 'conf' });
-    for (let i = 0; i < 300; i += 1) await cookieless();
+    drain('10.0.0.1');
 
     const res = await request(harness.app.express)
       .get('/api/e/conf/bundle')
@@ -51,25 +65,19 @@ describe('minting an identity is budgeted per address', () => {
   });
 
   it('is per address: one exhausted address does not close another', async () => {
-    for (let i = 0; i < 320; i += 1) await cookieless('10.0.0.1');
-    const before = countIdentities();
-    expect(before).toBe(300);
+    drain('10.0.0.1');
+    expect((await cookieless('10.0.0.1')).headers['set-cookie']).toBeUndefined();
 
-    const res = await cookieless('10.0.0.2');
-    expect(res.status).toBe(200);
-    expect(countIdentities()).toBe(301);
+    const other = await cookieless('10.0.0.2');
+    expect(other.status).toBe(200);
+    expect(countIdentities()).toBe(1);
   });
 
   it('never refuses a visitor who already holds a cookie', async () => {
     const agent = agentFor(harness);
     const uid = (await agent.get('/api/me').set('X-Forwarded-For', '10.0.0.7')).body.uid;
 
-    // Drain the mint bucket for that address directly rather than through 300
-    // requests, which would also spend the `read` budget and prove the wrong
-    // thing. This isolates the claim: the mint budget is on *creating* a row.
-    for (let i = 0; i < 300; i += 1) {
-      harness.app.ctx.limiter.consume('mint:ip:10.0.0.7', LIMITS.mint);
-    }
+    drain('10.0.0.7');
 
     const res = await agent.get('/api/me').set('X-Forwarded-For', '10.0.0.7');
     expect(res.status).toBe(200);

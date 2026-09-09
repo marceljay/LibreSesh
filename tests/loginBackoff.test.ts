@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Backoff, Tally, LOGIN_FAILURES_PER_HOUR } from '../server/src/ratelimit.js';
+import {
+  Backoff,
+  Tally,
+  LOGIN_FAILURES_PER_HOUR,
+  LOGIN_FREE_ATTEMPTS,
+  loginBlockSeconds,
+} from '../server/src/ratelimit.js';
 import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
 
 /**
@@ -9,46 +15,78 @@ import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
 describe('per-address backoff', () => {
   let now = 1_000_000;
   const backoff = new Backoff(() => now);
+  const key = 'e1:1.2.3.4';
 
   beforeEach(() => {
     now = 1_000_000;
     backoff.reset();
   });
 
-  it('doubles from a second, so a typo is nearly free', () => {
-    backoff.fail('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBe(1);
-    now += 1000;
-    expect(backoff.check('e1:1.2.3.4')).toBe(0);
+  const failTimes = (n: number, k = key): void => {
+    for (let i = 0; i < n; i += 1) backoff.fail(k);
+  };
 
-    backoff.fail('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBe(2);
-    now += 2000;
-    backoff.fail('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBe(4);
+  it('lets five attempts through with no wait at all', () => {
+    for (let i = 0; i < LOGIN_FREE_ATTEMPTS - 1; i += 1) {
+      backoff.fail(key);
+      expect(backoff.check(key)).toBe(0);
+    }
   });
 
-  it('stops doubling at a quarter of an hour', () => {
-    for (let i = 0; i < 30; i += 1) {
-      backoff.fail('e1:1.2.3.4');
-      now += 1000 * 60 * 60;
+  it('blocks for two minutes once the free attempts are spent', () => {
+    failTimes(LOGIN_FREE_ATTEMPTS);
+    expect(backoff.check(key)).toBe(120);
+    now += 119_000;
+    expect(backoff.check(key)).toBe(1);
+    now += 1_000;
+    expect(backoff.check(key)).toBe(0);
+  });
+
+  it('gives five more free attempts, then a quarter of an hour', () => {
+    failTimes(LOGIN_FREE_ATTEMPTS);
+    now += 120_000;
+    for (let i = 0; i < LOGIN_FREE_ATTEMPTS - 1; i += 1) {
+      backoff.fail(key);
+      expect(backoff.check(key)).toBe(0);
     }
-    backoff.fail('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBe(900);
+    backoff.fail(key);
+    expect(backoff.check(key)).toBe(900);
+  });
+
+  it('stays at a quarter of an hour for every failure after that', () => {
+    failTimes(LOGIN_FREE_ATTEMPTS * 2);
+    now += 900_000;
+    backoff.fail(key);
+    expect(backoff.check(key)).toBe(900);
+    now += 900_000;
+    backoff.fail(key);
+    expect(backoff.check(key)).toBe(900);
   });
 
   it('forgets the misses once a password is right', () => {
-    backoff.fail('e1:1.2.3.4');
-    backoff.fail('e1:1.2.3.4');
-    backoff.succeed('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBe(0);
+    failTimes(LOGIN_FREE_ATTEMPTS);
+    backoff.succeed(key);
+    expect(backoff.check(key)).toBe(0);
+    // And the count with them: five free attempts again, not one.
+    failTimes(LOGIN_FREE_ATTEMPTS - 1);
+    expect(backoff.check(key)).toBe(0);
   });
 
   it('is keyed on the pair, so one event cannot spend another’s patience', () => {
-    for (let i = 0; i < 5; i += 1) backoff.fail('e1:1.2.3.4');
-    expect(backoff.check('e1:1.2.3.4')).toBeGreaterThan(0);
+    failTimes(LOGIN_FREE_ATTEMPTS);
+    expect(backoff.check(key)).toBeGreaterThan(0);
     expect(backoff.check('e2:1.2.3.4')).toBe(0);
     expect(backoff.check('e1:5.6.7.8')).toBe(0);
+  });
+});
+
+describe('the block curve itself', () => {
+  it('is five free, two minutes, five free, then a quarter of an hour', () => {
+    expect([1, 2, 3, 4].map(loginBlockSeconds)).toEqual([0, 0, 0, 0]);
+    expect(loginBlockSeconds(5)).toBe(120);
+    expect([6, 7, 8, 9].map(loginBlockSeconds)).toEqual([0, 0, 0, 0]);
+    expect(loginBlockSeconds(10)).toBe(900);
+    expect(loginBlockSeconds(50)).toBe(900);
   });
 });
 
@@ -116,11 +154,21 @@ describe('the login route, end to end', () => {
       .set('X-Forwarded-For', ip)
       .send({ password, displayName: name });
 
-  it('makes the second wrong password from one address wait', async () => {
+  it('lets five wrong passwords through, then holds the sixth for two minutes', async () => {
+    for (let i = 0; i < LOGIN_FREE_ATTEMPTS; i += 1) {
+      expect((await attempt('nope')).status).toBe(403);
+    }
+    const blocked = await attempt('nope');
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers['retry-after']).toBe('120');
+    expect(blocked.body.error.message).toContain('couple of minutes');
+  });
+
+  it('lets a mistyped password be corrected immediately', async () => {
+    // The case the free attempts exist for: somebody misreads a four-word
+    // phrase off a slide, fixes it, and is in. No wait, no lockout.
     expect((await attempt('nope')).status).toBe(403);
-    const second = await attempt('nope');
-    expect(second.status).toBe(429);
-    expect(second.headers['retry-after']).toBe('1');
+    expect((await attempt('viewer-pw')).status).toBe(200);
   });
 
   it('closes the event to newcomers after sixty failures from many addresses', async () => {

@@ -6,10 +6,12 @@ All notable changes to this project are documented here.
 
 ### Security
 
-- **An event stops letting new people in when it is being guessed at.** A
-  wrong password now costs the address that sent it a moment before the next
-  try — a second, then two, then four, up to a quarter of an hour, cleared the
-  moment a password is right, so a typo costs almost nothing. That alone does
+- **An event stops letting new people in when it is being guessed at.** Five
+  wrong passwords from one place cost nothing — misreading a four-word phrase
+  off a slide is the usual reason anyone gets it wrong. The sixth waits two
+  minutes, the next five are free again, and the eleventh waits a quarter of
+  an hour, as does every one after it. Getting the password right clears the
+  count, so the next slip starts from five again. That alone does
   nothing against someone with a hundred addresses, so failures are also
   counted per event: past sixty in an hour the event stops admitting new
   people for fifteen minutes. Nobody already here is affected, the schedule

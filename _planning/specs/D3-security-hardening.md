@@ -70,13 +70,27 @@ and a slot, the attacker runs requests in parallel so the delay does not bound
 throughput, and legitimate users wait for nothing. Keep refusing fast with
 `Retry-After`; make the refusals smarter.
 
-**a. Per-IP backoff, per target.** Failures against event *E* from IP *A* are
-counted; after the *k*-th failure the next attempt from *A* at *E* is refused
-until `min(2^k, 900)` seconds have passed. 1 s, 2 s, 4 s … 15 minutes. A success
-resets the count. This replaces nothing — the 5/15-minute bucket stays — it
-makes the *first* failures cheap (a typo at a door costs a second, not a
-lockout) and sustained failure expensive, and it is keyed on the pair, so an
-attacker cannot spend one event's patience on another.
+**a. Per-address backoff, per target (curve chosen 2026-09-09).** Failures
+against event *E* from address *A* are counted. The first five cost nothing at
+all; the sixth is refused for **two minutes**; five more cost nothing; the
+eleventh and every failure after it is refused for **fifteen minutes**. A
+correct password clears the count outright, so the next mistake starts from
+five free attempts again. Keyed on the pair, so an attacker cannot spend one
+event's patience on another.
+
+Five free attempts because the common failure is a person misreading a
+four-word phrase off a slide, and charging them for that is a worse outcome
+than the attack being defended against. The earlier proposal — doubling from
+one second — was rejected: between one second and four there is no difference
+a person or an attacker would notice, so the ramp bought nothing the two flat
+steps do not.
+
+**This replaces the `auth` token bucket on the login route rather than joining
+it.** That bucket allowed five attempts per quarter hour and then imposed
+three minutes at the sixth, which would have overridden the curve above with
+numbers nobody chose. Its per-identity half never bound an attacker either: a
+cookie is free to discard, which is the same finding as §3. The bucket stays
+on the instance password, where the caller cannot shed identity so cheaply.
 
 **b. Per-target closure.** Failures against *E* from *all* sources are counted
 in a sliding hour. Past a threshold — **60 an hour** is the proposal; a room of

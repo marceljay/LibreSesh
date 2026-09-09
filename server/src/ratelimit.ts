@@ -65,14 +65,43 @@ export class RateLimiter {
   }
 }
 
+/** Free attempts before the first block, and again before the second. */
+export const LOGIN_FREE_ATTEMPTS = 5;
+/** The first block, once the free attempts are spent. */
+export const LOGIN_FIRST_BLOCK_S = 120;
+/** The second, and every block after it. */
+export const LOGIN_LONG_BLOCK_S = 900;
+
+/**
+ * How long this address waits after its nth failed password at one event
+ * (D3 §1a, curve chosen 2026-09-09).
+ *
+ * Five attempts cost nothing at all, because the common case is a person
+ * misreading a four-word phrase off a slide, and making them wait for that is
+ * a worse failure than the one being defended against. The sixth costs two
+ * minutes, five more cost nothing, and the eleventh costs a quarter of an
+ * hour, as does every failure after it.
+ *
+ * A doubling curve from one second was the earlier proposal. It was rejected
+ * as too fussy at the top of the range — the difference between one second
+ * and four is noise to a person and to an attacker alike, so the whole ramp
+ * bought nothing that the two flat steps do not.
+ */
+export function loginBlockSeconds(failures: number): number {
+  if (failures < LOGIN_FREE_ATTEMPTS) return 0;
+  if (failures === LOGIN_FREE_ATTEMPTS) return LOGIN_FIRST_BLOCK_S;
+  if (failures < LOGIN_FREE_ATTEMPTS * 2) return 0;
+  return LOGIN_LONG_BLOCK_S;
+}
+
 /**
  * Per-address backoff on failed password attempts at one event (D3 §1a).
  *
- * The token buckets alone make the first mistake as expensive as the
- * fiftieth. This makes the first few cheap — a typo at a door costs a
- * second, not a lockout — and sustained failure expensive, doubling to a
- * quarter of an hour. Keyed on the pair, so an attacker cannot spend one
- * event's patience on another, and a success clears the count.
+ * Keyed on the pair, so an attacker cannot spend one event's patience on
+ * another, and a correct password forgets everything that came before it.
+ * This is the *only* limit on the login route: the token bucket that used to
+ * sit there imposed three minutes at the sixth attempt whatever this said,
+ * which would have silently overridden the curve above.
  */
 export class Backoff {
   private readonly failures = new Map<string, { count: number; notBefore: number }>();
@@ -89,12 +118,12 @@ export class Backoff {
     return Math.ceil((entry.notBefore - t) / 1000);
   }
 
-  /** Record a failure and set the next window: 1 s, 2 s, 4 s … 15 minutes. */
+  /** Record a failure and apply the curve. */
   fail(key: string): void {
     const t = this.now();
     const entry = this.failures.get(key) ?? { count: 0, notBefore: 0 };
     entry.count += 1;
-    entry.notBefore = t + Math.min(2 ** (entry.count - 1), 900) * 1000;
+    entry.notBefore = t + loginBlockSeconds(entry.count) * 1000;
     this.failures.set(key, entry);
   }
 
@@ -103,6 +132,11 @@ export class Backoff {
     this.failures.delete(key);
   }
 
+  /**
+   * Entries are dropped an hour after their block ended. A count is kept that
+   * long on purpose: the second five attempts are only meaningful if the
+   * first five are still remembered when the block lifts.
+   */
   private sweep(t: number): void {
     if (t - this.lastSweep < 60_000) return;
     this.lastSweep = t;

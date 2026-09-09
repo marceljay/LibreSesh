@@ -13,7 +13,7 @@ import {
   ownProfile,
   restoreOnEntry,
 } from '../people.js';
-import { LIMITS, clientIp, keysFor, limit } from '../ratelimit.js';
+import { clientIp, limit } from '../ratelimit.js';
 import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
 
@@ -149,27 +149,27 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       );
     }
 
-    // 2. Has this address been failing at *this* event? Doubling from a
-    //    second, so a typo costs almost nothing and a run of guesses costs a
-    //    quarter of an hour.
+    // 2. Has this address been failing at *this* event? Five attempts are
+    //    free — misreading a four-word phrase off a slide is the common case
+    //    — then two minutes, five more free, then a quarter of an hour.
+    //
+    //    This is the only limit here. The `auth` token bucket used to sit
+    //    below it and would impose three minutes at the sixth attempt
+    //    whatever the curve said, which is a second lockout with numbers
+    //    nobody chose. The backoff is strictly better for this route: it is
+    //    keyed per event as well as per address, it escalates, and a correct
+    //    password clears it outright.
     const backoffKey = `${req.event.id}:${clientIp(req)}`;
     const waitFor = ctx.backoff.check(backoffKey);
     if (waitFor > 0) {
       res.setHeader('Retry-After', String(waitFor));
-      throw new HttpError(429, 'rate_limited', 'Too many password attempts — try again shortly');
-    }
-
-    // 3. The ordinary limit. Hand-rolled instead of the `limit` middleware so
-    //    a correct password can refund its token — switching roles shouldn't
-    //    burn the lockout allowance.
-    const keys = keysFor('auth', req);
-    let retryAfter = 0;
-    for (const key of keys) {
-      retryAfter = Math.max(retryAfter, ctx.limiter.consume(key, LIMITS.auth));
-    }
-    if (retryAfter > 0) {
-      res.setHeader('Retry-After', String(retryAfter));
-      throw new HttpError(429, 'rate_limited', 'Too many password attempts — try again later');
+      throw new HttpError(
+        429,
+        'rate_limited',
+        waitFor > 300
+          ? 'Too many wrong passwords from here — try again in about a quarter of an hour'
+          : 'Too many wrong passwords from here — try again in a couple of minutes',
+      );
     }
 
     const { password, displayName, claimProfile } = parse(authSchema, req.body);
@@ -199,7 +199,6 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     }
 
     ctx.backoff.succeed(backoffKey);
-    for (const key of keys) ctx.limiter.refund(key, LIMITS.auth);
     claim(req, displayName, claimProfile);
     grant(req.identity.id, req.event.id, role);
     res.json({ role });

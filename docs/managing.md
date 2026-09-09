@@ -31,10 +31,11 @@ Above the audit log you will sometimes find a line saying how many password
 attempts failed in the last hour. It appears only when there have been more
 than a handful, so a quiet event shows nothing.
 
-Two things happen on their own. An address that keeps getting the password
-wrong is made to wait longer each time, from a second up to a quarter of an
-hour, and the wait clears the moment it gets one right — so a mistyped
-password costs an attendee a second and nothing more. And if the event as a
+Two things happen on their own. Anyone can get the password wrong five times
+from one place at no cost, which covers misreading a four-word phrase off a
+slide; the sixth try waits two minutes, the next five are free again, and the
+eleventh waits a quarter of an hour. Getting it right clears the count, so an
+attendee who mistypes and then fixes it is never held up. And if the event as a
 whole sees sixty failures in an hour, from however many addresses, it stops
 letting *new* people in for fifteen minutes. Everyone already here keeps
 working normally: the schedule stays up, contributions still post, only the

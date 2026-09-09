@@ -138,54 +138,35 @@ describe('event auth endpoint', () => {
     expect((await agent.get('/api/me')).body.roles.testconf).toBe('viewer');
   });
 
-  // These two are about the token bucket, which counts per identity as well
-  // as per address. Each attempt comes from a different address so the
-  // per-address backoff (D3 §1a, its own suite) stays out of the way; the
-  // agent keeps one cookie, so the identity half of the bucket still counts.
-  it('rate limits the 6th failed attempt with Retry-After', async () => {
-    harness.close();
-    harness = makeHarness({ trustProxy: true });
-    seedEvent(harness.db);
+  // The login route's only limit is the per-address curve (D3 §1a): five
+  // free attempts, two minutes, five more, a quarter of an hour. The `auth`
+  // token bucket that used to sit here as well imposed three minutes at the
+  // sixth attempt whatever the curve said, and its per-identity half never
+  // bound an attacker anyway — a cookie is free to discard. The curve itself
+  // is pinned in loginBackoff.test.ts; these two are about the route.
+  it('holds the sixth wrong password from one address', async () => {
     const agent = agentFor(harness);
     for (let i = 0; i < 5; i++) {
-      await agent
-        .post('/api/e/testconf/auth')
-        .set('X-Forwarded-For', `10.0.0.${i}`)
-        .send({ password: 'wrong' })
-        .expect(403);
+      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
     }
-    const res = await agent
-      .post('/api/e/testconf/auth')
-      .set('X-Forwarded-For', '10.0.0.99')
-      .send({ password: 'wrong' })
-      .expect(429);
+    const res = await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(429);
     expect(res.body.error.code).toBe('rate_limited');
-    expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
+    expect(Number(res.headers['retry-after'])).toBe(120);
   });
 
-  it('refunds the attempt allowance when a password is correct', async () => {
-    harness.close();
-    harness = makeHarness({ trustProxy: true });
-    seedEvent(harness.db);
+  it('clears the count when a password is correct', async () => {
     const agent = agentFor(harness);
     for (let i = 0; i < 4; i++) {
-      await agent
-        .post('/api/e/testconf/auth')
-        .set('X-Forwarded-For', `10.0.1.${i}`)
-        .send({ password: 'wrong' })
-        .expect(403);
+      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
     }
-    // A success returns its token, so the next wrong guess is still the 5th.
     await agent
       .post('/api/e/testconf/auth')
-      .set('X-Forwarded-For', '10.0.1.50')
       .send({ password: 'user-pw', displayName: nextUsername() })
       .expect(200);
-    await agent
-      .post('/api/e/testconf/auth')
-      .set('X-Forwarded-For', '10.0.1.51')
-      .send({ password: 'wrong' })
-      .expect(403);
+    // Five free attempts again, not one: entering resets what came before.
+    for (let i = 0; i < 5; i++) {
+      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+    }
   });
 
   it('viewing requires a role', async () => {
