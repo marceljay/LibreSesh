@@ -98,6 +98,12 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A speaker can edit their own talk in an organiser's room.** Opening their
+  session showed an empty Room box, a notice saying no room here is open for
+  booking, and a Save button that could not be pressed — so the description,
+  the one thing a credited speaker may change, could not be saved. The room a
+  session is already in is no longer treated as a room being booked.
+
 - **Minting a speaker code no longer counts as a visit.** The People tab
   showed *seen just now* beside a speaker the moment an organiser generated
   their code, before the speaker had opened anything. The record that the
