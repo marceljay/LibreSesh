@@ -31,7 +31,8 @@
     "lint": "prettier --check . && eslint . && tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "schema": "tsx scripts/schema.ts"
   },
   "overrides": {
     "qs": "^6.16.0"

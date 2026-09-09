@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **A schema page generated from the migrations.** `docs/schema.md` draws
+  every table as an entity diagram — columns, keys, and a labelled line for
+  each foreign key — and lists, per table, what it references and what
+  references it, with the unique indexes. It is read from SQLite's own
+  pragmas on a freshly migrated database, so it describes what this build
+  makes, on the demo and in production alike. `npm run schema` rewrites it
+  and a test fails when a migration has moved on without it.
+
 ## [0.4.0] — 2026-09-09
 
 ### Added
