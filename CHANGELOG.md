@@ -11,13 +11,17 @@ All notable changes to this project are documented here.
   off a slide is the usual reason anyone gets it wrong. The sixth waits two
   minutes, the next five are free again, and the eleventh waits a quarter of
   an hour, as does every one after it. Getting the password right clears the
-  count, so the next slip starts from five again. That alone does
-  nothing against someone with a hundred addresses, so failures are also
-  counted per event: past sixty in an hour the event stops admitting new
-  people for fifteen minutes. Nobody already here is affected, the schedule
-  stays up, and no password is checked while the door is shut. The organiser
-  finds a line above the audit log saying how many attempts there have been
-  and whether the door closed.
+  count, so the next slip starts from five again. This counts each person
+  separately, not each network, so a room of two hundred sharing one wifi
+  never shares one allowance and nobody is held up by the person beside them.
+  That alone does nothing against someone with a hundred addresses, so
+  failures are also counted per event: past sixty in an hour, and only when
+  they come from at least ten different places, the event stops admitting new
+  people for fifteen minutes. One person cannot trigger that on their own,
+  which is the point — otherwise anyone could shut an event's door at will.
+  Nobody already here is affected, the schedule stays up, and no password is
+  checked while the door is shut. The organiser finds a line above the audit
+  log saying how many attempts there have been and whether the door closed.
 - **The password fields say what they are worth.** All three lead with the
   offer to make one for you, four random words, which is stronger than
   anything worth typing. Type your own and the field says what that password

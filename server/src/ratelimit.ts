@@ -150,63 +150,106 @@ export class Backoff {
   }
 }
 
-/** Failures an event tolerates in a sliding hour before its login closes. */
+/**
+ * Failures an event tolerates in a sliding hour before its login closes, and
+ * the number of *distinct addresses* they must come from.
+ *
+ * The distinct-address requirement is the whole point (added 2026-09-09).
+ * Without it one person on the venue wifi could fail sixty times in a script
+ * and stop an event admitting anyone for a quarter of an hour, again and
+ * again — a denial of service on arrivals, far worse than the guessing it
+ * defends against. A single address failing is already handled by its own
+ * wait, so nothing is lost by requiring the failures to be spread out, which
+ * is exactly what the distributed attack this exists for looks like.
+ */
 export const LOGIN_FAILURES_PER_HOUR = 60;
+export const LOGIN_DISTINCT_ADDRESSES = 10;
 /** How long it stays closed to people who are not already in. */
 export const LOGIN_CLOSED_MS = 15 * 60_000;
 
 /**
- * Failed attempts against one event from *every* source (D3 §1b).
+ * Failures from one address at one event, across every cookie it presents.
  *
- * Per-address limits do nothing against a hundred addresses, which a cheap
- * proxy list buys. Counting per target does: past the threshold the login
- * closes to new entrants for a quarter of an hour, no password is checked
- * (so no bcrypt is spent on an attacker), and everyone already holding a
- * role is untouched — the schedule stays up, only the door shuts.
+ * The waits above are keyed on the visitor as well as the address, so 200
+ * people on one venue wifi do not share five attempts. That alone would let
+ * an attacker throw the cookie away between guesses and get five more every
+ * time, which is why this exists: whatever cookie they present, the address
+ * gets this many failures an hour and then waits.
  *
- * The worst a hostile can do with this is keep a door shut a quarter hour at
- * a time, which is loud: the organiser is told, and it is in the audit log.
+ * Sized for a room, not for a person. A conference where the password is read
+ * off a slide produces a burst of honest failures from one address, and that
+ * must not lock the room out.
+ */
+export const ADDRESS_FAILURES_PER_HOUR = 300;
+
+/**
+ * A sliding-hour count of failures, with a block once a threshold is passed
+ * (D3 §1b). Used twice: per event, where a closure needs failures from many
+ * addresses, and per address, where it does not.
  */
 export class Tally {
-  private readonly events = new Map<number, { at: number[]; closedUntil: number }>();
+  private readonly rows = new Map<
+    string,
+    { at: number[]; sources: string[]; blockedUntil: number }
+  >();
 
   constructor(private readonly now: () => number = Date.now) {}
 
-  /** Seconds until the login reopens, or 0 when it is open. */
-  closedFor(eventId: number): number {
+  /** Seconds until this key is usable again, or 0. */
+  blockedFor(key: string): number {
     const t = this.now();
-    const entry = this.events.get(eventId);
-    if (!entry || entry.closedUntil <= t) return 0;
-    return Math.ceil((entry.closedUntil - t) / 1000);
+    const entry = this.rows.get(key);
+    if (!entry || entry.blockedUntil <= t) return 0;
+    return Math.ceil((entry.blockedUntil - t) / 1000);
   }
 
   /**
-   * Record a failure. Returns the count in the last hour when this one closed
-   * the login, and 0 otherwise — so the caller writes exactly one audit row
-   * per closure.
+   * Record a failure. `source` is what the distinct count is over — the
+   * address, for an event. Returns the failure count when this one caused
+   * the block, and 0 otherwise, so the caller writes exactly one audit row.
    */
-  fail(eventId: number): number {
+  fail(
+    key: string,
+    options: { threshold: number; blockMs: number; source?: string; distinctSources?: number },
+  ): number {
     const t = this.now();
-    const entry = this.events.get(eventId) ?? { at: [], closedUntil: 0 };
+    const entry = this.rows.get(key) ?? { at: [], sources: [], blockedUntil: 0 };
+    const keep = (_: unknown, i: number): boolean => t - entry.at[i] < 60 * 60_000;
+    entry.sources = entry.sources.filter(keep);
     entry.at = entry.at.filter((when) => t - when < 60 * 60_000);
     entry.at.push(t);
-    this.events.set(eventId, entry);
-    if (entry.at.length < LOGIN_FAILURES_PER_HOUR || entry.closedUntil > t) return 0;
-    entry.closedUntil = t + LOGIN_CLOSED_MS;
+    entry.sources.push(options.source ?? '');
+    this.rows.set(key, entry);
+
+    if (entry.at.length < options.threshold || entry.blockedUntil > t) return 0;
+    if (
+      options.distinctSources !== undefined &&
+      new Set(entry.sources).size < options.distinctSources
+    ) {
+      return 0;
+    }
+    entry.blockedUntil = t + options.blockMs;
     return entry.at.length;
   }
 
-  /** How many failures this event has seen in the last hour. */
-  recentFailures(eventId: number): number {
+  /** How many failures this key has seen in the last hour. */
+  recentFailures(key: string): number {
     const t = this.now();
-    const entry = this.events.get(eventId);
+    const entry = this.rows.get(key);
     if (!entry) return 0;
-    entry.at = entry.at.filter((when) => t - when < 60 * 60_000);
-    return entry.at.length;
+    return entry.at.filter((when) => t - when < 60 * 60_000).length;
+  }
+
+  /** How many distinct sources those failures came from. */
+  recentSources(key: string): number {
+    const t = this.now();
+    const entry = this.rows.get(key);
+    if (!entry) return 0;
+    return new Set(entry.sources.filter((_, i) => t - entry.at[i] < 60 * 60_000)).size;
   }
 
   reset(): void {
-    this.events.clear();
+    this.rows.clear();
   }
 }
 

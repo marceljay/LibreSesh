@@ -151,7 +151,7 @@ export function auditRoutes(ctx: Ctx): Router {
         .get(req.event.id, since);
       res.json({
         failuresLastHour: failures,
-        closedSecondsRemaining: ctx.tally.closedFor(req.event.id),
+        closedSecondsRemaining: ctx.tally.blockedFor(`event:${req.event.id}`),
         lastClosure: closure ? { at: closure.at, afterFailures: closure.entity_id } : null,
       });
     },

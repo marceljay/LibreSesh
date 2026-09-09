@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  ADDRESS_FAILURES_PER_HOUR,
   Backoff,
-  Tally,
+  LOGIN_DISTINCT_ADDRESSES,
   LOGIN_FAILURES_PER_HOUR,
   LOGIN_FREE_ATTEMPTS,
+  Tally,
   loginBlockSeconds,
 } from '../server/src/ratelimit.js';
-import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
+import { agentFor, makeHarness, seedEvent, type Agent, type Harness } from './helpers.js';
 
 /**
  * D3 §1a and §1b, as pure objects first: the clock is injectable, so the
@@ -93,49 +95,103 @@ describe('how long each failure costs', () => {
 describe('per-event closure', () => {
   let now = 1_000_000;
   const tally = new Tally(() => now);
+  const key = 'event:1';
+  const opts = (source: string) => ({
+    threshold: LOGIN_FAILURES_PER_HOUR,
+    blockMs: 15 * 60_000,
+    source,
+    distinctSources: LOGIN_DISTINCT_ADDRESSES,
+  });
 
   beforeEach(() => {
     now = 1_000_000;
     tally.reset();
   });
 
-  const failTimes = (eventId: number, n: number): number => {
+  /** n failures spread over enough addresses to satisfy the distinct rule. */
+  const spread = (n: number): number => {
     let closedAt = 0;
-    for (let i = 0; i < n; i += 1) closedAt = tally.fail(eventId) || closedAt;
+    for (let i = 0; i < n; i += 1) {
+      closedAt = tally.fail(key, opts(`10.0.0.${i % LOGIN_DISTINCT_ADDRESSES}`)) || closedAt;
+    }
     return closedAt;
   };
 
-  it('closes the login on the threshold failure, whatever the sources', () => {
-    expect(failTimes(1, LOGIN_FAILURES_PER_HOUR - 1)).toBe(0);
-    expect(tally.closedFor(1)).toBe(0);
-    expect(tally.fail(1)).toBe(LOGIN_FAILURES_PER_HOUR);
-    expect(tally.closedFor(1)).toBe(15 * 60);
+  it('closes on the threshold failure when they are spread out', () => {
+    expect(spread(LOGIN_FAILURES_PER_HOUR - 1)).toBe(0);
+    expect(tally.blockedFor(key)).toBe(0);
+    expect(tally.fail(key, opts('10.0.0.99'))).toBe(LOGIN_FAILURES_PER_HOUR);
+    expect(tally.blockedFor(key)).toBe(15 * 60);
+  });
+
+  // The reason the distinct rule exists: otherwise one person on the venue
+  // wifi shuts the event to everybody, over and over.
+  it('never closes on one address alone, however many times it fails', () => {
+    for (let i = 0; i < LOGIN_FAILURES_PER_HOUR * 5; i += 1) {
+      expect(tally.fail(key, opts('10.0.0.1'))).toBe(0);
+    }
+    expect(tally.blockedFor(key)).toBe(0);
+  });
+
+  it('needs enough distinct addresses, not just enough failures', () => {
+    for (let i = 0; i < LOGIN_FAILURES_PER_HOUR * 2; i += 1) {
+      // Nine addresses, one short of the requirement.
+      expect(tally.fail(key, opts(`10.0.0.${i % (LOGIN_DISTINCT_ADDRESSES - 1)}`))).toBe(0);
+    }
+    expect(tally.blockedFor(key)).toBe(0);
   });
 
   it('reports the closure once, not on every later failure', () => {
-    failTimes(1, LOGIN_FAILURES_PER_HOUR);
-    expect(tally.fail(1)).toBe(0);
-    expect(tally.fail(1)).toBe(0);
+    spread(LOGIN_FAILURES_PER_HOUR);
+    expect(tally.fail(key, opts('10.0.0.5'))).toBe(0);
+    expect(tally.fail(key, opts('10.0.0.6'))).toBe(0);
   });
 
   it('reopens after a quarter of an hour', () => {
-    failTimes(1, LOGIN_FAILURES_PER_HOUR);
+    spread(LOGIN_FAILURES_PER_HOUR);
     now += 15 * 60_000;
-    expect(tally.closedFor(1)).toBe(0);
+    expect(tally.blockedFor(key)).toBe(0);
   });
 
   it('counts a sliding hour, so a slow trickle never closes anything', () => {
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR * 2; i += 1) {
-      expect(tally.fail(1)).toBe(0);
+      expect(tally.fail(key, opts(`10.0.0.${i % LOGIN_DISTINCT_ADDRESSES}`))).toBe(0);
       now += 2 * 60_000;
     }
-    expect(tally.closedFor(1)).toBe(0);
+    expect(tally.blockedFor(key)).toBe(0);
   });
 
   it('is per event', () => {
-    failTimes(1, LOGIN_FAILURES_PER_HOUR);
-    expect(tally.closedFor(1)).toBeGreaterThan(0);
-    expect(tally.closedFor(2)).toBe(0);
+    spread(LOGIN_FAILURES_PER_HOUR);
+    expect(tally.blockedFor(key)).toBeGreaterThan(0);
+    expect(tally.blockedFor('event:2')).toBe(0);
+  });
+});
+
+describe('per-address cap, whatever cookie is presented', () => {
+  let now = 1_000_000;
+  const tally = new Tally(() => now);
+  const key = 'address:1:10.0.0.1';
+  const opts = { threshold: ADDRESS_FAILURES_PER_HOUR, blockMs: 15 * 60_000 };
+
+  beforeEach(() => {
+    now = 1_000_000;
+    tally.reset();
+  });
+
+  it('is sized for a room: a burst of honest typing never reaches it', () => {
+    // 200 people on one wifi, each getting it wrong once, and once more.
+    for (let i = 0; i < 400; i += 1) tally.fail(key, opts);
+    expect(tally.blockedFor(key)).toBeGreaterThan(0);
+    // …which is past the cap, so the cap must sit above a plausible room.
+    expect(ADDRESS_FAILURES_PER_HOUR).toBeGreaterThanOrEqual(300);
+  });
+
+  it('blocks the address once the cap is passed, whatever cookies were used', () => {
+    for (let i = 0; i < ADDRESS_FAILURES_PER_HOUR - 1; i += 1) tally.fail(key, opts);
+    expect(tally.blockedFor(key)).toBe(0);
+    expect(tally.fail(key, opts)).toBe(ADDRESS_FAILURES_PER_HOUR);
+    expect(tally.blockedFor(key)).toBe(15 * 60);
   });
 });
 
@@ -145,14 +201,24 @@ describe('the login route, end to end', () => {
   beforeEach(() => {
     harness = makeHarness({ trustProxy: true });
     seedEvent(harness.db, { slug: 'conf' });
+    persistent = agentFor(harness);
   });
   afterEach(() => harness.close());
 
-  const attempt = (password: string, ip = '10.0.0.1', name = 'someone') =>
-    agentFor(harness)
-      .post('/api/e/conf/auth')
-      .set('X-Forwarded-For', ip)
-      .send({ password, displayName: name });
+  /**
+   * One agent means one cookie, which is what the waits are keyed on now.
+   * Passing a fresh agent is how a test plays somebody who throws their
+   * cookie away between guesses.
+   */
+  const attempt = (
+    password: string,
+    ip = '10.0.0.1',
+    agent: Agent = persistent,
+    name = 'someone',
+  ) =>
+    agent.post('/api/e/conf/auth').set('X-Forwarded-For', ip).send({ password, displayName: name });
+
+  let persistent: Agent;
 
   it('lets five wrong passwords through, then holds the sixth for two minutes', async () => {
     for (let i = 0; i < LOGIN_FREE_ATTEMPTS; i += 1) {
@@ -173,11 +239,11 @@ describe('the login route, end to end', () => {
 
   it('closes the event to newcomers after sixty failures from many addresses', async () => {
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR; i += 1) {
-      await attempt('nope', `10.1.${Math.floor(i / 256)}.${i % 256}`);
+      await attempt('nope', `10.1.${Math.floor(i / 256)}.${i % 256}`, agentFor(harness));
     }
     // A fresh address, and the right password: still refused, and no bcrypt
     // was spent deciding that.
-    const res = await attempt('viewer-pw', '10.9.9.9');
+    const res = await attempt('viewer-pw', '10.9.9.9', agentFor(harness));
     expect(res.status).toBe(429);
     expect(res.body.error.code).toBe('login_closed');
 
@@ -202,10 +268,21 @@ describe('the login route, end to end', () => {
     ).toBe(200);
 
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR; i += 1) {
-      await attempt('nope', `10.2.${Math.floor(i / 256)}.${i % 256}`);
+      await attempt('nope', `10.2.${Math.floor(i / 256)}.${i % 256}`, agentFor(harness));
     }
 
     const res = await inside.get('/api/e/conf/bundle').set('X-Forwarded-For', '10.5.5.5');
+    expect(res.status).toBe(200);
+  });
+
+  it('does not let one person’s mistakes hold up the rest of the room', async () => {
+    // Same address — a venue wifi — different people. The first burns their
+    // own five attempts; the second walks in.
+    for (let i = 0; i < 6; i += 1) await attempt('nope');
+    expect((await attempt('nope')).status).toBe(429);
+
+    const someoneElse = agentFor(harness);
+    const res = await attempt('viewer-pw', '10.0.0.1', someoneElse);
     expect(res.status).toBe(200);
   });
 

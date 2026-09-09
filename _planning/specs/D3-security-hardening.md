@@ -70,38 +70,54 @@ and a slot, the attacker runs requests in parallel so the delay does not bound
 throughput, and legitimate users wait for nothing. Keep refusing fast with
 `Retry-After`; make the refusals smarter.
 
-**a. Per-address backoff, per target (waits chosen 2026-09-09).** Failures
-against event *E* from address *A* are counted. The first five cost nothing at
-all; the sixth is refused for **two minutes**; five more cost nothing; the
-eleventh and every failure after it is refused for **fifteen minutes**. A
-correct password clears the count outright, so the next mistake starts from
-five free attempts again. Keyed on the pair, so an attacker cannot spend one
-event's patience on another.
+**a. Per-visitor waits at one event (chosen 2026-09-09).** Failures at event
+*E* from one visitor — the cookie, paired with the address — are counted. The
+first five cost nothing at all; the sixth is refused for **two minutes**; five
+more cost nothing; the eleventh and every failure after it is refused for
+**fifteen minutes**. A correct password clears the count outright.
 
-Five free attempts because the common failure is a person misreading a
-four-word phrase off a slide, and charging them for that is a worse outcome
-than the attack being defended against. The earlier proposal — doubling from
-one second — was rejected: between one second and four there is no difference
-a person or an attacker would notice, so the ramp bought nothing the two flat
-steps do not.
+Five free because the common failure is a person misreading a four-word phrase
+off a slide, and charging them for that is a worse outcome than the attack
+being defended against. Doubling from one second was rejected: between one
+second and four there is nothing a person or an attacker would notice.
+
+**Keyed on the cookie, not the address alone.** A venue is one address. Two
+hundred people reading a password off a slide must not share five attempts,
+and one of them mistyping must not hold up the rest — that is the ordinary
+day this feature would otherwise ruin.
 
 **This replaces the `auth` token bucket on the login route rather than joining
-it.** That bucket allowed five attempts per quarter hour and then imposed
-three minutes at the sixth, which would have overridden the waits above with
-numbers nobody chose. Its per-identity half never bound an attacker either: a
-cookie is free to discard, which is the same finding as §3. The bucket stays
-on the instance password, where the caller cannot shed identity so cheaply.
+it.** That bucket allowed five attempts per quarter hour and then imposed three
+minutes at the sixth, which would have overridden the numbers above with
+numbers nobody chose. The bucket stays on the instance password, where the
+caller cannot shed identity as cheaply.
 
-**b. Per-target closure.** Failures against *E* from *all* sources are counted
-in a sliding hour. Past a threshold — **60 an hour** is the proposal; a room of
-300 entering at 09:00 produces successes, which do not count, and a handful of
-typos — the login page for *E* **closes to new entrants for 15 minutes**: every
-attempt gets `429 login_closed` with `Retry-After`, no password is checked (so
-no bcrypt is spent), and one audit row `login_closed` is written with the count.
-Everyone already holding a role is unaffected — the schedule stays up; only
-the door shuts. This is what stops the 100-address attacker, and its cost is
-bounded: the worst a hostile can do is keep the door shut for a quarter hour
-at a time, which is loud (see c) and recoverable.
+**a2. Per-address cap, whatever cookie is presented.** Keying on the cookie is
+free to escape: throw it away, get five more attempts. So one address at one
+event also gets **300 failures an hour** before it waits a quarter of an hour.
+Sized for a room rather than a person — a burst of honest failures from a
+venue must never reach it — and bounded by the limit on minting identities
+(§3), since each discarded cookie needs a new one.
+
+**b. Per-target closure, requiring many addresses.** Failures against *E* from
+all sources are counted in a sliding hour. Past **60 an hour**, *and* coming
+from at least **10 distinct addresses**, the login for *E* **closes to new
+entrants for 15 minutes**: every attempt gets `429 login_closed` with
+`Retry-After`, no password is checked (so no bcrypt is spent), and one audit
+row `login_closed` is written with the count. Everyone already holding a role
+is unaffected — the schedule stays up; only the door shuts.
+
+**The distinct-address requirement is not optional** (added 2026-09-09).
+Without it, one person on the venue wifi can fail sixty times in a script and
+stop the event admitting anybody, a quarter of an hour at a time, for as long
+as they like. That is a denial of service on arrivals — worse than the guessing
+this defends against, and trivially cheap. A single address is already handled
+by a2, so requiring the failures to be spread costs nothing and is exactly what
+a distributed attack looks like.
+
+Residual, accepted: an attacker holding a large IPv6 allocation has plenty of
+distinct addresses and can still trip the closure. The organiser is told, it is
+in the audit log, and everyone already inside is unaffected.
 
 **c. Tell the organiser.** Manage Event gets a line — in the Audit tab's header
 and as an amber notice on the Settings tab — reading *"N failed password

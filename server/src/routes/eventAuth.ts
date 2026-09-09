@@ -13,7 +13,14 @@ import {
   ownProfile,
   restoreOnEntry,
 } from '../people.js';
-import { clientIp, limit } from '../ratelimit.js';
+import {
+  ADDRESS_FAILURES_PER_HOUR,
+  LOGIN_CLOSED_MS,
+  LOGIN_DISTINCT_ADDRESSES,
+  LOGIN_FAILURES_PER_HOUR,
+  clientIp,
+  limit,
+} from '../ratelimit.js';
 import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
 
@@ -139,7 +146,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     //    address limit, so failures are also counted per target. While it is
     //    shut, nothing is checked and no bcrypt is spent on the attacker.
     //    Everyone already holding a role is unaffected.
-    const closedFor = ctx.tally.closedFor(req.event.id);
+    const closedFor = ctx.tally.blockedFor(`event:${req.event.id}`);
     if (closedFor > 0) {
       res.setHeader('Retry-After', String(closedFor));
       throw new HttpError(
@@ -149,17 +156,17 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       );
     }
 
-    // 2. Has this address been failing at *this* event? Five attempts are
-    //    free — misreading a four-word phrase off a slide is the common case
-    //    — then two minutes, five more free, then a quarter of an hour.
+    // 2. Has this *visitor* been failing at this event? Keyed on the cookie
+    //    as well as the address, because a venue is one address: 200 people
+    //    reading a password off a slide must not share five attempts between
+    //    them, and one of them mistyping must not hold up the rest.
     //
-    //    This is the only limit here. The `auth` token bucket used to sit
-    //    below it and would impose three minutes at the sixth attempt
-    //    whatever the steps above said, which is a second lockout with numbers
-    //    nobody chose. The backoff is strictly better for this route: it is
-    //    keyed per event as well as per address, it escalates, and a correct
-    //    password clears it outright.
-    const backoffKey = `${req.event.id}:${clientIp(req)}`;
+    //    This is the only per-visitor limit here. The `auth` token bucket
+    //    used to sit below it and would impose three minutes at the sixth
+    //    attempt whatever the steps above said, which is a second lockout
+    //    with numbers nobody chose.
+    const ip = clientIp(req);
+    const backoffKey = `${req.event.id}:${ip}:${req.identity.id}`;
     const waitFor = ctx.backoff.check(backoffKey);
     if (waitFor > 0) {
       res.setHeader('Retry-After', String(waitFor));
@@ -172,11 +179,39 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       );
     }
 
+    // 3. And has this address been failing at this event whatever cookie it
+    //    presents? Keying step 2 on the cookie would otherwise be free to
+    //    escape: throw the cookie away, get five more attempts. This is
+    //    sized for a room rather than a person, so a burst of honest typing
+    //    never reaches it.
+    const addressKey = `address:${req.event.id}:${ip}`;
+    const addressBlocked = ctx.tally.blockedFor(addressKey);
+    if (addressBlocked > 0) {
+      res.setHeader('Retry-After', String(addressBlocked));
+      throw new HttpError(
+        429,
+        'rate_limited',
+        'Too many wrong passwords from this network — try again in about a quarter of an hour',
+      );
+    }
+
     const { password, displayName, claimProfile } = parse(authSchema, req.body);
     const role = roleForPassword(req.event, password);
     if (!role) {
       ctx.backoff.fail(backoffKey);
-      const closedAfter = ctx.tally.fail(req.event.id);
+      ctx.tally.fail(addressKey, {
+        threshold: ADDRESS_FAILURES_PER_HOUR,
+        blockMs: LOGIN_CLOSED_MS,
+      });
+      // The event closes only when the failures are spread across many
+      // addresses. One person cannot shut a door on everybody: their own
+      // address is already waiting, and this needs company.
+      const closedAfter = ctx.tally.fail(`event:${req.event.id}`, {
+        threshold: LOGIN_FAILURES_PER_HOUR,
+        blockMs: LOGIN_CLOSED_MS,
+        source: ip,
+        distinctSources: LOGIN_DISTINCT_ADDRESSES,
+      });
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,

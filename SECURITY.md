@@ -17,8 +17,8 @@ explicitly *not* built to withstand a targeted attacker with time.
 
 | Threat | Mitigation |
 | --- | --- |
-| A hundred addresses guessing one event's password | Failures are counted per event as well as per address: past 60 in a sliding hour the event stops letting *new* people in for 15 minutes, no password is checked while it is shut (so no bcrypt is spent on the attacker), everyone already holding a role is unaffected, and one audit row records it. The organiser sees a notice above the audit log |
-| Repeated guesses from one address | Per address per event: five attempts cost nothing, the sixth is refused for 2 minutes, five more cost nothing, the eleventh and beyond for 15 minutes. A correct password clears the count. Mistyping a four-word phrase is free |
+| A hundred addresses guessing one event's password | Failures are counted per event: past 60 in a sliding hour **from at least 10 distinct addresses**, the event stops letting *new* people in for 15 minutes, no password is checked while it is shut, everyone already holding a role is unaffected, and one audit row records it. The distinct-address rule is what stops one person shutting an event's door on everybody. The organiser sees a notice above the audit log |
+| Repeated guesses from one visitor | Per event, per cookie **and** address: five attempts cost nothing, the sixth is refused for 2 minutes, five more cost nothing, the eleventh and beyond for 15 minutes. A correct password clears the count. Keyed on the cookie so a venue's whole wifi does not share one allowance, and capped at 300 failures an hour per address so throwing the cookie away buys little |
 | Guessing an event password | bcrypt (cost 10); 5 attempts per 15 min per identity **and** per IP, `Retry-After` on the 6th |
 | Guessing a link phrase | Same 5-per-15-min rate limit as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
 | Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |

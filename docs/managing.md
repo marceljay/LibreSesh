@@ -35,9 +35,16 @@ Two things happen on their own. Anyone can get the password wrong five times
 from one place at no cost, which covers misreading a four-word phrase off a
 slide; the sixth try waits two minutes, the next five are free again, and the
 eleventh waits a quarter of an hour. Getting it right clears the count, so an
-attendee who mistypes and then fixes it is never held up. And if the event as a
-whole sees sixty failures in an hour, from however many addresses, it stops
-letting *new* people in for fifteen minutes. Everyone already here keeps
+attendee who mistypes and then fixes it is never held up. This counts each
+person separately rather than each network, so a room sharing one wifi does not
+share one allowance — if a hundred people are typing the password off your
+slide at once, one of them getting it wrong holds up nobody but themselves.
+
+And if the event as a whole sees sixty failures in an hour, coming from at
+least ten different places, it stops letting *new* people in for fifteen
+minutes. It takes several sources on purpose: one person hammering the login
+is already waiting on their own, and should not be able to shut your door on
+everyone else. Everyone already here keeps
 working normally: the schedule stays up, contributions still post, only the
 door is shut. The audit log records the closure.
 
