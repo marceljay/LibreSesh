@@ -1549,7 +1549,6 @@ export function SchedulePage() {
             formats={bundle.formats}
             people={bundle.people}
             contributions={data.contributions[selected.id]}
-            me={me}
             displayName={bundle.displayName}
             timezone={timezone}
             canEdit={canEdit(selected)}
@@ -1731,7 +1730,6 @@ export function SchedulePage() {
           formats={bundle.formats}
           people={bundle.people}
           contributions={data.contributions[selected.id]}
-          me={me}
           displayName={bundle.displayName}
           timezone={timezone}
           canEdit={canEdit(selected)}
