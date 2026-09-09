@@ -98,7 +98,10 @@ export function identityMiddleware(db: Db, isProd: boolean) {
         ics_token: null,
       };
       setIdentityCookie(res, token, isProd);
-    } else if (identity.last_seen_at.slice(0, 16) !== now.slice(0, 16)) {
+    } else if (
+      identity.last_seen_at === null ||
+      identity.last_seen_at.slice(0, 16) !== now.slice(0, 16)
+    ) {
       // Throttle the write to once a minute — this runs on every request.
       touch.run(now, identity.id);
       identity.last_seen_at = now;

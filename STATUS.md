@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 ## In Progress
 
@@ -412,25 +412,23 @@ they left behind landed 2026-09-05 as R26).
   No captcha or edge proxy assumed — the question was whether the server can
   do this alone, and it can, up to "slow and visible" rather than "impossible".
 
-- **D4 · A signed-in-devices view, and what it costs.** Your proposal
-  (2026-09-07): a speaker — or also an organiser — can see which devices are
-  signed in as them, by address and browser, whether they came through a
-  device phrase or a speaker code; from what the request already carries, no
-  tracking modules. What I found: today the server *cannot* tell devices
-  apart. Every device that redeems a phrase receives the same identity token,
-  so there is no row per device to list, and no way to sign one out. The
-  audit log records a redemption but neither address nor browser. So the
-  feature is a data-model change, not a screen: a `devices` table (identity,
-  hashed per-device token, origin `gate|phrase|code|link`, first and last
-  seen, IP, User-Agent), the cookie carrying the device token, and revocation
-  per device — which also lets "revoke the speaker code" evict the devices it
-  let in, the gap SECURITY.md now names. Decisions I need: (a) who sees it —
-  I recommend everyone sees their own devices, and organisers see them on the
-  profile of anyone holding a speaker code, since those are the credentials
-  they hand out; (b) retention — I recommend last-seen only, rows dropped 90
-  days after they were last seen; (c) go or park. It is its own branch and a
-  migration on identity, so it should follow the token-hashing work in D3
-  rather than precede it.
+- **D4 · Per-device sign-in, decided — build behind D3.** Settled
+  2026-09-09. Approach **B**: one random token per device, issued at
+  redemption, stored hashed in a `devices` table (identity, hashed token,
+  origin `gate|phrase|code|link`, first seen, last seen), the cookie carrying
+  the device token, revocation per device. This is what lets "revoke the
+  speaker code" evict the devices it let in, and an organiser sign out one
+  device without the others. Rejected: A (rotate the token, evicting every
+  other device at once) as too blunt; C (a device id plus a block list) as B's
+  plumbing without B's list. **No IP address or geolocation, ever** — comparing
+  login locations is unreliable (a venue is one NAT, a VPN is anywhere) and
+  turns a scheduling tool into a tracker; the model-free signal that a takeover
+  happened is the redemption itself. Who sees it: everyone their own devices,
+  organisers a device *count* and sign-out on a profile — no browser strings on
+  show. Its own branch, a migration on identity, so it follows the token
+  hashing in D3. Device *counting* needs no fingerprinting: a redemption is an
+  audited event, so "how many devices joined this account" is already exact;
+  telling them *apart* is what B adds.
 
 - **D5 · Should a speaker code keep working after its first use?** Today it
   does: the code, and the link that carries it, redeem any number of times
@@ -474,6 +472,25 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
+
+- **Account notices, and account history on the profile.** Endorsed
+  2026-09-09; buildable now, needs none of D4's model change. Two parts.
+  (1) **Notify the person** whenever someone becomes them or their profile
+  moves under them, intended or not: a device signed in via speaker code,
+  speaker link or device phrase; a profile merged into theirs or theirs into
+  another; a claim approved or declined; a role changed (the live frame
+  already moves the state — this keeps the record). New notification kinds on
+  the existing per-identity inbox (`notifications.ts`, migration 020); the
+  redemption notice is the smallest, highest-value first commit, since it is
+  the earliest possible takeover warning and costs nothing in privacy. Each
+  new kind gets a mute toggle and a bell test, per the silence rules the
+  suite already pins. (2) **Account history on the profile, organisers only:**
+  the audit already records code mint/revoke, phrase mint, redemption,
+  redemption-failed, role set, claim request/approve/decline and merge — so
+  this is a query over existing rows plus one missing detail (the redemption
+  row carries no event and does not name which code adopted the device). The
+  device *count* shown here is exact today; the per-device list and sign-out
+  are D4.
 
 - **Finer permissions** (your words, 2026-09-08: "there should maybe be a
   few more granular permissions"). First, what is already true, because it

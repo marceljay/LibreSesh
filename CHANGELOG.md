@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-09
+
 ### Added
 
 - **The audit log links to what it names.** A line said *ada deleted session
@@ -32,6 +34,15 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The profile-edit switch is named for everyone.** The Permissions tab
+  called it *Edit their own speaker profile*; since every attendee has a
+  profile, it now reads *Edit their own profile*, and the table in
+  `docs/using.md` says the same.
+- **Link another device wears the devices glyph.** The menu row that mints
+  the phrase was plain text between Calendar and Theme, and the one thing in
+  the menu nobody found. It now carries the same laptop-and-phone icon as the
+  gate's *I'm already here on another device*, so the two ends of the flow
+  are marked alike.
 - **The test suite renders the app now.** Every route mounts under a
   simulated browser, talks to the real server, and is held to a clean
   console — where React reports a bad ref, a missing key or an update it did
@@ -53,6 +64,15 @@ All notable changes to this project are documented here.
   every library the app sits on has been testing against for a year.
 
 ### Fixed
+
+- **Minting a speaker code no longer counts as a visit.** The People tab
+  showed *seen just now* beside a speaker the moment an organiser generated
+  their code, before the speaker had opened anything. The record that the
+  code hands out was being created with a last-seen time. It now starts
+  without one, and gets it on the first request the speaker's device makes.
+  Existing rows are repaired on upgrade: a profile whose code is still
+  unredeemed, and which was never seen after the minute it was created,
+  goes back to a dash.
 
 - **The comment box posts as who you are here.** Its button said *Post as*
   and then the name the instance offers a newcomer, which follows the last

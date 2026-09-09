@@ -39,3 +39,7 @@ _scratch/
 
 # PR descriptions written by /pr when gh is unavailable
 .temp/
+
+# Dot-free copy of the build for the browser pass (a `.claude` path segment
+# breaks static serving from a worktree)
+lsbuild-scratch/

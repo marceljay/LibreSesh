@@ -16,7 +16,7 @@ an event nobody can moderate cannot be created by accident.
 | Capability | viewer | attendee | speaker | organiser |
 | --- | :---: | :---: | :---: | :---: |
 | Star sessions, build a personal agenda | ✓ | ✓ | ✓ | ✓ |
-| Edit your own speaker profile | ✓ | ✓ | ✓ | ✓ |
+| Edit your own profile | ✓ | ✓ | ✓ | ✓ |
 | Register interest in a pitch | ✓ | ✓ | ✓ | ✓ |
 | Add notes, links and questions | | ✓ | ✓ | ✓ |
 | Delete your own contributions | | ✓ | ✓ | ✓ |
