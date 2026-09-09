@@ -60,7 +60,7 @@ export const CAPABILITIES = [
   },
   {
     id: 'person.edit_own',
-    label: 'Edit their own speaker profile',
+    label: 'Edit their own profile',
     defaults: ['viewer', 'user', 'speaker', 'admin'],
   },
 ] as const satisfies readonly { id: string; label: string; defaults: readonly Role[] }[];
