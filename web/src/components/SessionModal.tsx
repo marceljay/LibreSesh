@@ -140,10 +140,15 @@ export function SessionModal({
   onLinkExisting,
 }: SessionModalProps) {
   const isAdmin = role === 'admin';
-  // Users may only place sessions in rooms that allow booking (SPEC §5.1).
+  // Users may only place sessions in rooms that allow booking (SPEC §5.1) —
+  // plus the room this session is already in, which is not a placement but a
+  // fact. Without it a speaker editing their own official talk in an
+  // organiser's room saw an empty Room box, the "nowhere for you to add a
+  // session" notice, and a Save button disabled for want of a room to book:
+  // no way to change the one thing that is theirs, the words.
   const allowedRooms = useMemo(
-    () => (isAdmin ? rooms : rooms.filter((r) => r.openBooking)),
-    [isAdmin, rooms],
+    () => (isAdmin ? rooms : rooms.filter((r) => r.openBooking || r.id === session?.roomId)),
+    [isAdmin, rooms, session?.roomId],
   );
 
   const existing = session ? place(session, timezone) : null;
