@@ -1002,7 +1002,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   sits above the day strip as a line of chips of its own
   (`SchedulePage.tsx:1179`), and on a phone those two rows are most of what
   stands between the event bar and the day's first session. Collapse it into a
-  `W2 ▾` dropdown at the head of the strip, carrying the range label, session
+  `Wk2 ▾` dropdown at the head of the strip, carrying the range label, session
   count and today-dot the chips carry now; the strip gives up about a day of
   width and the page gets a row back. Only above `weekRailFrom` (default 8
   days). Two smaller faults in the same chunking to take with it: a

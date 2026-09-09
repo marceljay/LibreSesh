@@ -17,9 +17,20 @@ import { ChevronLeftIcon, ChevronRightIcon } from './icons';
  * tabbing to one already brings it into view, so two more stops in the header
  * would be noise on the way to the day picker.
  */
+/** The page's own ground. An arrow fades the line out into whatever is behind
+ *  it, so a rail sitting on a different colour has to say so — fading to
+ *  `stone-50` on a white card leaves a visible seam where the gradient ends. */
+export const RAIL_FADE_PAGE =
+  'from-stone-50 via-stone-50/90 dark:from-stone-900 dark:via-stone-900/90';
+
+/** A rail inside one of the app's white boxes: the day strip's segmented
+ *  control, and anything else that is `bg-white dark:bg-stone-900`. */
+export const RAIL_FADE_CARD = 'from-white via-white/90 dark:from-stone-900 dark:via-stone-900/90';
+
 export function Rail({
   label,
   className = '',
+  fade = RAIL_FADE_PAGE,
   children,
 }: {
   /** Names the row for a screen reader — "Weeks", not "Week 1". */
@@ -28,6 +39,8 @@ export function Rail({
    *  items. Vertical spacing belongs *outside* the rail — the arrows are
    *  centred on this box, so padding under the row would sit them low. */
   className?: string;
+  /** Gradient stops for the arrows, matching whatever the rail sits on. */
+  fade?: string;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -80,7 +93,7 @@ export function Rail({
           side === 'back'
             ? 'start-0 justify-start bg-linear-to-r ps-0.5'
             : 'end-0 justify-end bg-linear-to-l pe-0.5'
-        } from-stone-50 via-stone-50/90 to-transparent text-stone-500 hover:text-stone-900 dark:from-stone-900 dark:via-stone-900/90 dark:text-stone-400 dark:hover:text-stone-100 ${
+        } ${fade} to-transparent text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 ${
           more[side] ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >

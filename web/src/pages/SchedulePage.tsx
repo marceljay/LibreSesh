@@ -31,6 +31,7 @@ import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
+import { WeekMenu } from '../components/WeekMenu';
 import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
@@ -44,7 +45,7 @@ import {
   SettingsIcon,
 } from '../components/icons';
 import { ListView } from '../components/ListView';
-import { Rail } from '../components/Rail';
+import { RAIL_FADE_CARD, Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
 import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
 import type { SaveOpts } from '../components/SessionModal';
@@ -1207,7 +1208,14 @@ export function SchedulePage() {
                   /* The rail's own box is exactly the line of chips: the space
                    under it is this wrapper's, because the arrows are centred
                    on the rail and padding inside it would sit them low. */
-                  <div className="mx-auto max-w-6xl pb-2">
+                  /* Desktop only. On a phone this row and the day strip under
+                   it are most of the gap between the event bar and the first
+                   session, and of the two the rail is the one that says the
+                   same thing in one chip — `WeekMenu` at the head of the
+                   strip. A desktop keeps the rail: the whole shape of the
+                   event at a glance is worth a line there, where there is one
+                   to spare. */
+                  <div className="mx-auto hidden max-w-6xl pb-2 sm:block">
                     <Rail label="Weeks" className="gap-1.5 px-4">
                       {weeks.map((week, i) => {
                         const first = week[0] as string;
@@ -1242,37 +1250,66 @@ export function SchedulePage() {
                 )}
 
                 <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4">
+                  {/* The strip is the box; the rail is the line inside it. That
+                    order matters: `Rail` positions its arrows against its own
+                    edges, so with the border outside them they fade to the
+                    card's inner edge instead of sitting on the border and
+                    spilling past its radius. `min-w-0` lets the box shrink
+                    rather than shoving the view toggle onto the next line —
+                    the line the week rail folding away was meant to save. */}
                   <div
                     data-tour="days"
-                    className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
+                    className="flex min-w-0 items-center rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
                   >
-                    {stripDays.map((d) => {
-                      const label = dayLabel(d, today);
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => goToDay(d)}
-                          aria-pressed={day === d}
-                          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
-                            day === d
-                              ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
-                              : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                          } ${day !== d && (perDay.get(d) ?? 0) === 0 ? 'opacity-40' : ''}`}
-                        >
-                          {label.top}{' '}
-                          <span
-                            className={
+                    {/* Below `sm` only: above it the week rail is still on
+                      screen, and two ways to pick the same week is one too
+                      many. Nothing at all under `weekRailFrom`, where there
+                      are no weeks to pick between. */}
+                    {weeks.length > 1 && (
+                      <WeekMenu
+                        className="sm:hidden"
+                        weeks={weeks}
+                        weekIndex={weekIndex}
+                        today={today}
+                        day={day}
+                        countFor={(week) => week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0)}
+                        onPick={goToDay}
+                      />
+                    )}
+                    {/* The strip scrolls, and its scrollbar is hidden, so
+                      without these a day past the edge was a day you never
+                      found — the same sentence the week rail has had since it
+                      was written, finally said here too. It matters more now:
+                      below `sm` this row is the only day navigation left. */}
+                    <Rail label="Days" className="gap-0" fade={RAIL_FADE_CARD}>
+                      {stripDays.map((d) => {
+                        const label = dayLabel(d, today);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => goToDay(d)}
+                            aria-pressed={day === d}
+                            className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
                               day === d
-                                ? 'text-stone-300 dark:text-stone-600'
-                                : 'text-stone-400 dark:text-stone-500'
-                            }
+                                ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                                : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                            } ${day !== d && (perDay.get(d) ?? 0) === 0 ? 'opacity-40' : ''}`}
                           >
-                            {label.sub}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            {label.top}{' '}
+                            <span
+                              className={
+                                day === d
+                                  ? 'text-stone-300 dark:text-stone-600'
+                                  : 'text-stone-400 dark:text-stone-500'
+                              }
+                            >
+                              {label.sub}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </Rail>
                   </div>
 
                   <div

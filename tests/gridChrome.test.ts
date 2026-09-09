@@ -249,8 +249,11 @@ describe('a rail says when the line goes on', () => {
     // inside that box sits them below the chips they belong to. The space
     // under the rail is the caller's, outside it.
     expect(rail).toContain('absolute inset-y-0');
+    // The padding stays on the wrapper, whatever else that wrapper says. It
+    // now also hides the rail below `sm`, where `WeekMenu` takes over at the
+    // head of the day strip — see weekMenu.test.ts.
     expect(schedule).toMatch(
-      /<div className="mx-auto max-w-6xl pb-2">\n\s*<Rail label="Weeks" className="gap-1.5 px-4">/,
+      /<div className="mx-auto hidden max-w-6xl pb-2 sm:block">\n\s*<Rail label="Weeks" className="gap-1.5 px-4">/,
     );
   });
 
