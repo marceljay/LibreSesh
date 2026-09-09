@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { openDb } from '../server/src/db.js';
 import { schemaDiagram } from '../server/src/schemaDiagram.js';
+import { schemaPageHtml } from '../server/src/schemaHtml.js';
 
 describe('docs/schema.md', () => {
   it('matches what the migrations produce (run `npm run schema` when this fails)', () => {
@@ -27,5 +28,18 @@ describe('docs/schema.md', () => {
         expect(page).toContain(`[\`${fk.table}\`](#${fk.table})`);
       }
     }
+  });
+});
+
+describe('schemaPageHtml', () => {
+  it('leaves the diagram for Mermaid, inlines the library and columns the tables', async () => {
+    const markdown = schemaDiagram(openDb(':memory:'));
+    const html = await schemaPageHtml(markdown, '/* mermaid */');
+    expect(html).toContain('<pre class="mermaid">erDiagram');
+    expect(html).not.toContain('language-mermaid');
+    expect(html).toContain('<script>/* mermaid */</script>');
+    expect(html).toContain('<h2>Tables</h2><div class="tables">');
+    expect(html).toContain('<h3><code>people</code></h3>');
+    expect(html).toContain('href="#events"');
   });
 });

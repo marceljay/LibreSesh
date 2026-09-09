@@ -12,7 +12,10 @@ All notable changes to this project are documented here.
   references it, with the unique indexes. It is read from SQLite's own
   pragmas on a freshly migrated database, so it describes what this build
   makes, on the demo and in production alike. `npm run schema` rewrites it
-  and a test fails when a migration has moved on without it.
+  and a test fails when a migration has moved on without it. `npm run
+  schema:pdf` prints the same page to `docs/schema.pdf`, A3 landscape, using
+  the Chromium the browser pass already drives and a bundled copy of Mermaid,
+  so it works without network.
 
 ## [0.4.0] — 2026-09-09
 
