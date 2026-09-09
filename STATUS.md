@@ -1022,6 +1022,29 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   border and past its radius, and it has to shrink or the view toggle wraps to
   the second line this item exists to save.
 
+- **An attendee's action row is a whole line holding one `+`.** [LIB-190] Raised
+  2026-09-09. Manage / Arrange / Add sit in a `basis-full` block
+  (`SchedulePage.tsx:1420`) so the organiser's three buttons take their own
+  line below `sm` — sound for an organiser, except Manage and Arrange are both
+  admin-only, so an attendee gets a full-width row holding one right-aligned
+  `+` hanging under the Now button. It is the wrong neighbour too: `+` and
+  **Pitch a session** are the two ways an attendee puts a session into the
+  world, and they sit a row apart. Move the `+` beside Pitch for anyone who is
+  not an organiser, minding the event that has the board switched off and the
+  attendee with no open-booking room.
+
+- **"Propose" and "Pitch" are the same word for two different acts.** [LIB-191]
+  Raised 2026-09-09. `SessionModal` heads itself *Propose a session* for a
+  non-organiser while the board beside it says *Pitch a session* — synonyms,
+  offered a few taps apart, for two genuinely different things. Worse, nothing
+  is proposed: `canCreateSession` wants `session.create_open` and a room with
+  `openBooking`, and with those the session lands on the grid unreviewed, so
+  the word promises an approval step the code does not have. *Pitch* was chosen
+  deliberately for the board and stays; *propose* is the one to retire. The
+  open question is how far the rename travels — the route is `/proposals`, the
+  components are `Proposal*` and the capability is `proposal.create`, while the
+  setting is `pitchesEnabled`.
+
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
   format and expected-person rows): typing a name the event does not know into
