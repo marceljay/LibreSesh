@@ -18,42 +18,36 @@ On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
 nothing local is unsaved. Suite at **1146**, lint clean, build clean.
 
-- **D3 · Security hardening, approved 2026-09-09 — two of three phases
-  built, unmerged.** [LIB-101] Approved minus lockdown, both thresholds
-  standing. Spec `_planning/specs/D3-security-hardening.md`, plan
+- **D3 · Security hardening — built, waiting on review.** [LIB-101] Narrowed
+  on 2026-09-10 to what it now is: the event login (§1), the instance
+  password (§2) and identity minting (§3). Spec
+  `_planning/specs/D3-security-hardening.md`, plan
   `_planning/plans/2026-09-05-D3-security-hardening.md`.
-  - **Phase 1 — `sec/instance-key-and-minting`, code-complete 2026-09-09.**
-    The instance key behind the `auth` rate limit with a refund on success
-    and an audit row on every miss; a per-address limit on minting identities
-    with an anonymous sentinel past it; the idle-identity sweep at boot and
-    daily; the preflight length check on `INSTANCE_ADMIN_PASSWORD`. Carries
-    the vocabulary rename ("rate limit" not "budget", "login page" not
-    "gate", 78 files).
-  - **Phase 2 — `sec/login`, code-complete 2026-09-10**, branched off phase 1
-    so it contains it. Per-visitor waits keyed on cookie *and* address (five
-    free, two minutes, five free, fifteen minutes — your numbers), a
-    per-address cap of 300 failures an hour so discarding cookies buys
-    little, the per-event closure requiring 60 failures from 10+ distinct
-    addresses so a single address cannot block sign-ins for everybody, the organiser
-    notice over the audit log from `GET /e/:slug/login-health`, and the
-    password *advice* that replaced the withdrawn policy.
-  - **Phase 3 — tokens at rest: blocked, found 2026-09-10.** [LIB-112]
-    Hashing on lookup is only half of it. Two routes hand the stored token
-    back out: redeeming a device phrase or speaker code sets the second
-    device's cookie to `identity.token`, and asking for the calendar link a
-    second time returns `ics_token` unchanged. A hash cannot be handed to a
-    browser, and minting a fresh one instead would sign the first device out,
-    which contradicts one speaker code working on a phone and a laptop at
-    once. Several devices sharing one identity needs a credential *per
-    device*, which is **D4** (LIB-103) — so `identities.token` hashing moves
-    behind D4 rather than ahead of it. `ics_token` can go on its own, but
-    only with a decision on LIB-187: making a second request mint a new link
-    and invalidate the old one is both the revoke that issue wants and the
-    fix for this. Written up in the spec under §5.
-  - **Both branches are pushed and have no PR** — `gh` is not authenticated
-    in this container, so `/pr` writes to `.temp/` instead. Merge order:
-    phase 1, then phase 2.
-  - Suite 1622, lint clean, at `3f09aec`.
+  - **Phase 1** merged as **#74**: the instance key behind the `auth` rate
+    limit with a refund on success and an audit row on every miss; a
+    per-address limit on minting identities with an anonymous sentinel past
+    it; the idle-identity sweep at boot and daily; the preflight length check
+    on `INSTANCE_ADMIN_PASSWORD`. Carries the vocabulary rename ("rate limit"
+    not "budget", "login page" not "gate", 78 files).
+  - **Phase 2** is **#75**, open and merging cleanly: per-visitor waits keyed
+    on cookie *and* address (five free, two minutes, five free, fifteen
+    minutes), a per-address cap of 300 failures an hour, the per-event stop
+    on new sign-ins needing 60 failures from 10+ distinct addresses, the
+    organiser notice from `GET /e/:slug/login-health` with a reset, and the
+    password advice that replaced the withdrawn policy.
+  - **Two deployment notes before merging to production:**
+    `INSTANCE_ADMIN_PASSWORD` under 16 characters now refuses to boot, and a
+    browser holding the old page will call `/api/e/:slug/gate`, which is now
+    `/login` — a reload fixes it, or the old path can be kept answering for
+    one release. No migration, nobody signed out, invite QR codes unaffected.
+  - Suite 1630, lint clean.
+
+- **Taken out of D3 on 2026-09-10, neither blocking anything:**
+  - **Lockdown** [LIB-188] — deferred by you on 2026-09-09, designed in full
+    as §4 of the spec.
+  - **Tokens at rest** [LIB-112] — blocked behind per-device sign-in
+    [LIB-103], because redeeming a device phrase hands the arriving device
+    the stored token and a hash cannot be handed out. Written up in §5.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

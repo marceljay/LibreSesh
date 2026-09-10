@@ -2,15 +2,20 @@
 
 **Spec:** [`specs/D3-security-hardening.md`](../specs/D3-security-hardening.md).
 This is **D3** in STATUS.md and **LIB-101** in Linear.
-**Decided 2026-09-09:** approved as written, minus lockdown — phases 1, 2 and
-4 are go, phases 3 and 5 are deferred. Both thresholds stand (60 failures an
-hour closes a login page; 300 identities per address per quarter hour). The password
-policy in §1d was withdrawn separately: advice, never a refusal, and no live
-instance is ever made to rotate.
+**Decided 2026-09-09, narrowed 2026-09-10.** D3 is phases 1 and 2 only. Both
+thresholds stand (60 failures an hour from 10+ distinct addresses stops new
+sign-ins; 300 identities per address per quarter hour). The password policy in
+§1d was withdrawn separately: advice, never a refusal, and no live instance is
+ever made to rotate.
 
-Five phases, cheapest and most valuable first. Each is its own branch and PR
-off `dev`; none depends on another, so they can land in any order — but the
-first is a morning and closes the worst gap, so it should go first.
+**Phase 1** landed in #74. **Phase 2** is #75. Both are complete.
+
+**Phases 3 and 5 (lockdown)** left D3 on 2026-09-09 and are LIB-188.
+**Phase 4 (tokens at rest)** left D3 on 2026-09-10 and is LIB-112, blocked
+behind D4. Neither blocks anything else; both keep their design below.
+
+The five phases as originally written follow. Phases 1 and 2 are D3; the rest
+are kept for the issues that now own them. None ever depended on another.
 
 ## Phase 1 — the instance key and free identities (½ day)
 

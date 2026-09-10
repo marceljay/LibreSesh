@@ -1,16 +1,25 @@
 # Security hardening
 
-**Status:** proposed, 2026-09-05. This is **D3** in STATUS.md and **LIB-101**
-in Linear; "D3 go" means approving the order in the plan and the two
-thresholds. Companion plan:
+**Status:** approved 2026-09-09, **scope narrowed 2026-09-10**. This is **D3**
+in STATUS.md and **LIB-101** in Linear. Companion plan:
 [`plans/2026-09-05-D3-security-hardening.md`](../plans/2026-09-05-D3-security-hardening.md).
 Threat model and the decisions already taken: SECURITY.md.
 
-**What is in D3, in one list:** the instance key behind the `auth` rate limit
-(§2), a per-IP mint rate limit (§3), per-IP backoff and the per-event stop on
-new sign-ins with its organiser notice (§1), **lockdown** (§4), and hashing
-`identities.token` and `ics_token` at rest (§5). Password strength is *not*
-in it — see §1d.
+**What D3 is, after the narrowing:** §1 (the event login), §2 (the instance
+password) and §3 (identity minting). All three were built on 2026-09-09 and
+2026-09-10 and wait only on review.
+
+**What was taken out of D3, and why:**
+
+- **§4 Lockdown → LIB-188.** Deferred by the user on 2026-09-09. Designed in
+  full below; nothing in §1–§3 depends on it.
+- **§5 Tokens at rest → LIB-112.** Found on 2026-09-10 to be impossible before
+  per-device sign-in (D4, LIB-103) — see the note in that section. It was
+  never a prerequisite for §1–§3 either.
+
+Neither is a requirement for anything else to move forward. Both sections stay
+here because the design is settled and only the sequencing changed; each is
+tracked by its own issue, and this spec is closed once §1–§3 are merged.
 
 The threat model stands — public-ish, low-stakes, high-trust; the host is
 trusted; identity is a cookie. This spec does not change it. It closes the gaps
@@ -228,10 +237,11 @@ names and no `last_seen_at` in 30 days.
 
 ---
 
-## 4. Lockdown — deferred 2026-09-09
+## 4. Lockdown — no longer part of D3 (LIB-188)
 
-**Designed, not being built.** D3 was approved without it; the rest of this
-section stands as the design for when it is picked up.
+**Designed, not being built.** Deferred by the user on 2026-09-09 and taken
+out of D3 on 2026-09-10; tracked as LIB-188. The rest of this section stands
+as the design for when it is picked up. Nothing depends on it.
 
 The brainstorm of 2026-09-05, condensed. A compromise here is a leaked
 password (admin or attendee), a stolen admin cookie, or the instance password.
@@ -305,9 +315,10 @@ the safe form of the idea.
 
 ---
 
-## 5. Tokens at rest
+## 5. Tokens at rest — no longer part of D3 (LIB-112)
 
-Queued in STATUS on 2026-09-05; restated here so the plan is in one place.
+Taken out of D3 on 2026-09-10 and tracked as LIB-112, blocked behind D4
+(LIB-103) for the reason below. Nothing depends on it.
 
 `identities.token` and `ics_token` are stored in clear, so any copy of the
 database — a backup, a snapshot, a screenshot — is a sign-in credential for
