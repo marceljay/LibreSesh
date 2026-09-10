@@ -305,6 +305,22 @@ them.
 13. **R12 · The login page — highest stakes, a mistake locks people out.** [LIB-169] *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
+    **Came back bad, and the page was rebuilt on `feat/gate-two-step`**
+    (2026-09-10): the first refusal could never be seen. The name box sat below
+    the button and behind a rule, the button was disabled until it held
+    something, and a browser's implicit submission clicks that same button — so
+    Enter from the password box did nothing either, and the sentence was a
+    string no press reached. The page **asks for the password first, and for a
+    username only once that password is right**. It needed no new endpoint:
+    `POST /auth` checks the password before it claims a name, so a password
+    with no name answers `name_required` when right and 403 when wrong,
+    granting nothing either way. Both boxes stay in one form (the second
+    hidden, not absent) so the password manager still sees a login to save —
+    R28's one ticked box. The first card is only ever the password: a device
+    that already holds a name here is entered under it rather than shown a box
+    for a name it already chose. The **invite card keeps its button disabled**
+    until it has a name, since there the name box is the field directly above
+    it. All three boxes are machine-checked in `tests/loginEntry.test.tsx`.
 14. **R13 · Claim & queue.** [LIB-170] The "This is me" button on an unclaimed profile, and
     the approval queue above the People list. *Pass:* asking to be a profile
     shows in the queue; approving hands it over. Also: the next-day button at the
