@@ -77,8 +77,8 @@ export const LOGIN_LONG_BLOCK_S = 900;
  * (D3 §1a, chosen 2026-09-09).
  *
  * Five attempts cost nothing at all, because the common case is a person
- * misreading a four-word phrase off a slide, and making them wait for that is
- * a worse failure than the one being defended against. The sixth costs two
+ * mistyping a four-word phrase they were given, and making them wait for that
+ * is a worse failure than the one being defended against. The sixth costs two
  * minutes, five more cost nothing, and the eleventh costs a quarter of an
  * hour, as does every failure after it.
  *
@@ -155,12 +155,12 @@ export class Backoff {
  * the number of *distinct addresses* they must come from.
  *
  * The distinct-address requirement is the whole point (added 2026-09-09).
- * Without it one person on the venue wifi could fail sixty times in a script
- * and stop an event admitting anyone for a quarter of an hour, again and
- * again — a denial of service on arrivals, far worse than the guessing it
- * defends against. A single address failing is already handled by its own
- * wait, so nothing is lost by requiring the failures to be spread out, which
- * is exactly what the distributed attack this exists for looks like.
+ * Without it, one person from a single address could fail sixty times in a
+ * script and stop an event accepting any new sign-in for a quarter of an
+ * hour, repeatedly. That is a denial of service, and cheaper to mount than
+ * the guessing it defends against. A single address is already handled by its own wait, so requiring the
+ * failures to come from several addresses loses nothing and is what a
+ * distributed attack looks like.
  */
 export const LOGIN_FAILURES_PER_HOUR = 60;
 export const LOGIN_DISTINCT_ADDRESSES = 10;
@@ -170,15 +170,15 @@ export const LOGIN_CLOSED_MS = 15 * 60_000;
 /**
  * Failures from one address at one event, across every cookie it presents.
  *
- * The waits above are keyed on the visitor as well as the address, so 200
- * people on one venue wifi do not share five attempts. That alone would let
+ * The waits above are keyed on the visitor as well as the address, so several
+ * hundred people behind one shared address do not share five attempts. That alone would let
  * an attacker throw the cookie away between guesses and get five more every
  * time, which is why this exists: whatever cookie they present, the address
  * gets this many failures an hour and then waits.
  *
- * Sized for a room, not for a person. A conference where the password is read
- * off a slide produces a burst of honest failures from one address, and that
- * must not lock the room out.
+ * Sized for a shared address, not for one person. Several hundred people
+ * signing in at once from one address produce a burst of mistyped passwords,
+ * and that must not lock all of them out.
  */
 export const ADDRESS_FAILURES_PER_HOUR = 300;
 
@@ -261,9 +261,9 @@ export const LIMITS = {
    * identity key to pair with the address, and `identityMiddleware` consumes
    * this one directly.
    *
-   * 300 a quarter hour is set by the NAT case — a venue's whole wifi is one
-   * address, and 300 first-ever visits in the quarter hour before a keynote
-   * is a real morning.
+   * 300 a quarter hour is set by the shared-address case: behind NAT, every
+   * device on one network presents the same address, and 300 first-time
+   * visitors in a quarter hour is an ordinary morning for one event.
    */
   mint: { capacity: 300, windowMs: 15 * 60_000 },
   contribution: { capacity: 10, windowMs: 60_000 },

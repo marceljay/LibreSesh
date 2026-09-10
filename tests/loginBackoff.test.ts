@@ -92,7 +92,7 @@ describe('how long each failure costs', () => {
   });
 });
 
-describe('per-event closure', () => {
+describe('stopping new sign-ins for one event', () => {
   let now = 1_000_000;
   const tally = new Tally(() => now);
   const key = 'event:1';
@@ -117,16 +117,16 @@ describe('per-event closure', () => {
     return closedAt;
   };
 
-  it('closes on the threshold failure when they are spread out', () => {
+  it('stops sign-ins on the threshold failure when addresses are spread', () => {
     expect(spread(LOGIN_FAILURES_PER_HOUR - 1)).toBe(0);
     expect(tally.blockedFor(key)).toBe(0);
     expect(tally.fail(key, opts('10.0.0.99'))).toBe(LOGIN_FAILURES_PER_HOUR);
     expect(tally.blockedFor(key)).toBe(15 * 60);
   });
 
-  // The reason the distinct rule exists: otherwise one person on the venue
-  // wifi shuts the event to everybody, over and over.
-  it('never closes on one address alone, however many times it fails', () => {
+  // The reason the distinct-address rule exists: otherwise one address can
+  // stop the event accepting any new sign-in, repeatedly.
+  it('never triggers on one address alone, however many times it fails', () => {
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR * 5; i += 1) {
       expect(tally.fail(key, opts('10.0.0.1'))).toBe(0);
     }
@@ -141,19 +141,19 @@ describe('per-event closure', () => {
     expect(tally.blockedFor(key)).toBe(0);
   });
 
-  it('reports the closure once, not on every later failure', () => {
+  it('reports it once, not on every later failure', () => {
     spread(LOGIN_FAILURES_PER_HOUR);
     expect(tally.fail(key, opts('10.0.0.5'))).toBe(0);
     expect(tally.fail(key, opts('10.0.0.6'))).toBe(0);
   });
 
-  it('reopens after a quarter of an hour', () => {
+  it('accepts sign-ins again after a quarter of an hour', () => {
     spread(LOGIN_FAILURES_PER_HOUR);
     now += 15 * 60_000;
     expect(tally.blockedFor(key)).toBe(0);
   });
 
-  it('counts a sliding hour, so a slow trickle never closes anything', () => {
+  it('counts a sliding hour, so a slow trickle never triggers it', () => {
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR * 2; i += 1) {
       expect(tally.fail(key, opts(`10.0.0.${i % LOGIN_DISTINCT_ADDRESSES}`))).toBe(0);
       now += 2 * 60_000;
@@ -179,11 +179,11 @@ describe('per-address cap, whatever cookie is presented', () => {
     tally.reset();
   });
 
-  it('is sized for a room: a burst of honest typing never reaches it', () => {
-    // 200 people on one wifi, each getting it wrong once, and once more.
+  it('sits above what several hundred people behind one address produce', () => {
+    // 200 people sharing one address, each mistyping twice.
     for (let i = 0; i < 400; i += 1) tally.fail(key, opts);
     expect(tally.blockedFor(key)).toBeGreaterThan(0);
-    // …which is past the cap, so the cap must sit above a plausible room.
+    // That is past the cap, so the cap has to be at least this high.
     expect(ADDRESS_FAILURES_PER_HOUR).toBeGreaterThanOrEqual(300);
   });
 
@@ -231,18 +231,18 @@ describe('the login route, end to end', () => {
   });
 
   it('lets a mistyped password be corrected immediately', async () => {
-    // The case the free attempts exist for: somebody misreads a four-word
-    // phrase off a slide, fixes it, and is in. No wait, no lockout.
+    // The case the free attempts exist for: somebody mistypes a four-word
+    // phrase, corrects it, and signs in. No wait, no lockout.
     expect((await attempt('nope')).status).toBe(403);
     expect((await attempt('viewer-pw')).status).toBe(200);
   });
 
-  it('closes the event to newcomers after sixty failures from many addresses', async () => {
+  it('stops new sign-ins after sixty failures from many addresses', async () => {
     for (let i = 0; i < LOGIN_FAILURES_PER_HOUR; i += 1) {
       await attempt('nope', `10.1.${Math.floor(i / 256)}.${i % 256}`, agentFor(harness));
     }
-    // A fresh address, and the right password: still refused, and no bcrypt
-    // was spent deciding that.
+    // A different address, and the correct password: still refused, and no
+    // bcrypt was spent deciding that.
     const res = await attempt('viewer-pw', '10.9.9.9', agentFor(harness));
     expect(res.status).toBe(429);
     expect(res.body.error.code).toBe('login_closed');
@@ -256,7 +256,7 @@ describe('the login route, end to end', () => {
     expect(rows[0].entity_id).toBe(LOGIN_FAILURES_PER_HOUR);
   });
 
-  it('leaves everyone already inside alone while the door is shut', async () => {
+  it('does not affect anyone who already holds a role', async () => {
     const inside = agentFor(harness);
     expect(
       (
@@ -275,9 +275,9 @@ describe('the login route, end to end', () => {
     expect(res.status).toBe(200);
   });
 
-  it('does not let one person’s mistakes hold up the rest of the room', async () => {
-    // Same address — a venue wifi — different people. The first burns their
-    // own five attempts; the second walks in.
+  it('does not let one person’s mistakes delay others on the same address', async () => {
+    // One shared address, two different people. The first spends their own
+    // five attempts; the second signs in straight away.
     for (let i = 0; i < 6; i += 1) await attempt('nope');
     expect((await attempt('nope')).status).toBe(429);
 

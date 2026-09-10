@@ -152,7 +152,7 @@ describe('sweeping identities that never became anybody', () => {
  * that references an identity fails on the foreign key. `requireRole` already
  * answered 429 for this; the routes that run *before* a role exists did not,
  * and answered 500. Entering an event is the one that matters — it is where
- * a busy venue meets the limit on minting.
+ * a busy event meets the limit on minting.
  */
 describe('routes that need a real identity row', () => {
   let harness: Harness;

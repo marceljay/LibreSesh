@@ -125,10 +125,10 @@ export function auditRoutes(ctx: Ctx): Router {
    * What an organiser needs to know about people failing to get in (D3 §1c).
    *
    * Counts come from the audit log rather than from the in-memory tally, so
-   * a restart does not erase the last hour, and the closure line is the row
-   * the login route wrote. Quiet events answer zeroes and the page shows
-   * nothing: this is not a dashboard, it is a notice that appears when there
-   * is something to say.
+   * a restart does not erase the last hour, and the line about sign-ins being
+   * stopped is the row the login route wrote. An event with no failures
+   * answers zeroes and the page shows nothing: this is a notice, not a
+   * dashboard.
    */
   router.get(
     '/login-health',

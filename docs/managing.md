@@ -25,43 +25,44 @@ ones arrive. Settings changes the number, and 0 keeps everything. That is a
 real trade rather than a detail: a low cap means someone making a great
 many edits can push an earlier action off the end.
 
-## When people are guessing at your passwords
+## When passwords are being guessed
 
 Above the audit log you will sometimes find a line saying how many password
 attempts failed in the last hour. It appears only when there have been more
 than a handful, so a quiet event shows nothing.
 
 Two things happen on their own. Anyone can get the password wrong five times
-from one place at no cost, which covers misreading a four-word phrase off a
-slide; the sixth try waits two minutes, the next five are free again, and the
-eleventh waits a quarter of an hour. Getting it right clears the count, so an
-attendee who mistypes and then fixes it is never held up. This counts each
-person separately rather than each network, so a room sharing one wifi does not
-share one allowance — if a hundred people are typing the password off your
-slide at once, one of them getting it wrong holds up nobody but themselves.
+at no cost, which covers mistyping a four-word phrase; the sixth attempt waits
+two minutes, the next five are free again, and the eleventh waits a quarter of
+an hour. Entering it correctly clears the count, so somebody who mistypes and
+then corrects it is never delayed. Attempts are counted per person, not per
+network address, so people sharing one address do not share one allowance. If
+a hundred people are typing the password at the same time from the same
+network, one of them getting it wrong delays nobody but themselves.
 
-And if the event as a whole sees sixty failures in an hour, coming from at
-least ten different places, it stops letting *new* people in for fifteen
-minutes. It takes several sources on purpose: one person hammering the login
-is already waiting on their own, and should not be able to shut your door on
-everyone else. Everyone already here keeps
-working normally: the schedule stays up, contributions still post, only the
-door is shut. The audit log records the closure.
+If the event as a whole sees sixty failed attempts in an hour, coming from at
+least ten different network addresses, it stops accepting new sign-ins for
+fifteen minutes. Several addresses are required on purpose: one address
+repeatedly failing is already waiting under the rule above, and should not be
+able to block sign-ins for everyone else. Anyone who already has access is
+unaffected: the schedule stays up and contributions still post. Only new
+sign-ins are refused, and the audit log records it.
 
 If the attempts are not your own attendees mistyping, change the passwords in
-Settings. Nobody is signed out by that — roles already granted are kept
-deliberately, so a rotation does not empty the room mid-event.
+Settings. Nobody is signed out by that: roles already granted are kept
+deliberately, so changing a password does not remove anyone's access
+mid-event.
 
 ## Choosing passwords
 
 Leave a password blank and one is generated: four random words, which is
-stronger than anything worth typing and is the recommended answer. If you
-type your own, the form says what that password is worth. The viewer password
-is usually read out or put on a slide, so a short one is a fair trade. The
+stronger than anything worth typing and is the recommended answer. If you type
+your own, the form says what that password is worth. The viewer password is
+usually read aloud or shown on screen, so a short one is a fair trade. The
 admin password changes the event and deserves more length. If you pick one of
 the handful anybody would guess first, or the event's own name, the form says
-so — and still lets you save it. The length is your call, because only you
-know whether the password is about to be shouted across a room.
+so, and still lets you save it. The length is your decision, because only you
+know how the password will be shared.
 
 ## Renaming an event
 

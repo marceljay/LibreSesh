@@ -34,7 +34,7 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
     free, two minutes, five free, fifteen minutes — your numbers), a
     per-address cap of 300 failures an hour so discarding cookies buys
     little, the per-event closure requiring 60 failures from 10+ distinct
-    addresses so one person cannot shut a door on everybody, the organiser
+    addresses so a single address cannot block sign-ins for everybody, the organiser
     notice over the audit log from `GET /e/:slug/login-health`, and the
     password *advice* that replaced the withdrawn policy.
   - **Phase 3 — `sec/tokens-at-rest`, not started.** Hash `identities.token`

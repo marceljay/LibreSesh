@@ -7,8 +7,8 @@ import { passwordWarning } from '../../../server/src/shared/passwordAdvice';
  *
  * Advice, never a refusal (D3 §1d): the form submits whatever this says, and
  * nothing here re-checks a password an event already has. How long a password
- * should be depends on whether it is about to be read out to a room, which
- * only the organiser knows. Rendered amber rather than red for the same
+ * should be depends on whether it is about to be read aloud to an audience,
+ * which only the organiser knows. Rendered amber rather than red for the same
  * reason — this is not an error.
  */
 export function PasswordNote({

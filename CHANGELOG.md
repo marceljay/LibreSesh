@@ -6,29 +6,31 @@ All notable changes to this project are documented here.
 
 ### Security
 
-- **An event stops letting new people in when it is being guessed at.** Five
-  wrong passwords from one place cost nothing — misreading a four-word phrase
-  off a slide is the usual reason anyone gets it wrong. The sixth waits two
-  minutes, the next five are free again, and the eleventh waits a quarter of
-  an hour, as does every one after it. Getting the password right clears the
-  count, so the next slip starts from five again. This counts each person
-  separately, not each network, so a room of two hundred sharing one wifi
-  never shares one allowance and nobody is held up by the person beside them.
-  That alone does nothing against someone with a hundred addresses, so
-  failures are also counted per event: past sixty in an hour, and only when
-  they come from at least ten different places, the event stops admitting new
-  people for fifteen minutes. One person cannot trigger that on their own,
-  which is the point — otherwise anyone could shut an event's door at will.
-  Nobody already here is affected, the schedule stays up, and no password is
-  checked while the door is shut. The organiser finds a line above the audit
-  log saying how many attempts there have been and whether the door closed.
+- **An event stops accepting new sign-ins when it is being guessed at.**
+  Five wrong passwords cost nothing: mistyping a four-word phrase is the
+  usual reason anyone gets it wrong. The sixth attempt waits two minutes, the
+  next five are free again, and the eleventh waits a quarter of an hour, as
+  does every attempt after it. Entering the correct password clears the
+  count, so the next mistake starts from five again. Attempts are counted per
+  person rather than per network address, so several hundred people sharing
+  one address do not share one allowance and nobody is delayed by someone
+  else's mistake. That alone does nothing against an attacker using a hundred
+  addresses, so failures are also counted per event: past sixty in an hour,
+  and only when they come from at least ten different addresses, the event
+  stops accepting new sign-ins for fifteen minutes. A single address cannot
+  trigger that, which matters, because otherwise one person could block
+  sign-ins for an entire event at will. Anyone who already has access is
+  unaffected, reading and writing carry on, and no password is compared while
+  sign-ins are stopped. The organiser sees a line above the audit log saying
+  how many attempts have failed and whether sign-ins were stopped.
 - **The password fields say what they are worth.** All three lead with the
-  offer to make one for you, four random words, which is stronger than
+  offer to generate one for you, four random words, which is stronger than
   anything worth typing. Type your own and the field says what that password
-  opens: the viewer one is usually read out to a room, the admin one changes
-  the event. Choose one of the handful anybody would guess first, or the
-  event's own name, and it says so. It never refuses, and nothing asks an
-  event already running to change a password it is using.
+  opens: the viewer password is usually read aloud to an audience, the admin
+  password changes the event. Choose one of the handful anybody would guess
+  first, or the event's own name, and the field says so. It never refuses,
+  and nothing asks an event already running to change a password it is
+  using.
 - **The instance password is no longer guessable at write speed.** It opens
   event creation, import and the whole-database backup, and every instance
   shares one. It sat behind the ordinary rate limit for changes, which allows tens of
@@ -40,12 +42,13 @@ All notable changes to this project are documented here.
   characters and says so on the console under twenty-four.
 - **A visitor who sends no cookie can no longer fill the database.** Every
   such request used to create a row before any limit ran, which is why the
-  limits keyed on that row never bit. Creating one is now rate-limited by address,
-  three hundred every quarter hour, a figure set by a venue whose whole wifi
-  shares one address. Past it the request simply carries no identity: reading
-  a public page still works, and anything that needs a role says so plainly
-  and names the wait. Rows that never became anybody — no role, no name, no
-  profile, no calendar subscription — are deleted after thirty days.
+  limits keyed on that row never bit. Creating one is now rate-limited per
+  network address, three hundred every quarter hour, a figure set by the case
+  where everyone on one network shares a single address. Past that the request
+  simply carries no identity: reading a public page still works, and anything
+  that needs a role says so plainly and names the wait. Rows that never became
+  anybody — no role, no name, no profile, no calendar subscription — are
+  deleted after thirty days.
 
 ### Added
 

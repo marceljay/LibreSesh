@@ -39,7 +39,7 @@ describe('password advice', () => {
   });
 
   it('has a note for each tier, and the admin one asks for the most', () => {
-    expect(TIER_NOTE.viewer).toContain('read out');
+    expect(TIER_NOTE.viewer).toContain('read aloud');
     expect(TIER_NOTE.user).toContain('Shared');
     expect(TIER_NOTE.admin).toContain('changes the event');
   });

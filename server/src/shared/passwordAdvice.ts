@@ -3,8 +3,8 @@
  * 2026-09-09).
  *
  * How long an event's passwords are is the organiser's decision. They know
- * whether one is read out to a room, printed on a badge, or guarding a
- * programme under embargo; the server does not. So nothing here rejects
+ * whether one is read aloud to an audience, printed on a badge, or guarding
+ * an unpublished programme; the server does not. So nothing here rejects
  * anything, no existing password is re-checked, and no instance is ever made
  * to rotate. The minimum stays where it was.
  *
@@ -17,9 +17,9 @@ export type PasswordTier = 'viewer' | 'user' | 'admin';
 
 /**
  * Passwords that are tried first by anyone guessing. Short on purpose: the
- * point is to catch the handful a person actually reaches for under time
- * pressure at a venue, not to be a dictionary. A longer list belongs in a
- * cracking tool, not in a form that still submits either way.
+ * point is to catch the handful a person actually reaches for when inventing
+ * one quickly, not to be a dictionary. A longer list belongs in a password
+ * cracker, not in a form that submits either way.
  */
 const COMMON = new Set([
   '123456',
@@ -74,8 +74,8 @@ export const BLANK_GENERATES =
 
 /** Per-tier context, so the advice matches what the password actually opens. */
 export const TIER_NOTE: Record<PasswordTier, string> = {
-  viewer: 'This one is usually read out or put on a slide. Short is a fair trade for that.',
-  user: 'Shared with everyone taking part, so it travels: expect it to be seen.',
+  viewer: 'This one is usually read aloud or shown on screen. Short is a fair trade for that.',
+  user: 'Shared with everyone taking part, so expect it to be passed on.',
   admin: 'This one changes the event. Worth more length than the other two.',
 };
 

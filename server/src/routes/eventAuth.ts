@@ -143,24 +143,26 @@ export function eventAuthRoutes(ctx: Ctx): Router {
 
     // Three checks, cheapest first, before any password is compared.
     //
-    // 1. Is this event's login closed? A hundred addresses defeat any per-
-    //    address limit, so failures are also counted per target. While it is
-    //    shut, nothing is checked and no bcrypt is spent on the attacker.
-    //    Everyone already holding a role is unaffected.
+    // 1. Has this event stopped accepting new sign-ins? A hundred addresses
+    //    defeat any per-address limit, so failures are also counted per
+    //    event. While it is stopped, no password is compared and no bcrypt is
+    //    spent on the attacker. Anyone who already holds a role is
+    //    unaffected.
     const closedFor = ctx.tally.blockedFor(`event:${req.event.id}`);
     if (closedFor > 0) {
       res.setHeader('Retry-After', String(closedFor));
       throw new HttpError(
         429,
         'login_closed',
-        'Too many wrong passwords here recently — this event is not letting new people in for a few minutes',
+        'Too many wrong passwords for this event recently — it is not accepting new sign-ins for a few minutes',
       );
     }
 
     // 2. Has this *visitor* been failing at this event? Keyed on the cookie
-    //    as well as the address, because a venue is one address: 200 people
-    //    reading a password off a slide must not share five attempts between
-    //    them, and one of them mistyping must not hold up the rest.
+    //    as well as the address, because everyone behind one NAT presents the
+    //    same address: several hundred people signing in at once must not
+    //    share five attempts, and one of them mistyping must not delay the
+    //    others.
     //
     //    This is the only per-visitor limit here. The `auth` token bucket
     //    used to sit below it and would impose three minutes at the sixth
@@ -175,16 +177,16 @@ export function eventAuthRoutes(ctx: Ctx): Router {
         429,
         'rate_limited',
         waitFor > 300
-          ? 'Too many wrong passwords from here — try again in about a quarter of an hour'
-          : 'Too many wrong passwords from here — try again in a couple of minutes',
+          ? 'Too many wrong passwords — try again in about a quarter of an hour'
+          : 'Too many wrong passwords — try again in a couple of minutes',
       );
     }
 
     // 3. And has this address been failing at this event whatever cookie it
     //    presents? Keying step 2 on the cookie would otherwise be free to
-    //    escape: throw the cookie away, get five more attempts. This is
-    //    sized for a room rather than a person, so a burst of honest typing
-    //    never reaches it.
+    //    escape: discard the cookie, get five more attempts. Sized for a
+    //    shared address rather than one person, so a burst of mistyped
+    //    passwords from one network never reaches it.
     const addressKey = `address:${req.event.id}:${ip}`;
     const addressBlocked = ctx.tally.blockedFor(addressKey);
     if (addressBlocked > 0) {
@@ -192,7 +194,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       throw new HttpError(
         429,
         'rate_limited',
-        'Too many wrong passwords from this network — try again in about a quarter of an hour',
+        'Too many wrong passwords from this address — try again in about a quarter of an hour',
       );
     }
 
@@ -204,9 +206,9 @@ export function eventAuthRoutes(ctx: Ctx): Router {
         threshold: ADDRESS_FAILURES_PER_HOUR,
         blockMs: LOGIN_CLOSED_MS,
       });
-      // The event closes only when the failures are spread across many
-      // addresses. One person cannot shut a door on everybody: their own
-      // address is already waiting, and this needs company.
+      // The event stops accepting sign-ins only when the failures come from
+      // several addresses. One address cannot trigger it alone: that address
+      // is already waiting under step 2.
       const closedAfter = ctx.tally.fail(`event:${req.event.id}`, {
         threshold: LOGIN_FAILURES_PER_HOUR,
         blockMs: LOGIN_CLOSED_MS,
