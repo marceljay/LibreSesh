@@ -286,6 +286,70 @@ describe('the login route, end to end', () => {
     expect(res.status).toBe(200);
   });
 
+  /**
+   * The limits are blunt on purpose, so both ways out of them matter: the
+   * organiser knows things the server cannot, such as that the failures were
+   * their own attendees given a password that was read out wrongly.
+   */
+  it('forgets every attempt when an organiser changes a password', async () => {
+    const admin = agentFor(harness);
+    await admin
+      .post('/api/e/conf/auth')
+      .set('X-Forwarded-For', '10.7.7.1')
+      .send({ password: 'admin-pw', displayName: 'organiser' });
+
+    for (let i = 0; i < 6; i += 1) await attempt('nope');
+    expect((await attempt('nope')).status).toBe(429);
+
+    await admin
+      .patch('/api/e/conf/settings')
+      .set('X-Forwarded-For', '10.7.7.1')
+      .send({ viewerPassword: 'a-new-viewer-password' })
+      .expect(200);
+
+    // The same person, no longer waiting: the count was protecting a password
+    // that no longer exists.
+    expect((await attempt('a-new-viewer-password')).status).toBe(200);
+  });
+
+  it('forgets every attempt when an organiser asks it to', async () => {
+    const admin = agentFor(harness);
+    await admin
+      .post('/api/e/conf/auth')
+      .set('X-Forwarded-For', '10.7.7.2')
+      .send({ password: 'admin-pw', displayName: 'organiser2' });
+
+    for (let i = 0; i < 6; i += 1) await attempt('nope');
+    expect((await attempt('nope')).status).toBe(429);
+
+    await admin
+      .post('/api/e/conf/login-attempts/reset')
+      .set('X-Forwarded-For', '10.7.7.2')
+      .expect(204);
+
+    expect((await attempt('viewer-pw')).status).toBe(200);
+  });
+
+  it('starts accepting sign-ins again after a reset', async () => {
+    const admin = agentFor(harness);
+    await admin
+      .post('/api/e/conf/auth')
+      .set('X-Forwarded-For', '10.7.7.3')
+      .send({ password: 'admin-pw', displayName: 'organiser3' });
+
+    for (let i = 0; i < LOGIN_FAILURES_PER_HOUR; i += 1) {
+      await attempt('nope', `10.8.${Math.floor(i / 256)}.${i % 256}`, agentFor(harness));
+    }
+    expect((await attempt('viewer-pw', '10.9.9.8', agentFor(harness))).status).toBe(429);
+
+    await admin
+      .post('/api/e/conf/login-attempts/reset')
+      .set('X-Forwarded-For', '10.7.7.3')
+      .expect(204);
+
+    expect((await attempt('viewer-pw', '10.9.9.7', agentFor(harness))).status).toBe(200);
+  });
+
   it('tells an organiser what has been happening', async () => {
     const admin = agentFor(harness);
     await admin

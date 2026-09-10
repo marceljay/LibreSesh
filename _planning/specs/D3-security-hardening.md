@@ -119,6 +119,15 @@ Residual, accepted: an attacker holding a large IPv6 allocation has plenty of
 distinct addresses and can still trip the closure. The organiser is told, it is
 in the audit log, and everyone already inside is unaffected.
 
+**c2. Let the organiser clear it (added 2026-09-10).** Both counts are blunt,
+and the organiser knows things the server cannot — that the failures were their
+own attendees given a password read out wrongly, or a stale invitation.
+Changing any password in `PATCH /settings` clears every count for the event,
+which is not optional: that is the action the notice recommends, and it is
+exactly when everyone holding the old password has just failed. A separate
+`POST /login-attempts/reset` (admin, audited) covers the case where the
+password was right all along.
+
 **c. Tell the organiser.** Manage Event gets a line — in the Audit tab's header
 and as an amber notice on the Settings tab — reading *"N failed password
 attempts in the last hour"* whenever N > 10, and *"New sign-ins were stopped at

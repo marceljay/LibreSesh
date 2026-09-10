@@ -145,6 +145,14 @@ export class Backoff {
     }
   }
 
+  /** Forget every visitor's failures at one event (see `clearEventLimits`). */
+  clearEvent(eventId: number): void {
+    const prefix = `${eventId}:`;
+    for (const key of this.failures.keys()) {
+      if (key.startsWith(prefix)) this.failures.delete(key);
+    }
+  }
+
   reset(): void {
     this.failures.clear();
   }
@@ -248,6 +256,13 @@ export class Tally {
     return new Set(entry.sources.filter((_, i) => t - entry.at[i] < 60 * 60_000)).size;
   }
 
+  /** Forget every row whose key starts with this (see `clearEventLimits`). */
+  clearPrefix(prefix: string): void {
+    for (const key of this.rows.keys()) {
+      if (key.startsWith(prefix)) this.rows.delete(key);
+    }
+  }
+
   reset(): void {
     this.rows.clear();
   }
@@ -297,4 +312,21 @@ export function limit(limiter: RateLimiter, name: LimitName) {
     }
     next();
   };
+}
+
+/**
+ * Forget everything counted against one event: every visitor's waits, every
+ * address's failures, and the stop on new sign-ins.
+ *
+ * Called when an organiser changes a password, and from the reset action
+ * beside the notice. Changing the password is exactly what the notice tells
+ * an organiser to do when attempts are failing, and it is the moment when
+ * everybody holding the old one has just failed: leaving them to wait two or
+ * fifteen minutes after the fix has been applied would make the advice worse
+ * than useless. The counts protect a password that no longer exists.
+ */
+export function clearEventLimits(ctx: { backoff: Backoff; tally: Tally }, eventId: number): void {
+  ctx.backoff.clearEvent(eventId);
+  ctx.tally.clearPrefix(`address:${eventId}:`);
+  ctx.tally.clearPrefix(`event:${eventId}`);
 }

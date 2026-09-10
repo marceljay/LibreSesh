@@ -48,10 +48,14 @@ able to block sign-ins for everyone else. Anyone who already has access is
 unaffected: the schedule stays up and contributions still post. Only new
 sign-ins are refused, and the audit log records it.
 
-If the attempts are not your own attendees mistyping, change the passwords in
-Settings. Nobody is signed out by that: roles already granted are kept
-deliberately, so changing a password does not remove anyone's access
-mid-event.
+Both limits can be cleared, because they are blunt and you know things the
+server does not. Changing any password in Settings clears them by itself,
+which matters because that is the moment everyone holding the old password
+has just failed. If the password was right all along and the failures were
+your own attendees, the notice above the audit log has a button that forgets
+the attempts and starts accepting sign-ins again. Either way nobody is signed
+out: roles already granted are kept deliberately, so changing a password does
+not remove anyone's access mid-event.
 
 ## Choosing passwords
 

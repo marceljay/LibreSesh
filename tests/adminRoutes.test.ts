@@ -28,6 +28,7 @@ type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 const ADMIN_ROUTES: [Method, string][] = [
   ['get', '/audit'],
   ['get', '/login-health'],
+  ['post', '/login-attempts/reset'],
   ['get', '/export.json'],
   ['post', '/breaks'],
   ['patch', '/breaks/999'],

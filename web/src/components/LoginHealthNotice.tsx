@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { errorText } from '../lib/errorText';
+import { SecondaryButton, useToast } from './ui';
 import type { LoginHealthDto } from '../../../server/src/shared/types';
 
 /**
@@ -13,12 +15,19 @@ import type { LoginHealthDto } from '../../../server/src/shared/types';
  *
  * Since the passwords an event uses are the organiser's own choice (D3 §1d),
  * this is how a weak one becomes visible: nothing refused it, so something
- * has to say when it is being hammered.
+ * has to say when it is being guessed at.
+ *
+ * The reset is here rather than only in Settings because the organiser is
+ * better placed than the server to know that a burst of failures was their
+ * own attendees — a password read out wrongly, a stale invitation. Changing a
+ * password clears the same counts.
  */
 const NOISE_FLOOR = 10;
 
 export function LoginHealthNotice({ slug }: { slug: string }) {
   const [health, setHealth] = useState<LoginHealthDto | null>(null);
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     let live = true;
@@ -54,9 +63,23 @@ export function LoginHealthNotice({ slug }: { slug: string }) {
           : 'Everyone already here is unaffected.'}
       </p>
       <p className="mt-1 text-xs">
-        If this is not your own attendees mistyping, change the passwords in Settings. The attempts
-        are in the log below.
+        If this is not your own attendees mistyping, change the passwords in Settings — that clears
+        these counts too. The attempts are in the log below.
       </p>
+      <SecondaryButton
+        className="mt-2 py-1"
+        disabled={busy}
+        onClick={() => {
+          setBusy(true);
+          api
+            .resetLoginAttempts(slug)
+            .then(() => setHealth({ ...health, failuresLastHour: 0, closedSecondsRemaining: 0 }))
+            .catch((err: unknown) => toast.show(errorText(err)))
+            .finally(() => setBusy(false));
+        }}
+      >
+        {closed ? 'Allow sign-ins again' : 'Forget these attempts'}
+      </SecondaryButton>
     </div>
   );
 }

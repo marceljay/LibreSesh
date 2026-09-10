@@ -148,6 +148,9 @@ export const api = {
   login: (slug: string) => request<LoginDto>('GET', `/e/${encode(slug)}/login`),
   /** Admin only: what to tell the organiser about failed logins (D3 §1c). */
   loginHealth: (slug: string) => request<LoginHealthDto>('GET', `/e/${encode(slug)}/login-health`),
+  /** Admin only: forget every failed attempt counted against this event. */
+  resetLoginAttempts: (slug: string) =>
+    request<void>('POST', `/e/${encode(slug)}/login-attempts/reset`),
   authenticate: (slug: string, password: string, displayName?: string, claimProfile?: boolean) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/auth`, {
       password,

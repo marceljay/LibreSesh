@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireRole } from '../auth.js';
+import { audit } from '../audit.js';
+import { clearEventLimits } from '../ratelimit.js';
 import type { Ctx } from '../context.js';
 import type { Db } from '../db.js';
 import { NameResolver } from '../eventIdentity.js';
@@ -154,6 +156,33 @@ export function auditRoutes(ctx: Ctx): Router {
         closedSecondsRemaining: ctx.tally.blockedFor(`event:${req.event.id}`),
         lastClosure: closure ? { at: closure.at, afterFailures: closure.entity_id } : null,
       });
+    },
+  );
+
+  /**
+   * Forget every failed attempt counted against this event, and start
+   * accepting new sign-ins again if they were stopped (D3 §1).
+   *
+   * The limits are deliberately blunt, and an organiser is better placed than
+   * the server to know that a burst of failures was their own attendees:
+   * a password read out wrongly, a stale invitation, a colleague testing.
+   * Changing a password clears these too; this is for the case where the
+   * password was right all along.
+   */
+  router.post(
+    '/login-attempts/reset',
+    requireRole(ctx.db, 'admin'),
+    limit(ctx.limiter, 'write'),
+    (req, res) => {
+      clearEventLimits(ctx, req.event.id);
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action: 'login_attempts_reset',
+        entity: 'event',
+        entityId: req.event.id,
+      });
+      res.status(204).end();
     },
   );
 
