@@ -152,6 +152,17 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **The login page asks for the password first, and the username after it.**
+  The two boxes used to stand on one card with the name below the button and
+  behind a rule, so somebody who filled the password and pressed got nothing at
+  all: the button was disabled until the name had something in it, which
+  swallowed the Enter key too, and the sentence naming the missing field was
+  never reached. Now the page asks for the password alone and a card titled
+  *Pick a username* follows it — so a wrong password is wrong before you have
+  chosen a name, and an empty box is told which one is missing. A device that
+  already holds a name in the event is entered under it on the first press, and
+  the invite QR's card is unchanged.
+
 - **A speaker can edit their own talk in an organiser's room.** Opening their
   session showed an empty Room box, a notice saying no room here is open for
   booking, and a Save button that could not be pressed — so the description,

@@ -127,7 +127,9 @@ describe('the login page', () => {
     fireEvent.change(await screen.findByLabelText('Event password'), {
       target: { value: 'viewer-pw' },
     });
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'grace' } });
+    // The password is asked on its own; the username box follows it.
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.change(await screen.findByLabelText('Username'), { target: { value: 'grace' } });
     fireEvent.click(screen.getByRole('button', { name: 'Enter schedule' }));
     expect((await screen.findAllByText(/Keynote/)).length).toBeGreaterThan(0);
   });
