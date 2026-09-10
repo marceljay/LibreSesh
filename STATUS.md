@@ -18,17 +18,32 @@ On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
 nothing local is unsaved. Suite at **1146**, lint clean, build clean.
 
-- **D3 · Security hardening, approved 2026-09-09 — building.** [LIB-101]
-  Approved as written minus lockdown, with both thresholds standing (60 login page
-  failures an hour closes a door for 15 minutes; 300 identities per address
-  per quarter hour). Three phases, each its own branch off `dev`, in this
-  order: `sec/instance-key-and-minting` (the instance key behind the `auth`
-  rate limit, a per-IP limit on minting, the idle-identity sweep), `sec/login` (per-IP
-  backoff, the per-event closure, the organiser notice, and the password
-  *advice* that replaced the withdrawn policy), then `sec/tokens-at-rest`
-  (`identities.token` and `ics_token` hashed, migration 018). Spec
-  `_planning/specs/D3-security-hardening.md`, plan
+- **D3 · Security hardening, approved 2026-09-09 — two of three phases
+  built, unmerged.** [LIB-101] Approved minus lockdown, both thresholds
+  standing. Spec `_planning/specs/D3-security-hardening.md`, plan
   `_planning/plans/2026-09-05-D3-security-hardening.md`.
+  - **Phase 1 — `sec/instance-key-and-minting`, code-complete 2026-09-09.**
+    The instance key behind the `auth` rate limit with a refund on success
+    and an audit row on every miss; a per-address limit on minting identities
+    with an anonymous sentinel past it; the idle-identity sweep at boot and
+    daily; the preflight length check on `INSTANCE_ADMIN_PASSWORD`. Carries
+    the vocabulary rename ("rate limit" not "budget", "login page" not
+    "gate", 78 files).
+  - **Phase 2 — `sec/login`, code-complete 2026-09-10**, branched off phase 1
+    so it contains it. Per-visitor waits keyed on cookie *and* address (five
+    free, two minutes, five free, fifteen minutes — your numbers), a
+    per-address cap of 300 failures an hour so discarding cookies buys
+    little, the per-event closure requiring 60 failures from 10+ distinct
+    addresses so one person cannot shut a door on everybody, the organiser
+    notice over the audit log from `GET /e/:slug/login-health`, and the
+    password *advice* that replaced the withdrawn policy.
+  - **Phase 3 — `sec/tokens-at-rest`, not started.** Hash `identities.token`
+    and `ics_token`, migration 018. This is what makes account recovery
+    (LIB-122) have to rotate rather than re-issue a token.
+  - **Both branches are pushed and have no PR** — `gh` is not authenticated
+    in this container, so `/pr` writes to `.temp/` instead. Merge order:
+    phase 1, then phase 2.
+  - Suite 1622, lint clean, at `3f09aec`.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
