@@ -141,6 +141,9 @@ scripts/           seed.ts, create-event.ts, decrypt-backup.ts
 assets/            brand source SVGs
 tests/             Vitest suites
 docs/              guides (identity, using, managing, deploy, hosting, import)
+web/public/        copied verbatim into the build: the icons, and the four docs
+                   the running instance serves for AI agents — llms.txt,
+                   agents.md, SKILL.md, api.md
 deploy/            Dockerfile, compose, Caddyfile, systemd unit, backup script
 design/mockup.jsx  approved UI reference — never imported
 ARCHITECTURE.md    how it fits together
@@ -160,6 +163,7 @@ STATUS.md          current work and the backlog
 | [docs/schema.md](docs/schema.md) | Every table and what links to what, generated from the migrations; `npm run schema:pdf` prints it |
 | [docs/deploy.md](docs/deploy.md) | Config, Docker, Railway, systemd, backups, upgrades |
 | [docs/hosting.md](docs/hosting.md) | Picking and sizing a VPS, hardening, day-2 operations, troubleshooting |
+| [web/public/agents.md](web/public/agents.md) | **Served by the instance** at `/agents.md`: the operating manual for an AI agent acting on it. Alongside it [`llms.txt`](web/public/llms.txt) (what this site is), [`SKILL.md`](web/public/SKILL.md) (the packaged-skill format) and [`api.md`](web/public/api.md) (the full HTTP reference) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Internals |
 | [SECURITY.md](SECURITY.md) | Threat model, accepted risks, codes and links |
 | [STATUS.md](STATUS.md) / [CHANGELOG.md](CHANGELOG.md) | Backlog and shipped work |

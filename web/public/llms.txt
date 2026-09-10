@@ -1,0 +1,40 @@
+# LibreSesh
+
+> A scheduling tool for conferences and unconferences: one server, one SQLite
+> file, a schedule a room full of people can edit together. This instance hosts
+> one or more events, each at `/e/<slug>`, each behind its own password. There
+> is no public view of any event, no accounts, and nothing to buy.
+
+An event has rooms, a programme of sessions across days, a board of pitched
+sessions people register interest in, and notes, links and questions attached
+to each session. Everything updates live over Server-Sent Events.
+
+If you are a program acting for someone here, start with
+[/agents.md](/agents.md) — how to get in, what you may do, and what not to do
+on a person's behalf. It is the canonical description of this instance for
+agents; this file is the short version of it.
+
+## Docs
+
+- [/agents.md](/agents.md): the operating manual — access, the four-step flow,
+  the limits, the policy on acting for a human.
+- [/SKILL.md](/SKILL.md): the same capabilities packaged as a skill, if your
+  harness consumes that format.
+- [/api.md](/api.md): the full HTTP reference — every endpoint, every error
+  code, the rate limits.
+- [/api/events](/api/events): the only unauthenticated endpoint. Names and
+  dates of the events on this instance; no schedule content.
+
+## Three things that will save you the trouble
+
+- **One request gets a whole schedule.** `GET /api/e/<slug>/bundle` returns the
+  entire event. Nothing to crawl, no pagination.
+- **Subscribe rather than poll.** `GET /api/e/<slug>/stream` carries every
+  change and is not rate limited.
+- **Keep your cookie jar.** Identity is a signed cookie; there is no bearer
+  token. A client that drops it gets `401` on everything.
+
+## Source
+
+[github.com/marceljay/libresesh](https://github.com/marceljay/libresesh) — the
+server, the web app, and the architecture and security notes behind both.
