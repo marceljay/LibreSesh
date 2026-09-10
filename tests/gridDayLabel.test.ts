@@ -122,18 +122,24 @@ describe('Now keeps its words at every width', () => {
     // Elastic, it absorbs whatever the row has left and gives it back when
     // there is none, so nothing else has to move or shrink to make room.
     expect(schedule).toMatch(/<SearchBox\s+fill/);
-    expect(search).toContain("fill ? 'min-w-[7rem] flex-1 sm:flex-none' : 'shrink-0'");
+    expect(search).toContain("fill ? 'min-w-[6rem] flex-1 sm:flex-none' : 'shrink-0'");
   });
 
   it('keeps a floor small enough for the row it has to fit in', () => {
     // A flex line breaks on each item's *hypothetical* main size, which for
     // `flex: 1 1 0%` is the min-width. At 9rem the line went over 360px — a
     // Galaxy S8 — so Now wrapped before anything was typed, and the field then
-    // grew into the space Now had left. The rest of the row is about 207px
-    // there; 7rem clears it, 9rem does not.
+    // grew into the space Now had left.
+    //
+    // 7rem was the second guess and still wrapped it. Measured in Chromium
+    // rather than estimated: Now is 112px and the fold toggle 54px, both wider
+    // than the arithmetic said, so the rigid half of the row is 224px against
+    // 336px of usable width. 6rem leaves sixteen pixels of headroom. At 320px
+    // it wraps, which is the safety valve working — Now keeps its label on the
+    // second line rather than being clipped off the first.
     const floor = search.match(/min-w-\[(\d+)rem\]/);
     expect(floor).not.toBeNull();
-    expect(Number((floor as RegExpMatchArray)[1])).toBeLessThanOrEqual(7);
+    expect(Number((floor as RegExpMatchArray)[1])).toBeLessThanOrEqual(6);
   });
 
   it('does not reserve the clear button’s gutter until there is one', () => {
