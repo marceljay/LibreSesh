@@ -52,7 +52,10 @@ afterEach(async () => {
   expect(errors, 'console.error was called').toEqual([]);
 });
 
-const addSession = () => screen.queryAllByRole('button', { name: 'Add session' });
+// Adding and pitching share one button, and its name says which ways in it
+// offers — "Add session" alone, or "Add or pitch a session" with the board on.
+const addSession = () =>
+  screen.queryAllByRole('button', { name: /^Add (session|or pitch a session)$/ });
 
 describe('a page follows its own role change', () => {
   it('gains the organiser controls on promotion, and loses them on demotion', async () => {

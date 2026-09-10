@@ -75,6 +75,27 @@ export function dayLabel(date: string, today: string): { top: string; sub: strin
 }
 
 /**
+ * The day written out: "Thursday 12 November".
+ *
+ * The grid's own day is otherwise only named up in the picker, which folds
+ * away as soon as you scroll into the day — and a screenshot of a grid, or a
+ * tab left open overnight, then says nothing about which day it is.
+ *
+ * Locale's own order and spelling, like every other date here, so this reads
+ * "12 November" or "November 12" as the reader expects. The ordinal-and-"of"
+ * form ("12th of November") is English-only and would have to be hand-built
+ * per language, for a label nobody reads twice.
+ */
+export function dayFullLabel(date: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+}
+
+/**
  * A span of days as one label: "1–7 Jun", or "29 Jun – 5 Jul" when it straddles
  * a month. Used by the week rail, where a week has to name itself in the width
  * of a chip.

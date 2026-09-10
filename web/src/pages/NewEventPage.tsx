@@ -232,7 +232,7 @@ export function NewEventPage() {
             <PasswordNote password={viewerPassword} name={name} slug={slug} />
           </Field>
           <Field
-            label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and propose sessions`}
+            label={`${userRoleLabel.trim() || 'Attendee'} — add contributions and sessions`}
             hint={TIER_NOTE.user}
           >
             <ControlShell>
