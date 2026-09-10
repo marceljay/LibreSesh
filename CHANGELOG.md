@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-10
+
 ### Security
 
 - **An event stops accepting new sign-ins when it is being guessed at.**
@@ -75,6 +77,13 @@ All notable changes to this project are documented here.
   row: the menu leaves it out where there is no tour to start.
 
 ### Changed
+
+- **The event login's endpoint is `/login`, not `/gate`.** The rename that ran
+  through the code and the documentation reached the route as well:
+  `GET /api/e/:slug/gate` no longer answers. Nothing an operator has to do,
+  but a browser left open on the old page calls the dead path until it is
+  reloaded, so a deployment is best followed by a reload rather than by
+  wondering why one tab stopped signing anybody in.
 
 - **The schedule keeps the event bar through the fold.** Scrolling into the
   day used to put the whole header away — logo, name, bell and menu along
