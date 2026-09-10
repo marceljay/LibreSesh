@@ -96,6 +96,36 @@ const byTagName = (tags: TagDto[]): TagDto[] =>
  * holds: you have at most one profile per event, so a frame claiming a second
  * one is yours is claiming it for its author, not for you.
  */
+/**
+ * Star or unstar a session, in both halves at once.
+ *
+ * `starredSessionIds` is whether it is *yours*; `starCounts` is how many
+ * people in total. They are drawn as one object — a star with a number beside
+ * it — so moving one without the other is visibly wrong: the star went amber
+ * under a number that did not budge, which reads as the click not having
+ * worked. Stars carry no server change event, so nothing corrected it either;
+ * it stayed wrong until the next reload.
+ *
+ * Returns the bundle unchanged when it already says what is being asked for,
+ * so the reducer can keep the same object and skip the render.
+ */
+export function applyStar(bundle: BundleDto, sessionId: number, starred: boolean): BundleDto {
+  if (bundle.starredSessionIds.includes(sessionId) === starred) return bundle;
+  const was = bundle.starCounts[sessionId] ?? 0;
+  return {
+    ...bundle,
+    starredSessionIds: starred
+      ? [...bundle.starredSessionIds, sessionId]
+      : bundle.starredSessionIds.filter((id) => id !== sessionId),
+    starCounts: {
+      ...bundle.starCounts,
+      // Clamped: a count that arrived stale would otherwise go negative and be
+      // rendered as one.
+      [sessionId]: Math.max(0, was + (starred ? 1 : -1)),
+    },
+  };
+}
+
 export function applyPersonChange(people: PersonDto[], incoming: PersonDto): PersonDto[] {
   const prev = people.find((p) => p.id === incoming.id);
   if (prev === undefined) {
@@ -348,17 +378,8 @@ function reducer(state: State, action: Action): State {
     // source of truth and callers flip it optimistically.
     case 'setStarred': {
       if (!state.bundle) return state;
-      const has = state.bundle.starredSessionIds.includes(action.sessionId);
-      if (has === action.starred) return state;
-      return {
-        ...state,
-        bundle: {
-          ...state.bundle,
-          starredSessionIds: action.starred
-            ? [...state.bundle.starredSessionIds, action.sessionId]
-            : state.bundle.starredSessionIds.filter((id) => id !== action.sessionId),
-        },
-      };
+      const bundle = applyStar(state.bundle, action.sessionId, action.starred);
+      return bundle === state.bundle ? state : { ...state, bundle };
     }
     case 'change':
       return applyChange(state, action.change);
