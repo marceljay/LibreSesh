@@ -16,7 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1648**, lint clean, build clean.
+nothing local is unsaved. Suite at **1651**, lint clean, build clean.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -1051,6 +1051,16 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   open question is how far the rename travels — the route is `/proposals`, the
   components are `Proposal*` and the capability is `proposal.create`, while the
   setting is `pitchesEnabled`.
+
+- **Generate `/openapi.json` from the zod schemas.** [LIB-198] `web/public/api.md`
+  shipped 2026-09-10 and says outright that there is no OpenAPI document; this
+  is it. Every request body already has a zod schema and zod 4 has
+  `z.toJSONSchema`, so the generated half is nearly free — follow `npm run
+  schema`, which regenerates `docs/schema.md` and fails a test when the copy is
+  behind. What needs deciding is the rest: paths live in the routers, responses
+  have no schemas (the DTOs are TypeScript interfaces), and per-endpoint roles
+  are middleware rather than data. Worth doing after a real agent has read the
+  prose once, so the parts that matter get modelled first.
 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier that shipped on 2026-09-10 is a stopgap standing

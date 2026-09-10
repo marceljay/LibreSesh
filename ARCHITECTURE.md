@@ -1026,6 +1026,40 @@ handful of times an event. The same class of failure must not be a toast in
 one section and inline in another; if a new screen wants a third path, this is
 the paragraph to change first.
 
+### The four files the instance serves for programs
+
+`web/public/` is copied verbatim into the build, so anything in it is served at
+the root by the same `express.static` that serves the icons — before the
+catch-all that hands `index.html` to every other path. Four documents live
+there on purpose, and they are four rather than one because the conventions
+that grew up around agent access settled into layers, each answering a
+different question:
+
+| Served at | Answers |
+| --- | --- |
+| [`/llms.txt`](web/public/llms.txt) | *What is this site?* A paragraph and a set of links |
+| [`/agents.md`](web/public/agents.md) | *How do I act here?* Access, the four-step flow, the limits, the policy on writing for a human. The canonical one |
+| [`/SKILL.md`](web/public/SKILL.md) | The same, in the packaged-skill format — YAML frontmatter, under 500 lines — for a harness that consumes those |
+| [`/api.md`](web/public/api.md) | *What exactly can I call?* Every endpoint, every error code |
+
+Resist the urge to collapse them. An agent arrives holding one of these names
+and no others, which is the whole reason the set exists; each file therefore
+links to the other three, and a test enforces it. Equally, resist letting them
+say the same thing four times — the layering only pays if `llms.txt` stays a
+paragraph and `api.md` stays a reference.
+
+They are served rather than kept in `docs/` because the audience arrives over
+HTTP and has no checkout. Which also means they are public and unauthenticated,
+like the icons — so they describe the *protocol* and never an instance's
+content. `GET /api/events` already lists the events on a box; nothing in these
+four files should add to what that gives away.
+
+`tests/apiDoc.test.ts` walks the routers and fails when a mounted path is
+absent from `api.md`, because the reference stops being one the moment an
+endpoint is added without a line in it. It also checks the cross-links and
+`SKILL.md`'s frontmatter, which are the two things a careless edit silently
+breaks.
+
 ## Security
 
 The threat model, the risks accepted on purpose, and every code and link the
