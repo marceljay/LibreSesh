@@ -200,7 +200,7 @@ export const WORDS: readonly string[] = [
   'galaxy',
   'garden',
   'garlic',
-  'login page',
+  'gate',
   'gecko',
   'geyser',
   'ginger',
