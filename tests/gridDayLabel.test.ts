@@ -22,6 +22,7 @@ import { dayFullLabel } from '../web/src/lib/format';
 const WEB = join(__dirname, '..', 'web', 'src');
 const schedule = readFileSync(join(WEB, 'pages', 'SchedulePage.tsx'), 'utf8');
 const calendar = readFileSync(join(WEB, 'components', 'Calendar.tsx'), 'utf8');
+const search = readFileSync(join(WEB, 'components', 'SearchBox.tsx'), 'utf8');
 
 describe('the grid names the day it is showing', () => {
   it('writes it out in the locale’s own order', () => {
@@ -48,18 +49,32 @@ describe('the grid names the day it is showing', () => {
   });
 });
 
-describe('Now gives way to the search field on a phone', () => {
-  it('keeps the dot and drops the words while the field has focus', () => {
+describe('Now keeps its words at every width', () => {
+  it('does not hide them for space', () => {
+    // They briefly went on a phone while the search field had focus. Hiding
+    // them only helps where it actually prevents the wrap, and on the
+    // narrowest screens the row wrapped anyway — a bare dot on a second line
+    // is worse than the label on a second line, so the trade never paid.
+    expect(schedule).not.toContain('group-has-[.search-box_input:focus]');
     expect(schedule).toMatch(
-      /group-has-\[\.search-box_input:focus\]:hidden sm:group-has-\[\.search-box_input:focus\]:inline/,
+      /<span className="ms-1">Now \{fmtMin\(nowMinuteOfDay\(timezone\)\)\}<\/span>/,
     );
   });
 
-  it('scopes it to the search box, not to any focused input', () => {
-    // The filter panel has a text field of its own and is a descendant of this
-    // same row, so a bare `input:focus` would narrow Now when you filter too.
-    expect(schedule).toContain('<div data-tour="filters" className="group flex');
-    expect(schedule).toContain('className="search-box"');
+  it('lets the search field take slack rather than demand space', () => {
+    // Elastic, it absorbs whatever the row has left and gives it back when
+    // there is none, so nothing else has to move or shrink to make room.
+    expect(schedule).toMatch(/<SearchBox\s+fill/);
+    expect(search).toMatch(/fill \? 'min-w-\[9rem\] flex-1' : 'shrink-0'/);
+    expect(search).toMatch(/fill \? 'w-full'/);
+  });
+
+  it('keeps flex-wrap as the safety valve underneath it', () => {
+    // If even the field's floor will not fit, the row wraps. A second line is
+    // always better than a control off the edge of the screen.
+    expect(schedule).toContain(
+      '<div data-tour="filters" className="flex flex-wrap items-center gap-1.5">',
+    );
   });
 
   it('keeps the time in the accessible name, which has no width to save', () => {

@@ -1381,7 +1381,7 @@ export function SchedulePage() {
                 folded ? 'pt-2' : 'pt-0'
               }`}
             >
-              <div data-tour="filters" className="group flex flex-wrap items-center gap-1.5">
+              <div data-tour="filters" className="flex flex-wrap items-center gap-1.5">
                 {/* This row is the whole header once the rest folds away, so it
                   carries the way back — and the day it is showing, since the
                   day strip that usually answers that is one of the things put
@@ -1410,7 +1410,7 @@ export function SchedulePage() {
                   )}
                 </button>
                 <SearchBox
-                  className="search-box"
+                  fill
                   sessions={bundle.sessions}
                   rooms={bundle.rooms}
                   timezone={timezone}
@@ -1443,24 +1443,16 @@ export function SchedulePage() {
                      matched everywhere and the box model did not. */
                   className="flex h-[34px] shrink-0 items-center rounded-lg border border-transparent bg-highlight px-3 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
                 >
+                  {/* Words at every width. They briefly went on a phone while
+                    the search field had focus, to keep the row on one line —
+                    but hiding them only helps where it actually prevents the
+                    wrap, and on the narrowest screens the row wrapped anyway.
+                    A bare dot and a second line is worse than the label and a
+                    second line, so the trade never paid. The field is elastic
+                    now and takes slack instead of demanding space, which
+                    removes the reason it was asked for. */}
                   <span aria-hidden="true">●</span>
-                  {/* The search field grows on focus, and on a phone this row
-                    has nothing to give it — the field, Filter and this button
-                    already fill the width, so the field pushed something onto
-                    a second line. The dot alone still says what the button is
-                    and where it goes, so it is what stays; the words come
-                    back the moment focus leaves, and never go at all above
-                    `sm`, where the row is not tight.
-
-                    Scoped to the search box by class rather than to any
-                    focused input: the filter panel has a text field of its
-                    own, and it is a descendant of this same row. */}
-                  <span
-                    aria-hidden="true"
-                    className="ms-1 group-has-[.search-box_input:focus]:hidden sm:group-has-[.search-box_input:focus]:inline"
-                  >
-                    Now {fmtMin(nowMinuteOfDay(timezone))}
-                  </span>
+                  <span className="ms-1">Now {fmtMin(nowMinuteOfDay(timezone))}</span>
                 </button>
                 <ActiveFilters
                   filters={filters}

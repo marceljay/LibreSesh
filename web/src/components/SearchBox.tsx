@@ -130,6 +130,7 @@ export function SearchBox({
   onSeeAll,
   initialQuery = '',
   autoFocus = false,
+  fill = false,
   className = '',
 }: {
   sessions: SessionDto[];
@@ -140,6 +141,16 @@ export function SearchBox({
   onSeeAll: (query: string) => void;
   initialQuery?: string;
   autoFocus?: boolean;
+  /** Take the room the row has left instead of a width of its own.
+   *
+   *  A fixed field that grows on focus asks its neighbours for space they do
+   *  not have on a phone, and the row wraps. Elastic, it absorbs whatever slack
+   *  there is and gives it back when there is none, so nothing else has to move
+   *  or shrink to make room. The floor is what keeps it a field rather than a
+   *  sliver — and if even that will not fit, the row wraps, which is the whole
+   *  point of leaving `flex-wrap` on: a second line is always better than a
+   *  control off the edge of the screen. */
+  fill?: boolean;
   className?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
@@ -217,7 +228,10 @@ export function SearchBox({
   });
 
   return (
-    <div ref={refs.setReference} className={`relative shrink-0 ${className}`}>
+    <div
+      ref={refs.setReference}
+      className={`relative ${fill ? 'min-w-[9rem] flex-1' : 'shrink-0'} ${className}`}
+    >
       <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-500 dark:text-stone-400" />
       {/* eslint-disable-next-line no-restricted-syntax -- bespoke search combobox with its own listbox; not a plain text field */}
       <input
@@ -244,7 +258,9 @@ export function SearchBox({
            touch screen the text is floored at 16px — under that Safari zooms
            the page in on focus and does not zoom back out — which the shorter
            placeholder leaves room for. */
-        className={`h-[34px] w-36 rounded-full border border-stone-500 bg-stone-50 py-0 ps-8 pe-8 text-xs outline-hidden transition-[width] focus:w-56 dark:border-stone-500 dark:bg-stone-950 sm:w-44 sm:focus:w-72 ${bareFieldFocusRing}`}
+        className={`h-[34px] rounded-full border border-stone-500 bg-stone-50 py-0 ps-8 pe-8 text-xs outline-hidden dark:border-stone-500 dark:bg-stone-950 ${
+          fill ? 'w-full' : 'w-36 transition-[width] focus:w-56 sm:w-44 sm:focus:w-72'
+        } ${bareFieldFocusRing}`}
       />
       {query && (
         <button
