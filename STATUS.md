@@ -16,18 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1645**, lint clean, build clean.
-
-- **0.5.0 is unreleased on `dev`; `main` is still on 0.4.0.** Everything under
-  `[Unreleased]` in CHANGELOG.md waits on that merge: the event bar on every
-  page, the schema page generated from the migrations, and all three sections
-  of D3. Two deployment notes belong to it. `INSTANCE_ADMIN_PASSWORD` under
-  sixteen characters now refuses to boot in production, so the live value has
-  to be checked before deploying. And `GET /api/e/:slug/gate` is now `/login`,
-  so a browser holding the old page calls a dead path until it is reloaded —
-  a reload fixes it, or the old path can be kept answering for one release.
-  No migration, nobody signed out, invite QR codes unaffected.
-
+nothing local is unsaved. Suite at **1648**, lint clean, build clean.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
