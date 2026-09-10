@@ -34,7 +34,7 @@ import { loadClaims } from '../claims.js';
 import { getPermissions } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import { trackWindowsFor } from '../trackHours.js';
-import { getSession } from '../sessionRules.js';
+import { getVisibleSession, sessionVisibility } from '../drafts.js';
 
 /** Read endpoints. The whole event fits comfortably in one JSON payload, so the
  *  client fetches a bundle once and patches it from the SSE stream. */
@@ -77,11 +77,16 @@ export function bundleRoutes(ctx: Ctx): Router {
       ctx.db,
       tracks.map((t) => t.id),
     );
+    // Drafts only for the people who have a hand in them; for everyone else
+    // they are not here at all, and nor are their counts or the reader's own
+    // star on one that was published when they starred it.
     const sessions = ctx.db
       .prepare<[number], SessionRow>(
         'SELECT * FROM sessions WHERE event_id = ? AND deleted_at IS NULL ORDER BY starts_at',
       )
-      .all(eventId);
+      .all(eventId)
+      .filter(sessionVisibility(ctx.db, eventId, req.identity.id, req.role));
+    const shown = new Set(sessions.map((s) => s.id));
 
     const people = ctx.db
       .prepare<[number], PersonRow>(
@@ -109,7 +114,8 @@ export function bundleRoutes(ctx: Ctx): Router {
             AND (? = 1 OR c.hidden = 0)
           GROUP BY c.session_id`,
       )
-      .all(eventId, req.role === 'admin' ? 1 : 0);
+      .all(eventId, req.role === 'admin' ? 1 : 0)
+      .filter((c) => shown.has(c.session_id));
 
     const bundle: BundleDto = {
       event: toEventDto(req.event),
@@ -138,7 +144,8 @@ export function bundleRoutes(ctx: Ctx): Router {
             WHERE st.identity_id = ? AND s.event_id = ? AND s.deleted_at IS NULL`,
         )
         .all(req.identity.id, eventId)
-        .map((r) => r.session_id),
+        .map((r) => r.session_id)
+        .filter((id) => shown.has(id)),
       starCounts: Object.fromEntries(
         ctx.db
           .prepare<[number], { session_id: number; n: number }>(
@@ -148,6 +155,7 @@ export function bundleRoutes(ctx: Ctx): Router {
               GROUP BY st.session_id`,
           )
           .all(eventId)
+          .filter((r) => shown.has(r.session_id))
           .map((r) => [r.session_id, r.n]),
       ),
       contributionCounts: Object.fromEntries(counts.map((c) => [c.session_id, c.n])),
@@ -158,7 +166,13 @@ export function bundleRoutes(ctx: Ctx): Router {
   });
 
   router.get('/sessions/:id', limit(ctx.limiter, 'read'), (req, res) => {
-    const session = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const session = getVisibleSession(
+      ctx.db,
+      req.event.id,
+      Number(req.params.id),
+      req.identity.id,
+      req.role,
+    );
     const names = new NameResolver(ctx.db, req.event.id);
     const isAdmin = atLeast(req.role, 'admin');
     const contributions = ctx.db

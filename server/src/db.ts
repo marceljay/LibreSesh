@@ -134,6 +134,9 @@ export interface SessionRow {
   /** Opaque id shared by linked sessions, or null when this one stands alone.
    *  Not a foreign key: there is no series table — see migration 017. */
   series_id: string | null;
+  /** 1 = kept off the schedule: seen only by who has a hand in it, and
+   *  claiming no room or time until published — see migration 022. */
+  draft: number;
 }
 
 /** Who is giving a session. Ordered, because the order is the credit order. */

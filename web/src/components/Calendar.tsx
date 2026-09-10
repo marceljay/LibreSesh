@@ -372,9 +372,12 @@ export function Calendar({
   const placed = onThisDay;
   // A hold draws an amber band across every column *as well as* its own block.
   const holdBands = useMemo(
-    () => onThisDay.filter((p) => p.session.blocksOpenBooking),
+    () => onThisDay.filter((p) => p.session.blocksOpenBooking && !p.session.draft),
     [onThisDay],
   );
+  // A draft is drawn where it would go, but it claims the slot no more than
+  // the server lets it: it neither clashes, nor competes, nor holds the floor.
+  const claiming = useMemo(() => placed.filter((p) => !p.session.draft), [placed]);
   // Lunch. `date === null` is the every-day case, which is most of them.
   // Clipped to the viewport rather than dropped: a break that starts before
   // the grid does still says where the morning ends.
@@ -392,8 +395,8 @@ export function Calendar({
   );
   const lanes = useMemo(() => laneLayout(placed, columnOf), [placed, columnOf]);
 
-  const overlaps = useMemo(() => overlappingIds(placed), [placed]);
-  const competing = useMemo(() => competingIds(onThisDay), [onThisDay]);
+  const overlaps = useMemo(() => overlappingIds(claiming), [claiming]);
+  const competing = useMemo(() => competingIds(claiming), [claiming]);
   const tagColor = useMemo(() => new Map(tags.map((t) => [t.id, t.color])), [tags]);
 
   const height = (dayEndMin - dayStartMin) * PX_PER_MIN;
@@ -816,7 +819,7 @@ export function Calendar({
                 data-tour={blockIndex === 0 ? 'session-block' : undefined}
                 role="button"
                 tabIndex={0}
-                aria-label={`${session.title}, ${fmtMin(startMin)} to ${fmtMin(endMin)}${
+                aria-label={`${session.title}${session.draft ? ', draft' : ''}, ${fmtMin(startMin)} to ${fmtMin(endMin)}${
                   clash ? ', overlaps another session' : ''
                 }${session.blocksOpenBooking ? ', everyone should be here' : ''}${
                   competes ? ', competing with an official session' : ''
@@ -835,8 +838,14 @@ export function Calendar({
                     onOpen(session.id);
                   }
                 }}
-                className={`absolute overflow-hidden rounded-lg border bg-white dark:bg-stone-900 px-2 py-1 text-start shadow-xs transition-shadow
-                  ${session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'}
+                className={`absolute overflow-hidden rounded-lg border px-2 py-1 text-start shadow-xs transition-shadow
+                  ${
+                    // A draft is greyed and dashed whatever its placement: the
+                    // one thing to read off it is that it is not on yet.
+                    session.draft
+                      ? 'border-dashed border-stone-400 bg-stone-100 text-stone-600 dark:border-stone-500 dark:bg-stone-800 dark:text-stone-300'
+                      : `bg-white dark:bg-stone-900 ${session.type === 'open' ? 'border-dashed border-emerald-400 dark:border-emerald-500' : 'border-stone-200 dark:border-stone-700'}`
+                  }
                   ${
                     highlighted
                       ? 'z-20 shadow-lg ring-2 ring-stone-900 dark:ring-stone-100'
@@ -863,6 +872,14 @@ export function Calendar({
                       style={{ background: tagColor.get(id) ?? '#6B7280' }}
                     />
                   ))}
+                  {session.draft && (
+                    <span
+                      title="Off the schedule: only the organisers and the people behind it can see it"
+                      className="ms-auto rounded-sm bg-stone-200 dark:bg-stone-700 px-1 text-xs font-bold text-stone-700 dark:text-stone-200"
+                    >
+                      draft
+                    </span>
+                  )}
                   {clash && (
                     <span
                       title="Overlaps another session in this room"
@@ -881,7 +898,7 @@ export function Calendar({
                   )}
                   {live && (
                     <span
-                      className={`${clash || competes ? '' : 'ms-auto '}rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900`}
+                      className={`${clash || competes || session.draft ? '' : 'ms-auto '}rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900`}
                     >
                       now
                     </span>

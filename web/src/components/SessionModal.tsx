@@ -188,6 +188,12 @@ export function SessionModal({
   const [blocksOpenBooking, setBlocksOpenBooking] = useState(session?.blocksOpenBooking ?? false);
   const [blockHelp, setBlockHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Taking a session off the schedule is for whoever may delete it — the
+  // server holds it to the same rule — so the switch is offered on a new
+  // session, which is theirs, and on an edit only alongside Delete. A
+  // co-speaker gets neither: being credited is a claim on the words.
+  const canDraft = !session || onDelete !== undefined;
+  const [draft, setDraft] = useState(session?.draft ?? false);
 
   // The server refuses a hold on an open session rather than quietly dropping
   // it, so the form never offers the combination: switching the type to open
@@ -290,6 +296,7 @@ export function SessionModal({
         roomId,
         type: isAdmin ? type : undefined,
         ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
+        ...(canDraft ? { draft } : {}),
         title: title.trim(),
         speakers,
         description: description.trim(),
@@ -345,7 +352,15 @@ export function SessionModal({
             type="submit"
             disabled={saving || allowedRooms.length === 0 || repeatProblem !== null}
           >
-            {saving ? 'Saving…' : runCount > 1 ? `Create ${runCount} sessions` : 'Save'}
+            {saving
+              ? 'Saving…'
+              : runCount > 1
+                ? `Create ${runCount} ${draft ? 'drafts' : 'sessions'}`
+                : draft && !session?.draft
+                  ? 'Save as draft'
+                  : session?.draft && !draft
+                    ? 'Publish'
+                    : 'Save'}
           </PrimaryButton>
         </>
       }
@@ -492,6 +507,26 @@ export function SessionModal({
                     in Manage Event → Programme and drawn quietly behind every day they apply to.
                   </p>
                 </HelpNote>
+              )}
+            </Field>
+          )}
+
+          {/* Above the title, with the other decisions about what the session
+              is, so a draft is chosen before the form is filled in. It is
+              also the way to take one off the schedule without deleting it:
+              an unscheduled talk keeps its words, speakers and slot. */}
+          {canDraft && (
+            <Field label="Draft">
+              <Toggle
+                checked={draft}
+                onChange={setDraft}
+                label="Keep this off the schedule for now"
+              />
+              {draft && (
+                <p className={hintClass}>
+                  Only the organisers, whoever added it and the people credited on it can see a
+                  draft. It keeps this room and time, but holds neither until it is published.
+                </p>
               )}
             </Field>
           )}

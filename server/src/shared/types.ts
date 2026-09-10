@@ -303,6 +303,10 @@ export interface SessionDto {
    *  one stands alone. The form shows the link controls only when it is set
    *  and there is more than one member — see the linked-sessions spec. */
   seriesId: string | null;
+  /** Kept off the schedule. Only organisers, whoever added it and the people
+   *  credited on it are ever sent one, and it claims no room or time: the
+   *  clash and hold rules skip it until it is published. */
+  draft: boolean;
 }
 
 export interface ContributionDto {

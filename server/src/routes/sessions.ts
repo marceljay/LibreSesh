@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireWritable } from '../auth.js';
 import { audit, newBatch } from '../audit.js';
 import type { Ctx } from '../context.js';
+import { getVisibleSession, publishSession } from '../drafts.js';
 import type { Role } from '../shared/types.js';
 import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
@@ -109,19 +110,24 @@ export function sessionRoutes(ctx: Ctx): Router {
     const type = req.role === 'admin' ? (body.type ?? 'official') : 'open';
     assertMayPlace(getPermissions(ctx.db, req.event.id), req.role, room, type);
     const blocks = req.role === 'admin' && assertMayBlock(type, body.blocksOpenBooking);
+    const draft = body.draft ?? false;
 
     const window = { startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) };
     assertValidTimes(req.event, window);
+    // A draft claims no slot, so it has nothing to collide with until it is
+    // published — and publishing is checked then, as the placement it is.
     if (req.role !== 'admin') {
       assertWithinEventWindow(req.event, window);
-      assertNoOverlap(ctx.db, req.event.id, room.id, window);
-      assertNotBlocked(ctx.db, req.event.id, req.role, window);
+      if (!draft) {
+        assertNoOverlap(ctx.db, req.event.id, room.id, window);
+        assertNotBlocked(ctx.db, req.event.id, req.role, window);
+      }
     }
     const tagIds = body.tagIds ?? [];
     assertTagsBelong(ctx.db, req.event.id, tagIds);
     const trackId = body.trackId ?? null;
     assertTrackBelongs(ctx.db, req.event.id, trackId);
-    assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
+    if (!draft) assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
     const formatId = body.formatId ?? null;
     assertFormatBelongs(ctx.db, req.event.id, formatId);
 
@@ -133,8 +139,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, draft)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           req.event.id,
@@ -151,6 +157,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           req.identity.id,
           now,
           now,
+          draft ? 1 : 0,
         );
       const newId = Number(info.lastInsertRowid);
       setTags(ctx, newId, tagIds);
@@ -158,7 +165,8 @@ export function sessionRoutes(ctx: Ctx): Router {
       return newId;
     })();
 
-    const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+    const row = getSession(ctx.db, req.event.id, id);
+    const dto = loadSessionDto(ctx.db, row);
     audit(ctx.db, {
       identityId: req.identity.id,
       eventId: req.event.id,
@@ -166,19 +174,23 @@ export function sessionRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: id,
     });
-    ctx.broker.publish(req.event.slug, 'session.created', dto);
-    notifyMentionsIn(
-      ctx.db,
-      {
-        eventId: req.event.id,
-        subjectType: 'session',
-        subjectId: id,
-        actorId: req.identity.id,
-        text: body.description ?? '',
-        where: `in “${dto.title}”`,
-      },
-      (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
-    );
+    publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
+    // A draft mentions nobody yet: the names in it are heard when it is
+    // published, rather than pointing someone at a session they cannot open.
+    if (!draft) {
+      notifyMentionsIn(
+        ctx.db,
+        {
+          eventId: req.event.id,
+          subjectType: 'session',
+          subjectId: id,
+          actorId: req.identity.id,
+          text: body.description ?? '',
+          where: `in “${dto.title}”`,
+        },
+        (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+      );
+    }
     res.status(201).json(dto);
   });
 
@@ -210,6 +222,8 @@ export function sessionRoutes(ctx: Ctx): Router {
     const type = req.role === 'admin' ? (body.type ?? 'official') : 'open';
     assertMayPlace(getPermissions(ctx.db, req.event.id), req.role, room, type);
     const blocks = req.role === 'admin' && assertMayBlock(type, body.blocksOpenBooking);
+    // Every occurrence is a draft, or none is.
+    const draft = body.draft ?? false;
 
     const first = { startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) };
     assertValidTimes(req.event, first);
@@ -255,9 +269,11 @@ export function sessionRoutes(ctx: Ctx): Router {
         // an attendee's is not.
         if (req.role !== 'admin') {
           assertWithinEventWindow(req.event, window);
-          assertNoOverlap(ctx.db, req.event.id, room.id, window);
-          assertNotBlocked(ctx.db, req.event.id, req.role, window);
-          assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
+          if (!draft) {
+            assertNoOverlap(ctx.db, req.event.id, room.id, window);
+            assertNotBlocked(ctx.db, req.event.id, req.role, window);
+            assertWithinTrackHours(ctx.db, req.event, req.role, trackId, window);
+          }
         }
       } catch (err) {
         throw badRequest(`${date}: ${(err as Error).message}`);
@@ -275,8 +291,8 @@ export function sessionRoutes(ctx: Ctx): Router {
         `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at, series_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, series_id, draft)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       return windows.map((window) => {
         const newId = Number(
@@ -296,6 +312,7 @@ export function sessionRoutes(ctx: Ctx): Router {
             now,
             now,
             seriesId,
+            draft ? 1 : 0,
           ).lastInsertRowid,
         );
         setTags(ctx, newId, tagIds);
@@ -311,23 +328,26 @@ export function sessionRoutes(ctx: Ctx): Router {
     // The rows share a batch so the log reads as one line — five rows for one
     // press buried the rest of the morning, and a fortnight-long run could
     // push earlier actions past the retention cap on its own.
-    const dtos = ids.map((id) => loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id)));
-    const batch = dtos.length > 1 ? newBatch() : undefined;
-    for (const dto of dtos) {
+    const batch = ids.length > 1 ? newBatch() : undefined;
+    const dtos = ids.map((id) => {
+      const row = getSession(ctx.db, req.event.id, id);
+      const dto = loadSessionDto(ctx.db, row);
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
         action: 'create',
         entity: 'session',
-        entityId: dto.id,
+        entityId: id,
         batch,
       });
-      ctx.broker.publish(req.event.slug, 'session.created', dto);
-    }
+      publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
+      return dto;
+    });
     // A name in the description is one mention, not one per day of the run:
-    // the first occurrence carries it, and the panel opens on that one.
+    // the first occurrence carries it, and the panel opens on that one. A
+    // draft run mentions nobody until it is published, as a single draft does.
     const firstOfRun = dtos[0];
-    if (firstOfRun) {
+    if (firstOfRun && !draft) {
       notifyMentionsIn(
         ctx.db,
         {
@@ -345,13 +365,28 @@ export function sessionRoutes(ctx: Ctx): Router {
   });
 
   router.patch('/sessions/:id', ...userEdit, (req, res) => {
-    const existing = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const existing = getVisibleSession(
+      ctx.db,
+      req.event.id,
+      Number(req.params.id),
+      req.identity.id,
+      req.role,
+    );
     const matrix = getPermissions(ctx.db, req.event.id);
     const speaksHere = speaksFor(ctx.db, req.identity.id, existing);
     assertMayMutate(matrix, req.role, req.identity.id, existing, speaksHere);
 
     const body = parse(sessionPatchSchema, req.body);
     assertNotStale(existing, body.expectedUpdatedAt);
+
+    // Taking a session off the schedule, or putting it back, is for the people
+    // who may delete it — the creator and the organisers — so no speaksHere:
+    // being credited on a session is a claim on its words, not on whether it
+    // runs. Publishing is placing, and is held to every rule a booking meets.
+    const nextDraft = body.draft ?? existing.draft === 1;
+    const draftChanged = nextDraft !== (existing.draft === 1);
+    if (draftChanged) assertMayMutate(matrix, req.role, req.identity.id, existing);
+    const publishing = draftChanged && !nextDraft;
 
     /**
      * Every placement rule below asks *what changed*, never *which keys
@@ -403,15 +438,21 @@ export function sessionRoutes(ctx: Ctx): Router {
     assertValidTimes(req.event, window);
     if (req.role !== 'admin') {
       assertWithinEventWindow(req.event, window);
-      assertNoOverlap(ctx.db, req.event.id, room.id, window, existing.id);
-      // Only a session that actually moves is re-checked. A plenary announced
-      // after someone had already booked that hour leaves their session where
-      // it is — badged as competing — and refusing to let them fix a typo in
-      // it afterwards would punish them for the organiser's later decision.
-      const retimed =
-        window.startsAt.toISOString() !== existing.starts_at ||
-        window.endsAt.toISOString() !== existing.ends_at;
-      if (retimed) assertNotBlocked(ctx.db, req.event.id, req.role, window, existing.id);
+      // A session that stays a draft collides with nothing.
+      if (!nextDraft) {
+        assertNoOverlap(ctx.db, req.event.id, room.id, window, existing.id);
+        // Only a session that actually moves is re-checked. A plenary announced
+        // after someone had already booked that hour leaves their session where
+        // it is — badged as competing — and refusing to let them fix a typo in
+        // it afterwards would punish them for the organiser's later decision.
+        // A draft being published is arriving in that hour, not already in it.
+        const retimed =
+          window.startsAt.toISOString() !== existing.starts_at ||
+          window.endsAt.toISOString() !== existing.ends_at;
+        if (retimed || publishing) {
+          assertNotBlocked(ctx.db, req.event.id, req.role, window, existing.id);
+        }
+      }
     }
     if (body.tagIds) assertTagsBelong(ctx.db, req.event.id, body.tagIds);
     // `undefined` leaves the track alone; an explicit `null` clears it.
@@ -425,7 +466,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       nextTrackId !== existing.track_id ||
       window.startsAt.toISOString() !== existing.starts_at ||
       window.endsAt.toISOString() !== existing.ends_at;
-    if (replaced) {
+    if (!nextDraft && (replaced || publishing)) {
       assertWithinTrackHours(ctx.db, req.event, req.role, nextTrackId, window);
     }
     // `undefined` leaves the format alone; an explicit `null` clears it. It is
@@ -460,7 +501,9 @@ export function sessionRoutes(ctx: Ctx): Router {
         // anchor is held to.
         if (req.role !== 'admin' && t.type === 'official' && (roomMoves || typeMoves)) return false;
         if (roomMoves || typeMoves) assertMayPlace(matrix, req.role, room, type);
-        if (req.role !== 'admin') {
+        // Each sibling keeps its own draft flag, and one that is a draft
+        // collides with nothing, as the anchor would not.
+        if (req.role !== 'admin' && t.draft === 0) {
           if (roomMoves) assertNoOverlap(ctx.db, req.event.id, room.id, tWindow, t.id);
           if (nextTrackId !== t.track_id) {
             assertWithinTrackHours(ctx.db, req.event, req.role, nextTrackId, tWindow);
@@ -510,7 +553,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
                   blocks_open_booking = ?, title = ?, description = ?,
-                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?
+                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?, draft = ?
             WHERE id = ?`,
         )
         .run(
@@ -525,6 +568,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           window.startsAt.toISOString(),
           window.endsAt.toISOString(),
           now,
+          nextDraft ? 1 : 0,
           existing.id,
         );
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
@@ -557,7 +601,8 @@ export function sessionRoutes(ctx: Ctx): Router {
     // batched so an edit across a series reads as one line in the log.
     const editBatch = outcome.touched.length > 1 ? newBatch() : undefined;
     const dtos = outcome.touched.map((id) => {
-      const d = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      const now = getSession(ctx.db, req.event.id, id);
+      const d = loadSessionDto(ctx.db, now);
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
@@ -566,11 +611,25 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch: editBatch,
       });
-      ctx.broker.publish(req.event.slug, 'session.updated', d);
+      publishSession(ctx.db, ctx.broker, req.event, 'session.updated', now, d);
 
       const was = before.get(id);
-      const now = getSession(ctx.db, req.event.id, id);
-      if (was && isAMove(was, now)) {
+      // Coming off the schedule is what the audience hears about — to a
+      // starrer it is a cancellation, and the stream has just removed it from
+      // their screen. A draft that moves, or is published, moves nobody's
+      // plans: none of them could see it.
+      if (was && was.draft === 0 && now.draft === 1) {
+        notifySessionAudience(
+          ctx.db,
+          {
+            eventId: req.event.id,
+            sessionId: id,
+            actorId: req.identity.id,
+            title: `${d.title} was taken off the schedule`,
+          },
+          (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+        );
+      } else if (was && was.draft === 0 && now.draft === 0 && isAMove(was, now)) {
         notifySessionAudience(
           ctx.db,
           {
@@ -591,7 +650,10 @@ export function sessionRoutes(ctx: Ctx): Router {
     // Someone newly named in the description hears about it once, from the
     // session that was edited — a series edit that carried the words to its
     // siblings is still one act of naming them.
-    if (body.description !== undefined && body.description !== existing.description) {
+    // A draft mentions nobody; publishing one is when the names in it are
+    // heard, all of them at once, since none were while it was a draft.
+    const redescribed = body.description !== undefined && body.description !== existing.description;
+    if (!nextDraft && (publishing || redescribed)) {
       notifyMentionsIn(
         ctx.db,
         {
@@ -599,8 +661,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           subjectType: 'session',
           subjectId: existing.id,
           actorId: req.identity.id,
-          text: body.description,
-          previous: existing.description,
+          text: nextDescription,
+          previous: publishing ? undefined : existing.description,
           where: `in “${nextTitle}”`,
         },
         (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
@@ -621,7 +683,13 @@ export function sessionRoutes(ctx: Ctx): Router {
   });
 
   router.delete('/sessions/:id', ...userEdit, (req, res) => {
-    const existing: SessionRow = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const existing: SessionRow = getVisibleSession(
+      ctx.db,
+      req.event.id,
+      Number(req.params.id),
+      req.identity.id,
+      req.role,
+    );
     assertMayMutate(getPermissions(ctx.db, req.event.id), req.role, req.identity.id, existing);
     ctx.db
       .prepare('UPDATE sessions SET deleted_at = ?, updated_at = ? WHERE id = ?')
@@ -634,16 +702,20 @@ export function sessionRoutes(ctx: Ctx): Router {
       entityId: existing.id,
     });
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
-    notifySessionAudience(
-      ctx.db,
-      {
-        eventId: req.event.id,
-        sessionId: existing.id,
-        actorId: req.identity.id,
-        title: `${existing.title} was cancelled`,
-      },
-      (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
-    );
+    // Its audience was told when it came off the schedule; deleting a draft
+    // cancels nothing anyone could still see.
+    if (existing.draft === 0) {
+      notifySessionAudience(
+        ctx.db,
+        {
+          eventId: req.event.id,
+          sessionId: existing.id,
+          actorId: req.identity.id,
+          title: `${existing.title} was cancelled`,
+        },
+        (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
+      );
+    }
     res.status(204).end();
   });
 
@@ -656,7 +728,8 @@ export function sessionRoutes(ctx: Ctx): Router {
     // Linking six sessions is one action, however many rows it writes.
     const batch = ids.length > 1 ? newBatch() : undefined;
     return ids.map((id) => {
-      const dto = loadSessionDto(ctx.db, getSession(ctx.db, req.event.id, id));
+      const row = getSession(ctx.db, req.event.id, id);
+      const dto = loadSessionDto(ctx.db, row);
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
@@ -665,7 +738,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch,
       });
-      ctx.broker.publish(req.event.slug, 'session.updated', dto);
+      publishSession(ctx.db, ctx.broker, req.event, 'session.updated', row, dto);
       return dto;
     });
   };

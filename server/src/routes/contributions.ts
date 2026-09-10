@@ -4,12 +4,12 @@ import { requireCapability } from '../permissions.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { ContributionRow } from '../db.js';
-import { forbidden, notFound } from '../errors.js';
+import { getVisibleSession } from '../drafts.js';
+import { conflict, forbidden, notFound } from '../errors.js';
 import { NameResolver } from '../eventIdentity.js';
 import { mentionedIdentities, notify } from '../notifications.js';
 import { toContributionDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
-import { getSession } from '../sessionRules.js';
 import { contributionSchema, hiddenSchema, parse } from '../validation.js';
 
 export function contributionRoutes(ctx: Ctx): Router {
@@ -38,7 +38,18 @@ export function contributionRoutes(ctx: Ctx): Router {
     requireWritable,
     limit(ctx.limiter, 'contribution'),
     (req, res) => {
-      const session = getSession(ctx.db, req.event.id, Number(req.params.id));
+      const session = getVisibleSession(
+        ctx.db,
+        req.event.id,
+        Number(req.params.id),
+        req.identity.id,
+        req.role,
+      );
+      // Notes and questions are the audience's, and a draft has none yet. Its
+      // broadcast would also reach the whole room, draft or not.
+      if (session.draft === 1) {
+        throw conflict('Notes open once the session is on the schedule', 'draft');
+      }
       const body = parse(contributionSchema, req.body);
       const info = ctx.db
         .prepare(

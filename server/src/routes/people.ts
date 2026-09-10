@@ -4,6 +4,7 @@ import { audit } from '../audit.js';
 import { notifyMentionsIn } from '../notifications.js';
 import type { Ctx } from '../context.js';
 import { mintSpeakerCode, revokeSpeakerCode } from '../deviceLink.js';
+import { sessionVisibility } from '../drafts.js';
 import type { PersonRow, SessionRow } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { auditMerge, broadcastMerge, mergePeople } from '../mergePeople.js';
@@ -107,7 +108,8 @@ export function peopleRoutes(ctx: Ctx): Router {
           WHERE s.event_id = ? AND ss.person_id = ? AND s.deleted_at IS NULL
           ORDER BY s.starts_at`,
       )
-      .all(req.event.id, person.id);
+      .all(req.event.id, person.id)
+      .filter(sessionVisibility(ctx.db, req.event.id, req.identity.id, req.role));
 
     const detail: PersonDetailDto = {
       person: views(req, person.id).own,

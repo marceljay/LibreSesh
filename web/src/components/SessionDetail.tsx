@@ -245,6 +245,14 @@ export function SessionDetail({
               everyone should be here
             </span>
           )}
+          {session.draft && (
+            <span
+              title="Off the schedule: only the organisers, whoever added it and the people credited on it can see it"
+              className="rounded-full border border-dashed border-stone-400 dark:border-stone-500 px-2 py-0.5 text-xs font-semibold text-stone-600 dark:text-stone-300"
+            >
+              draft
+            </span>
+          )}
           {session.tagIds.map((id) => {
             const tag = tags.find((t) => t.id === id);
             if (!tag) return null;

@@ -3,6 +3,7 @@ import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { ContributionRow, SessionRow } from '../db.js';
+import { publishSession } from '../drafts.js';
 import { conflict, notFound } from '../errors.js';
 import { NameResolver } from '../eventIdentity.js';
 import { loadSessionDto, toContributionDto } from '../mappers.js';
@@ -70,7 +71,8 @@ export function trashRoutes(ctx: Ctx): Router {
       .prepare('UPDATE sessions SET deleted_at = NULL, updated_at = ? WHERE id = ?')
       .run(new Date().toISOString(), row.id);
 
-    const dto = loadSessionDto(ctx.db, { ...row, deleted_at: null });
+    const restored = { ...row, deleted_at: null };
+    const dto = loadSessionDto(ctx.db, restored);
     audit(ctx.db, {
       identityId: req.identity.id,
       eventId: req.event.id,
@@ -78,7 +80,8 @@ export function trashRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: row.id,
     });
-    ctx.broker.publish(req.event.slug, 'session.created', dto);
+    // A draft comes back a draft, to the people who could see it before.
+    publishSession(ctx.db, ctx.broker, req.event, 'session.created', restored, dto);
     res.json(dto);
   });
 

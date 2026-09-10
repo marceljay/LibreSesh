@@ -186,6 +186,9 @@ export function exportEvent(
       createdAt: s.created_at,
       updatedAt: s.updated_at,
       starCount: starCounts.get(s.id) ?? 0,
+      // Only when set, so a published session reads exactly as it always has.
+      // Left out, a draft would come back from its own export as published.
+      ...(s.draft === 1 ? { draft: true } : {}),
     }));
   }
 

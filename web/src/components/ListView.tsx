@@ -216,6 +216,14 @@ export function ListView({
                             </TagChip>
                           );
                         })}
+                        {session.draft && (
+                          <span
+                            title="Off the schedule: only the organisers and the people behind it can see it"
+                            className="rounded-full border border-dashed border-stone-400 dark:border-stone-500 px-2 py-0.5 text-xs font-medium text-stone-600 dark:text-stone-300"
+                          >
+                            draft
+                          </span>
+                        )}
                         {/* See Calendar: the programme is what gets marked, and
                         only when the organiser asks for it. */}
                         {showOfficialBadge && session.type === 'official' && (

@@ -218,6 +218,7 @@ erDiagram
     TEXT livestreams "default '[]'"
     INTEGER format_id FK "nullable"
     TEXT series_id "nullable"
+    INTEGER draft "default 0"
   }
   stars {
     INTEGER identity_id PK, FK
