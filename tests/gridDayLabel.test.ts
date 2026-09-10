@@ -65,8 +65,31 @@ describe('Now keeps its words at every width', () => {
     // Elastic, it absorbs whatever the row has left and gives it back when
     // there is none, so nothing else has to move or shrink to make room.
     expect(schedule).toMatch(/<SearchBox\s+fill/);
-    expect(search).toMatch(/fill \? 'min-w-\[9rem\] flex-1' : 'shrink-0'/);
-    expect(search).toMatch(/fill \? 'w-full'/);
+    expect(search).toContain("fill ? 'min-w-[7rem] flex-1 sm:flex-none' : 'shrink-0'");
+  });
+
+  it('keeps a floor small enough for the row it has to fit in', () => {
+    // A flex line breaks on each item's *hypothetical* main size, which for
+    // `flex: 1 1 0%` is the min-width. At 9rem the line went over 360px — a
+    // Galaxy S8 — so Now wrapped before anything was typed, and the field then
+    // grew into the space Now had left. The rest of the row is about 207px
+    // there; 7rem clears it, 9rem does not.
+    const floor = search.match(/min-w-\[(\d+)rem\]/);
+    expect(floor).not.toBeNull();
+    expect(Number((floor as RegExpMatchArray)[1])).toBeLessThanOrEqual(7);
+  });
+
+  it('does not reserve the clear button’s gutter until there is one', () => {
+    // The × only renders with a query in the box, so 32px of `pe-8` was dead
+    // space in the state the field spends most of its life in — and on a phone
+    // that is a third of the text it can show.
+    expect(search).toContain("${query ? 'pe-8' : 'pe-3'}");
+  });
+
+  it('leaves the desktop widths alone', () => {
+    // The row is only tight on a phone. A search field grown across half a
+    // desktop is not an improvement.
+    expect(search).toContain("'w-full sm:w-44 sm:transition-[width] sm:focus:w-72'");
   });
 
   it('keeps flex-wrap as the safety valve underneath it', () => {
