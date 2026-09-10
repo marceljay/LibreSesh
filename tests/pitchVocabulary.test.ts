@@ -78,8 +78,11 @@ describe('the word is gone from everything a person reads', () => {
 
 describe('pitch still means the board, and only the board', () => {
   it('says pitch where an idea waits to be placed', () => {
-    expect(schedule).toContain("title: 'Pitch a session'");
-    expect(schedule).toContain('Pitch a session with no room or time');
+    // Adding and pitching share one button now, so the schedule's own wording
+    // moved into it; the tour step names both ways in at once.
+    expect(read('components', 'NewSessionMenu.tsx')).toContain('Pitch a session');
+    expect(schedule).toContain("title: 'Add or pitch a session'");
+    expect(schedule).toContain('pitch an idea with neither');
     expect(read('components', 'ProposalModal.tsx')).toContain("'Pitch a session'");
   });
 });

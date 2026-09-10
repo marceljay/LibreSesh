@@ -100,21 +100,29 @@ describe('the board’s way in', () => {
     readFileSync(join(__dirname, '..', 'web', 'src', ...parts), 'utf8');
   const schedule = read('pages', 'SchedulePage.tsx');
   const board = read('components', 'ProposalBoard.tsx');
+  const menu = read('components', 'NewSessionMenu.tsx');
 
   it('says what you can do there, not what the place is called', () => {
-    expect(schedule).toMatch(/<span className="hidden sm:inline">Pitch a session<\/span>/);
-    expect(schedule).toMatch(/aria-label="Pitch a session"/);
-    expect(schedule).not.toMatch(/>\s*Pitches\s*$/m);
+    // The way in merged with Add session, so the wording lives in that control
+    // rather than on the page.
+    expect(menu).toMatch(/<span className="hidden sm:inline">Pitch a session<\/span>/);
+    expect(menu).toMatch(/aria-label="Pitch a session"/);
+    expect(menu).not.toMatch(/>\s*Pitches\s*$/m);
   });
 
   it('keeps the words on the button when only the icon shows', () => {
     // Below `sm` the label is hidden and the bulb carries it, so the accessible
     // name has to live on the link itself.
-    expect(schedule).toMatch(/<PitchIcon className="h-3\.5 w-3\.5" \/>/);
+    expect(menu).toMatch(/<PitchIcon className="h-3\.5 w-3\.5" \/>/);
   });
 
   it('hides the button and the page when the board is off', () => {
-    expect(schedule).toMatch(/\{event\.pitchesEnabled && \(/);
+    // The link is inside the merged control now, so the switch reaches it as a
+    // null href rather than by not rendering a sibling.
+    expect(schedule).toMatch(
+      /pitchHref=\{event\.pitchesEnabled \? `\/e\/\$\{slug\}\/proposals` : null\}/,
+    );
+    expect(menu).toContain('if (pitchHref === null)');
     expect(board).toMatch(/if \(!event\.pitchesEnabled\) \{/);
   });
 });

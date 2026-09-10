@@ -32,18 +32,13 @@ import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
 import { DayPicker } from '../components/DayPicker';
+import { NewSessionMenu } from '../components/NewSessionMenu';
 import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
 import { Login } from '../components/Login';
-import {
-  CalendarIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  PitchIcon,
-  SettingsIcon,
-} from '../components/icons';
+import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, SettingsIcon } from '../components/icons';
 import { ListView } from '../components/ListView';
 import { RAIL_FADE_CARD, Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
@@ -1067,11 +1062,19 @@ export function SchedulePage() {
       title: 'Rooms or tracks',
       body: 'This event has tracks, so the grid can lay its columns out either way. Reading by track, each block says which room it is in.',
     },
-    {
-      target: 'pitches',
-      title: 'Pitch a session',
-      body: 'Pitch a session with no room or time, and say which pitches you would turn up to. Organisers place the popular ones on the grid.',
-    },
+    /* One step, because it is one button now — and conditional, because it is
+       not always there: an event can turn the board off, and not everyone may
+       book a room. Spread in place rather than pushed at the end, so the tour
+       does not walk back up the page to reach it. */
+    ...(canWrite || event.pitchesEnabled
+      ? [
+          {
+            target: 'add',
+            title: 'Add or pitch a session',
+            body: 'Both live here. Add one with a room and a time to put it straight on the grid, or pitch an idea with neither and let people say they would turn up — organisers place the popular ones.',
+          },
+        ]
+      : []),
     {
       target: 'now',
       title: 'Jump to now',
@@ -1093,13 +1096,6 @@ export function SchedulePage() {
       target: 'arrange',
       title: 'Move things around',
       body: 'Turn on Arrange, then drag a block to change its time or room, or drag its bottom edge to change its length. It snaps to 5 minutes and only moves what you may edit.',
-    });
-  }
-  if (canWrite) {
-    tourSteps.push({
-      target: 'add',
-      title: 'Add a session',
-      body: 'Organisers add official sessions anywhere; everyone else adds non-official ones in the rooms that anyone may book.',
     });
   }
   if (role === 'admin') {
@@ -1141,27 +1137,6 @@ export function SchedulePage() {
   const foldInner = `${folded || foldMoving ? 'overflow-hidden' : ''}${
     folded && !foldMoving ? ' invisible' : ''
   }`;
-
-  /* Add is the one action an attendee shares with an organiser, so it renders
-     in one of two places. For an organiser it ends the Manage / Arrange / Add
-     block. For everybody else that block does not exist — Manage and Arrange
-     are both admin-only — and what was left was a `basis-full` row holding a
-     single right-aligned `+` under the Now button. It goes beside Pitch a
-     session instead, which is the other half of the same choice: put the
-     session on the grid, or put the idea on the board. */
-  const addButton = canWrite ? (
-    <button
-      type="button"
-      data-tour="add"
-      onClick={() => setEditing({})}
-      aria-label="Add session"
-      title="Add session"
-      className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
-    >
-      <span aria-hidden="true">+</span>
-      <span className="hidden sm:inline">Add session</span>
-    </button>
-  ) : null;
 
   return (
     /* An app shell, not a document: the viewport holds the header and the
@@ -1373,37 +1348,26 @@ export function SchedulePage() {
                     </div>
                   )}
 
-                  {/* Everyone needs the board: attendees pitch there, viewers can
-                    register interest. It sits with the other ways of looking at the
-                    programme, not up with the account chrome.
+                  {/* Both ways of putting a session into the world, behind one
+                    button. They were a row apart, then side by side, and they
+                    are the same question asked twice — do you have a room and
+                    a time, or only an idea? Behind one button the two sit
+                    together with room for a sentence each, which is where that
+                    difference can be explained rather than guessed at from two
+                    labels.
 
-                    "Pitches" named the place; "Pitch a session" says what you
-                    can do there, which is what somebody who has never seen an
-                    unconference needs to read. It costs two words, so below
-                    `sm` — where this row already competes with Manage, Arrange
-                    and Add — the bulb carries it alone, with the words still on
-                    the button as its accessible name.
-
-                    Gone entirely on an event that has turned the board off: the
-                    pitches themselves are untouched, but there is nothing here
-                    to walk into. */}
-                  {event.pitchesEnabled && (
-                    <Link
-                      data-tour="pitches"
-                      to={`/e/${slug}/proposals`}
-                      aria-label="Pitch a session"
-                      title="Pitch a session"
-                      className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                    >
-                      <PitchIcon className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Pitch a session</span>
-                      {openPitchCount > 0 && (
-                        <span className="text-stone-400 dark:text-stone-500">{openPitchCount}</span>
-                      )}
-                    </Link>
-                  )}
-
-                  {role !== 'admin' && addButton}
+                    It sits with the other ways of looking at the programme,
+                    not up with the account chrome. The board disappears from
+                    it on an event that has turned pitches off — the pitches
+                    themselves are untouched, but there is nothing to walk
+                    into — and the menu becomes a plain button when only one of
+                    the two is open to this viewer. */}
+                  <NewSessionMenu
+                    canAdd={canWrite}
+                    pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+                    pitchCount={openPitchCount}
+                    onAdd={() => setEditing({})}
+                  />
                 </div>
               </div>
             </div>
@@ -1522,7 +1486,6 @@ export function SchedulePage() {
                         </span>
                       </button>
                     )}
-                    {addButton}
                   </div>
                 )}
               </div>
@@ -1533,13 +1496,27 @@ export function SchedulePage() {
 
       {fullPage && selected ? (
         <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6">
-          <Link
-            to={sheetUrl}
-            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-          >
-            <span aria-hidden="true">←</span>
-            Back to the schedule
-          </Link>
+          {/* This page drops the header's rows, so until now the only way out
+              of it was backwards. Reading somebody else's session is one of
+              the likelier moments to want one of your own — or to want to
+              pitch the thing it made you think of — and the merged control is
+              small enough to ride along at the end of the way back rather
+              than earning a row of its own. */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Link
+              to={sheetUrl}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+            >
+              <span aria-hidden="true">←</span>
+              Back to the schedule
+            </Link>
+            <NewSessionMenu
+              canAdd={canWrite}
+              pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+              pitchCount={openPitchCount}
+              onAdd={() => setEditing({})}
+            />
+          </div>
           {/* `collapseAt={null}`: the panel collapses long discussions to keep
               the composer reachable, and this page is where you come to read
               the rest, so collapsing here would defeat the trip. */}
