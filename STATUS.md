@@ -305,6 +305,22 @@ them.
 13. **R12 · The login page — highest stakes, a mistake locks people out.** [LIB-169] *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
+    **Came back bad, and the page was rebuilt on `feat/gate-two-step`**
+    (2026-09-10): the first refusal could never be seen. The name box sat below
+    the button and behind a rule, the button was disabled until it held
+    something, and a browser's implicit submission clicks that same button — so
+    Enter from the password box did nothing either, and the sentence was a
+    string no press reached. The page **asks for the password first, and for a
+    username only once that password is right**. It needed no new endpoint:
+    `POST /auth` checks the password before it claims a name, so a password
+    with no name answers `name_required` when right and 403 when wrong,
+    granting nothing either way. Both boxes stay in one form (the second
+    hidden, not absent) so the password manager still sees a login to save —
+    R28's one ticked box. The first card is only ever the password: a device
+    that already holds a name here is entered under it rather than shown a box
+    for a name it already chose. The **invite card keeps its button disabled**
+    until it has a name, since there the name box is the field directly above
+    it. All three boxes are machine-checked in `tests/loginEntry.test.tsx`.
 14. **R13 · Claim & queue.** [LIB-170] The "This is me" button on an unclaimed profile, and
     the approval queue above the People list. *Pass:* asking to be a profile
     shows in the queue; approving hands it over. Also: the next-day button at the
@@ -975,25 +991,18 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   whole suite stayed green — is what the gap costs. A React error boundary
   would have contained it; there is still none.
 
-- **Brute-forcing an event password costs an attacker one cookie.** [LIB-129] The login page
-  spends a token from `LIMITS.auth` (5 attempts / 15 min) on two buckets, the
-  identity and the IP, refunding both when a password is right
-  (`eventAuth.ts:62-86`). The identity half is keyed on `req.identity.id`,
-  which is whatever the caller's cookie says: dropping the cookie mints a new
-  identity and a full bucket, so that half stops an honest typo and nothing
-  else. The IP half is the only real limit, and it is `req.ip` — the socket
-  address unless `TRUST_PROXY=1` (`config.ts:128`, `app.ts:48`). Behind a proxy
-  with that unset, every attendee shares the proxy's bucket, which is a lockout
-  for the whole venue at 5 wrong guesses; with it set, the app must not also be
-  reachable off-proxy, or `X-Forwarded-For` is the attacker's to write.
+- **`X-Forwarded-For` is unguarded, and the login limits now depend on it.**
+  [LIB-129] With `TRUST_PROXY=1` the app reads the address from the header, so
+  an instance also reachable off-proxy lets a caller write their own address.
+  That was a limit-evasion problem before D3 phase 2 and is a denial-of-service
+  one after it: a forged address escapes the per-address wait, and forging ten
+  distinct ones trips the per-event closure that stops an event admitting
+  anybody. `SECURITY.md:148` and the `deploy.md` env table say to set
+  `TRUST_PROXY=1` behind a proxy; neither says the app must then be
+  unreachable except through it. Documentation first, since that is the actual
+  control; a hop count or a trusted-proxy list is the code answer if a
+  deployment ever needs one.
 
-  What is missing is a counter the caller cannot reset: failures per _event_,
-  surviving a new cookie, growing the wait as they pile up. `auth_failed`
-  already lands in the audit log on every miss (`eventAuth.ts:76`), so the
-  count exists — nothing reads it, and no organiser is ever told that someone
-  has been guessing at their event all afternoon. Raising the capacity is not
-  the fix and would only hurt the typo case; bcrypt already makes each guess
-  cost something, which is why this is a real backlog item and not a fire.
 
 - **27 React Compiler findings, surfaced by eslint-plugin-react-hooks 7.** [LIB-130]
   The flat-config migration brought fourteen new rules with it. Eleven pass and
