@@ -1266,6 +1266,25 @@ w-48`, the other `w-full` — so they are exempted by name in
 
 ## Low Priority / Ideas
 
+- **Decision · Measure the header row instead of guessing at it.** [LIB-194]
+  Deferred on 2026-09-10, with the reasoning worth keeping. CSS cannot ask
+  whether hiding something would prevent a wrap — no such query exists, and
+  `@container` reports the container's size, not whether the content fits. We
+  hit it shrinking the Now button to a bare dot while the search field had
+  focus: the rule was unconditional, so on the narrowest screens the row
+  wrapped anyway and the label had been given up for nothing. Fixed by making
+  the field elastic instead, with `flex-wrap` left on as the safety valve, so
+  nothing is blocked — file it for the row elasticity will not save. The
+  options all measure and react rather than predict: a local hook (wrapped
+  children have a different `offsetTop`, and `Rail.tsx` already observes a box
+  and its children for the neighbouring problem), Blueprint's `OverflowList`,
+  `rc-overflow`, or Every Layout's CSS-only `Switcher`. The bundle decides it —
+  a third UI dependency for one row, against [LIB-140] already asking what
+  Floating UI costs the first paint — so the local hook is almost certainly the
+  answer, and this exists to make that a decision rather than a default. Worth
+  deciding too: whether reacting to a wrap is right at all, since every control
+  that hides itself to save space is one somebody then cannot find.
+
 - **React 18 → 19, and react-router 6 → 7.** Deferred through the whole Base UI
   migration and never needed: Base UI supports React 18, so nothing was blocked
   on it. It stays worth doing eventually — 19 is where the ecosystem is heading
