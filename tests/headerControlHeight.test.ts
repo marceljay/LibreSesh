@@ -30,6 +30,15 @@ const filter = read('components', 'FilterMenu.tsx');
 const menu = read('components', 'NewSessionMenu.tsx');
 
 describe('the header row is one height', () => {
+  it('states it on the fold toggle, whose content is icons rather than text', () => {
+    // Measured at 32px in Chromium while every bordered neighbour was 34.
+    // `px-2.5 py-2` is 34px when the line box is text — but this button's
+    // children are two 14px icons, so it came out 14 + 16 + 2 instead of
+    // 16 + 16 + 2. Predicting a height from padding is wrong the moment the
+    // content stops being text, which is the whole argument for stating it.
+    expect(schedule).toMatch(/h-\[34px\][^"]*rounded-lg border border-stone-300 bg-white px-2\.5/);
+  });
+
   it('states it on the filled buttons, with a border to square the box', () => {
     // Now, and the + Session button. Filled, so without this they are the two
     // pixels of border short of everything beside them.
