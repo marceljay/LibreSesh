@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
-import { fmtMin, place, speakerLine } from '../lib/format';
+import { dayFullLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { laneLayout } from '../lib/laneLayout';
 import { InfoIcon } from './icons';
 import { StarTally } from './StarTally';
@@ -609,6 +609,26 @@ export function Calendar({
                 {fmtMin(dayStartMin + i * 60)}
               </div>
             ))}
+            {/* The day, on the first hour's line, in the empty band to the
+                right of it. `dayStartMin` is the event's own opening hour
+                rather than the first session's, so that band is nearly always
+                clear — and where a session does start on the stroke of it,
+                the block paints over this rather than the other way round.
+
+                It is here because the day picker folds away the moment you
+                scroll into the day, and then nothing on screen says which day
+                the grid is. A screenshot of it said nothing either.
+
+                Escapes the gutter deliberately: the gutter is 48px, and the
+                hour labels are right-aligned inside it, so there is nothing
+                to the right of them until the first block. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -translate-y-1/2 whitespace-nowrap ps-2 text-xs font-medium text-stone-400 dark:text-stone-500"
+              style={{ top: 0, insetInlineStart: GUTTER_W }}
+            >
+              {dayFullLabel(day)}
+            </div>
             {/* The time on the now line, in the gutter with the hours rather
                 than on the line's first inch, where it lay over the start of
                 whichever block was on in the first column (reviewed
