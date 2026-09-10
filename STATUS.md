@@ -316,7 +316,13 @@ them.
 16. **R15 · Speaker edits their own session** [LIB-172] (the reported flow). As an attendee
     credited on an official session. *Pass:* Edit appears; Room / Day / Start /
     Duration are disabled under the grey notice; Delete is absent; saving a
-    changed description goes through.
+    changed description goes through. **Came back bad and is fixed on
+    `fix/speaker-edits-own`** (2026-09-09): the form filtered rooms to the ones
+    open for booking on an edit as well as a placement, so a speaker on an
+    organiser's stage got an empty Room box, the "nowhere for you to add a
+    session" notice and a dead Save — the description could not be saved at
+    all. All four boxes are machine-checked now in
+    `tests/speakerEdit.test.tsx`; nothing here needs your eyes.
 17. **R17 · Official badge & Formats.** [LIB-173] With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
