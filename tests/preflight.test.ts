@@ -17,7 +17,8 @@ afterEach(() => {
 const prod = (over: Record<string, string | undefined> = {}) => ({
   NODE_ENV: 'production',
   COOKIE_SECRET: 'a-secret',
-  INSTANCE_ADMIN_PASSWORD: 'a-password',
+  // Long enough to clear the D3 §2 check; the length rules are tested below.
+  INSTANCE_ADMIN_PASSWORD: 'kZ2p-instance-key-long-enough',
   ALLOW_EPHEMERAL_DB: '1',
   ...over,
 });
@@ -30,6 +31,27 @@ describe('deployment preflight', () => {
 
   it('passes a correctly configured instance', () => {
     expect(preflight(prod())).toEqual([]);
+  });
+
+  // D3 §2: the one password on the box nobody chose and no rotation notice
+  // covers. Every instance shares it and it opens event creation, import and
+  // the whole-database backup.
+  it('refuses to boot on an instance password under 16 characters', () => {
+    const problems = preflight(prod({ INSTANCE_ADMIN_PASSWORD: 'short-one-123' }));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].severity).toBe('fatal');
+    expect(problems[0].problem).toContain('shorter than 16');
+  });
+
+  it('warns, but boots, between 16 and 24 characters', () => {
+    const problems = preflight(prod({ INSTANCE_ADMIN_PASSWORD: 'sixteen-chars-ok!' }));
+    expect(problems).toHaveLength(1);
+    expect(problems[0].severity).toBe('warning');
+    expect(problems[0].problem).toContain('shorter than 24');
+  });
+
+  it('says nothing about a long instance password', () => {
+    expect(preflight(prod({ INSTANCE_ADMIN_PASSWORD: 'x'.repeat(24) }))).toEqual([]);
   });
 
   // The whole point: one round of fixes, not one problem per redeploy.

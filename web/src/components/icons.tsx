@@ -229,7 +229,7 @@ export function ColumnsIcon({ className }: { className?: string }) {
 
 /** A laptop with a phone beside it — the same person on another device.
  *
- *  Marks device linking wherever it is offered: the door on the gate and the
+ *  Marks device linking wherever it is offered: the door on the login page and the
  *  phrase that opens it. Two devices rather than a chain link, because the
  *  chain reads as "hyperlink" and the thing being linked is hardware. */
 export function DevicesIcon({ className }: { className?: string }) {

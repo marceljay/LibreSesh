@@ -5,7 +5,7 @@ import type { Db, PersonRow } from './db.js';
  * `self-as-speaker-and-merge-ux`, Step 0): one live `people` row per
  * `(event, identity)`. A row without an identity is someone an organiser
  * expects who has not arrived. These helpers keep that invariant at the two
- * places it is made — the gate and the profile editor.
+ * places it is made — the login page and the profile editor.
  */
 
 /** The live profile this identity holds in this event, if any. */
@@ -51,7 +51,7 @@ export interface Namesake {
 /**
  * An unclaimed profile whose full name matches `name` case-insensitively —
  * the "Ada Lovelace" an organiser typed onto her talk before she arrived.
- * The gate offers it rather than adopting it silently: the same name could
+ * The login page offers it rather than adopting it silently: the same name could
  * be a different Ada.
  */
 export function findUnclaimedNamesake(db: Db, eventId: number, name: string): Namesake | undefined {
@@ -82,7 +82,7 @@ export function findUnclaimedNamesake(db: Db, eventId: number, name: string): Na
  *
  * Only entering does this. Archiving does not sign anybody out, so somebody
  * still holding a session from before stays filed until they next come in
- * through the gate, which is the moment that means "I am here again".
+ * through the login page, which is the moment that means "I am here again".
  *
  * Returns the row when it actually changed, so the caller can tell a
  * restoration from an ordinary entry and only announce the former.

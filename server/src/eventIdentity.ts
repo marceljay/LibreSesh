@@ -54,7 +54,7 @@ export function claimEventName(db: Db, eventId: number, identityId: number, desi
  * that never claimed a name here — an event created before migration 009 can
  * hold contributions from someone who has since been removed from `roles` —
  * and to the UID when there is no seed either, since a fresh identity has no
- * name until it types one at a gate.
+ * name until it types one at the login page.
  */
 export class NameResolver {
   private readonly cache = new Map<number, string>();

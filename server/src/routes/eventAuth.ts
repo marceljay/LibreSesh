@@ -14,11 +14,11 @@ import {
   restoreOnEntry,
 } from '../people.js';
 import { LIMITS, keysFor, limit } from '../ratelimit.js';
-import type { GateDto } from '../shared/types.js';
+import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
 
 /**
- * Password gate for an event. Mounted before the viewer requirement, since
+ * Password login page for an event. Mounted before the viewer requirement, since
  * this is how a visitor earns a role in the first place.
  */
 export function eventAuthRoutes(ctx: Ctx): Router {
@@ -28,7 +28,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
    * Usernames are unique per event (migration 009), so entry is where one is
    * claimed, and — since everyone who enters is a person (migration 010) —
    * where the `people` row is made. Runs before the role is granted: a clash
-   * must leave you outside the event, back at the gate with a name to change,
+   * must leave you outside the event, back at the login page with a name to change,
    * not inside it nameless.
    *
    * A first entry must bring a name; there is no seed to fall back on any
@@ -37,7 +37,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
    * When an organiser has typed this exact name onto a session before the
    * person arrived, there is an unclaimed profile waiting. It is not adopted
    * silently — the same name can be a different person — but offered: the
-   * gate answers `profile_exists`, and re-entering with `claimProfile` takes
+   * login page answers `profile_exists`, and re-entering with `claimProfile` takes
    * it. A profile with a speaker code is already claimed and never gets here.
    */
   /**
@@ -47,7 +47,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
    * than finding out on their next reload.
    *
    * The broadcast carries the public view. Nobody has a role here yet — this
-   * runs before the gate grants one — and the organiser-only facts are not
+   * runs before the login page grants one — and the organiser-only facts are not
    * this identity's to hand out anyway.
    */
   const restore = (req: Request, personId: number): void => {
@@ -96,9 +96,9 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     } else ensureOwnProfile(ctx.db, req.event.id, req.identity.id, name);
   };
 
-  /** What this device already is here, for the gate to prefill. */
-  router.get('/gate', limit(ctx.limiter, 'read'), (req, res) => {
-    const dto: GateDto = {
+  /** What this device already is here, for the login page to prefill. */
+  router.get('/login', limit(ctx.limiter, 'read'), (req, res) => {
+    const dto: LoginDto = {
       heldName: eventDisplayName(ctx.db, req.event.id, req.identity.id) ?? null,
     };
     res.json(dto);
@@ -114,7 +114,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
   };
 
   router.post('/auth', (req, res) => {
-    // On a demo *event* the gate is a role picker, not a password prompt.
+    // On a demo *event* the login page is a role picker, not a password prompt.
     // There is no secret to brute-force here, so no rate limiting either.
     // Scoped to the seeded fixtures: a real event on the same instance keeps
     // its passwords, which is the whole reason this is not `config.demoMode`.
@@ -134,7 +134,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     }
 
     // Hand-rolled instead of the `limit` middleware so a correct password can
-    // refund its token — switching roles shouldn't burn the lockout budget.
+    // refund its token — switching roles shouldn't burn the lockout allowance.
     const keys = keysFor('auth', req);
     let retryAfter = 0;
     for (const key of keys) {

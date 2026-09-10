@@ -43,7 +43,7 @@ describe('the root is a landing page, not the event list', () => {
 describe('the logo goes home, and the list keeps its own way back', () => {
   it('sends every logo to `/`, under one label', () => {
     // Three of them: the event bar (one row, every page of an event), the
-    // list itself, and the gate (2026-09-07, the one page that had none).
+    // list itself, and the login page (2026-09-07, the one page that had none).
     // They used to mean "all events"; they mean "home" now, and the label has
     // to move with the target or it describes the old destination.
     const logos = tsxFiles(WEB_SRC).flatMap((file) => {
@@ -66,7 +66,7 @@ describe('the logo goes home, and the list keeps its own way back', () => {
   it('keeps the "back to the list" links pointing at the list', () => {
     // These are not the logo: they are the way back to where you came from,
     // and they were correct before the logo moved. Seven of them, counting
-    // the landing page's own call to action and the gate's "All events".
+    // the landing page's own call to action and the login page's "All events".
     const backLinks = tsxFiles(WEB_SRC).flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(/to="\/events"/g)].map(() => file),
     );
@@ -140,7 +140,7 @@ describe('the shared button class keeps the shape a <button> needs', () => {
   it('leaves `inline-flex` off the primary class', () => {
     // A <button> centres its label by the UA's `text-align: center`; make it a
     // flex container and the label becomes a flex item at `flex-start`, which
-    // silently left-aligns all eight full-width PrimaryButtons — the gate's
+    // silently left-aligns all eight full-width PrimaryButtons — the login page's
     // "Enter schedule" among them. This used to be pinned through the landing
     // page, which was the only <a> borrowing the class; the landing page has
     // its own, larger buttons now, so the rule is pinned where it lives.

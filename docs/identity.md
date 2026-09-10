@@ -14,7 +14,7 @@ at another.
 
 Opening the event on a second device: the menu behind your name mints a
 short phrase; on the other device choose **I'm already here on another
-device** at the gate and type it, and that device becomes you — same name,
+device** at the login page and type it, and that device becomes you — same name,
 role and starred agenda. The phrase works once and dies after ten minutes.
 
 ## Two kinds of password
@@ -23,7 +23,7 @@ One password belongs to the **server**. Three belong to each **event**.
 
 - The **instance password** (`INSTANCE_ADMIN_PASSWORD`) is set by whoever
   deploys the instance and is shared by everyone allowed to create events on
-  it. It gates exactly two things: creating an event, and cloning one you
+  it. It login pages exactly two things: creating an event, and cloning one you
   are not already an admin of. It grants nothing *inside* any event —
   holding it does not make you an organiser of anything.
 - The **event passwords** — viewer, attendee and organiser — are chosen per
@@ -44,7 +44,7 @@ Switching role means signing out and entering a different event password.
 The fourth role, **speaker**, has no shared password. An organiser mints a
 personal four-word phrase from a speaker's profile page, and gets it three
 ways at once: the words, a link, and a QR of that link. Typing the words
-under **I have a speaker code** at the gate, or opening the link, signs that
+under **I have a speaker code** at the login page, or opening the link, signs that
 device in as the speaker — on as many devices as they like, until the phrase
 is revoked. The link carries the code in the part of the address a browser
 never sends to a server, and it is taken out of the address bar as the page

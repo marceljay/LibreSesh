@@ -203,7 +203,7 @@ describe('blank passwords are filled in', () => {
       expect(Object.values(generated)).not.toContain('viewer2026');
       expect(Object.values(generated)).not.toContain('user2026');
       expect(Object.values(generated)).not.toContain('admin2026');
-      // And that event's gate is a password prompt, not a role picker.
+      // And that event's login page is a password prompt, not a role picker.
       const visitor = agentFor(harness);
       await visitor.get('/api/me').expect(200);
       await visitor

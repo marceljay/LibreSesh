@@ -11,7 +11,7 @@ import type { InboxDto } from '../shared/types.js';
 import { muteSchema, parse } from '../validation.js';
 
 /**
- * One person's inbox for one event. No role check beyond the event gate: rows
+ * One person's inbox for one event. No role check beyond the event login page: rows
  * are selected by `identity_id`, so the query cannot return anyone else's, and
  * a viewer can be mentioned as easily as an organiser.
  */

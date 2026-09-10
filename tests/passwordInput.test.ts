@@ -3,12 +3,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The eye beside the event password at the gate.
+ * The eye beside the event password at the source.
  *
  * There is no DOM in this suite (`environment: node`), so what is pinned is
  * the wiring, as text: that the primitive flips the input's `type` and
  * nothing else, that the eye cannot submit the form it sits in, and that the
- * gate's password field goes through it rather than a bare `type="password"`.
+ * login page's password field goes through it rather than a bare `type="password"`.
  */
 const WEB_SRC = join(import.meta.dirname, '..', 'web', 'src');
 const read = (...parts: string[]) => readFileSync(join(WEB_SRC, ...parts), 'utf8');
@@ -42,13 +42,13 @@ describe('PasswordInput', () => {
   });
 });
 
-describe('the gate uses it', () => {
-  const gate = read('components', 'Gate.tsx');
+describe('the login page uses it', () => {
+  const source = read('components', 'Login.tsx');
 
   it('for the event password, with the manager-facing attributes intact', () => {
-    expect(gate).toMatch(
+    expect(source).toMatch(
       /<PasswordInput\s+name="password"\s+autoComplete="current-password"\s+enterKeyHint="go"/,
     );
-    expect(gate).not.toContain('type="password"');
+    expect(source).not.toContain('type="password"');
   });
 });

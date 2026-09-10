@@ -9,7 +9,7 @@ import { dayLabel, fmtMin, nowMinuteOfDay, place, speakerLine, todayInZone } fro
 import { useEventData } from '../lib/useEventData';
 import { useMe } from '../lib/useMe';
 import { timeClashPairs } from '../components/Calendar';
-import { Gate } from '../components/Gate';
+import { Login } from '../components/Login';
 import { EventBar } from '../components/EventBar';
 import { EmptyState, Spinner, useToast } from '../components/ui';
 
@@ -105,8 +105,8 @@ export function AgendaPage() {
   );
 
   if (data.status === 'loading') return <Spinner label="Loading your agenda…" />;
-  if (data.status === 'gate') {
-    return <Gate slug={slug} me={me} onEntered={() => void data.reload()} />;
+  if (data.status === 'login page') {
+    return <Login slug={slug} me={me} onEntered={() => void data.reload()} />;
   }
   if (data.status === 'error' || !bundle || !event) {
     return (

@@ -6,8 +6,8 @@ thresholds. Companion plan:
 [`plans/2026-09-05-D3-security-hardening.md`](../plans/2026-09-05-D3-security-hardening.md).
 Threat model and the decisions already taken: SECURITY.md.
 
-**What is in D3, in one list:** the instance key behind the `auth` budget
-(§2), a per-IP mint budget (§3), per-IP backoff and the per-event door closure
+**What is in D3, in one list:** the instance key behind the `auth` rate limit
+(§2), a per-IP mint rate limit (§3), per-IP backoff and the per-event door closure
 with its organiser notice (§1), **lockdown** (§4), and hashing
 `identities.token` and `ics_token` at rest (§5). Password strength is *not*
 in it — see §1d.
@@ -20,7 +20,7 @@ the bleeding, and a way to notice the bleeding at all.
 
 Five parts, independent of each other:
 
-1. [Brute force at the gate](#1-brute-force-at-the-gate)
+1. [Brute force at the login page](#1-brute-force-at-the-login page)
 2. [Brute force against the instance password](#2-the-instance-password-is-guessable-at-write-speed)
 3. [Free identities](#3-a-cookieless-request-mints-a-row)
 4. [Lockdown](#4-lockdown)
@@ -30,7 +30,7 @@ Out of scope, and why, at the end.
 
 ---
 
-## 1. Brute force at the gate
+## 1. Brute force at the login page
 
 ### Today
 
@@ -50,7 +50,7 @@ margin of centuries.
 
 - **The identity bucket is free.** A request with no cookie is minted a fresh
   identity (§3), so an attacker simply never sends one. Only the IP bucket has
-  ever done any work at the gate.
+  ever done any work at the login page.
 - **Nothing counts attempts per *target*.** 100 addresses — a cheap proxy list
   — get 48,000 guesses a day against one event's password, and nothing adds
   them up or notices. Against a generated phrase that is still nothing. Against
@@ -81,9 +81,9 @@ attacker cannot spend one event's patience on another.
 **b. Per-target closure.** Failures against *E* from *all* sources are counted
 in a sliding hour. Past a threshold — **60 an hour** is the proposal; a room of
 300 entering at 09:00 produces successes, which do not count, and a handful of
-typos — the gate for *E* **closes to new entrants for 15 minutes**: every
-attempt gets `429 gate_closed` with `Retry-After`, no password is checked (so
-no bcrypt is spent), and one audit row `gate_closed` is written with the count.
+typos — the login page for *E* **closes to new entrants for 15 minutes**: every
+attempt gets `429 login_closed` with `Retry-After`, no password is checked (so
+no bcrypt is spent), and one audit row `login_closed` is written with the count.
 Everyone already holding a role is unaffected — the schedule stays up; only
 the door shuts. This is what stops the 100-address attacker, and its cost is
 bounded: the worst a hostile can do is keep the door shut for a quarter hour
@@ -140,17 +140,17 @@ and are out of scope (below). Against generated phrases none of it is needed.
 ### Today
 
 Four routes check `X-Instance-Key`. `POST /backup` sits behind the `auth`
-budget (5 per 15 min). The other three — `POST /events`, `POST /events/import`,
+rate limit (5 per 15 min). The other three — `POST /events`, `POST /events/import`,
 `POST /events/:slug/clone` — sit behind **`write`: 30 a minute per IP**. That
 is 43,000 guesses a day per address at the highest-value secret on the box,
-which gates every event's creation and the encrypted backup of everything. It
+which login pages every event's creation and the encrypted backup of everything. It
 is compared in constant time, which was never the point.
 
 ### Design
 
 One `requireInstanceKey(ctx)` middleware, used by all four routes, that
-consumes from the `auth` budget on both keys, checks the header, **refunds on
-success** (the way the gate does, so an organiser making three events in a row
+consumes from the `auth` rate limit on both keys, checks the header, **refunds on
+success** (the way the login page does, so an organiser making three events in a row
 is not locked out), and on failure writes an audit row `instance_key_failed`
 with `eventId: null` (an instance-level row — see the STATUS entry about those
 having no screen; this makes it more urgent). The per-target closure of §1
@@ -169,12 +169,12 @@ is no reason for it to be short.
 `identityMiddleware` inserts an `identities` row for every request that
 arrives without a valid `cid` — before any rate limit runs, since the limits
 are keyed on the identity it is about to create. One `curl` loop is an
-unbounded `INSERT`, and it is also why the identity bucket at the gate is
+unbounded `INSERT`, and it is also why the identity bucket at the login page is
 decorative.
 
 ### Design
 
-A per-IP budget on **minting**, not on requests: `mint: { capacity: 300,
+A per-IP rate limit on **minting**, not on requests: `mint: { capacity: 300,
 windowMs: 15 * 60_000 }`. Over it, the request proceeds anonymous — `req.identity`
 is a sentinel with `id: 0` that holds no roles and cannot be granted one — and
 any route that needs a real identity answers `429 too_many_identities`. Reads
@@ -221,7 +221,7 @@ first).
   `X-Instance-Key` (via §2's middleware) — that is the only way out.
 - `pruneAudit` skips the event; Empty Trash is refused; both so evidence
   survives the incident.
-- Reads, calendar feeds, SSE, the gate (entering to *read*) and device linking
+- Reads, calendar feeds, SSE, the login page (entering to *read*) and device linking
   all keep working. Stars are frozen too — "read-only means read-only" is the
   rule a banner can state.
 - Entering and leaving lockdown are audit rows (`lockdown`, `lockdown_lifted`)

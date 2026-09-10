@@ -20,14 +20,14 @@ import {
   linkClass,
 } from './ui';
 
-export interface GateProps {
+export interface LoginProps {
   slug: string;
   eventName?: string;
   me: Me | null;
   onEntered: () => void;
   /**
    * The page was opened with a speaker link whose code did not redeem. The
-   * gate then opens on the speaker-code form with that said, rather than on a
+   * login page then opens on the speaker-code form with that said, rather than on a
    * password box the speaker was never given.
    */
   speakerLinkFailed?: boolean;
@@ -40,8 +40,8 @@ const SPEAKER_CODE_FAILED =
   'That speaker code didn’t match — it may have been revoked or replaced. Ask your organiser for a new one.';
 const DEVICE_PHRASE_FAILED = 'That phrase didn’t match — it may have expired or been revoked.';
 
-/** Full-screen password gate — an event's schedule is never public (SPEC §3.2). */
-export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false }: GateProps) {
+/** Full-screen password login page — an event's schedule is never public (SPEC §3.2). */
+export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = false }: LoginProps) {
   const { refresh } = useMe();
   /**
    * An invite QR puts the event password in the URL fragment. `takeInvite` has
@@ -55,13 +55,13 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
    * The username is typed here, every first time: nothing is generated for
    * you and nothing carries over from another event. A device that already
    * holds a name in *this* event (it signed out, or its role changed) gets it
-   * back from `/gate`, so re-entering is one tap.
+   * back from `/login`, so re-entering is one tap.
    */
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(speakerLinkFailed ? SPEAKER_CODE_FAILED : null);
   const [busy, setBusy] = useState(false);
   /**
-   * The gate's "is that you?": an organiser typed this exact name onto a
+   * The login page's "is that you?": an organiser typed this exact name onto a
    * session before its owner arrived, and that unclaimed profile is on
    * offer. Adopting it silently would hand a namesake someone else's talks,
    * so it is a question with two answers, and the entry is retried with one.
@@ -71,7 +71,7 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
   useEffect(() => {
     let live = true;
     api
-      .gate(slug)
+      .login(slug)
       .then((g) => {
         if (live && g.heldName) setName((current) => current || g.heldName || '');
       })
@@ -106,14 +106,14 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
    * them, so "already called that" is a dead end for anyone who lost their
    * cookie — clearing site data, a second browser, or a server that restarted
    * with a new signing key. They are the same person and they cannot say so;
-   * the server is right to refuse, and the gate should still let them in.
+   * the server is right to refuse, and the login page should still let them in.
    */
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [pendingRole, setPendingRole] = useState<Role | null>(null);
   /**
    * The phrase paths: a speaker code an organiser sent, or the device phrase
    * your other device shows. Both redeem through `/me/link` and both make
-   * this browser *become* the identity the phrase names; the gate only says
+   * this browser *become* the identity the phrase names; the login page only says
    * different things, because a speaker holding a four-word code from an
    * email has no reason to recognise "link another device".
    */
@@ -131,7 +131,7 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
     try {
       await api.linkDevice(phrase.trim());
       // The cookie now points at the other device's identity; its roles come
-      // with it, so a re-fetch usually walks straight through the gate.
+      // with it, so a re-fetch usually walks straight through the login page.
       await refresh();
       onEntered();
     } catch (err) {
@@ -237,7 +237,7 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
   const claimAndEnter = () => (demo ? enterAs(pendingRole ?? 'viewer', true) : submit(true));
 
   // Per event, not per instance: a demo instance can also be hosting a real
-  // conference, and that gate must still ask for a password.
+  // conference, and that login page must still ask for a password.
   const demo = me?.demoEventSlugs?.includes(slug) === true;
   const roles: { role: Role; label: string; blurb: string }[] = [
     { role: 'viewer', label: 'Viewer', blurb: 'Read the schedule, star sessions' },
@@ -313,7 +313,7 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 dark:bg-stone-950 px-4 py-10">
-      {/* The gate is the whole page, and it used to be a card with no way off
+      {/* The login page is the whole page, and it used to be a card with no way off
           it: no logo, no link, nothing to say what site this was or where the
           other events are. Someone with the wrong link, or the wrong password,
           was stuck. The same small header every other page has, above the
@@ -346,7 +346,7 @@ export function Gate({ slug, eventName, me, onEntered, speakerLinkFailed = false
             </p>
             {/* Above the roles, and not behind `!invite`. The buttons are
                 disabled until there is a name, so with the field below them
-                the gate opened on three dead controls and no stated reason —
+                the login page opened on three dead controls and no stated reason —
                 and under an invite to a demo event the field was not rendered
                 at all, which disabled them for good. A role is what you pick
                 *with* a name, so the name comes first. */}

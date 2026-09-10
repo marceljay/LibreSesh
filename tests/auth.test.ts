@@ -58,7 +58,7 @@ describe('identity', () => {
   it('mints an anonymous identity on first contact and keeps it', async () => {
     const agent = agentFor(harness);
     const first = await agent.get('/api/me').expect(200);
-    // No name until one is typed at a gate: nothing is generated for you.
+    // No name until one is typed at a login page: nothing is generated for you.
     expect(first.body.displayName).toBe('');
     expect(first.body.roles).toEqual({});
 
@@ -190,13 +190,13 @@ describe('event auth endpoint', () => {
       .send({ password: 'user-pw' })
       .expect(400);
     expect(refused.body.error.code).toBe('name_required');
-    expect((await agent.get('/api/e/testconf/gate').expect(200)).body).toEqual({ heldName: null });
+    expect((await agent.get('/api/e/testconf/login').expect(200)).body).toEqual({ heldName: null });
 
     await agent
       .post('/api/e/testconf/auth')
       .send({ password: 'user-pw', displayName: 'Robin' })
       .expect(200);
-    expect((await agent.get('/api/e/testconf/gate').expect(200)).body).toEqual({
+    expect((await agent.get('/api/e/testconf/login').expect(200)).body).toEqual({
       heldName: 'Robin',
     });
 
@@ -231,7 +231,7 @@ describe('demo mode', () => {
     await agent.get('/api/e/testconf/bundle').expect(401);
   });
 
-  it('reports demoMode on /me so the gate knows which form to show', async () => {
+  it('reports demoMode on /me so the login page knows which form to show', async () => {
     harness = makeHarness({ demoMode: true });
     seedEvent(harness.db);
     const agent = agentFor(harness);
@@ -301,7 +301,7 @@ describe('demo mode', () => {
     const agent = agentFor(harness);
     await agent.get('/api/me').expect(200);
 
-    // No role picker here — the gate wants a password.
+    // No role picker here — the login page wants a password.
     await agent
       .post('/api/e/testconf/auth')
       .send({ role: 'admin', displayName: nextUsername() })
@@ -316,7 +316,7 @@ describe('demo mode', () => {
     expect(ok.body.role).toBe('admin');
   });
 
-  it('names the open events on /me so the gate knows which form to show', async () => {
+  it('names the open events on /me so the login page knows which form to show', async () => {
     harness = makeHarness({ demoMode: true, demoEventSlugs: ['democonf-2026'] });
     seedEvent(harness.db);
     const agent = agentFor(harness);
@@ -331,7 +331,7 @@ describe('demo mode', () => {
     const agent = agentFor(harness);
     await agent.get('/api/me').expect(200);
     // The demo branch parses `role`, so a password-only body is a 400 — the
-    // gate sends one shape or the other, never both.
+    // login page sends one shape or the other, never both.
     await agent
       .post('/api/e/testconf/auth')
       .send({ password: 'admin-pw', displayName: nextUsername() })
@@ -395,7 +395,7 @@ describe('a name already held in this event', () => {
       .expect(409);
     expect(refused.body.error.code).toBe('name_taken');
 
-    // Which is what the gate's one-click retry sends.
+    // Which is what the login page's one-click retry sends.
     const retry = await afterWipe
       .post('/api/e/testconf/auth')
       .send({ password: 'user-pw', displayName: 'Ada 2' })
@@ -405,7 +405,7 @@ describe('a name already held in this event', () => {
     expect(me.body.displayName).toBe('Ada 2');
   });
 
-  it('behaves the same on a demo event, where the gate is a role picker', async () => {
+  it('behaves the same on a demo event, where the login page is a role picker', async () => {
     harness = makeHarness({ demoMode: true });
     seedEvent(harness.db);
 

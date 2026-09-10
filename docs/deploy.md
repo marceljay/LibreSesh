@@ -31,10 +31,10 @@ it, and operating it afterwards, see [hosting.md](hosting.md).
 | `PORT` | `3000` | |
 | `DATABASE_PATH` | `data/app.db` | `-wal`/`-shm` sidecars sit next to it |
 | `COOKIE_SECRET` | generated once | **Required in production.** Elsewhere a generated one is kept in `.cookie-secret` beside the database, so restarts do not sign everyone out. Changing it logs everyone out |
-| `INSTANCE_ADMIN_PASSWORD` | dev placeholder | **Required in production**; gates event creation |
+| `INSTANCE_ADMIN_PASSWORD` | dev placeholder | **Required in production**, and at least 16 characters or the boot stops (24 recommended: `openssl rand -base64 24`). Gates event creation, import and the whole-database backup. Five wrong attempts per address per quarter hour, and every miss is audited |
 | `TRUST_PROXY` | off | Set `1` behind Caddy so rate limits see real IPs |
 | `SERVE_STATIC` | on in production | Serves `web/dist` from the API process |
-| `DEMO_MODE` | off | Set `1` and the gate becomes a role picker **on the seeded demo events only** — every other event on the instance keeps its passwords |
+| `DEMO_MODE` | off | Set `1` and the login page becomes a role picker **on the seeded demo events only** — every other event on the instance keeps its passwords |
 | `DEMO_EVENT_SLUGS` | the seeded two | Comma-separated; which slugs `DEMO_MODE` opens up. Only needed if you seed your own fixture |
 | `SEED_DEMO_EVENT` | on | Creates DemoConf at boot if absent — plus LongConf when `DEMO_MODE=1`; set `0` on a real conference instance |
 | `ALLOW_EPHEMERAL_DB` | off in prod | Permits a database directory that is not a mounted volume — a disposable instance only |
@@ -155,7 +155,7 @@ is the one variable whose *change* costs more than its absence:
 - **Worse, their names do not come back with them.** A display name is
   held, uniquely per event, by the identity that claimed it. After a
   rotation people are told "someone at this event is already called Ada",
-  which is true and useless: the someone is their own former self. The gate
+  which is true and useless: the someone is their own former self. The login page
   offers "Enter as *Ada 2*", and an organiser can free the originals with
   `sqlite3 "$DATABASE_PATH" "DELETE FROM event_identities WHERE event_id = <id>;"`,
   which is a blunt instrument — it frees every name in that event.

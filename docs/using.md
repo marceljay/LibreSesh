@@ -5,7 +5,7 @@ floor. Identity and passwords: [identity.md](identity.md).
 
 ## Roles
 
-The password typed at the gate is the role. **Speaker** is a personal
+The password typed at the login page is the role. **Speaker** is a personal
 phrase, not a shared password.
 
 **Most of what a role may do is per-event policy**, set from Manage Event →

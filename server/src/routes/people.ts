@@ -119,7 +119,7 @@ export function peopleRoutes(ctx: Ctx): Router {
   /**
    * Your own profile for this event. Since migration 010 it exists from the
    * moment you enter, so this is an edit; the create branch is kept for an
-   * identity that got in before that and has not been through a gate since.
+   * identity that got in before that and has not been through a login page since.
    * The full name is free — two people may share one — so there is nothing
    * to clash with; the username is the unique thing, and it lives on the
    * event membership, not here.

@@ -60,7 +60,7 @@ describe('one event bar, on every page of an event', () => {
   });
 
   it('signs out to somewhere that still makes sense', () => {
-    // A page that renders the gate itself reloads into it; a page that
+    // A page that renders the login page itself reloads into it; a page that
     // cannot — a profile, the board, Manage Event — goes to the schedule,
     // which can.
     for (const file of ['SchedulePage.tsx', 'AgendaPage.tsx', 'SearchPage.tsx']) {

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * Phase 4 of the form-layer overhaul: form semantics for the loose controls.
  *
- * The add-rows, the unlock box, the invite check and the gate were inputs and
+ * The add-rows, the unlock box, the invite check and the login page were inputs and
  * a button with no `<form>` around them, so Enter did whatever each field's
  * own `onKeyDown` said — fourteen hand-rolled handlers at Phase 0, some fields
  * submitting and their neighbours not. A real form submits from any field in
@@ -101,44 +101,44 @@ describe('no field submits on its own Enter any more', () => {
   });
 });
 
-describe('the gate is a login a password manager can see', () => {
-  const gate = read('components', 'Gate.tsx');
+describe('the login page is a login a password manager can see', () => {
+  const source = read('components', 'Login.tsx');
 
   it('puts the password and the name in one form', () => {
     // A manager only recognises a login when the password field and the
-    // username field share a <form>; the gate had neither, so the event
+    // username field share a <form>; the login page had neither, so the event
     // password could not be saved or filled. Phase 0 finding 8.
-    expect(gate).toContain('<InlineForm onSubmit={() => void submit()}>');
+    expect(source).toContain('<InlineForm onSubmit={() => void submit()}>');
     // The field is a `PasswordInput` now (its eye is pinned in
     // `passwordInput.test.ts`); the manager-facing attributes are unchanged.
-    expect(gate).toMatch(/<PasswordInput\s+name="password"\s+autoComplete="current-password"/);
-    expect(gate).toMatch(/name="username"\s+autoComplete="username"/);
+    expect(source).toMatch(/<PasswordInput\s+name="password"\s+autoComplete="current-password"/);
+    expect(source).toMatch(/name="username"\s+autoComplete="username"/);
   });
 
   it('keeps the link phrase out of the manager, in a form of its own', () => {
     // A one-time phrase is not a password to remember. And it must not nest
     // inside the entry form, which HTML forbids and browsers silently flatten.
-    expect(gate).toContain('<InlineForm onSubmit={() => void link()}>');
-    const phrase = gate.slice(
-      gate.indexOf('value={phrase}'),
-      gate.indexOf('placeholder="house-dog-erratic"'),
+    expect(source).toContain('<InlineForm onSubmit={() => void link()}>');
+    const phrase = source.slice(
+      source.indexOf('value={phrase}'),
+      source.indexOf('placeholder="house-dog-erratic"'),
     );
-    expect(gate.slice(gate.indexOf('value={phrase}'))).toContain('autoComplete="off"');
+    expect(source.slice(source.indexOf('value={phrase}'))).toContain('autoComplete="off"');
     expect(phrase).not.toContain("e.key === 'Enter'");
   });
 
   it('says so when Enter arrives with no name, since the browser no longer will', () => {
-    expect(gate).toContain("setError('Pick a username to enter');");
+    expect(source).toContain("setError('Pick a username to enter');");
   });
 });
 
 describe("a phone's keyboard labels the Enter key for what it does", () => {
   // `enterKeyHint` only relabels the key — the form or handler still has to
   // exist (forms strategy, Phase 4). So it goes only where Enter has one clear
-  // meaning: Go at the gate, Search in a search box, Done on a single-line
+  // meaning: Go at the source, Search in a search box, Done on a single-line
   // inline edit. Never on a multi-line field, where Enter is a newline.
   it.each([
-    ['components', 'Gate.tsx', 'go', 3],
+    ['components', 'Login.tsx', 'go', 3],
     ['components', 'SearchBox.tsx', 'search', 1],
     ['pages', 'AdminSearch.tsx', 'search', 1],
     ['pages', 'ProfilePage.tsx', 'done', 2],

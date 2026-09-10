@@ -67,6 +67,17 @@ export class RateLimiter {
 
 export const LIMITS = {
   auth: { capacity: 5, windowMs: 15 * 60_000 },
+  /**
+   * Identity *creation* per source address (D3 §3). Not applied through
+   * `limit()`: minting happens before `req.identity` exists, so there is no
+   * identity key to pair with the address, and `identityMiddleware` consumes
+   * this one directly.
+   *
+   * 300 a quarter hour is set by the NAT case — a venue's whole wifi is one
+   * address, and 300 first-ever visits in the quarter hour before a keynote
+   * is a real morning.
+   */
+  mint: { capacity: 300, windowMs: 15 * 60_000 },
   contribution: { capacity: 10, windowMs: 60_000 },
   session: { capacity: 12, windowMs: 60_000 },
   write: { capacity: 30, windowMs: 60_000 },

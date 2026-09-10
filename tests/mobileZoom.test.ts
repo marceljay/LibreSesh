@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Safari on iOS zooms the page in when you focus a field whose text is under
- * 16px, and it does not zoom back out when you leave it. The password gate is
+ * 16px, and it does not zoom back out when you leave it. The password login page is
  * a text field on an otherwise empty page, so signing in on an iPhone left you
  * on a magnified layout with the right-hand side of everything off screen —
  * and no obvious way back but a pinch.

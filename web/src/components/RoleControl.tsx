@@ -5,7 +5,7 @@ import { EditIcon } from './icons';
 import { popoverPanelClass, usePopover } from './Popover';
 import { roleTagColor, roleTagShape, roleWord } from './ui';
 
-/** What each role is allowed to do here, in the words the gate uses. Every
+/** What each role is allowed to do here, in the words the login page uses. Every
  *  badge says what it means on hover; "signed out" is the one nobody can
  *  guess, so it gets the longest sentence. */
 export const ROLE_HELP: Record<Role, string> = {

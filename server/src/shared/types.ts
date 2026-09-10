@@ -4,12 +4,12 @@ export type Role = 'viewer' | 'user' | 'speaker' | 'admin';
 export type SessionType = 'official' | 'open';
 export type ContributionKind = 'note' | 'link' | 'question';
 /** Where a profile's speaker code stands: never minted (or revoked), minted
- *  and still unused, or redeemed at the gate. */
+ *  and still unused, or redeemed at the login page. */
 export type CodeState = 'none' | 'pending' | 'used';
 
-/** What the gate needs before anyone is in: the username this device already
+/** What the login page needs before anyone is in: the username this device already
  *  holds here, if it has entered before. */
-export interface GateDto {
+export interface LoginDto {
   heldName: string | null;
 }
 
@@ -24,9 +24,9 @@ export interface Me {
   /** Role held per event slug. Absent slug = no access. */
   roles: Record<string, Role>;
   /** Public-demo instance. Only labels the build as a demo — it does **not**
-   *  mean this event's gate is open; see `demoEventSlugs`. */
+   *  mean this event's login page is open; see `demoEventSlugs`. */
   demoMode: boolean;
-  /** The events whose gate offers roles as buttons instead of asking for a
+  /** The events whose login page offers roles as buttons instead of asking for a
    *  password. Everything else on a demo instance is a real event with real
    *  passwords. Empty unless the instance is in demo mode. */
   demoEventSlugs: string[];
@@ -213,7 +213,7 @@ export interface PersonDto {
   /**
    * Organisers only. Whether a speaker code exists for this profile and, if
    * so, whether it has been used: `pending` is a phrase still sitting in an
-   * unread email, `used` one that has been typed at the gate at least once,
+   * unread email, `used` one that has been typed at the login page at least once,
    * `none` a profile that was never sent one (or whose code was revoked).
    *
    * Three states rather than a `codePending` boolean because an organiser

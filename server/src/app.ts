@@ -54,7 +54,7 @@ export function createApp(db: Db, config: Config): App {
 
   const api = Router();
   // Middleware order per SPEC §5: identity → rate limit → role check → handler.
-  api.use(identityMiddleware(db, process.env.NODE_ENV === 'production'));
+  api.use(identityMiddleware(db, process.env.NODE_ENV === 'production', ctx.limiter));
   api.use(meRoutes(ctx));
   api.use(eventRoutes(ctx));
   api.use(importRoutes(ctx));

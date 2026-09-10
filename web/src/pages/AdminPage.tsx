@@ -1884,7 +1884,7 @@ export function AdminPage() {
                 action="Expect someone"
                 fieldLabel="Name of the person to expect"
                 submitLabel="Add person"
-                hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the gate, or with a speaker code."
+                hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the login page, or with a speaker code."
                 maxLength={120}
                 onSubmit={addPerson}
               />

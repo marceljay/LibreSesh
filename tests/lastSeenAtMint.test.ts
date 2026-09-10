@@ -73,7 +73,7 @@ describe('last seen, and a speaker code that has not been used', () => {
     expect(await lastSeen(personId)).toBeTruthy();
   });
 
-  it('leaves a gate visitor stamped as before', async () => {
+  it('leaves a login page visitor stamped as before', async () => {
     const visitor = await actorWithRole(harness, 'testconf', 'user-pw');
     const me = (await visitor.get('/api/me').expect(200)).body;
     const row = harness.db

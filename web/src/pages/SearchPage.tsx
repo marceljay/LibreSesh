@@ -10,7 +10,7 @@ import { useFilters } from '../lib/useFilters';
 import { api } from '../lib/api';
 import { useMe } from '../lib/useMe';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
-import { Gate } from '../components/Gate';
+import { Login } from '../components/Login';
 import { EventBar } from '../components/EventBar';
 import { SearchBox, SessionResultRow } from '../components/SearchBox';
 import { EmptyState, Spinner } from '../components/ui';
@@ -105,8 +105,8 @@ export function SearchPage() {
   };
 
   if (data.status === 'loading') return <Spinner label="Loading schedule…" />;
-  if (data.status === 'gate') {
-    return <Gate slug={slug} me={me} onEntered={() => void data.reload()} />;
+  if (data.status === 'login page') {
+    return <Login slug={slug} me={me} onEntered={() => void data.reload()} />;
   }
   if (data.status === 'error' || !bundle || !event) {
     return (

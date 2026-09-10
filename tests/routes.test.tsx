@@ -120,7 +120,7 @@ describe('instance pages', () => {
   });
 });
 
-describe('the gate', () => {
+describe('the login page', () => {
   it('asks for the password, then shows the schedule', async () => {
     routeFetchTo(agentFor(harness));
     open(`/e/${SLUG}`);

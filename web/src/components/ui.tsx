@@ -438,12 +438,12 @@ export function FormGrid({
 
 /**
  * A real `<form>` for controls that are not in a dialog: an add-row on a
- * settings tab, the gate, an unlock box. `Modal` already renders one when it
+ * settings tab, the login page, an unlock box. `Modal` already renders one when it
  * is given `onSubmit`; this is the same contract for everything else.
  *
  * It replaces the hand-rolled `onKeyDown={(e) => e.key === 'Enter' && …}` that
  * every loose section had grown, each on some of its fields and not others —
- * so Enter submitted the room's name but not its capacity, and the gate's
+ * so Enter submitted the room's name but not its capacity, and the login page's
  * password but not the phrase beside it. A form submits from any field in it,
  * and the primary button is `type="submit"` so a phone's keyboard labels the
  * key for it (`enterKeyHint`) and a screen reader calls it what it is.
@@ -677,7 +677,7 @@ export function Chip({
  *  Deliberately *not* `inline-flex`, which `secondaryButtonClass` does carry.
  *  A `<button>` centres its label by the UA's `text-align: center`; make it a
  *  flex container and the label becomes a flex item at `flex-start` instead,
- *  which silently left-aligns all eight full-width PrimaryButtons — the gate's
+ *  which silently left-aligns all eight full-width PrimaryButtons — the login page's
  *  "Enter schedule" among them. An `<a>` that wants the button's box adds
  *  `inline-flex items-center` itself, the way `SessionDetail` already adds
  *  `justify-center` to the one wide SecondaryButton. */

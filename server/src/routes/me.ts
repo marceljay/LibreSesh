@@ -61,7 +61,7 @@ export function meRoutes(ctx: Ctx): Router {
   /**
    * Redeem a phrase minted on another device: this browser's cookie is
    * repointed at that identity, and the freshly minted one it arrived with is
-   * simply abandoned. Guesses share the password-attempt budget, and like
+   * simply abandoned. Guesses share the password-attempt rate limit, and like
    * `/auth` a correct phrase refunds its token.
    */
   router.post('/me/link', (req, res) => {

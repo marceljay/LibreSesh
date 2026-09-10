@@ -35,7 +35,7 @@ import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
-import { Gate } from '../components/Gate';
+import { Login } from '../components/Login';
 import {
   CalendarIcon,
   ChevronDownIcon,
@@ -161,7 +161,7 @@ export function SchedulePage() {
 
   // A device that already held a role here chose to switch and the code
   // failed: the schedule is still theirs, so the news arrives as a toast
-  // rather than a gate. (A stranger's failure is told by the gate itself.)
+  // rather than a login page. (A stranger's failure is told by the login page itself.)
   useEffect(() => {
     if (speakerLink.status === 'failed' && data.status === 'ready') {
       toast.show('That speaker link didn’t work — ask your organiser for a new one.');
@@ -970,7 +970,7 @@ export function SchedulePage() {
 
   // A speaker link is settled before anything else is drawn: the bundle that
   // loaded (or 401'd) under the old cookie is the wrong person's, and flashing
-  // the gate at a speaker whose code is being redeemed reads as a refusal.
+  // the login page at a speaker whose code is being redeemed reads as a refusal.
   if (speakerLink.status === 'waiting' || speakerLink.status === 'redeeming') {
     return <Spinner label="Signing you in as a speaker…" />;
   }
@@ -988,9 +988,9 @@ export function SchedulePage() {
   }
 
   if (data.status === 'loading') return <Spinner label="Loading schedule…" />;
-  if (data.status === 'gate') {
+  if (data.status === 'login page') {
     return (
-      <Gate
+      <Login
         slug={slug}
         me={me}
         onEntered={() => void data.reload()}
@@ -1027,7 +1027,7 @@ export function SchedulePage() {
   // touch past everything you may not. They still edit that session — time,
   // room and length included — through Edit session, which is the same change
   // made by naming it rather than by aiming at it. The server never knew about
-  // Arrange; it gates the underlying edit, and that rule is unchanged.
+  // Arrange; it login pages the underlying edit, and that rule is unchanged.
   //
   // Grid only. `arrange` is read by `Calendar` and by nothing else — the list
   // has no geometry to drag against — so in the list the button was a toggle

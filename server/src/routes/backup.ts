@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { Router } from 'express';
 import { z } from 'zod';
-import { hasInstanceKey, requireRole } from '../auth.js';
+import { requireInstanceKey, requireRole } from '../auth.js';
 import { audit } from '../audit.js';
 import {
   HEADER_BYTES,
@@ -17,7 +17,6 @@ import {
 } from '../backup.js';
 import type { Ctx } from '../context.js';
 import { exportEvent } from '../exportEvent.js';
-import { forbidden } from '../errors.js';
 import { limit } from '../ratelimit.js';
 import { EXPORT_PARTS, type ExportPart } from '../shared/exportParts.js';
 import { parse } from '../validation.js';
@@ -103,10 +102,7 @@ export function exportRoutes(ctx: Ctx): Router {
 export function backupRoutes(ctx: Ctx): Router {
   const router = Router();
 
-  router.post('/backup', limit(ctx.limiter, 'auth'), (req, res, next) => {
-    if (!hasInstanceKey(ctx.config, req.get('X-Instance-Key'))) {
-      throw forbidden('Wrong instance password');
-    }
+  router.post('/backup', requireInstanceKey(ctx), (req, res, next) => {
     const { passphrase } = parse(backupSchema, req.body);
 
     // Beside the database, which is the one directory we know is writable and
