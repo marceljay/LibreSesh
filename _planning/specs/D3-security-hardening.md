@@ -317,6 +317,40 @@ hashes on lookup. A deterministic hash means a migration can rewrite the
 columns in place, every existing cookie keeps working and every old backup
 still restores.
 
+### Blocked, found 2026-09-10 while starting the work
+
+**This section cannot be built as written.** Hashing on lookup is only half
+the story: two routes *hand the stored value back out*, and a hash cannot be
+handed to a browser.
+
+- **Redeeming a device phrase or a speaker code** ends in
+  `setIdentityCookie(res, identity.token, …)` (`routes/me.ts`): the second
+  device is given the identity's stored token as its cookie. Hash the column
+  and there is nothing to give it. Minting a fresh one instead would sign the
+  *first* device out, which contradicts the feature — one speaker code is
+  meant to work on a phone and a laptop at once.
+- **Asking for the calendar link a second time** returns
+  `req.identity.ics_token` unchanged (`routes/agenda.ts`), so the same URL
+  keeps working. Hash the column and the second call hands back a hash that
+  no feed will accept.
+
+**What this means.** Several devices sharing one identity requires the server
+to be able to produce a credential for a new device, and hashing removes the
+only stored copy. The way out is a credential *per device* — which is
+**D4** (LIB-103): each device row holds the hash of its own token, a new
+device gets a new one, and no existing device is disturbed. Hashing then falls
+out naturally, because nothing ever needs the stored value back.
+
+**Revised order.** `identities.token` hashing moves behind D4 rather than
+ahead of it. `ics_token` can be hashed on its own, but only alongside a
+decision on LIB-187 (the calendar link cannot be revoked today): the honest
+version is that asking for the link again *mints a new one and invalidates the
+old*, which is the revoke that issue asks for, and makes the second-call
+problem disappear.
+
+The rest of this section — what hashing does and does not protect — still
+stands.
+
 It does not protect anyone from the running server (SECURITY.md,
 *The running server can act as any user*) and the backup still needs
 encrypting for the names in it and the speaker-code hashes. What it changes is

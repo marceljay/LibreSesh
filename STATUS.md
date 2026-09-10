@@ -37,9 +37,19 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
     addresses so a single address cannot block sign-ins for everybody, the organiser
     notice over the audit log from `GET /e/:slug/login-health`, and the
     password *advice* that replaced the withdrawn policy.
-  - **Phase 3 — `sec/tokens-at-rest`, not started.** Hash `identities.token`
-    and `ics_token`, migration 018. This is what makes account recovery
-    (LIB-122) have to rotate rather than re-issue a token.
+  - **Phase 3 — tokens at rest: blocked, found 2026-09-10.** [LIB-112]
+    Hashing on lookup is only half of it. Two routes hand the stored token
+    back out: redeeming a device phrase or speaker code sets the second
+    device's cookie to `identity.token`, and asking for the calendar link a
+    second time returns `ics_token` unchanged. A hash cannot be handed to a
+    browser, and minting a fresh one instead would sign the first device out,
+    which contradicts one speaker code working on a phone and a laptop at
+    once. Several devices sharing one identity needs a credential *per
+    device*, which is **D4** (LIB-103) — so `identities.token` hashing moves
+    behind D4 rather than ahead of it. `ics_token` can go on its own, but
+    only with a decision on LIB-187: making a second request mint a new link
+    and invalidate the old one is both the revoke that issue wants and the
+    fix for this. Written up in the spec under §5.
   - **Both branches are pushed and have no PR** — `gh` is not authenticated
     in this container, so `/pr` writes to `.temp/` instead. Merge order:
     phase 1, then phase 2.
