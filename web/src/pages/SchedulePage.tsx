@@ -31,7 +31,7 @@ import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
-import { WeekMenu } from '../components/WeekMenu';
+import { DayPicker } from '../components/DayPicker';
 import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
@@ -364,6 +364,9 @@ export function SchedulePage() {
   // follows a shared `?day=` link instead of fighting it.
   const weekIndex = weeks.length ? Math.floor(Math.max(0, days.indexOf(day)) / 7) : 0;
   const stripDays = weeks.length ? (weeks[weekIndex] ?? days) : days;
+  /** Long enough that the strip cannot show the event: a phone gets the one
+   *  `DayPicker` control instead of the week rail and the strip both. */
+  const longEvent = weeks.length > 1;
 
   /** The identity's starred session ids, as a set for cheap lookups. */
   const starredIds = useMemo(
@@ -1050,10 +1053,9 @@ export function SchedulePage() {
     {
       target: 'days',
       title: 'Pick a day',
-      body:
-        weeks.length > 1
-          ? 'One tab per day. A long event splits into weeks above — pick a week, then a day. Dimmed days have nothing scheduled yet.'
-          : 'One tab per day of the event.',
+      body: longEvent
+        ? 'One tab per day, a week at a time — the weeks are the rail above. On a phone all of it folds into the day button, with an arrow for the day either side. Dimmed days have nothing scheduled yet.'
+        : 'One tab per day of the event.',
     },
     {
       target: 'view',
@@ -1198,7 +1200,7 @@ export function SchedulePage() {
           <>
             <div ref={foldedRows} className={foldRow}>
               <div className={foldInner}>
-                {weeks.length > 1 && (
+                {longEvent && (
                   /* One line that scrolls sideways, like the day strip below
                    it, rather than a row that wraps: on a phone a four-week
                    conference wrapped to two lines and a six-week one to three,
@@ -1250,32 +1252,39 @@ export function SchedulePage() {
                 )}
 
                 <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4">
+                  {/* A long event on a phone gets one control for the day
+                    instead of two rows of them — the weeks above and this
+                    strip, which even with arrows keeps a fortnight's far days
+                    several flicks away. `DayPicker` holds all of them, and its
+                    chevrons keep tomorrow one tap away, which is the only
+                    thing the strip was better at.
+
+                    Only past `weekRailFrom`: under it the strip shows the
+                    whole event at once, so there is nothing to fix and a
+                    dropdown over three visible chips is a pure loss. */}
+                  {longEvent && (
+                    <DayPicker
+                      className="sm:hidden"
+                      days={days}
+                      weeks={weeks}
+                      day={day}
+                      today={today}
+                      countFor={(d) => perDay.get(d) ?? 0}
+                      onPick={goToDay}
+                    />
+                  )}
                   {/* The strip is the box; the rail is the line inside it. That
                     order matters: `Rail` positions its arrows against its own
                     edges, so with the border outside them they fade to the
                     card's inner edge instead of sitting on the border and
                     spilling past its radius. `min-w-0` lets the box shrink
-                    rather than shoving the view toggle onto the next line —
-                    the line the week rail folding away was meant to save. */}
+                    rather than shoving the view toggle onto the next line. */}
                   <div
                     data-tour="days"
-                    className="flex min-w-0 items-center rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
+                    className={`min-w-0 items-center rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900 ${
+                      longEvent ? 'hidden sm:flex' : 'flex'
+                    }`}
                   >
-                    {/* Below `sm` only: above it the week rail is still on
-                      screen, and two ways to pick the same week is one too
-                      many. Nothing at all under `weekRailFrom`, where there
-                      are no weeks to pick between. */}
-                    {weeks.length > 1 && (
-                      <WeekMenu
-                        className="sm:hidden"
-                        weeks={weeks}
-                        weekIndex={weekIndex}
-                        today={today}
-                        day={day}
-                        countFor={(week) => week.reduce((n, d) => n + (perDay.get(d) ?? 0), 0)}
-                        onPick={goToDay}
-                      />
-                    )}
                     {/* The strip scrolls, and its scrollbar is hidden, so
                       without these a day past the edge was a day you never
                       found — the same sentence the week rail has had since it
