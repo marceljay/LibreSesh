@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -16,38 +16,18 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1146**, lint clean, build clean.
+nothing local is unsaved. Suite at **1645**, lint clean, build clean.
 
-- **D3 · Security hardening — built, waiting on review.** [LIB-101] Narrowed
-  on 2026-09-10 to what it now is: the event login (§1), the instance
-  password (§2) and identity minting (§3). Spec
-  `_planning/specs/D3-security-hardening.md`, plan
-  `_planning/plans/2026-09-05-D3-security-hardening.md`.
-  - **Phase 1** merged as **#74**: the instance key behind the `auth` rate
-    limit with a refund on success and an audit row on every miss; a
-    per-address limit on minting identities with an anonymous sentinel past
-    it; the idle-identity sweep at boot and daily; the preflight length check
-    on `INSTANCE_ADMIN_PASSWORD`. Carries the vocabulary rename ("rate limit"
-    not "budget", "login page" not "gate", 78 files).
-  - **Phase 2** is **#75**, open and merging cleanly: per-visitor waits keyed
-    on cookie *and* address (five free, two minutes, five free, fifteen
-    minutes), a per-address cap of 300 failures an hour, the per-event stop
-    on new sign-ins needing 60 failures from 10+ distinct addresses, the
-    organiser notice from `GET /e/:slug/login-health` with a reset, and the
-    password advice that replaced the withdrawn policy.
-  - **Two deployment notes before merging to production:**
-    `INSTANCE_ADMIN_PASSWORD` under 16 characters now refuses to boot, and a
-    browser holding the old page will call `/api/e/:slug/gate`, which is now
-    `/login` — a reload fixes it, or the old path can be kept answering for
-    one release. No migration, nobody signed out, invite QR codes unaffected.
-  - Suite 1630, lint clean.
+- **0.5.0 is unreleased on `dev`; `main` is still on 0.4.0.** Everything under
+  `[Unreleased]` in CHANGELOG.md waits on that merge: the event bar on every
+  page, the schema page generated from the migrations, and all three sections
+  of D3. Two deployment notes belong to it. `INSTANCE_ADMIN_PASSWORD` under
+  sixteen characters now refuses to boot in production, so the live value has
+  to be checked before deploying. And `GET /api/e/:slug/gate` is now `/login`,
+  so a browser holding the old page calls a dead path until it is reloaded —
+  a reload fixes it, or the old path can be kept answering for one release.
+  No migration, nobody signed out, invite QR codes unaffected.
 
-- **Taken out of D3 on 2026-09-10, neither blocking anything:**
-  - **Lockdown** [LIB-188] — deferred by you on 2026-09-09, designed in full
-    as §4 of the spec.
-  - **Tokens at rest** [LIB-112] — blocked behind per-device sign-in
-    [LIB-103], because redeeming a device phrase hands the arriving device
-    the stored token and a hash cannot be handed out. Written up in §5.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -518,6 +498,15 @@ they left behind landed 2026-09-05 as R26).
   message still says codes "work once and expire after 10 minutes", which
   was never true of a speaker code.
 
+- **R39 · The event login's failure limits.** [LIB-101] D3 phase 2, merged
+  into `dev` on 2026-09-10 and never seen in a browser. Get an event password
+  wrong six times: the sixth answer should name a two-minute wait, and five
+  wrong ones after that a fifteen-minute one. A correct password clears the
+  count. On Manage Event → Audit, an organiser whose event is being guessed at
+  sees a notice with a button that clears the failures. Check New event and
+  Settings in the same pass: the password fields now lead with the generated
+  phrase and carry the advice that replaced the withdrawn policy.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -530,6 +519,15 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
+
+- **Two sentences in SECURITY.md read as nonsense.** The `gate` → `login page`
+  rename in #74 replaced the word where it was a metaphor and where it was a
+  verb: "This is a supply-chain login page" was "gate", and "The instance
+  password login pages event creation" was "gates". Both are in the public
+  security document, and both should go before 0.5.0 leaves. The same rename
+  also put `login page` into the link-phrase wordlist; that half is fixed in
+  `4a3cadd`, these two sentences are what it left behind.
+
 
 - **Lockdown, deferred out of D3 on 2026-09-09.** [LIB-188] Designed in full
   as §4 of the D3 spec and phases 3 and 5 of its plan; not being built now.

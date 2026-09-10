@@ -8,7 +8,8 @@ sign-ins; 300 identities per address per quarter hour). The password policy in
 §1d was withdrawn separately: advice, never a refusal, and no live instance is
 ever made to rotate.
 
-**Phase 1** landed in #74. **Phase 2** is #75. Both are complete.
+**Phase 1** landed in #74. **Phase 2** landed in #75, merged into `dev` on
+2026-09-10. Both are complete.
 
 **Phases 3 and 5 (lockdown)** left D3 on 2026-09-09 and are LIB-188.
 **Phase 4 (tokens at rest)** left D3 on 2026-09-10 and is LIB-112, blocked
