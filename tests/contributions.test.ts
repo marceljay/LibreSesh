@@ -146,6 +146,16 @@ describe('contributions', () => {
     const res = await post(author, { kind: 'note', body: 'over' }).expect(429);
     expect(res.body.error.code).toBe('rate_limited');
   });
+
+  it('spends one person’s allowance without touching their neighbour’s', async () => {
+    for (let i = 0; i < 10; i++) {
+      await post(author, { kind: 'note', body: `n${i}` }).expect(201);
+    }
+    await post(author, { kind: 'note', body: 'over' }).expect(429);
+    // Same address — every test actor is 127.0.0.1, as a whole room behind one
+    // access point is one address. The person next to them is unaffected.
+    await post(otherUser, { kind: 'note', body: 'mine' }).expect(201);
+  });
 });
 
 describe('rooms and tags', () => {
