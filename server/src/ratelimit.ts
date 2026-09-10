@@ -294,17 +294,67 @@ export function clientIp(req: Request): string {
 }
 
 /** The two buckets a request must pass: its identity and its source IP. */
-export function keysFor(name: LimitName, req: Request): string[] {
+export function keysFor(name: LimitName, req: Request): [string, string] {
   return [`${name}:id:${req.identity.id}`, `${name}:ip:${clientIp(req)}`];
 }
+
+/**
+ * How much larger a bucket is when it is keyed on the address than when it is
+ * keyed on the person.
+ *
+ * An address is not a person here. A conference is a room of people behind one
+ * access point, so the address bucket is shared by all of them, and sized like
+ * a personal allowance it makes them throttle each other: thirty writes a
+ * minute is the whole room registering interest in the pitches together, and
+ * ten contributions a minute is the whole room asking questions during a talk.
+ * That is the one failure a rate limit may not have, because it arrives when
+ * the event is at its busiest and reads as the app being broken.
+ *
+ * Multiplied out, the address bucket stops pretending to be a per-person
+ * allowance and becomes the only thing it was ever good for: a backstop
+ * against a single address flooding the process, set far above anything a room
+ * does. It is not a flood defence — one runs after the cookie signature and
+ * three lookups, inside the process it would be protecting, so a refused
+ * request still costs about a sixth of a served one. That job belongs to the
+ * reverse proxy. For `read` the backstop now sits above what one core can
+ * serve, which only makes explicit what was already true.
+ *
+ * Not every limit: see `PERSON_SIZED_ADDRESS`.
+ */
+export const ADDRESS_MULTIPLIER = 100;
+
+/**
+ * The limits whose address bucket stays the size of the personal one, because
+ * they meter a secret rather than a workload.
+ *
+ * `auth` counts password attempts — against the login page, and against the two
+ * oracles in `settings.ts` that say which role a password grants. A room
+ * sharing one address is precisely how a guesser would like that counting
+ * done, so the address stays worth counting even though it is shared, and the
+ * cost of the sharing is bounded: a wrong password is rare, and a right one is
+ * refunded. `mint` is address-keyed and nothing else — there is no identity yet
+ * to key on — and its 300 per quarter hour is already sized for a shared
+ * address (SECURITY.md).
+ */
+const PERSON_SIZED_ADDRESS: ReadonlySet<LimitName> = new Set(['auth', 'mint']);
+
+/** The address-keyed bucket for a named limit: same window, room-sized. */
+export const addressSpec = (name: LimitName): BucketSpec =>
+  PERSON_SIZED_ADDRESS.has(name)
+    ? LIMITS[name]
+    : { capacity: LIMITS[name].capacity * ADDRESS_MULTIPLIER, windowMs: LIMITS[name].windowMs };
 
 /** Express middleware applying one named limit to both the identity and the IP. */
 export function limit(limiter: RateLimiter, name: LimitName) {
   const spec = LIMITS[name];
+  const address = addressSpec(name);
   return (req: Request, res: Response, next: NextFunction): void => {
-    const keys = keysFor(name, req);
-    let retryAfter = 0;
-    for (const key of keys) retryAfter = Math.max(retryAfter, limiter.consume(key, spec));
+    const [personKey, addressKey] = keysFor(name, req);
+    // Both are always consumed; `Math.max` over two calls, not short-circuit.
+    const retryAfter = Math.max(
+      limiter.consume(personKey, spec),
+      limiter.consume(addressKey, address),
+    );
     if (retryAfter > 0) {
       res.setHeader('Retry-After', String(retryAfter));
       next(new HttpError(429, 'rate_limited', 'Too many requests — slow down a moment'));

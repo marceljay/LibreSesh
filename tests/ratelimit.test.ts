@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LIMITS, RateLimiter } from '../server/src/ratelimit.js';
+import { addressSpec, LIMITS, RateLimiter } from '../server/src/ratelimit.js';
 
 describe('RateLimiter', () => {
   const spec = { capacity: 3, windowMs: 60_000 };
@@ -64,5 +64,19 @@ describe('RateLimiter', () => {
     expect(LIMITS.session.capacity).toBe(12);
     expect(LIMITS.write.capacity).toBe(30);
     expect(LIMITS.read.capacity).toBe(300);
+  });
+
+  it('gives an address a room-sized bucket, over the same window', () => {
+    for (const name of ['contribution', 'session', 'write', 'read'] as const) {
+      expect(addressSpec(name)).toEqual({
+        capacity: LIMITS[name].capacity * 100,
+        windowMs: LIMITS[name].windowMs,
+      });
+    }
+  });
+
+  it('leaves the buckets that meter a secret at their personal size', () => {
+    expect(addressSpec('auth')).toEqual(LIMITS.auth);
+    expect(addressSpec('mint')).toEqual(LIMITS.mint);
   });
 });

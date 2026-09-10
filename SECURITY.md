@@ -22,7 +22,7 @@ explicitly *not* built to withstand a targeted attacker with time.
 | Guessing an event password | bcrypt (cost 10); 5 attempts per 15 min per identity **and** per IP, `Retry-After` on the 6th |
 | Guessing a link phrase | Same 5-per-15-min rate limit as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
 | Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |
-| Spam / flooding | Token buckets per identity and per IP on every write class; server-enforced max lengths |
+| Spam / flooding | Token buckets **per person** on every write class and on reads: 10 contributions, 12 sessions, 30 other writes and 300 reads a minute. The same buckets keyed on the source address hold 100× that, because an address is not a person here — a conference is a room behind one access point, and an address bucket sized like a personal allowance makes attendees throttle each other at the busiest moment. It is a backstop against one address flooding the process, not a second allowance. `auth` and `mint` are the exceptions and stay person-sized per address: they meter a secret, not a workload. Server-enforced max lengths |
 | XSS via session or profile text | HTML escaped before markdown parsing; URL scheme allowlist; no `dangerouslySetInnerHTML` on unescaped input |
 | Open redirect | Every client navigation is prefixed with a literal `/e/` |
 | Reading a schedule you were not given | Viewing requires the viewer password; there is no public event view |
@@ -87,6 +87,16 @@ explicitly *not* built to withstand a targeted attacker with time.
   mutates state would break that assumption.
 - **A determined attacker with a valid password can ruin the schedule.** The
   audit log and restore endpoints are the recovery path, not prevention.
+- **The rate limiter is not a denial-of-service defence, and cannot be made
+  into one.** It lives inside the process it would be protecting, and runs
+  after the cookie signature is verified and the identity, event and role are
+  looked up — so a refused request still costs roughly a sixth of a served one
+  (0.70 ms against 4.44 ms for the largest bundle, measured 2026-09-10). What
+  it is good at is stopping one client from being expensive on its own: a retry
+  loop, a stuck poller, an agent written without backoff. A flood from many
+  addresses is the reverse proxy's job and the network's, and no value of these
+  numbers changes that. It is why the address-keyed backstop can be set as high
+  as it is without giving anything up.
 
 ## Codes and links
 

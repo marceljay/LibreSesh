@@ -16,7 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1648**, lint clean, build clean.
+nothing local is unsaved. Suite at **1651**, lint clean, build clean.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -524,6 +524,15 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
+
+- **Cap concurrent SSE connections per identity.** [LIB-196] `/stream` is the
+  one route that never calls `limit()`, so a single cookie can hold unbounded
+  open sockets from one address — twenty opened back to back all answered 200
+  on 2026-09-10. A token bucket is the wrong tool for a long-lived connection:
+  the cost is concurrency, not rate. Cap what the broker will hold for one
+  identity (four is a phone, a laptop and a spare tab) and close the oldest
+  past it, so reloading never locks a person out of their own event. Nothing
+  mitigates this today, which is why it sits above the two below.
 
 - **Lockdown, deferred out of D3 on 2026-09-09.** [LIB-188] Designed in full
   as §4 of the D3 spec and phases 3 and 5 of its plan; not being built now.
@@ -1042,6 +1051,36 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   open question is how far the rename travels — the route is `/proposals`, the
   components are `Proposal*` and the capability is `proposal.create`, while the
   setting is `pitchesEnabled`.
+
+- **Generate `/openapi.json` from the zod schemas.** [LIB-198] `web/public/api.md`
+  shipped 2026-09-10 and says outright that there is no OpenAPI document; this
+  is it. Every request body already has a zod schema and zod 4 has
+  `z.toJSONSchema`, so the generated half is nearly free — follow `npm run
+  schema`, which regenerates `docs/schema.md` and fails a test when the copy is
+  behind. What needs deciding is the rest: paths live in the routers, responses
+  have no schemas (the DTOs are TypeScript interfaces), and per-endpoint roles
+  are middleware rather than data. Worth doing after a real agent has read the
+  prose once, so the parts that matter get modelled first.
+
+- **Key the role-gated rate limits on the person, not the address.** [LIB-195]
+  The ×100 address multiplier that shipped on 2026-09-10 is a stopgap standing
+  in for a rule: key on the address while there is no identity yet (`auth`,
+  `mint` — both meter a secret), key on the person once there is (`read`,
+  `write`, `session`, `contribution` — all of them behind `requireRole`
+  already). It leaves one bucket instead of two, and nothing left to mis-size.
+  The cost is that a role-holder on one address is bounded by their personal
+  bucket alone: roughly 150 writes a minute rather than 30, since `auth` still
+  caps them at about five fresh identities a quarter hour. SECURITY.md already
+  names the audit log and soft deletes as the answer to that person.
+
+- **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
+  `useEventData.ts:380` refetches the entire event on every stream reconnect —
+  right when it was written, and the reason the shared limit was ever felt.
+  With `retry: 3000`, a room on bad wifi turns that into a bundle build per
+  device per reconnect: 4.44 ms of server CPU and 6.1 KB gzipped each, times
+  everyone in the room. `Last-Event-ID` replay from a short per-event ring is
+  the small version; a `?since=` bundle is the thorough one. Not urgent now
+  that nobody is being throttled — this is about the traffic itself.
 
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
