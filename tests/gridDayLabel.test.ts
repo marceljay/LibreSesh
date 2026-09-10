@@ -23,6 +23,7 @@ const WEB = join(__dirname, '..', 'web', 'src');
 const schedule = readFileSync(join(WEB, 'pages', 'SchedulePage.tsx'), 'utf8');
 const calendar = readFileSync(join(WEB, 'components', 'Calendar.tsx'), 'utf8');
 const search = readFileSync(join(WEB, 'components', 'SearchBox.tsx'), 'utf8');
+const list = readFileSync(join(WEB, 'components', 'ListView.tsx'), 'utf8');
 
 describe('the grid names the day it is showing', () => {
   it('writes it out in the locale’s own order', () => {
@@ -34,18 +35,74 @@ describe('the grid names the day it is showing', () => {
     expect(label).toMatch(/12/);
   });
 
-  it('puts it on the first hour’s line, past the gutter', () => {
+  it('sits in the band above the first session, costing no height', () => {
+    // Not a heading row of its own. The space it needs is already on screen.
     expect(calendar).toContain('dayFullLabel(day)');
     expect(calendar).toMatch(/insetInlineStart: GUTTER_W/);
-    expect(calendar).toMatch(/top: 0/);
+    expect(calendar).toContain('...dayLabelStyle');
+  });
+
+  it('clears the block rather than being centred across it', () => {
+    // Centred on an hour line, half of it sat behind whatever started there.
+    // Anchored by `bottom`, CSS works out its own height — a constant for the
+    // line box goes stale the first time the type scale moves.
+    expect(calendar).toContain('const dayLabelStyle = useMemo(');
+    expect(calendar).toMatch(
+      /bottom: height - Math\.max\(0, \(first - dayStartMin\) \* PX_PER_MIN\) \+ 2/,
+    );
+    expect(calendar).not.toContain('-translate-y-1/2 whitespace-nowrap');
+  });
+
+  it('measures from the first session, not the opening hour', () => {
+    // Next day scrolls the grid to the first session, so the top of the day
+    // window is usually off screen by the time anybody looks.
+    expect(calendar).toMatch(/min === null \|\| p\.startMin < min/);
+    // An empty day has nothing to sit above, so it says the day at the top.
+    expect(calendar).toMatch(/if \(first === null\) return \{ top: 0 \};/);
+  });
+
+  it('is loud enough to read beside the hours', () => {
+    // `text-stone-400` at `font-medium` was a whisper next to labels of the
+    // same colour, and read as a stray note rather than the name of the day.
+    const label = calendar.slice(
+      calendar.indexOf('insetInlineStart: GUTTER_W') - 400,
+      calendar.indexOf('insetInlineStart: GUTTER_W'),
+    );
+    expect(label).toContain('font-semibold');
+    expect(label).toContain('text-stone-500');
+  });
+
+  it('is a sibling of the gutter, not a child of it', () => {
+    // The gutter is `z-10` so it can slide over the grid, and inside it the
+    // day inherited that and painted over the first column's blocks. Out here
+    // it is an ordinary earlier sibling, so blocks drawn after it cover it.
+    const gutter = calendar.indexOf('sticky start-0 z-10 shrink-0');
+    const gutterEnd = calendar.indexOf('halfHourCount', gutter);
+    const label = calendar.indexOf('insetInlineStart: GUTTER_W');
+    expect(label).toBeGreaterThan(calendar.indexOf('{fmtMin(nowMin)}', gutter));
+    expect(label).toBeLessThan(gutterEnd);
   });
 
   it('lets a block paint over it rather than the other way round', () => {
-    // Where a session does start on the stroke of the opening hour, the label
-    // is the thing that gives way — and it is never a target either way.
-    const label = calendar.slice(calendar.indexOf('insetInlineStart: GUTTER_W') - 600);
-    expect(label.slice(0, 700)).toContain('pointer-events-none');
-    expect(label.slice(0, 700)).toContain('aria-hidden="true"');
+    // Where a session starts on the stroke of that hour the programme wins,
+    // and it is never a target either way.
+    const label = calendar.slice(
+      calendar.indexOf('insetInlineStart: GUTTER_W') - 400,
+      calendar.indexOf('insetInlineStart: GUTTER_W'),
+    );
+    expect(label).toContain('pointer-events-none');
+    expect(label).toContain('aria-hidden="true"');
+  });
+
+  it('says it on the list’s first time row, also for free', () => {
+    expect(list).toContain('dayFullLabel(day)');
+    expect(list).toContain('{rowIndex === firstGroupIndex && (');
+  });
+
+  it('survives a day that opens with lunch', () => {
+    // Breaks carry no time heading to hang the day on, so the first *group*
+    // is the anchor rather than the first row.
+    expect(list).toMatch(/rows\.findIndex\(\(r\) => r\.kind !== 'break'\)/);
   });
 });
 
