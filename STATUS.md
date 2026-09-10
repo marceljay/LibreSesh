@@ -998,6 +998,51 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
+- **Day navigation on a phone.** [LIB-189, LIB-192] Raised 2026-09-09, built
+  the same day. A long event navigated in two rows — a rail of week chips, and
+  that week's days scrolling sideways under it — which on a phone were most of
+  what stood between the event bar and the day's first session. LIB-189 folded
+  the rail into a button and gave the strip the `Rail` arrows it had never had;
+  LIB-192 then replaced both rows with one control, `‹ Wed 18 Sep ›`, holding
+  every day of the event grouped under its week with the counts and dimming the
+  strip carried. The chevrons are the load-bearing half: reaching tomorrow in
+  one tap is the only thing the strip was better at, and a bare dropdown would
+  have been worse than what it replaced. Only past `weekRailFrom` (default 8
+  days), where the strip cannot show the event anyway; under it nothing changes
+  and the arrows still serve. Desktop keeps both rows.
+
+  Still open on LIB-189, deliberately: a Sunday-start event splits every
+  weekend, because the boundaries fall every seven days from day one; and a
+  tail chunk can be a single day (15 days → 7 / 7 / 1), so "Week 3" labels one
+  date. Both change what a week *means*, which is worth deciding rather than
+  slipping in beside a layout change. A configurable week start is explicitly
+  *not* wanted — chunking from the start date already gives the fewest chips
+  possible, and calendar alignment is what would turn a Wednesday fortnight
+  into three of them.
+
+- **An attendee's action row is a whole line holding one `+`.** [LIB-190] Raised
+  2026-09-09. Manage / Arrange / Add sit in a `basis-full` block
+  (`SchedulePage.tsx:1420`) so the organiser's three buttons take their own
+  line below `sm` — sound for an organiser, except Manage and Arrange are both
+  admin-only, so an attendee gets a full-width row holding one right-aligned
+  `+` hanging under the Now button. It is the wrong neighbour too: `+` and
+  **Pitch a session** are the two ways an attendee puts a session into the
+  world, and they sit a row apart. Move the `+` beside Pitch for anyone who is
+  not an organiser, minding the event that has the board switched off and the
+  attendee with no open-booking room.
+
+- **"Propose" and "Pitch" are the same word for two different acts.** [LIB-191]
+  Raised 2026-09-09. `SessionModal` heads itself *Propose a session* for a
+  non-organiser while the board beside it says *Pitch a session* — synonyms,
+  offered a few taps apart, for two genuinely different things. Worse, nothing
+  is proposed: `canCreateSession` wants `session.create_open` and a room with
+  `openBooking`, and with those the session lands on the grid unreviewed, so
+  the word promises an approval step the code does not have. *Pitch* was chosen
+  deliberately for the board and stays; *propose* is the one to retire. The
+  open question is how far the rename travels — the route is `/proposals`, the
+  components are `Proposal*` and the capability is `proposal.create`, while the
+  setting is `pitchesEnabled`.
+
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
   format and expected-person rows): typing a name the event does not know into
@@ -1220,6 +1265,25 @@ w-48`, the other `w-full` — so they are exempted by name in
   organiser actually asks.
 
 ## Low Priority / Ideas
+
+- **Decision · Measure the header row instead of guessing at it.** [LIB-194]
+  Deferred on 2026-09-10, with the reasoning worth keeping. CSS cannot ask
+  whether hiding something would prevent a wrap — no such query exists, and
+  `@container` reports the container's size, not whether the content fits. We
+  hit it shrinking the Now button to a bare dot while the search field had
+  focus: the rule was unconditional, so on the narrowest screens the row
+  wrapped anyway and the label had been given up for nothing. Fixed by making
+  the field elastic instead, with `flex-wrap` left on as the safety valve, so
+  nothing is blocked — file it for the row elasticity will not save. The
+  options all measure and react rather than predict: a local hook (wrapped
+  children have a different `offsetTop`, and `Rail.tsx` already observes a box
+  and its children for the neighbouring problem), Blueprint's `OverflowList`,
+  `rc-overflow`, or Every Layout's CSS-only `Switcher`. The bundle decides it —
+  a third UI dependency for one row, against [LIB-140] already asking what
+  Floating UI costs the first paint — so the local hook is almost certainly the
+  answer, and this exists to make that a decision rather than a default. Worth
+  deciding too: whether reacting to a wrap is right at all, since every control
+  that hides itself to save space is one somebody then cannot find.
 
 - **React 18 → 19, and react-router 6 → 7.** Deferred through the whole Base UI
   migration and never needed: Base UI supports React 18, so nothing was blocked

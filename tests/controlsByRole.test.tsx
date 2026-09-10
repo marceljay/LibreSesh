@@ -34,6 +34,8 @@ configure({ asyncUtilTimeout: 10_000 });
 vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 });
 
 const SLUG = 'testconf';
+/** Adding and pitching share one button; its name says which ways in it has. */
+const ADD_SESSION = /^Add (session|or pitch a session)$/;
 const ROLES: Role[] = ['viewer', 'user', 'speaker'];
 
 interface Actor {
@@ -97,7 +99,9 @@ const CONTROLS: Control[] = [
     capability: 'session.create_open',
     path: () => `/e/${SLUG}`,
     anchor: () => screen.findAllByText(/Keynote/),
-    count: () => screen.queryAllByRole('button', { name: 'Add session' }).length,
+    // One control now, and its name says how many ways in it offers: "Add
+    // session" alone, "Add or pitch a session" when the board is open too.
+    count: () => screen.queryAllByRole('button', { name: ADD_SESSION }).length,
   },
   {
     capability: 'session.edit_own',
@@ -270,7 +274,7 @@ describe('every matrix-governed control, rendered per role', () => {
       open(`/e/${SLUG}`);
       await screen.findAllByText(/Keynote/);
       await settled();
-      expect(screen.queryAllByRole('button', { name: 'Add session' })).toHaveLength(0);
+      expect(screen.queryAllByRole('button', { name: ADD_SESSION })).toHaveLength(0);
     } finally {
       for (const r of rooms)
         await admin.patch(`/api/e/${SLUG}/rooms/${r.id}`).send({ openBooking: true }).expect(200);

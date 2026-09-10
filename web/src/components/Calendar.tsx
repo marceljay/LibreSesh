@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
-import { fmtMin, place, speakerLine } from '../lib/format';
+import { dayFullLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { laneLayout } from '../lib/laneLayout';
 import { InfoIcon } from './icons';
 import { StarTally } from './StarTally';
@@ -391,11 +391,35 @@ export function Calendar({
     [breaks, day, dayStartMin, dayEndMin],
   );
   const lanes = useMemo(() => laneLayout(placed, columnOf), [placed, columnOf]);
+
   const overlaps = useMemo(() => overlappingIds(placed), [placed]);
   const competing = useMemo(() => competingIds(onThisDay), [onThisDay]);
   const tagColor = useMemo(() => new Map(tags.map((t) => [t.id, t.color])), [tags]);
 
   const height = (dayEndMin - dayStartMin) * PX_PER_MIN;
+
+  /**
+   * Where the day's name goes: the line directly above the first session,
+   * clear of it rather than across it.
+   *
+   * It sat centred on an hour line, which put half of it behind whatever block
+   * started there. Anchored by its `bottom` instead, it clears the block by two
+   * pixels and CSS works out its own height — a constant for the line box is
+   * the kind of number that goes stale the first time the type scale moves.
+   *
+   * The first session, not the opening hour: Next day scrolls the grid to the
+   * first session, so the top of the day window is usually off screen by the
+   * time anybody looks. An empty day has nothing to sit above, so it goes to
+   * the top and says the day there.
+   */
+  const dayLabelStyle = useMemo(() => {
+    const first = placed.reduce<number | null>(
+      (min, p) => (min === null || p.startMin < min ? p.startMin : min),
+      null,
+    );
+    if (first === null) return { top: 0 };
+    return { bottom: height - Math.max(0, (first - dayStartMin) * PX_PER_MIN) + 2 };
+  }, [placed, dayStartMin, height]);
   const showNow = nowMin !== null && nowMin >= dayStartMin && nowMin <= dayEndMin;
 
   const startDrag = useCallback(
@@ -622,6 +646,40 @@ export function Calendar({
                 {fmtMin(nowMin)}
               </span>
             )}
+          </div>
+
+          {/* The day, in the empty band above the first session rather than in
+              a row of its own — it costs no height at all, which is the point.
+              That band is where the grid has already been scrolled to: Next day
+              lands on the first session, not on the top of the opening hour.
+
+              Clear of the block, not across it. Centred on an hour line it had
+              half of itself behind whatever started there; `dayLabelStyle`
+              anchors it by its `bottom` instead, two pixels above the first
+              block, and lets CSS work out its own height.
+
+              It is here because the day picker folds away the moment you scroll
+              into the day, and then nothing on screen says which day the grid
+              is. A screenshot of it said nothing either.
+
+              A sibling of the gutter rather than a child of it, and this is the
+              whole reason: the gutter is `z-10` so it can slide over the grid,
+              and inside it the day inherited that and painted *over* the first
+              column's blocks. Out here it is an ordinary earlier sibling, so
+              every block drawn after it covers it — which is the right way
+              round, because the programme wins over a label. It scrolls
+              sideways with the columns for the same reason; sticking it would
+              drag it back across them.
+
+              Semibold, and a stop darker than the hours: as a whisper beside
+              labels of their own colour it read as a stray note rather than as
+              the name of the day. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute whitespace-nowrap ps-2 text-xs font-semibold text-stone-500 dark:text-stone-400"
+            style={{ ...dayLabelStyle, insetInlineStart: GUTTER_W }}
+          >
+            {dayFullLabel(day)}
           </div>
 
           {Array.from({ length: halfHourCount }, (_, i) => (

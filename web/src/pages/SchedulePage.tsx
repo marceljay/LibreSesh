@@ -31,20 +31,16 @@ import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
+import { DayPicker } from '../components/DayPicker';
+import { NewSessionMenu } from '../components/NewSessionMenu';
 import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
 import { ActiveFilters, FilterMenu } from '../components/FilterMenu';
 import { Login } from '../components/Login';
-import {
-  CalendarIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  PitchIcon,
-  SettingsIcon,
-} from '../components/icons';
+import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, SettingsIcon } from '../components/icons';
 import { ListView } from '../components/ListView';
-import { Rail } from '../components/Rail';
+import { RAIL_FADE_CARD, Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
 import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
 import type { SaveOpts } from '../components/SessionModal';
@@ -363,6 +359,9 @@ export function SchedulePage() {
   // follows a shared `?day=` link instead of fighting it.
   const weekIndex = weeks.length ? Math.floor(Math.max(0, days.indexOf(day)) / 7) : 0;
   const stripDays = weeks.length ? (weeks[weekIndex] ?? days) : days;
+  /** Long enough that the strip cannot show the event: a phone gets the one
+   *  `DayPicker` control instead of the week rail and the strip both. */
+  const longEvent = weeks.length > 1;
 
   /** The identity's starred session ids, as a set for cheap lookups. */
   const starredIds = useMemo(
@@ -1049,10 +1048,9 @@ export function SchedulePage() {
     {
       target: 'days',
       title: 'Pick a day',
-      body:
-        weeks.length > 1
-          ? 'One tab per day. A long event splits into weeks above — pick a week, then a day. Dimmed days have nothing scheduled yet.'
-          : 'One tab per day of the event.',
+      body: longEvent
+        ? 'One tab per day, a week at a time — the weeks are the rail above. On a phone all of it folds into the day button, with an arrow for the day either side. Dimmed days have nothing scheduled yet.'
+        : 'One tab per day of the event.',
     },
     {
       target: 'view',
@@ -1064,11 +1062,19 @@ export function SchedulePage() {
       title: 'Rooms or tracks',
       body: 'This event has tracks, so the grid can lay its columns out either way. Reading by track, each block says which room it is in.',
     },
-    {
-      target: 'pitches',
-      title: 'Pitch a session',
-      body: 'Propose a session with no room or time, and say which pitches you would turn up to. Organisers place the popular ones on the grid.',
-    },
+    /* One step, because it is one button now — and conditional, because it is
+       not always there: an event can turn the board off, and not everyone may
+       book a room. Spread in place rather than pushed at the end, so the tour
+       does not walk back up the page to reach it. */
+    ...(canWrite || event.pitchesEnabled
+      ? [
+          {
+            target: 'add',
+            title: 'Add or pitch a session',
+            body: 'Both live here. Add one with a room and a time to put it straight on the grid, or pitch an idea with neither and let people say they would turn up — organisers place the popular ones.',
+          },
+        ]
+      : []),
     {
       target: 'now',
       title: 'Jump to now',
@@ -1077,7 +1083,7 @@ export function SchedulePage() {
     {
       target: 'session-block',
       title: 'Open a session',
-      body: "Tap any block for its description, speaker and everyone's notes, links and questions. Dashed green blocks are non-official — anyone may propose one, and something else can always run alongside it.",
+      body: "Tap any block for its description, speaker and everyone's notes, links and questions. Dashed green blocks are non-official — anyone may add one, and something else can always run alongside it.",
     },
     {
       target: 'filters',
@@ -1090,13 +1096,6 @@ export function SchedulePage() {
       target: 'arrange',
       title: 'Move things around',
       body: 'Turn on Arrange, then drag a block to change its time or room, or drag its bottom edge to change its length. It snaps to 5 minutes and only moves what you may edit.',
-    });
-  }
-  if (canWrite) {
-    tourSteps.push({
-      target: 'add',
-      title: 'Add a session',
-      body: 'Organisers add official sessions anywhere; everyone else proposes non-official ones in the rooms that anyone may book.',
     });
   }
   if (role === 'admin') {
@@ -1176,7 +1175,7 @@ export function SchedulePage() {
           <>
             <div ref={foldedRows} className={foldRow}>
               <div className={foldInner}>
-                {weeks.length > 1 && (
+                {longEvent && (
                   /* One line that scrolls sideways, like the day strip below
                    it, rather than a row that wraps: on a phone a four-week
                    conference wrapped to two lines and a six-week one to three,
@@ -1186,7 +1185,14 @@ export function SchedulePage() {
                   /* The rail's own box is exactly the line of chips: the space
                    under it is this wrapper's, because the arrows are centred
                    on the rail and padding inside it would sit them low. */
-                  <div className="mx-auto max-w-6xl pb-2">
+                  /* Desktop only. On a phone this row and the day strip under
+                   it are most of the gap between the event bar and the first
+                   session, and of the two the rail is the one that says the
+                   same thing in one chip — `WeekMenu` at the head of the
+                   strip. A desktop keeps the rail: the whole shape of the
+                   event at a glance is worth a line there, where there is one
+                   to spare. */
+                  <div className="mx-auto hidden max-w-6xl pb-2 sm:block">
                     <Rail label="Weeks" className="gap-1.5 px-4">
                       {weeks.map((week, i) => {
                         const first = week[0] as string;
@@ -1221,37 +1227,73 @@ export function SchedulePage() {
                 )}
 
                 <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-3 pb-3 sm:px-4">
+                  {/* A long event on a phone gets one control for the day
+                    instead of two rows of them — the weeks above and this
+                    strip, which even with arrows keeps a fortnight's far days
+                    several flicks away. `DayPicker` holds all of them, and its
+                    chevrons keep tomorrow one tap away, which is the only
+                    thing the strip was better at.
+
+                    Only past `weekRailFrom`: under it the strip shows the
+                    whole event at once, so there is nothing to fix and a
+                    dropdown over three visible chips is a pure loss. */}
+                  {longEvent && (
+                    <DayPicker
+                      className="sm:hidden"
+                      days={days}
+                      weeks={weeks}
+                      day={day}
+                      today={today}
+                      countFor={(d) => perDay.get(d) ?? 0}
+                      onPick={goToDay}
+                    />
+                  )}
+                  {/* The strip is the box; the rail is the line inside it. That
+                    order matters: `Rail` positions its arrows against its own
+                    edges, so with the border outside them they fade to the
+                    card's inner edge instead of sitting on the border and
+                    spilling past its radius. `min-w-0` lets the box shrink
+                    rather than shoving the view toggle onto the next line. */}
                   <div
                     data-tour="days"
-                    className="flex overflow-x-auto rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5 no-scrollbar"
+                    className={`min-w-0 items-center rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900 ${
+                      longEvent ? 'hidden sm:flex' : 'flex'
+                    }`}
                   >
-                    {stripDays.map((d) => {
-                      const label = dayLabel(d, today);
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => goToDay(d)}
-                          aria-pressed={day === d}
-                          className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
-                            day === d
-                              ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
-                              : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                          } ${day !== d && (perDay.get(d) ?? 0) === 0 ? 'opacity-40' : ''}`}
-                        >
-                          {label.top}{' '}
-                          <span
-                            className={
+                    {/* The strip scrolls, and its scrollbar is hidden, so
+                      without these a day past the edge was a day you never
+                      found — the same sentence the week rail has had since it
+                      was written, finally said here too. It matters more now:
+                      below `sm` this row is the only day navigation left. */}
+                    <Rail label="Days" className="gap-0" fade={RAIL_FADE_CARD}>
+                      {stripDays.map((d) => {
+                        const label = dayLabel(d, today);
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => goToDay(d)}
+                            aria-pressed={day === d}
+                            className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium ${
                               day === d
-                                ? 'text-stone-300 dark:text-stone-600'
-                                : 'text-stone-400 dark:text-stone-500'
-                            }
+                                ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                                : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
+                            } ${day !== d && (perDay.get(d) ?? 0) === 0 ? 'opacity-40' : ''}`}
                           >
-                            {label.sub}
-                          </span>
-                        </button>
-                      );
-                    })}
+                            {label.top}{' '}
+                            <span
+                              className={
+                                day === d
+                                  ? 'text-stone-300 dark:text-stone-600'
+                                  : 'text-stone-400 dark:text-stone-500'
+                              }
+                            >
+                              {label.sub}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </Rail>
                   </div>
 
                   <div
@@ -1306,35 +1348,26 @@ export function SchedulePage() {
                     </div>
                   )}
 
-                  {/* Everyone needs the board: attendees pitch there, viewers can
-                    register interest. It sits with the other ways of looking at the
-                    programme, not up with the account chrome.
+                  {/* Both ways of putting a session into the world, behind one
+                    button. They were a row apart, then side by side, and they
+                    are the same question asked twice — do you have a room and
+                    a time, or only an idea? Behind one button the two sit
+                    together with room for a sentence each, which is where that
+                    difference can be explained rather than guessed at from two
+                    labels.
 
-                    "Pitches" named the place; "Pitch a session" says what you
-                    can do there, which is what somebody who has never seen an
-                    unconference needs to read. It costs two words, so below
-                    `sm` — where this row already competes with Manage, Arrange
-                    and Add — the bulb carries it alone, with the words still on
-                    the button as its accessible name.
-
-                    Gone entirely on an event that has turned the board off: the
-                    pitches themselves are untouched, but there is nothing here
-                    to walk into. */}
-                  {event.pitchesEnabled && (
-                    <Link
-                      data-tour="pitches"
-                      to={`/e/${slug}/proposals`}
-                      aria-label="Pitch a session"
-                      title="Pitch a session"
-                      className="flex items-center gap-1.5 rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 px-3 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500"
-                    >
-                      <PitchIcon className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Pitch a session</span>
-                      {openPitchCount > 0 && (
-                        <span className="text-stone-400 dark:text-stone-500">{openPitchCount}</span>
-                      )}
-                    </Link>
-                  )}
+                    It sits with the other ways of looking at the programme,
+                    not up with the account chrome. The board disappears from
+                    it on an event that has turned pitches off — the pitches
+                    themselves are untouched, but there is nothing to walk
+                    into — and the menu becomes a plain button when only one of
+                    the two is open to this viewer. */}
+                  <NewSessionMenu
+                    canAdd={canWrite}
+                    pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+                    pitchCount={openPitchCount}
+                    onAdd={() => setEditing({})}
+                  />
                 </div>
               </div>
             </div>
@@ -1377,6 +1410,7 @@ export function SchedulePage() {
                   )}
                 </button>
                 <SearchBox
+                  fill
                   sessions={bundle.sessions}
                   rooms={bundle.rooms}
                   timezone={timezone}
@@ -1400,9 +1434,25 @@ export function SchedulePage() {
                   type="button"
                   data-tour="now"
                   onClick={jumpToNow}
-                  className="shrink-0 rounded-lg bg-highlight px-3 py-2 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
+                  aria-label={`Jump to now, ${fmtMin(nowMinuteOfDay(timezone))}`}
+                  /* 34px like every other control in the header, and a
+                     transparent border to get there: this one is filled
+                     rather than outlined, and `px-3 py-2` without a border is
+                     two pixels shorter than `px-3 py-2` with one. That is the
+                     whole reason the row came out ragged — the padding
+                     matched everywhere and the box model did not. */
+                  className="flex h-[34px] shrink-0 items-center rounded-lg border border-transparent bg-highlight px-3 text-xs font-semibold text-stone-900 shadow-xs hover:brightness-95"
                 >
-                  ● Now {fmtMin(nowMinuteOfDay(timezone))}
+                  {/* Words at every width. They briefly went on a phone while
+                    the search field had focus, to keep the row on one line —
+                    but hiding them only helps where it actually prevents the
+                    wrap, and on the narrowest screens the row wrapped anyway.
+                    A bare dot and a second line is worse than the label and a
+                    second line, so the trade never paid. The field is elastic
+                    now and takes slack instead of demanding space, which
+                    removes the reason it was asked for. */}
+                  <span aria-hidden="true">●</span>
+                  <span className="ms-1">Now {fmtMin(nowMinuteOfDay(timezone))}</span>
                 </button>
                 <ActiveFilters
                   filters={filters}
@@ -1410,15 +1460,19 @@ export function SchedulePage() {
                   tags={bundle.tags}
                   tracks={bundle.tracks}
                 />
-                {/* Manage / Arrange / Add end this row rather than the one above:
+                {/* The organiser's actions end this row rather than the one above:
                   the day strip and the view toggles left a wide gap on the right of
-                  it, and the organiser's three actions were taking a whole row of
-                  their own to sit in. `basis-full` below `sm` puts them back on a
-                  line of their own, because on a phone they do not fit beside the
-                  search box. Living here also means they survive the fold — Arrange
-                  is a thing you reach for mid-scroll, and it used to fold away. */}
-                <div className="flex basis-full items-center justify-end gap-2 sm:ms-auto sm:basis-auto">
-                  {role === 'admin' && (
+                  it, and these were taking a whole row of their own to sit in.
+                  `basis-full` below `sm` puts them back on a line of their own,
+                  because on a phone three buttons do not fit beside the search box.
+                  Living here also means they survive the fold — Arrange is a thing
+                  you reach for mid-scroll, and it used to fold away.
+
+                  Organiser-only, block and all. Manage and Arrange both need the
+                  role, so for anyone else this rendered a full-width line holding
+                  nothing but the `+` — which now sits beside Pitch instead. */}
+                {role === 'admin' && (
+                  <div className="flex basis-full items-center justify-end gap-2 sm:ms-auto sm:basis-auto">
                     <Link
                       data-tour="manage"
                       to={`/e/${slug}/admin`}
@@ -1429,41 +1483,28 @@ export function SchedulePage() {
                       <SettingsIcon className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Manage Event</span>
                     </Link>
-                  )}
-                  {canArrange && (
-                    <button
-                      type="button"
-                      data-tour="arrange"
-                      onClick={() => setArrange((a) => !a)}
-                      aria-pressed={arrange}
-                      aria-label={arrange ? 'Done arranging' : 'Arrange sessions'}
-                      title={arrange ? 'Done arranging' : 'Arrange sessions'}
-                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
-                        arrange
-                          ? 'border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
-                          : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'
-                      }`}
-                    >
-                      <span aria-hidden="true">{arrange ? '✓' : '↕'}</span>
-                      <span className="hidden sm:inline">
-                        {arrange ? 'Done arranging' : 'Arrange Sessions'}
-                      </span>
-                    </button>
-                  )}
-                  {canWrite && (
-                    <button
-                      type="button"
-                      data-tour="add"
-                      onClick={() => setEditing({})}
-                      aria-label="Add session"
-                      title="Add session"
-                      className="flex items-center gap-1.5 rounded-lg bg-stone-900 dark:bg-stone-100 dark:text-stone-900 px-3 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:hover:bg-stone-300"
-                    >
-                      <span aria-hidden="true">+</span>
-                      <span className="hidden sm:inline">Add session</span>
-                    </button>
-                  )}
-                </div>
+                    {canArrange && (
+                      <button
+                        type="button"
+                        data-tour="arrange"
+                        onClick={() => setArrange((a) => !a)}
+                        aria-pressed={arrange}
+                        aria-label={arrange ? 'Done arranging' : 'Arrange sessions'}
+                        title={arrange ? 'Done arranging' : 'Arrange sessions'}
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
+                          arrange
+                            ? 'border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
+                            : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'
+                        }`}
+                      >
+                        <span aria-hidden="true">{arrange ? '✓' : '↕'}</span>
+                        <span className="hidden sm:inline">
+                          {arrange ? 'Done arranging' : 'Arrange Sessions'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -1472,13 +1513,27 @@ export function SchedulePage() {
 
       {fullPage && selected ? (
         <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6">
-          <Link
-            to={sheetUrl}
-            className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-          >
-            <span aria-hidden="true">←</span>
-            Back to the schedule
-          </Link>
+          {/* This page drops the header's rows, so until now the only way out
+              of it was backwards. Reading somebody else's session is one of
+              the likelier moments to want one of your own — or to want to
+              pitch the thing it made you think of — and the merged control is
+              small enough to ride along at the end of the way back rather
+              than earning a row of its own. */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <Link
+              to={sheetUrl}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+            >
+              <span aria-hidden="true">←</span>
+              Back to the schedule
+            </Link>
+            <NewSessionMenu
+              canAdd={canWrite}
+              pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+              pitchCount={openPitchCount}
+              onAdd={() => setEditing({})}
+            />
+          </div>
           {/* `collapseAt={null}`: the panel collapses long discussions to keep
               the composer reachable, and this page is where you come to read
               the rest, so collapsing here would defeat the trip. */}

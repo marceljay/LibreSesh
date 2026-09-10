@@ -71,7 +71,7 @@ export function FilterMenu({
         aria-label="Filter"
         title="Filter"
         {...getReferenceProps({ onClick: () => setOpen((o) => !o) })}
-        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
+        className={`flex h-[34px] items-center gap-1.5 rounded-full border px-3 text-xs font-medium ${
           count > 0 || open
             ? 'border-stone-900 bg-stone-900 text-white dark:border-stone-100 dark:bg-stone-100 dark:text-stone-900'
             : 'border-stone-300 bg-white text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500'

@@ -1,7 +1,7 @@
 import { plural } from '../lib/plural';
 import { type ReactNode, useMemo } from 'react';
 import type { BreakDto, RoomDto, SessionDto, TagDto } from '@shared/types';
-import { fmtMin, place, speakerLine } from '../lib/format';
+import { dayFullLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { nowLineIndex } from '../lib/nowLine';
 import { StarTally } from './StarTally';
 import { TagChip } from './ui';
@@ -121,10 +121,15 @@ export function ListView({
   const withNowLine = (items: ReactNode[]): ReactNode[] =>
     nowLine === null ? items : [...items.slice(0, nowAt), nowLine, ...items.slice(nowAt)];
 
+  /** The first row that is a time rather than a break — a day that opens with
+   *  lunch would otherwise never say its name, because breaks carry no time
+   *  heading to hang it on. */
+  const firstGroupIndex = rows.findIndex((r) => r.kind !== 'break');
+
   return (
     <div className="px-4 pb-24 pt-3">
       {withNowLine(
-        rows.map((row) =>
+        rows.map((row, rowIndex) =>
           row.kind === 'break' ? (
             <div
               key={`break-${row.item.id}`}
@@ -139,6 +144,17 @@ export function ListView({
             <div key={row.group.start} className="mb-4">
               <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-stone-500 dark:text-stone-400">
                 {fmtMin(row.group.start)}
+                {/* The day, on the first time of the list rather than in a
+                    heading of its own: this row is already here, so saying it
+                    costs no height. The day picker folds away as soon as you
+                    scroll into the day, and after that nothing else on screen
+                    named the day — a screenshot of a list said nothing either.
+                    The grid says it the same way, beside its first hour. */}
+                {rowIndex === firstGroupIndex && (
+                  <span className="font-normal text-stone-400 dark:text-stone-500">
+                    {dayFullLabel(day)}
+                  </span>
+                )}
               </div>
               <div className="space-y-2">
                 {row.group.items.map(({ session, startMin, endMin }) => {
