@@ -15,6 +15,18 @@ describe('link phrases', () => {
     expect(new Set(WORDS).size).toBe(WORDS.length);
   });
 
+  /**
+   * Every entry, not a sampled phrase. A word carrying a space or a capital
+   * would produce a phrase that cannot be typed at a login page, read aloud
+   * or carried in a URL fragment — and minting is random, so a sampled test
+   * catches it about once in two hundred runs. One such word did reach this
+   * list, from a careless find-and-replace across the repository.
+   */
+  it('holds only plain lowercase words', () => {
+    const bad = WORDS.filter((w) => !/^[a-z]+$/.test(w));
+    expect(bad).toEqual([]);
+  });
+
   it('mints three words joined by dashes', () => {
     expect(newLinkPhrase()).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/);
   });
