@@ -95,6 +95,21 @@ export function loginBlockSeconds(failures: number): number {
 }
 
 /**
+ * How many more attempts are free before the next wait, given this many
+ * failures already. The login page says so once it is down to the last two,
+ * so that a wait is something a person is warned about rather than something
+ * that happens to them: the whole point of five free attempts is that a
+ * mistyped four-word phrase costs nothing, and that only holds if the person
+ * knows which attempt is the expensive one. Earlier than two it is noise, and
+ * telling an attacker is no help to them — they can count.
+ */
+export function loginAttemptsLeft(failures: number): number {
+  if (failures < LOGIN_FREE_ATTEMPTS) return LOGIN_FREE_ATTEMPTS - failures;
+  if (failures < LOGIN_FREE_ATTEMPTS * 2) return LOGIN_FREE_ATTEMPTS * 2 - failures;
+  return 0;
+}
+
+/**
  * Per-address backoff on failed password attempts at one event (D3 §1a).
  *
  * Keyed on the pair, so an attacker cannot spend one event's patience on
@@ -118,13 +133,20 @@ export class Backoff {
     return Math.ceil((entry.notBefore - t) / 1000);
   }
 
-  /** Record a failure and set how long this address now waits. */
-  fail(key: string): void {
+  /**
+   * Record a failure and set how long this address now waits. Returns the
+   * running count and the wait this failure just bought, so the route can
+   * answer with both in one response rather than leaving the wait to be
+   * discovered by the next attempt.
+   */
+  fail(key: string): { count: number; waitSeconds: number } {
     const t = this.now();
     const entry = this.failures.get(key) ?? { count: 0, notBefore: 0 };
     entry.count += 1;
-    entry.notBefore = t + loginBlockSeconds(entry.count) * 1000;
+    const waitSeconds = loginBlockSeconds(entry.count);
+    entry.notBefore = t + waitSeconds * 1000;
     this.failures.set(key, entry);
+    return { count: entry.count, waitSeconds };
   }
 
   /** A correct password forgets the misses that came before it. */

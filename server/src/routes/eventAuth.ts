@@ -21,6 +21,8 @@ import {
   LOGIN_FAILURES_PER_HOUR,
   clientIp,
   limit,
+  loginAttemptsLeft,
+  loginBlockSeconds,
 } from '../ratelimit.js';
 import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
@@ -201,7 +203,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
     const { password, displayName, claimProfile } = parse(authSchema, req.body);
     const role = roleForPassword(req.event, password);
     if (!role) {
-      ctx.backoff.fail(backoffKey);
+      const { count, waitSeconds } = ctx.backoff.fail(backoffKey);
       ctx.tally.fail(addressKey, {
         threshold: ADDRESS_FAILURES_PER_HOUR,
         blockMs: LOGIN_CLOSED_MS,
@@ -233,7 +235,25 @@ export function eventAuthRoutes(ctx: Ctx): Router {
           entityId: closedAfter,
         });
       }
-      throw forbidden('That password does not match');
+      // The wait this miss just bought rides on the miss itself. It stays a
+      // 403 — the password was compared and it was wrong, which is a
+      // different fact from the 429 the *next* attempt gets, where nothing is
+      // compared at all. Only `Retry-After` is borrowed, so the page can
+      // start its clock now instead of springing the wait on the next press.
+      if (waitSeconds > 0) {
+        res.setHeader('Retry-After', String(waitSeconds));
+        throw forbidden('That password does not match', { waitSeconds });
+      }
+
+      // Short of a wait, say how close it is. `attemptsLeft` counts the free
+      // attempts still to come and `nextWaitSeconds` what the one after them
+      // costs; the page turns them into a sentence and stays quiet until the
+      // last two.
+      const attemptsLeft = loginAttemptsLeft(count);
+      throw forbidden('That password does not match', {
+        attemptsLeft,
+        nextWaitSeconds: loginBlockSeconds(count + attemptsLeft),
+      });
     }
 
     ctx.backoff.succeed(backoffKey);
