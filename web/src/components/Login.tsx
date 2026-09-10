@@ -11,6 +11,8 @@ import { Logo } from './Logo';
 import {
   ControlShell,
   Field,
+  HelpButton,
+  HelpNote,
   InlineForm,
   PasswordInput,
   PrimaryButton,
@@ -40,6 +42,12 @@ const SPEAKER_CODE_FAILED =
   'That speaker code didn’t match — it may have been revoked or replaced. Ask your organiser for a new one.';
 const DEVICE_PHRASE_FAILED = 'That phrase didn’t match — it may have expired or been revoked.';
 
+/** What a username is here, for whoever wonders. Inline under the field on the
+ *  cards that have other things to say, and behind the header's "?" on the one
+ *  that asks for a name and nothing else. */
+const USERNAME_HELP =
+  'What you’ll be called in this event — unique here, remembered on this device. No account, no password.';
+
 /** Full-screen password login page — an event's schedule is never public (SPEC §3.2). */
 export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = false }: LoginProps) {
   const { refresh } = useMe();
@@ -67,6 +75,30 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
    * so it is a question with two answers, and the entry is retried with one.
    */
   const [namesake, setNamesake] = useState<{ name: string; sessionCount: number } | null>(null);
+  /**
+   * The password card asks one thing at a time: the password, and then — only
+   * once the server has said that password is right — the username. The two
+   * used to stand together with the name box below the button and behind a
+   * rule, so a first-timer filled the password, pressed, and got nothing.
+   *
+   * The server needs no new endpoint to do this: `POST /auth` checks the
+   * password *before* it claims a name, so a password with no name comes back
+   * `name_required` when it is right and `403` when it is wrong, and neither
+   * grants anything. A device that already holds a name here never sees the
+   * second step — the server enters it under the name it holds.
+   */
+  const [nameAsked, setNameAsked] = useState(false);
+  /** The "?" in that step's header, holding what the card no longer says. */
+  const [nameHelp, setNameHelp] = useState(false);
+  /**
+   * A name this device already holds here, from `/login`. It is never shown:
+   * the first card is the password and nothing else, at every event and on
+   * every visit, and a device that holds a name is simply entered under it on
+   * the first press — the server falls back to the held name when the request
+   * carries none. Drawing the box prefilled instead put both questions back on
+   * one card for exactly the people who had seen the two-step before, which
+   * read as the feature being missing.
+   */
 
   useEffect(() => {
     let live = true;
@@ -87,6 +119,12 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
     if (err.code === 'name_taken') {
       setError(errorText(err));
       setSuggestion(name.trim());
+      return true;
+    }
+    // The password was right; the name is the step that is left. The box
+    // appearing is the answer, so there is nothing to say in red.
+    if (err.code === 'name_required') {
+      setNameAsked(true);
       return true;
     }
     if (err.code === 'profile_exists') {
@@ -162,10 +200,16 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
   };
 
   const submit = async (claimProfile?: boolean) => {
-    if (busy || !password.trim()) return;
-    // The form submits from the password box too, and `noValidate` means the
-    // browser will not point at the empty name field — so this has to.
-    if (!name.trim()) {
+    if (busy) return;
+    // The form submits from either box, and `noValidate` means the browser
+    // will not point at an empty one — so this has to. Sentences rather than
+    // silence: the button is live whatever the boxes hold, so a press that
+    // does nothing has to say what it is waiting for.
+    if (!password.trim()) {
+      setError('Type the event password to enter');
+      return;
+    }
+    if (nameAsked && !name.trim()) {
       setError('Pick a username to enter');
       return;
     }
@@ -174,9 +218,12 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
     setSuggestion(null);
     setNamesake(null);
     try {
-      // The name is claimed as part of entry: it has to be unique inside this
-      // event, and the server grants no role if it is taken.
-      await api.authenticate(slug, password.trim(), name.trim(), claimProfile);
+      // With no name yet this asks the password on its own: the server answers
+      // `name_required` for a password that is right, and enters a device that
+      // already holds a name here without a second step. The name, when it
+      // comes, is claimed as part of entry — unique inside this event, and no
+      // role is granted if it is taken.
+      await api.authenticate(slug, password.trim(), name.trim() || undefined, claimProfile);
       onEntered();
     } catch (err) {
       if (!nameProblem(err)) {
@@ -256,7 +303,10 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
   const nameField = (
     <Field
       label="Username"
-      hint="What you'll be called in this event — unique here, remembered on this device. No account, no password."
+      // On the step that asks for nothing else, the explanation is behind the
+      // "?" in the card's header instead: it is three facts nobody needs while
+      // typing, and inline they were most of the card.
+      hint={nameAsked ? undefined : USERNAME_HELP}
     >
       <ControlShell>
         <TextInput
@@ -269,6 +319,11 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
           required
           aria-required="true"
           placeholder="e.g. ada"
+          // Only where the box has just appeared under a password that was
+          // right — the demo and invite cards draw it from the start, and
+          // stealing focus there would move the caret out of the field
+          // somebody is already in.
+          autoFocus={nameAsked}
         />
       </ControlShell>
     </Field>
@@ -330,12 +385,37 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
         </Link>
       </header>
       <div className="w-full max-w-sm rounded-2xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-900 p-6 shadow-xs">
+        {/* The second step is titled for the question it asks, not for the
+            event: by then the event is settled, and the name is the whole of
+            what is left. Which event it was, and what a username is here, move
+            behind the "?" — one press for whoever put the phone down halfway
+            through and came back wondering, and nothing to read for everyone
+            else. */}
         <div className="mb-1 flex items-center gap-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-sm font-bold text-white">
             {initial}
           </div>
-          <h1 className="truncate text-lg font-semibold tracking-tight">{eventName ?? slug}</h1>
+          <h1 className="truncate text-lg font-semibold tracking-tight">
+            {nameAsked ? 'Pick a username' : (eventName ?? slug)}
+          </h1>
+          {nameAsked && (
+            <span className="ms-auto">
+              <HelpButton
+                open={nameHelp}
+                onClick={() => setNameHelp((o) => !o)}
+                label="usernames"
+              />
+            </span>
+          )}
         </div>
+        {nameAsked && nameHelp && (
+          <HelpNote>
+            <p>{USERNAME_HELP}</p>
+            <p>
+              You are joining <span className="font-medium">{eventName ?? slug}</span>.
+            </p>
+          </HelpNote>
+        )}
         {demo ? (
           <>
             <p className="mb-1 mt-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
@@ -407,6 +487,10 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
                     Enter as “{suggestion.replace(/\s+\d+$/, '')} 2” instead
                   </button>
                 )}
+                {/* Disabled until there is a name, unlike the password card's
+                    button: here the name box is the field directly above, so a
+                    button that lights up as you type explains itself, and
+                    there is no second field to be ambiguous about. */}
                 <PrimaryButton
                   className="mt-4 w-full py-2 text-sm"
                   type="submit"
@@ -431,23 +515,41 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
               </>
             ) : (
               <>
-                <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
-                  This schedule needs the event password.
-                </p>
+                {/* Nothing here says the password was right: arriving at this
+                    step is what says it, and a line that only repeats what the
+                    screen already did is a line to read for nothing. */}
+                {!nameAsked && (
+                  <p className="mb-5 text-sm text-stone-500 dark:text-stone-400">
+                    This schedule needs the event password.
+                  </p>
+                )}
 
-                <Field label="Event password">
-                  <ControlShell invalid={Boolean(error)}>
-                    <PasswordInput
-                      name="password"
-                      autoComplete="current-password"
-                      enterKeyHint="go"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoFocus
-                    />
-                  </ControlShell>
-                </Field>
+                {/* Hidden once the password is answered for, not unmounted: the
+                    two boxes have to be in one form at the moment it submits
+                    for a password manager to see a login worth saving, and the
+                    step that submits is the second one. What the person sees is
+                    one question at a time. */}
+                <div hidden={nameAsked}>
+                  <Field label="Event password">
+                    <ControlShell invalid={Boolean(error)}>
+                      <PasswordInput
+                        name="password"
+                        autoComplete="current-password"
+                        enterKeyHint="go"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        autoFocus
+                      />
+                    </ControlShell>
+                  </Field>
+                </div>
+
+                {/* The second card, in the same panel: on its own once the
+                    password is behind us, and beside the password box only in
+                    the one case where `/login` handed a name back and both are
+                    answerable in a single press. */}
+                {nameAsked && nameField}
                 {error && linkMode === 'none' && (
                   <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
                 )}
@@ -463,24 +565,26 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
                   </button>
                 )}
 
-                <PrimaryButton
-                  className="mt-4 w-full py-2 text-sm"
-                  type="submit"
-                  disabled={busy || nameMissing}
-                >
-                  {busy ? 'Checking…' : 'Enter schedule'}
+                {/* Never disabled: the browser's implicit submission fires a
+                    click at this button, so disabling it swallows Enter from
+                    the box as well as the press — and the sentence saying what
+                    is missing is raised by the handler that would never run. */}
+                <PrimaryButton className="mt-4 w-full py-2 text-sm" type="submit" disabled={busy}>
+                  {busy ? 'Checking…' : nameAsked ? 'Enter schedule' : 'Continue'}
                 </PrimaryButton>
               </>
-            )}
-            {!invite && (
-              <div className="mt-5 border-t border-stone-100 dark:border-stone-800 pt-4">
-                {nameField}
-              </div>
             )}
           </InlineForm>
         )}
 
-        <div className="mt-4 border-t border-stone-100 dark:border-stone-800 pt-4">
+        {/* The other ways in are alternatives to the password, so they belong
+            with the password. Once it has been answered they are noise on the
+            one question left, and pressing one would throw away a password the
+            server has already agreed with. */}
+        <div
+          className="mt-4 border-t border-stone-100 pt-4 dark:border-stone-800"
+          hidden={nameAsked}
+        >
           {linkMode !== 'none' ? (
             <InlineForm onSubmit={() => void link()}>
               <Field
