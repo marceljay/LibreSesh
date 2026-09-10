@@ -43,7 +43,7 @@ describe('display names are unique per event', () => {
     expect(second.status).toBe(409);
   });
 
-  it('grants no role when the name is refused, so the gate can ask again', async () => {
+  it('grants no role when the name is refused, so the login page can ask again', async () => {
     await enterAs(harness, 'confone', 'Ada');
     const { agent } = await enterAs(harness, 'confone', 'Ada');
     await agent.get('/api/e/confone/bundle').expect(401);

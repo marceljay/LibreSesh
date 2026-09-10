@@ -37,7 +37,7 @@ cookie/identity → rate limit → role check → handler → audit + SSE broadc
   can be evaluated.
 - **`loadEvent` before `requireRole`**, because a role is per event.
 - **`eventAuthRoutes` before `requireRole`** — earning a role has to come before
-  requiring one, or the password gate would demand the password it grants.
+  requiring one, or the password login page would demand the password it grants.
 - **`calendarRoutes` before `requireRole`** — a subscribing calendar app has no
   cookie and authenticates by capability token instead (see below).
 - **`/me/link` is global, not event-scoped** — redeeming a link phrase swaps
@@ -75,7 +75,7 @@ rows, open the database file in a read-only viewer (a copy for production:
 | `breaks` | Lunch and friends: a label and local minutes of day, `date` null meaning every day. No room, no author, hard-deleted |
 | `sessions` | Scheduled: always has a room and a time; `blocks_open_booking` holds the floor against attendees |
 | `proposals` | Pitched: no room, no time, until an organiser places it |
-| `people` | One per identity that has entered the event (made at the gate, migration 010), plus organiser-typed shells nobody has claimed yet. Holds the full name; the username lives on `event_identities`. `archived_at` files a row out of the lists without deleting it (migration 013). Manage → People lists these and nothing else |
+| `people` | One per identity that has entered the event (made at the login page, migration 010), plus organiser-typed shells nobody has claimed yet. Holds the full name; the username lives on `event_identities`. `archived_at` files a row out of the lists without deleting it (migration 013). Manage → People lists these and nothing else |
 | `contributions` | Notes, links, questions; `hidden` for moderation |
 | `stars`, `proposal_interest` | Private per-identity interest |
 | `audit` | Append-only log of every write |
@@ -300,8 +300,8 @@ apart have no business fighting over "Ada", so `event_identities` holds the
 name and enforces `UNIQUE(event_id, display_name)`. `identities.display_name`
 is only a trace: empty when an identity is minted, following whatever name
 its owner last chose, prefilled nowhere. A username is typed at every first
-gate — nothing like `attendee_x7f2k` is generated — and a device re-entering
-an event gets its own name back from `GET /e/:slug/gate`.
+login page — nothing like `attendee_x7f2k` is generated — and a device re-entering
+an event gets its own name back from `GET /e/:slug/login page`.
 
 **Two names, two jobs.** The **username** (`event_identities.display_name`)
 is what the room calls you: unique here, on everything you post, in the
@@ -309,11 +309,11 @@ header chip. The **full name** (`people.name`) is what a session is credited
 to: free to repeat, since two "Alex Chen"s can be in one room and the merge
 tool exists for two rows that are one human, not for namesakes. Every
 identity that enters holds exactly one live `people` row (`ensureOwnProfile`
-in `server/src/people.ts`, called from the gate; migration 010 backfilled the
+in `server/src/people.ts`, called from the login page; migration 010 backfilled the
 entrants from before), with the full name initialised to the username and not
 following it afterwards. A `people` row *without* an identity is a shell an
 organiser typed onto a talk for someone who has not arrived. When somebody
-enters under that shell's name the gate does not hand it over silently — the
+enters under that shell's name the login page does not hand it over silently — the
 same name can be a different person — but answers `profile_exists` and takes
 it only on a second entry with `claimProfile`.
 
@@ -326,7 +326,7 @@ event too.
 
 Two consequences worth knowing:
 
-- **The name is claimed at the gate, before the role is granted.** A clash has
+- **The name is claimed at the login page, before the role is granted.** A clash has
   to leave you outside the event with a name to change, not inside it nameless.
   See `claimEventName` in `server/src/eventIdentity.ts`.
 - **It is its own table, not a column on `roles`.** Signing out of an event
@@ -386,7 +386,7 @@ does not stop there: their display name is held, uniquely per event, by the
 identity they just lost, so they cannot even re-enter under their own name.
 That is why an unconfigured secret is generated **once** and kept in
 `.cookie-secret` beside the database rather than invented per boot, why
-production requires an explicit one, and why the gate offers "Enter as *Ada 2*"
+production requires an explicit one, and why the login page offers "Enter as *Ada 2*"
 when a name is already taken. `config.cookieSecretOrigin` records which of the
 three routes was taken — `env`, `file`, or `ephemeral` — and the boot log warns
 loudly about the last one.
@@ -398,12 +398,12 @@ flowchart TD
   V -- yes --> L["token → identities row<br/>this request is that person"]
   M --> N["A stranger: no roles anywhere"]
   L --> Q{"roles row for<br/>this identity + this event?"}
-  Q -- no --> G["401 — the gate"]
+  Q -- no --> G["401 — the login page"]
   Q -- yes --> H["Handler runs with req.role"]
   N --> G
   G -. "enter with a name" .-> NAME{"is that name already held<br/>in this event?"}
   NAME -- "no" --> H
-  NAME -- "yes, by another identity" --> S["409 name_taken<br/>gate offers Ada 2"]
+  NAME -- "yes, by another identity" --> S["409 name_taken<br/>login page offers Ada 2"]
 
   style M fill:#fde68a,stroke:#b45309,color:#000
   style S fill:#fecaca,stroke:#b91c1c,color:#000
@@ -454,9 +454,9 @@ and the choice of `#` over `?` is the whole design.
   password into Caddy's log once per scan.
 - **It is taken out of the address bar before anything renders.**
   `takeInvite()` runs in `main.tsx`, reads the hash once and calls
-  `history.replaceState`, leaving a bare `/e/:slug`; the gate then reads that
+  `history.replaceState`, leaving a bare `/e/:slug`; the login page then reads that
   one copy rather than the URL. Deliberately at startup and not inside the
-  gate, because the gate does not always appear — an organiser who scans the
+  login page, because the login page does not always appear — an organiser who scans the
   attendee code already holds a role and walks straight through to the
   schedule, and would otherwise be left with the password sitting in their
   address bar with nothing to clear it. `replaceState` and not `pushState`, so
@@ -465,11 +465,11 @@ and the choice of `#` over `?` is the whole design.
   attendee who scans the poster and then pastes "the link" into a group chat
   has shared a page that *asks* for the password, not one that hands it out.
 - **`r` is a caption, never a grant.** The role in the fragment only decides
-  what the gate says — "Invited as Attendee" — before anything is submitted.
+  what the login page says — "Invited as Attendee" — before anything is submitted.
   Entry is still `POST /auth` with the password, and the server derives the role
   from the password as it always did. A forged `r` produces a wrong label on a
   screen and nothing else, which is why it is not signed.
-- **Scanning is not entry.** The gate still asks for a display name, because
+- **Scanning is not entry.** The login page still asks for a display name, because
   names are unique per event and claimed at entry (§Why a display name belongs
   to the event). Entering everyone automatically under whatever seed their
   device happened to mint would fill the roster with strangers nobody can
@@ -497,7 +497,7 @@ things about it follow from the storage model rather than from taste:
   nothing else, so the server cannot produce a plaintext to encode, for an
   admin or for anyone.
 - **So the server confirms the typing instead.** `POST /e/:slug/password-role`
-  is admin-only, rate-limited on the same bucket as the gate, and answers with
+  is admin-only, rate-limited on the same bucket as the login page, and answers with
   the role a password grants without granting it. It exists because a QR is
   printed once and scanned by everyone, and a typo in it is not discovered
   until two hundred people are standing at the door. It is deliberately not
@@ -544,10 +544,9 @@ All the identity work for a speaker code happens at **mint** time — an
 unclaimed person gets a fresh identity, the speaker role, and its display name
 claimed — precisely so that redemption stays the same dumb token adoption in
 both cases. That is what makes one speaker code work from any number of
-devices. Phrases are stored hashed; guesses share the password rate-limit
-budget.
+devices. Phrases are stored hashed; guesses share the password rate limit.
 
-The gate offers the code its own door — **I have a speaker code** — beside
+The login page offers the code its own door — **I have a speaker code** — beside
 the device-link one. Both post to `/me/link`; only the words differ, because a
 speaker holding four words from an email was told they are a speaker and
 nothing about devices, and would not click a sentence about linking one.
@@ -563,7 +562,7 @@ device that already holds a role in the event would be signed out of it — the
 usual case being the organiser who made the link and opens it to see that it
 works. That device is asked first; a stranger's device, which is what a
 speaker's own phone is, is simply let in. A code that fails to redeem lands on
-the gate with the speaker-code form open and the reason stated, never on a
+the login page with the speaker-code form open and the reason stated, never on a
 password box the speaker was never given.
 
 ### Archiving a profile, and why it is not deleting
@@ -655,7 +654,7 @@ So after a merge:
   it may be a real person at other events on this instance, and the audit log
   points at it. Its event display name row stays, so the People list and
   old audit entries keep their label and the name stays reserved. The device
-  can re-enter through the gate and is then a fresh participant;
+  can re-enter through the login page and is then a fresh participant;
 - the re-keying and the sign-out are **scoped to the event being merged**. The
   losing identity may be a genuinely different presence at other events on the
   instance; those are untouched. Unifying the history means the losing device
@@ -663,7 +662,7 @@ So after a merge:
   irreversible (no `/trash` path), and audited.
 
 An admin merging the wrong two people is therefore a real mistake with no undo
-— the confirmation step in the UI is the only gate. The audit log keeps the
+— the confirmation step in the UI is the only login page. The audit log keeps the
 truthful record either way: rows written before the merge keep the actor who
 actually wrote them.
 
@@ -681,9 +680,9 @@ From here the phone can go two ways:
   #7; both devices are now one identity, and #9 goes quiet forever — its row
   stays, because the audit log points at it and its UID must keep resolving.
 - **The wrong way, which nothing currently prevents: re-entering.** If the
-  phone just passes the gate again, it comes back as #9 — same UID as before,
+  phone just passes the login page again, it comes back as #9 — same UID as before,
   fresh role, none of its old work — and the human is split across two
-  identities again, undoing the organiser's cleanup. The gate does not yet
+  identities again, undoing the organiser's cleanup. The login page does not yet
   hint "if this is you, link this device instead"; that gap is queued in
   STATUS.md.
 
@@ -900,7 +899,7 @@ the room who was mentioned and when. The frame it sends
 its own inbox over an authenticated request — so a stream attributed to the
 wrong identity leaks a nudge and nothing else. The other per-person frame is
 `role.updated`, sent when an organiser changes someone's role: the page
-concerned re-derives every control it gates from `bundle.role`, so a demoted
+concerned re-derives every control it login pages from `bundle.role`, so a demoted
 attendee loses the buttons the server has started refusing without a reload,
 and a promoted one gains theirs. The room still receives `person.updated` as
 before; it carries the profile, not the reader's standing.
@@ -1012,7 +1011,7 @@ followed since the forms overhaul rather than a new one:
   typed it, with their text intact.** In a dialog that is `FormError` in the
   footer, beside the button they pressed — never at the top of a form they have
   scrolled away from. On a page it is `FieldError` under the control (the
-  profile's field-at-a-time editors, the gate). The form stays open holding
+  profile's field-at-a-time editors, the login page). The form stays open holding
   the message until the next attempt clears it.
 - **A failure they cannot fix from the form goes to the toast:** the network,
   a row someone else changed first (`stale`), an unexpected status. A form

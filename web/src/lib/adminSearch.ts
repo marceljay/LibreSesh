@@ -137,7 +137,7 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     id: 'passwords',
     label: 'Passwords',
     tab: 'settings',
-    keywords: 'password viewer user admin sign in access code entry gate',
+    keywords: 'password viewer user admin sign in access code entry login page',
     anchor: 'passwords',
   },
   {

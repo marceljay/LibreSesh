@@ -1,6 +1,8 @@
 import { randomInt } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import type { Db, IdentityRow } from './db.js';
+import { HttpError } from './errors.js';
+import { clientIp, LIMITS, type RateLimiter } from './ratelimit.js';
 
 const BASE62 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
@@ -63,11 +65,63 @@ export function findIdentityByToken(db: Db, token: string): IdentityRow | undefi
 }
 
 /**
+ * The identity a request gets when it has no valid cookie *and* its address
+ * has spent the `mint` rate limit (D3 §3). Row id 0 exists in no table, so it
+ * holds no role anywhere and can be granted none; `requireRole` and the login page
+ * turn it into `429 too_many_identities`. Public reads that need no identity
+ * — `/api/me`, the landing page's event list — still work.
+ *
+ * A sentinel rather than a thrown error because the limit is on *creating* a
+ * row, not on making a request: an address over the limit should still be
+ * able to read, and a returning visitor with a cookie is never affected.
+ */
+export const ANONYMOUS_IDENTITY: IdentityRow = Object.freeze({
+  id: 0,
+  public_id: '00000',
+  token: '',
+  display_name: '',
+  created_at: '1970-01-01T00:00:00.000Z',
+  last_seen_at: null,
+  ics_token: null,
+});
+
+/** Whether this request never got an identity of its own (see above). */
+export const isAnonymous = (identity: IdentityRow): boolean => identity.id === 0;
+
+/**
+ * Refuse a request that needs a real identity row behind it.
+ *
+ * The sentinel's id is 0, which exists in no table, so anything writing a row
+ * that references an identity — a role, a name at an event, a device phrase —
+ * fails on the foreign key and answers 500. `requireRole` already turns the
+ * sentinel into a clear 429; this is the same answer for the routes that run
+ * *before* any role exists, entering an event chief among them.
+ */
+export function requireIdentity(req: Request, _res: Response, next: NextFunction): void {
+  if (isAnonymous(req.identity)) {
+    next(
+      new HttpError(
+        429,
+        'too_many_identities',
+        'Too many new visitors from this address — try again in a few minutes',
+      ),
+    );
+    return;
+  }
+  next();
+}
+
+/**
  * Resolves `req.identity` from the signed `cid` cookie, minting a new anonymous
  * identity (and setting the cookie) on first contact. Runs before everything
  * else so even rate-limit rejections are attributable.
+ *
+ * Minting is rate-limited per source address, because it is the one write any
+ * stranger can make: without the limit a `curl` loop is an unbounded
+ * `INSERT`, and the identity half of every other bucket is decorative, since
+ * an attacker simply never sends a cookie.
  */
-export function identityMiddleware(db: Db, isProd: boolean) {
+export function identityMiddleware(db: Db, isProd: boolean, limiter: RateLimiter) {
   const insert = db.prepare(
     'INSERT INTO identities (public_id, token, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)',
   );
@@ -83,10 +137,15 @@ export function identityMiddleware(db: Db, isProd: boolean) {
     let identity = cookieToken ? findIdentityByToken(db, cookieToken) : undefined;
 
     if (!identity) {
+      if (limiter.consume(`mint:ip:${clientIp(req)}`, LIMITS.mint) > 0) {
+        req.identity = ANONYMOUS_IDENTITY;
+        next();
+        return;
+      }
       const token = newIdentityToken();
       const publicId = newPublicId(db);
-      // No seed name: a username is typed at the first gate, never handed
-      // out. The column follows the last name chosen, for the next gate.
+      // No seed name: a username is typed at the first login page, never handed
+      // out. The column follows the last name chosen, for the next login page.
       const info = insert.run(publicId, token, '', now, now);
       identity = {
         id: Number(info.lastInsertRowid),

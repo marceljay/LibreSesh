@@ -15,7 +15,7 @@ import { limit } from '../ratelimit.js';
  * answering.
  *
  * The other three ways in all need somebody else to act first — a minted
- * speaker phrase, an organiser merging two profiles, or the gate happening to
+ * speaker phrase, an organiser merging two profiles, or the login page happening to
  * offer the shell because the username you typed matched its full name. This
  * is the one that starts with the person it concerns.
  *
@@ -115,7 +115,7 @@ export function claimRoutes(ctx: Ctx): Router {
         // Everyone who enters holds a profile, so there is nearly always one
         // to fold in. The bare adoption is for an identity that somehow has
         // none — one that entered before migration 010 and has not been
-        // through a gate since.
+        // through a login page since.
         if (theirs && theirs.id !== shell.id) {
           return mergePeople(ctx.db, req.event.id, shell, theirs);
         }

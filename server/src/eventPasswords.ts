@@ -6,7 +6,7 @@
  * filled in rather than rejected. What they get filled in *with* depends on the
  * instance:
  *
- * - On a demo instance the gate is a role picker and the passwords are not
+ * - On a demo instance the login page is a role picker and the passwords are not
  *   checked at all, so secrecy is meaningless and predictability is worth
  *   something: the published DemoConf values are used, and screenshots, docs
  *   and tutorials keep working.

@@ -2,7 +2,7 @@ import type { Role } from './types.js';
 
 /**
  * The things an organiser can hand out or withhold, and what they are called
- * in the admin UI. Shared so the client can render the matrix and gate its own
+ * in the admin UI. Shared so the client can render the matrix and login page its own
  * controls from the same list the server enforces.
  *
  * Everything not listed is fixed: managing rooms, tags, people, settings and

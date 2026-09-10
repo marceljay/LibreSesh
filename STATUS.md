@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -16,19 +16,18 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1146**, lint clean, build clean.
+nothing local is unsaved. Suite at **1645**, lint clean, build clean.
 
-- **D3 · Security hardening, approved 2026-09-09 — building.** [LIB-101]
-  Approved as written minus lockdown, with both thresholds standing (60 gate
-  failures an hour closes a door for 15 minutes; 300 identities per address
-  per quarter hour). Three phases, each its own branch off `dev`, in this
-  order: `sec/instance-key-and-minting` (the instance key behind the `auth`
-  budget, a per-IP mint budget, the idle-identity sweep), `sec/gate` (per-IP
-  backoff, the per-event closure, the organiser notice, and the password
-  *advice* that replaced the withdrawn policy), then `sec/tokens-at-rest`
-  (`identities.token` and `ics_token` hashed, migration 018). Spec
-  `_planning/specs/D3-security-hardening.md`, plan
-  `_planning/plans/2026-09-05-D3-security-hardening.md`.
+- **0.5.0 is unreleased on `dev`; `main` is still on 0.4.0.** Everything under
+  `[Unreleased]` in CHANGELOG.md waits on that merge: the event bar on every
+  page, the schema page generated from the migrations, and all three sections
+  of D3. Two deployment notes belong to it. `INSTANCE_ADMIN_PASSWORD` under
+  sixteen characters now refuses to boot in production, so the live value has
+  to be checked before deploying. And `GET /api/e/:slug/gate` is now `/login`,
+  so a browser holding the old page calls a dead path until it is reloaded —
+  a reload fixes it, or the old path can be kept answering for one release.
+  No migration, nobody signed out, invite QR codes unaffected.
+
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -42,21 +41,21 @@ nothing local is unsaved. Suite at **1146**, lint clean, build clean.
   out of the footer into a block that names the instance password, the board
   preview framed as a browser window, GitHub's mark on the source link).
   All code-complete and queued for your eyes as R19–R25. From 2026-09-05:
-  an **eye beside the event password** at the gate that shows what you
+  an **eye beside the event password** at the login page that shows what you
   typed (the `PasswordInput` primitive in `ui.tsx`, used only there so far —
   the instance-password boxes on New event, Import and the admin pages are
   still bare), filed under R28. Three more from today, all filed under
   **R30**: tags wear their colour as a pale wash instead of filling with it,
   with the format moved out of that row to sit beside the title; the header
   gives the event name back about three characters on a phone; and the demo
-  gate asks for a name *before* offering the roles. **First verdicts landed
+  login page asks for a name *before* offering the roles. **First verdicts landed
   2026-09-07** through the review sheet (the artifact at
   `claude.ai/code/artifact/ad99a753…`, verdicts in its `verdicts`
   collection): eight items cleared, three bad, two faults on a fourth — the
   fixes are the top backlog group.
 
 - **Branch `fix/review-round-2`** is all shipped: seven commits in **0.3.6**
-  (PR #55), the last two — the gate wearing the logo and a link to the other
+  (PR #55), the last two — the login page wearing the logo and a link to the other
   events (**R36**), the audit log linking to what it names (**R37**) — into
   `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
   shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
@@ -111,7 +110,7 @@ both in CHANGELOG `[0.3.0]`, both waiting only as R26 and R27. Everything
 collected since 0.2.3 (2026-09-02) was cut as **0.3.0**; `[Unreleased]` has
 filled again since — the bell (migration 020), the time fields and their day
 cap, the eye, the calmer tags, help folded into the profile menu, and the
-drag-hold, system-theme, phone-header and demo-gate fixes — all on `dev`,
+drag-hold, system-theme, phone-header and demo-login page fixes — all on `dev`,
 merged to `main` up to the bell (PR #50) and untagged. Only v0.1.0 and v0.2.0
 carry git tags — 0.2.3 and 0.3.0 do not, which is worth settling before the
 next cut [LIB-156]. (v0.3.5, v0.3.6 and v0.4.0 were tagged on `main` since.)
@@ -139,7 +138,7 @@ here:
   ProposalBoard 6, SessionDetail 5, AdminPage 5, SessionModal 4,
   SchedulePage 4, LandingPage 3, AgendaPage 3, SearchPage 2, NewEventPage 2,
   ImportPage 2, MentionText 2, FilterMenu 2, EventListPage 2, AdminBackup 1,
-  AdminAudit 1, NotificationBell 1, Tour 1, Gate 1.
+  AdminAudit 1, NotificationBell 1, Tour 1, Login page 1.
   Count the tree, not the files this entry happens to name.
 
 - **ARCHITECTURE.md concurrency paragraph.** [LIB-154] §Realtime documents broadcast and
@@ -203,6 +202,30 @@ Enter did nothing; that was the third go at the time box — and is rebuilt on
 cover a title — and is fixed on `fix/now-line-placement`, reworded on the
 sheet for a second look. Verdicts live in the sheet's own store, so ticking
 there is enough — nothing needs pasting back.
+
+**Machine-checked since 2026-09-09 (`test/review-queue-jsdom`).** The part of
+this queue that did not actually need eyes is walked by the suite now, in a
+real DOM against the real server — `tests/reviewFlows.test.tsx`. Covered in
+full: **R33** [LIB-177] (the leave guard both ways, and no dialog after Save),
+**R13** [LIB-170] (claim and queue), **R32** [LIB-176] (the page re-themes on
+`visibilitychange` and on a bfcache `pageshow`, menu closed), **R34** [LIB-178]
+(the `@` menu in a session description, and the saved name linking), **R37**
+[LIB-181] (the audit log's session and actor links). Covered in the part that
+is not layout: **R21** [LIB-160] (the chips reach the search page and the URL;
+both days answer), **R26** [LIB-158] (the checkbox interlock and the
+`?include=` link — *not* the import walk-through or the phone paragraph),
+**R5** [LIB-164] (the picker's list and select-all; this-only the default;
+*all* carries the words and not the times), **R7** [LIB-98] (starring a block
+without opening it), **R10** [LIB-167] (the sorted column's arrow, and Columns
+adding UID), **R11** [LIB-168] (the badge's menu, with the held role ticked),
+**R22** [LIB-161] (the label, the hint and the long option).
+
+**Still yours, and only yours:** R25, R2, R8, R9, R1, R14, R6, R18, R28's
+screen-reader and phone-keyboard checks and the Arrange drag, R35 on a phone,
+R36, and R26's import walk-through. There is **no browser in this container** —
+Debian's chromium is not installed and Playwright's download host is
+unreachable from here — so `npm run browser-pass` cannot stand in for any of
+them.
 
 0. **R26 · Export what you choose, and import it back.** [LIB-158] Manage Event → Backup:
    four checkboxes above the download button. *Pass:* unticking **Sessions**
@@ -279,7 +302,7 @@ there is enough — nothing needs pasting back.
     the row (and the ⋯ menu flips *up* on the last row of a long list, not
     off-screen); an archived profile shows its amber notice; re-entering the
     event un-archives.
-13. **R12 · The gate — highest stakes, a mistake locks people out.** [LIB-169] *Pass:* an
+13. **R12 · The login page — highest stakes, a mistake locks people out.** [LIB-169] *Pass:* an
     empty username is refused with a message; a name matching an expected
     profile asks "is that you?" and can claim it; an ordinary name enters.
 14. **R13 · Claim & queue.** [LIB-170] The "This is me" button on an unclaimed profile, and
@@ -292,7 +315,13 @@ there is enough — nothing needs pasting back.
 16. **R15 · Speaker edits their own session** [LIB-172] (the reported flow). As an attendee
     credited on an official session. *Pass:* Edit appears; Room / Day / Start /
     Duration are disabled under the grey notice; Delete is absent; saving a
-    changed description goes through.
+    changed description goes through. **Came back bad and is fixed on
+    `fix/speaker-edits-own`** (2026-09-09): the form filtered rooms to the ones
+    open for booking on an edit as well as a placement, so a speaker on an
+    organiser's stage got an empty Room box, the "nowhere for you to add a
+    session" notice and a dead Save — the description could not be saved at
+    all. All four boxes are machine-checked now in
+    `tests/speakerEdit.test.tsx`; nothing here needs your eyes.
 17. **R17 · Official badge & Formats.** [LIB-173] With the badge off (default) the grid
     and list say nothing about placement; turn it on in Manage Event → Settings
     and check a grid block + a list card in both themes. In Manage Event →
@@ -303,7 +332,7 @@ there is enough — nothing needs pasting back.
     does **not** zoom the page (the 16px fix).
 19. **R28 · Forms close-out** [LIB-174] (2026-09-05, on `docs/forms-overhaul-close-out`,
     the eight leftovers from `_planning/forms-overhaul-review.md`). At the
-    gate: your browser or password manager **offers to save** the event
+    login page: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
     as well as the password box, and Enter with no name says *Pick a username
     to enter*; the link phrase is **not** offered for saving; the **eye**
@@ -314,7 +343,7 @@ there is enough — nothing needs pasting back.
     track with a screen reader on announces *… added*. The **?** beside
     Placement is a touch bigger. On the speaker field with VoiceOver or NVDA,
     arrowing through the list reads the row you land on. On a phone, the
-    Enter key reads *Go* at the gate and *Search* in the search box. **Every
+    Enter key reads *Go* at the login page and *Search* in the search box. **Every
     time field** (session Start, break From/To, track hours, Day starts/ends)
     is now a box plus a chevron: type `930` or `2pm` and tab away — it reads
     09:30 / 14:00; type `noon` — the box goes red and reverts on blur; ↑/↓
@@ -377,7 +406,7 @@ there is enough — nothing needs pasting back.
     a real DOM in `tests/timeField.test.tsx`, and driven through the
     container's headless Chromium before it was committed.)
 
-25. **R36 · The gate has a way out.** [LIB-180] Open an event link logged out, so the
+25. **R36 · The login page has a way out.** [LIB-180] Open an event link logged out, so the
     password card shows. *Pass:* above the card, the LibreSesh mark on the
     left and **All events** on the right; the mark opens `/`, the link opens
     `/events`; in **both themes** and on a **phone** the header fits the
@@ -424,7 +453,7 @@ they left behind landed 2026-09-05 as R26).
 - **D4 · Per-device sign-in, decided — build behind D3.** [LIB-103] Settled
   2026-09-09. Approach **B**: one random token per device, issued at
   redemption, stored hashed in a `devices` table (identity, hashed token,
-  origin `gate|phrase|code|link`, first seen, last seen), the cookie carrying
+  origin `login page|phrase|code|link`, first seen, last seen), the cookie carrying
   the device token, revocation per device. This is what lets "revoke the
   speaker code" evict the devices it let in, and an organiser sign out one
   device without the others. Rejected: A (rotate the token, evicting every
@@ -463,11 +492,20 @@ they left behind landed 2026-09-05 as R26).
     is in SECURITY.md.
   I recommend **(b)**, with (a) as the fallback if a window feels like
   friction. Either way, two things found while measuring should go in the
-  same change: the gate shows *"revoked or replaced"* for a rate-limited
+  same change: the login page shows *"revoked or replaced"* for a rate-limited
   attempt too (four wrong codes from one address, then the correct link is
   refused for fifteen minutes with the wrong reason), and the server's own
   message still says codes "work once and expire after 10 minutes", which
   was never true of a speaker code.
+
+- **R39 · The event login's failure limits.** [LIB-101] D3 phase 2, merged
+  into `dev` on 2026-09-10 and never seen in a browser. Get an event password
+  wrong six times: the sixth answer should name a two-minute wait, and five
+  wrong ones after that a fifteen-minute one. A correct password clears the
+  count. On Manage Event → Audit, an organiser whose event is being guessed at
+  sees a notice with a button that clears the failures. Check New event and
+  Settings in the same pass: the password fields now lead with the generated
+  phrase and carry the advice that replaced the withdrawn policy.
 
 ## Blockers
 
@@ -481,6 +519,15 @@ waiting on anything external._
 _The only queue of future work, priority-ordered. Top High-Priority item = next up._
 
 ## High Priority
+
+- **Two sentences in SECURITY.md read as nonsense.** The `gate` → `login page`
+  rename in #74 replaced the word where it was a metaphor and where it was a
+  verb: "This is a supply-chain login page" was "gate", and "The instance
+  password login pages event creation" was "gates". Both are in the public
+  security document, and both should go before 0.5.0 leaves. The same rename
+  also put `login page` into the link-phrase wordlist; that half is fixed in
+  `4a3cadd`, these two sentences are what it left behind.
+
 
 - **Lockdown, deferred out of D3 on 2026-09-09.** [LIB-188] Designed in full
   as §4 of the D3 spec and phases 3 and 5 of its plan; not being built now.
@@ -566,7 +613,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     row (2026-09-05, tags change).
   - **R30b · No invite link for a speaker code.** Your words: *"Invite link
     for speaker code or otherwise is missing."* **Done 2026-09-07** on
-    `feat/speaker-link`: the gate has an *I have a speaker code* door, and the
+    `feat/speaker-link`: the login page has an *I have a speaker code* door, and the
     profile page shows the code as a link (`/e/:slug#c=<phrase>`) and a QR
     that signs the opening device in as the speaker. ARCHITECTURE §One
     person, many devices.
@@ -758,7 +805,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 - **Profile and identity data-model items** [LIB-122, LIB-123, LIB-185] live in
   `_planning/profile-and-identity-todo.md` (split out 2026-09-09 at your
-  request): the gate not suggesting device linking to a merged-out device,
+  request): the login page not suggesting device linking to a merged-out device,
   and the new one — a lost account cannot be merged back under its old
   username, because the username is held by the signed-out identity and the
   rename is refused. Design agreed 2026-09-09 in
@@ -820,7 +867,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     reveals three rows, that a typed one reads "set by you — not stored"
     rather than looking broken, and that Replace's confirm dialog is legible
     on a phone;
-  - the gate's **"Nobody can get in as organiser"** panel: it is the only
+  - the login page's **"Nobody can get in as organiser"** panel: it is the only
     place a wrong instance password is typed, and the error has never been
     seen rendered.
 
@@ -843,7 +890,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   - the **Backup** tab: the passphrase mismatch warning, and that the encrypted
     download actually saves with its `.lsbk` name from a real browser rather
     than supertest;
-  - the gate's **"Enter as Ada 2"** link, which is only reachable by taking a
+  - the login page's **"Enter as Ada 2"** link, which is only reachable by taking a
     name that is already held;
   - buttons are 38px tall now, matching the inputs beside them — worth one
     sweep for anything that looked balanced at 32px.
@@ -881,7 +928,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     verified — the symbol renders with correct finder patterns and the URL
     round-trips through the fragment, both under test — but _scanning_ is the
     part no test in this repo can reach. Wanted: a real phone camera on the
-    rendered code; that the gate then shows **Invited as …** with no password
+    rendered code; that the login page then shows **Invited as …** with no password
     box; that the address bar reads a bare `/e/:slug` immediately after, and
     that Back does not restore the fragment; that copying the URL at that point
     yields a link which asks a second device for the password. Also worth a
@@ -928,7 +975,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   whole suite stayed green — is what the gap costs. A React error boundary
   would have contained it; there is still none.
 
-- **Brute-forcing an event password costs an attacker one cookie.** [LIB-129] The gate
+- **Brute-forcing an event password costs an attacker one cookie.** [LIB-129] The login page
   spends a token from `LIMITS.auth` (5 attempts / 15 min) on two buckets, the
   identity and the IP, refunding both when a password is right
   (`eventAuth.ts:62-86`). The identity half is keyed on `req.identity.id`,
@@ -992,7 +1039,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   one button); scoping the token per event is the larger fix. Hashing it at
   rest (D3 §5) protects a stolen backup and does nothing about a leaked URL.
 
-- **Publishing a session: a link that works without the gate.** [LIB-133] A published
+- **Publishing a session: a link that works without the login page.** [LIB-133] A published
   session would be the app's first genuinely unauthenticated read — sharing one
   talk without sharing the event or handing over a role. No commit yet. Design
   is done and lives in `_planning/specs/publishing-a-session.md`: the **snapshot**
@@ -1104,7 +1151,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   `useRole` and do focus return by hand.
 
   Measure before deciding: most of the win may be elsewhere. Nothing is
-  code-split — one chunk carries the admin pages, the calendar and the gate
+  code-split — one chunk carries the admin pages, the calendar and the login page
   alike, and a route-level `React.lazy` on the admin section would likely dwarf
   18 kB. Check that first; the popover dep may not be the thing worth cutting.
 
@@ -1179,7 +1226,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   `/logout` already uses, plus a "Sign out of this event" item on the role
   select. What needs deciding first is what it means: the person keeps
   their username, their profile and everything they wrote, and can walk
-  back in through the gate with the password they still know — so it is a
+  back in through the login page with the password they still know — so it is a
   nudge, not a ban, and the UI should not imply otherwise. Wait until an
   organiser actually asks.
 

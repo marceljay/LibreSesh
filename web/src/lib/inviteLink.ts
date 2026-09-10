@@ -8,7 +8,7 @@ import type { Role } from '@shared/types';
  * - a fragment is never sent to the server, so the secret stays out of access
  *   logs, `Referer` headers and any proxy in between — a query string would
  *   put an event's password in Caddy's log for every scan;
- * - the gate strips it with `history.replaceState` the moment it reads it, so
+ * - the login page strips it with `history.replaceState` the moment it reads it, so
  *   the URL left in the address bar is a bare `/e/:slug`. An attendee who
  *   scans the poster and then pastes "the link" into a group chat shares a
  *   page that asks for the password, not one that hands it out.
@@ -27,7 +27,7 @@ export interface Invite {
   password: string;
   /**
    * A label, never a grant. The server derives the real role from the password
-   * and this is only what the gate says while you are looking at it, so that
+   * and this is only what the login page says while you are looking at it, so that
    * "Invited as Attendee" can be shown before anything is submitted.
    */
   role?: Role;
@@ -107,7 +107,7 @@ let hasTaken = false;
  * caller after it gets the same answer from a URL that no longer holds one.
  *
  * Called from `main.tsx` before anything renders, and *not* only from the
- * gate, because the gate does not always appear. An organiser who scans the
+ * login page, because the login page does not always appear. An organiser who scans the
  * attendee code already holds a role, walks straight through to the schedule,
  * and would otherwise be left with the password sitting in their address bar
  * with nothing to clear it.

@@ -264,7 +264,7 @@ export function ProfilePage() {
     <div className="min-h-screen bg-stone-100 dark:bg-stone-950 text-stone-900 dark:text-stone-100">
       {/* A profile can be read on the person's own detail alone — the bundle
           arrives a moment later, or not at all through a link that skipped
-          the gate — and the bar needs the bundle. */}
+          the login page — and the bar needs the bundle. */}
       {bundle && (
         <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95">
           <EventBar
@@ -841,7 +841,7 @@ function FieldForm({
 /**
  * Organiser-only: mint or revoke this person's speaker phrase. The phrase is
  * shown exactly once, at mint — the server keeps only a hash. Whoever types
- * it at any gate becomes this person with the speaker role, on any number of
+ * it at any login page becomes this person with the speaker role, on any number of
  * devices, until it is revoked.
  */
 function SpeakerAccess({
@@ -906,7 +906,7 @@ function SpeakerAccess({
         </span>
         {state === 'pending' && (
           <span
-            title="The phrase has been generated and never typed at the gate — it is still sitting in an unread message."
+            title="The phrase has been generated and never typed at the login page — it is still sitting in an unread message."
             className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
           >
             code unused
@@ -914,7 +914,7 @@ function SpeakerAccess({
         )}
         {state === 'used' && (
           <span
-            title="The phrase has been typed at the gate at least once, so a device is signed in as this profile."
+            title="The phrase has been typed at the login page at least once, so a device is signed in as this profile."
             className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
           >
             code used
@@ -940,7 +940,7 @@ function SpeakerAccess({
       ) : (
         <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
           {state === 'none'
-            ? `No phrase exists for ${person.name}. Generate one and they can type it at the gate to become this profile, with the speaker role.`
+            ? `No phrase exists for ${person.name}. Generate one and they can type it at the login page to become this profile, with the speaker role.`
             : state === 'pending'
               ? `A phrase exists and has not been used. It is shown only once, so if it did not reach ${person.name}, generate a new one — which replaces the old.`
               : `${person.name} has used their phrase. It still works on further devices; generating a new one replaces it, revoking cancels it without signing out the devices already in.`}
@@ -990,8 +990,8 @@ function SpeakerHandout({
       </div>
       <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
         Shown once — give it to {personName}. Typing it under “I have a speaker code” at the event
-        gate signs them in as this profile with the speaker role, from any device, until you revoke
-        it.
+        login page signs them in as this profile with the speaker role, from any device, until you
+        revoke it.
       </p>
       <div className="mt-3 flex flex-wrap items-start gap-3">
         <QrCode

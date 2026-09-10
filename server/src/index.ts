@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
+import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -44,6 +45,15 @@ if (config.seedDemoEvent) {
 }
 
 const { express: app, ctx } = createApp(db, config);
+
+// Identities that never became anybody are swept at boot and once a day
+// after it (D3 §3). `unref` so the timer never holds the process open.
+const sweep = (): void => {
+  const removed = sweepIdleIdentities(db);
+  if (removed > 0) console.log(`swept ${removed} identities idle for ${IDLE_IDENTITY_DAYS}+ days`);
+};
+sweep();
+setInterval(sweep, 24 * 60 * 60_000).unref();
 
 // 0.0.0.0 so the port is reachable from outside a container.
 const server = app.listen(config.port, '0.0.0.0', () => {

@@ -26,6 +26,10 @@ export interface PreflightProblem {
 
 type Env = Record<string, string | undefined>;
 
+/** Below this the boot stops; below the second, it warns (D3 §2). */
+export const INSTANCE_KEY_MIN = 16;
+export const INSTANCE_KEY_COMFORTABLE = 24;
+
 /** Railway (and most PaaS) inject their own markers; used only to sharpen advice. */
 const onRailway = (env: Env): boolean =>
   Boolean(env.RAILWAY_ENVIRONMENT_NAME ?? env.RAILWAY_SERVICE_NAME ?? env.RAILWAY_PROJECT_ID);
@@ -52,6 +56,22 @@ export function preflight(env: Env): PreflightProblem[] {
       severity: 'fatal',
       problem: 'INSTANCE_ADMIN_PASSWORD is not set.',
       fix: `Set it in ${where}. It is the password that lets someone create events on this instance — not an event password.`,
+    });
+  } else if (env.INSTANCE_ADMIN_PASSWORD.length < INSTANCE_KEY_MIN) {
+    // The one password on the box that no organiser chose and no rotation
+    // notice covers. Every instance shares it, it opens event creation,
+    // import and the whole-database backup, and it is typed by machines far
+    // more than by people — so length here costs nobody anything.
+    problems.push({
+      severity: 'fatal',
+      problem: `INSTANCE_ADMIN_PASSWORD is shorter than ${INSTANCE_KEY_MIN} characters.`,
+      fix: `Set a longer one in ${where} — \`openssl rand -base64 24\`. It opens event creation, import and the whole-database backup on this instance, and it is the same for everyone who has it.`,
+    });
+  } else if (env.INSTANCE_ADMIN_PASSWORD.length < INSTANCE_KEY_COMFORTABLE) {
+    problems.push({
+      severity: 'warning',
+      problem: `INSTANCE_ADMIN_PASSWORD is shorter than ${INSTANCE_KEY_COMFORTABLE} characters.`,
+      fix: `It works, and \`openssl rand -base64 24\` in ${where} is free. Attempts are rate-limited (five a quarter hour per address) and audited, so this is depth rather than a hole.`,
     });
   }
 

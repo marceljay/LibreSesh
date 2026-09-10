@@ -56,7 +56,7 @@ describe('permission matrix', () => {
       expect(m['session.credit_others']).toEqual(['user', 'speaker', 'admin']);
     });
 
-    it('ships in the bundle so the client can gate its own controls', async () => {
+    it('ships in the bundle so the client can login page its own controls', async () => {
       const res = await viewer.get('/api/e/testconf/bundle').expect(200);
       expect(Object.keys(res.body.permissions).sort()).toEqual([...CAPABILITY_IDS].sort());
     });

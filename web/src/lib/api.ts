@@ -6,7 +6,8 @@ import type {
   ContributionKind,
   EventDto,
   EventSummary,
-  GateDto,
+  LoginDto,
+  LoginHealthDto,
   GeneratedPasswords,
   ImportResult,
   LinkCodeDto,
@@ -39,7 +40,7 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly retryAfter?: number,
-    /** Facts the server attached for the client to act on — the gate's
+    /** Facts the server attached for the client to act on — the login page's
      *  `profile_exists` names the profile it found. */
     readonly details?: Record<string, unknown>,
   ) {
@@ -141,17 +142,22 @@ export const api = {
     ),
 
   /** `displayName` is claimed inside the event, where names are unique. A 409
-   *  means someone here already has it — nothing is granted, so the gate can
+   *  means someone here already has it — nothing is granted, so the login page can
    *  ask again. */
   /** The username this device already holds here, before it is in. */
-  gate: (slug: string) => request<GateDto>('GET', `/e/${encode(slug)}/gate`),
+  login: (slug: string) => request<LoginDto>('GET', `/e/${encode(slug)}/login`),
+  /** Admin only: what to tell the organiser about failed logins (D3 §1c). */
+  loginHealth: (slug: string) => request<LoginHealthDto>('GET', `/e/${encode(slug)}/login-health`),
+  /** Admin only: forget every failed attempt counted against this event. */
+  resetLoginAttempts: (slug: string) =>
+    request<void>('POST', `/e/${encode(slug)}/login-attempts/reset`),
   authenticate: (slug: string, password: string, displayName?: string, claimProfile?: boolean) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/auth`, {
       password,
       displayName,
       claimProfile,
     }),
-  /** Demo instances only: the gate picks a role instead of checking a password. */
+  /** Demo instances only: the login page picks a role instead of checking a password. */
   authenticateAsRole: (slug: string, role: Role, displayName?: string, claimProfile?: boolean) =>
     request<{ role: Role }>('POST', `/e/${encode(slug)}/auth`, { role, displayName, claimProfile }),
   /** Which role a password grants, without granting it — admin only. The

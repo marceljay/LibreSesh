@@ -46,3 +46,9 @@ lsbuild-scratch/
 
 # Printed from docs/schema.md by `npm run schema:pdf`; regenerated, not tracked.
 docs/schema.pdf
+
+# Credentials handed to the container by hand — a token pasted into a file to
+# feed `gh auth login --with-token` is one `git add -A` from a public commit.
+token.txt
+*.token
+gh-token*

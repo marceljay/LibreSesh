@@ -250,7 +250,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       // at the one occurrence that cannot land, not the whole run.
       try {
         assertValidTimes(req.event, window);
-        // The same gate a single open session passes, once per occurrence:
+        // The same login page a single open session passes, once per occurrence:
         // an organiser's run is trusted to overlap and to sit off-viewport,
         // an attendee's is not.
         if (req.role !== 'admin') {

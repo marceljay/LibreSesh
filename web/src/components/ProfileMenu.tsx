@@ -214,7 +214,7 @@ export function ProfileMenu({
             }}
             className={itemClass}
           >
-            {/* The same two-device glyph as the gate's "I'm already here on
+            {/* The same two-device glyph as the login page's "I'm already here on
                 another device": this item mints the phrase that door takes,
                 and a plain row of text between Calendar and Theme was the
                 one thing in the menu nobody found. */}

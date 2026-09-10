@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { hashPassword, requireRole, roleForPassword } from '../auth.js';
+import { clearEventLimits } from '../ratelimit.js';
 import { audit, pruneAudit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
@@ -46,7 +47,7 @@ export function settingsRoutes(ctx: Ctx): Router {
    * standing at the door. So the panel asks here first and refuses to draw a
    * code for a password no role answers to.
    *
-   * Admin-only, and rate-limited on the same bucket as the gate: it is an
+   * Admin-only, and rate-limited on the same bucket as the login page: it is an
    * oracle over the event's passwords, and an attendee holding the attendee
    * password must not be able to use it to hunt for the organiser one.
    */
@@ -166,6 +167,16 @@ export function settingsRoutes(ctx: Ctx): Router {
             current.id,
           );
       })();
+
+      // A password change forgets every failed attempt counted against this
+      // event (D3 §1). Changing the password is what the organiser's notice
+      // tells them to do when attempts are failing, and it is the moment when
+      // everyone holding the old one has just failed: leaving them to wait
+      // would make that advice worse than useless. The counts were protecting
+      // a password that no longer exists.
+      if (body.viewerPassword || body.userPassword || body.adminPassword) {
+        clearEventLimits(ctx, current.id);
+      }
 
       // Apply a tightened cap now rather than at the next hundredth write —
       // an organiser who sets it to trim the log expects the log to be trimmed.

@@ -377,6 +377,8 @@ function PeopleColumnsMenu({ columns }: { columns: PeopleColumnsControl }) {
 }
 
 import { MergeModal } from '../components/MergeModal';
+import { PasswordNote } from '../components/PasswordNote';
+import { TIER_NOTE } from '../../../server/src/shared/passwordAdvice';
 import {
   auditKeepField,
   numberFieldMessage,
@@ -1884,7 +1886,7 @@ export function AdminPage() {
                 action="Expect someone"
                 fieldLabel="Name of the person to expect"
                 submitLabel="Add person"
-                hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the gate, or with a speaker code."
+                hint="Creates a profile nobody holds yet — for a speaker you are putting on the programme before they arrive. They claim it at the login page, or with a speaker code."
                 maxLength={120}
                 onSubmit={addPerson}
               />
@@ -2089,29 +2091,32 @@ export function AdminPage() {
                     </p>
                   </div>
                   <FormGrid cols={3}>
-                    <Field label="Viewer">
+                    <Field label="Viewer" hint={TIER_NOTE.viewer}>
                       <ControlShell>
                         <TextInput
                           value={viewerPassword}
                           onChange={(e) => setViewerPassword(e.target.value)}
                         />
                       </ControlShell>
+                      <PasswordNote password={viewerPassword} name={name} slug={slug} />
                     </Field>
-                    <Field label={userRoleLabel.trim() || 'User'}>
+                    <Field label={userRoleLabel.trim() || 'User'} hint={TIER_NOTE.user}>
                       <ControlShell>
                         <TextInput
                           value={userPassword}
                           onChange={(e) => setUserPassword(e.target.value)}
                         />
                       </ControlShell>
+                      <PasswordNote password={userPassword} name={name} slug={slug} />
                     </Field>
-                    <Field label="Admin">
+                    <Field label="Admin" hint={TIER_NOTE.admin}>
                       <ControlShell>
                         <TextInput
                           value={adminPassword}
                           onChange={(e) => setAdminPassword(e.target.value)}
                         />
                       </ControlShell>
+                      <PasswordNote password={adminPassword} name={name} slug={slug} />
                     </Field>
                   </FormGrid>
                 </SettingAnchor>

@@ -6,7 +6,7 @@ import { linkClass } from '../components/ui';
 import { BoardPreview } from './BoardPreview';
 
 /** Where the code lives. Same answer the About dialog gives, asked here by
- *  someone who has not gone through a gate yet. */
+ *  someone who has not gone through a login page yet. */
 const REPO_URL = 'https://github.com/marceljay/LibreSesh';
 
 /**

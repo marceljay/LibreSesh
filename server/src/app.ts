@@ -9,7 +9,7 @@ import type { Ctx } from './context.js';
 import type { Db } from './db.js';
 import { errorHandler, notFound } from './errors.js';
 import { identityMiddleware } from './identity.js';
-import { RateLimiter } from './ratelimit.js';
+import { Backoff, RateLimiter, Tally } from './ratelimit.js';
 import { agendaRoutes, calendarRoutes } from './routes/agenda.js';
 import { auditRoutes } from './routes/audit.js';
 import { backupRoutes, exportRoutes } from './routes/backup.js';
@@ -44,7 +44,14 @@ export interface App {
 }
 
 export function createApp(db: Db, config: Config): App {
-  const ctx: Ctx = { db, broker: new Broker(), limiter: new RateLimiter(), config };
+  const ctx: Ctx = {
+    db,
+    broker: new Broker(),
+    limiter: new RateLimiter(),
+    backoff: new Backoff(),
+    tally: new Tally(),
+    config,
+  };
   const app = express();
 
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -54,7 +61,7 @@ export function createApp(db: Db, config: Config): App {
 
   const api = Router();
   // Middleware order per SPEC §5: identity → rate limit → role check → handler.
-  api.use(identityMiddleware(db, process.env.NODE_ENV === 'production'));
+  api.use(identityMiddleware(db, process.env.NODE_ENV === 'production', ctx.limiter));
   api.use(meRoutes(ctx));
   api.use(eventRoutes(ctx));
   api.use(importRoutes(ctx));

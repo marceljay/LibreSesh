@@ -61,7 +61,7 @@ export function agendaRoutes(ctx: Ctx): Router {
 }
 
 /**
- * The calendar feed, mounted BEFORE the viewer-role gate: a subscribing
+ * The calendar feed, mounted BEFORE the viewer-role login page: a subscribing
  * calendar app has no cookie, and `?token=` is what stands in for one.
  */
 export function calendarRoutes(ctx: Ctx): Router {

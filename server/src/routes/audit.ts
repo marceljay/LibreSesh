@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireRole } from '../auth.js';
+import { audit } from '../audit.js';
+import { clearEventLimits } from '../ratelimit.js';
 import type { Ctx } from '../context.js';
 import type { Db } from '../db.js';
 import { NameResolver } from '../eventIdentity.js';
@@ -120,6 +122,69 @@ function labelsFor(db: Db, rows: Row[]): Map<string, Subject> {
  */
 export function auditRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
+
+  /**
+   * What an organiser needs to know about people failing to get in (D3 §1c).
+   *
+   * Counts come from the audit log rather than from the in-memory tally, so
+   * a restart does not erase the last hour, and the line about sign-ins being
+   * stopped is the row the login route wrote. An event with no failures
+   * answers zeroes and the page shows nothing: this is a notice, not a
+   * dashboard.
+   */
+  router.get(
+    '/login-health',
+    requireRole(ctx.db, 'admin'),
+    limit(ctx.limiter, 'read'),
+    (req, res) => {
+      const since = new Date(Date.now() - 60 * 60_000).toISOString();
+      const failures = ctx.db
+        .prepare<[number, string], { n: number }>(
+          `SELECT COUNT(*) AS n FROM audit
+            WHERE event_id = ? AND action = 'auth_failed' AND at >= ?`,
+        )
+        .get(req.event.id, since)!.n;
+      const closure = ctx.db
+        .prepare<[number, string], { at: string; entity_id: number | null }>(
+          `SELECT at, entity_id FROM audit
+            WHERE event_id = ? AND action = 'login_closed' AND at >= ?
+            ORDER BY at DESC LIMIT 1`,
+        )
+        .get(req.event.id, since);
+      res.json({
+        failuresLastHour: failures,
+        closedSecondsRemaining: ctx.tally.blockedFor(`event:${req.event.id}`),
+        lastClosure: closure ? { at: closure.at, afterFailures: closure.entity_id } : null,
+      });
+    },
+  );
+
+  /**
+   * Forget every failed attempt counted against this event, and start
+   * accepting new sign-ins again if they were stopped (D3 §1).
+   *
+   * The limits are deliberately blunt, and an organiser is better placed than
+   * the server to know that a burst of failures was their own attendees:
+   * a password read out wrongly, a stale invitation, a colleague testing.
+   * Changing a password clears these too; this is for the case where the
+   * password was right all along.
+   */
+  router.post(
+    '/login-attempts/reset',
+    requireRole(ctx.db, 'admin'),
+    limit(ctx.limiter, 'write'),
+    (req, res) => {
+      clearEventLimits(ctx, req.event.id);
+      audit(ctx.db, {
+        identityId: req.identity.id,
+        eventId: req.event.id,
+        action: 'login_attempts_reset',
+        entity: 'event',
+        entityId: req.event.id,
+      });
+      res.status(204).end();
+    },
+  );
 
   router.get('/audit', requireRole(ctx.db, 'admin'), limit(ctx.limiter, 'read'), (req, res) => {
     const { before } = parse(querySchema, req.query);

@@ -17,8 +17,10 @@ explicitly *not* built to withstand a targeted attacker with time.
 
 | Threat | Mitigation |
 | --- | --- |
+| A hundred addresses guessing one event's password | Failures are counted per event: past 60 in a sliding hour **from at least 10 distinct addresses**, the event stops accepting new sign-ins for 15 minutes. No password is compared while it is stopped, anyone who already holds a role is unaffected, and one audit row records it. The distinct-address requirement is what stops a single address blocking sign-ins for everyone. The organiser sees a notice above the audit log |
+| Repeated guesses from one visitor | Per event, per cookie **and** address: five attempts cost nothing, the sixth is refused for 2 minutes, five more cost nothing, the eleventh and beyond for 15 minutes. A correct password clears the count. Keyed on the cookie so that everyone behind one NAT address does not share a single allowance, and capped at 300 failures an hour per address so discarding the cookie buys little |
 | Guessing an event password | bcrypt (cost 10); 5 attempts per 15 min per identity **and** per IP, `Retry-After` on the 6th |
-| Guessing a link phrase | Same 5-per-15-min budget as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
+| Guessing a link phrase | Same 5-per-15-min rate limit as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
 | Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |
 | Spam / flooding | Token buckets per identity and per IP on every write class; server-enforced max lengths |
 | XSS via session or profile text | HTML escaped before markdown parsing; URL scheme allowlist; no `dangerouslySetInnerHTML` on unescaped input |
@@ -29,6 +31,8 @@ explicitly *not* built to withstand a targeted attacker with time.
 | A photographed invite QR or forwarded invite link | It *is* the event password: whoever has it holds that role until the password is changed. Changing it does not evict roles already granted. The panel that draws the code says so, loudest for the two codes that grant writing |
 | A forwarded speaker link or photographed speaker QR | It is a standing personal credential: whoever opens it is that speaker, on that device, until the code is revoked — and revoking does not sign out devices already in; changing the person's role does. The profile page says "send it to them and nobody else" beside the link. No expiry, by design (§Codes and links) |
 | A leaked `COOKIE_SECRET` | Little on its own — a forged signature still needs a real 131-bit token, and an unknown one just mints an anonymous identity. Kept out of the database's volume so a copied DB and the secret do not leak together |
+| Guessing the instance password | The `auth` rate limit on every route that takes it — 5 attempts per identity **and** per address per 15 minutes, a refund on success so ordinary use is never throttled, and an `instance_key_failed` audit row (no event id) for every miss. It must be 16 characters to boot in production, 24 recommended |
+| Flooding the identity table | Minting is rate-limited per address (300 per 15 minutes, sized for a shared NAT address). Over it a request carries no identity rather than being refused, so public reads still work and anything needing a role answers `429 too_many_identities`. Rows that never became anybody — no role, no username, no profile, no calendar feed, no link code — are deleted after 30 days |
 | A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget. If one leaks open anyway: identity tokens need `COOKIE_SECRET` as well before they sign anyone in, but `ics_token`s work against the live server as they are, and speaker-code hashes (~37 bits) crack offline — revoke roles and codes |
 
 **Out of scope, accepted:**
@@ -70,7 +74,7 @@ explicitly *not* built to withstand a targeted attacker with time.
   it buys exactly one thing: the host cannot act as you **while you are away**.
   It cannot stop a host that serves the JavaScript from acting as you while you
   are on the page, so "the owner can't eavesdrop" is not on offer to any web
-  app. Against that one gain: a key prompt at the gate (the highest-stakes
+  app. Against that one gain: a key prompt at the login page (the highest-stakes
   screen, on a phone, at a door), per-device enrolment instead of link phrases,
   a calendar feed that cannot sign and stays a bearer token regardless, and
   giving up the `httpOnly` cookie for a key XSS can reach. Not worth it for a
@@ -112,7 +116,7 @@ Four rules apply across the rows:
 - **Link previews are safe; link rewriters are not.** A messenger fetching a
   preview sends the URL without its fragment, so a preview never carries the
   code. Corporate mail systems that rewrite links for scanning can drop the
-  fragment altogether; the recipient then lands on the ordinary gate with no
+  fragment altogether; the recipient then lands on the ordinary login page with no
   error, because to the app no link arrived. The four words in the same
   message are the fallback, which is why the code is always shown beside the
   link rather than replaced by it.
@@ -133,7 +137,7 @@ Four rules apply across the rows:
 
 - **`.npmrc` sets `ignore-scripts=true`.** `better-sqlite3` will not build on
   `npm install`. Use `npm run rebuild:native`, or `--ignore-scripts=false` in
-  Docker. This is a supply-chain gate; do not remove it to "fix" the build.
+  Docker. This is a supply-chain login page; do not remove it to "fix" the build.
 - **`COOKIE_SECRET` must be set and stable in production.** Elsewhere an
   unconfigured one is generated once and kept in `.cookie-secret` beside the
   database, because a key that changes per boot invalidates every identity —
@@ -143,7 +147,7 @@ Four rules apply across the rows:
   says the next restart will sign everyone out.
 - **`TRUST_PROXY=1` behind a reverse proxy**, or every request appears to come
   from the proxy and the per-IP rate limit becomes a single shared bucket.
-- **The instance password gates event creation** and the whole-database
+- **The instance password login pages event creation** and the whole-database
   backup, and is compared in constant time. It is not a user account; it is a
   deploy-level secret.
 - **A whole-database backup is a credential, not a document.** It is the file

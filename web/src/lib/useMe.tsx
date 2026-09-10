@@ -34,7 +34,7 @@ export function MeProvider({ children }: { children: ReactNode }) {
     try {
       setMe(await api.me());
     } catch {
-      // A failed /me is not fatal — the gate will surface the real problem.
+      // A failed /me is not fatal — the login page will surface the real problem.
     }
   }, []);
 

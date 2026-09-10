@@ -17,7 +17,7 @@ import type {
 } from '@shared/types';
 import { ApiError, api } from './api';
 
-type Status = 'loading' | 'gate' | 'ready' | 'error';
+type Status = 'loading' | 'login page' | 'ready' | 'error';
 
 interface State {
   status: Status;
@@ -35,7 +35,7 @@ interface State {
 type Action =
   | { kind: 'loading' }
   | { kind: 'loaded'; bundle: BundleDto }
-  | { kind: 'gate' }
+  | { kind: 'login page' }
   | { kind: 'error'; message: string }
   | { kind: 'connected'; connected: boolean }
   | { kind: 'contributions'; sessionId: number; items: ContributionDto[] }
@@ -114,7 +114,7 @@ export function applyPersonChange(people: PersonDto[], incoming: PersonDto): Per
   // `isMine` cannot work that way, because it is always present and is
   // always about the requester. A row's owner does not change under someone
   // who is watching it; the one thing that would change it, claiming a
-  // profile at the gate, arrives as a fresh page rather than as a frame.
+  // profile at the login page, arrives as a fresh page rather than as a frame.
   return byPersonName(upsert(people, { ...prev, ...incoming, isMine: prev.isMine }));
 }
 
@@ -320,7 +320,7 @@ function applyChange(state: State, change: ChangeEvent): State {
       };
     case 'role.updated':
       // Sent only to the person concerned (`Broker.publishTo`). Everything the
-      // page gates re-derives from `bundle.role`, so this is the whole change.
+      // page login pages re-derives from `bundle.role`, so this is the whole change.
       return { ...state, bundle: { ...bundle, role: (change.entity as { role: Role }).role } };
     default:
       return state;
@@ -333,8 +333,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, status: state.bundle ? state.status : 'loading', error: null };
     case 'loaded':
       return { ...state, status: 'ready', bundle: action.bundle, error: null };
-    case 'gate':
-      return { ...state, status: 'gate', bundle: null, error: null };
+    case 'login page':
+      return { ...state, status: 'login page', bundle: null, error: null };
     case 'error':
       return { ...state, status: state.bundle ? 'ready' : 'error', error: action.message };
     case 'connected':
@@ -402,7 +402,7 @@ export function useEventData(slug: string): EventData {
    * The hash is deliberately dropped rather than carried across. It is where an
    * invite link keeps its password, and `takeInvite` strips it with a raw
    * `history.replaceState` the router never sees — so carrying `location.hash`
-   * here would put a password the gate had already scrubbed back into the URL.
+   * here would put a password the login page had already scrubbed back into the URL.
    * Nothing else uses the fragment.
    */
   const canonicalSlug = state.bundle?.event.slug;
@@ -424,7 +424,7 @@ export function useEventData(slug: string): EventData {
     try {
       dispatch({ kind: 'loaded', bundle: await api.bundle(slug) });
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) dispatch({ kind: 'gate' });
+      if (err instanceof ApiError && err.status === 401) dispatch({ kind: 'login page' });
       else dispatch({ kind: 'error', message: errorText(err) });
     }
   }, [slug]);

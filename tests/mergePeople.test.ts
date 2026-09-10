@@ -190,7 +190,7 @@ describe('merging people', () => {
 
       // The losing device is signed out of the event, not left as a zombie
       // that is present but owns nothing: its role is revoked, so the event
-      // is gone from under it until it re-enters through the gate as a
+      // is gone from under it until it re-enters through the login page as a
       // fresh participant. The survivor owns the note now.
       await dupe.get('/api/e/testconf/bundle').expect(401);
       await dupe.delete(`/api/e/testconf/contributions/${note}`).expect(401);
