@@ -520,15 +520,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## High Priority
 
-- **Two sentences in SECURITY.md read as nonsense.** The `gate` → `login page`
-  rename in #74 replaced the word where it was a metaphor and where it was a
-  verb: "This is a supply-chain login page" was "gate", and "The instance
-  password login pages event creation" was "gates". Both are in the public
-  security document, and both should go before 0.5.0 leaves. The same rename
-  also put `login page` into the link-phrase wordlist; that half is fixed in
-  `4a3cadd`, these two sentences are what it left behind.
-
-
 - **Lockdown, deferred out of D3 on 2026-09-09.** [LIB-188] Designed in full
   as §4 of the D3 spec and phases 3 and 5 of its plan; not being built now.
   The principle: any admin may freeze an event, and only the instance
