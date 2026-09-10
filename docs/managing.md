@@ -25,6 +25,49 @@ ones arrive. Settings changes the number, and 0 keeps everything. That is a
 real trade rather than a detail: a low cap means someone making a great
 many edits can push an earlier action off the end.
 
+## When passwords are being guessed
+
+Above the audit log you will sometimes find a line saying how many password
+attempts failed in the last hour. It appears only when there have been more
+than a handful, so a quiet event shows nothing.
+
+Two things happen on their own. Anyone can get the password wrong five times
+at no cost, which covers mistyping a four-word phrase; the sixth attempt waits
+two minutes, the next five are free again, and the eleventh waits a quarter of
+an hour. Entering it correctly clears the count, so somebody who mistypes and
+then corrects it is never delayed. Attempts are counted per person, not per
+network address, so people sharing one address do not share one allowance. If
+a hundred people are typing the password at the same time from the same
+network, one of them getting it wrong delays nobody but themselves.
+
+If the event as a whole sees sixty failed attempts in an hour, coming from at
+least ten different network addresses, it stops accepting new sign-ins for
+fifteen minutes. Several addresses are required on purpose: one address
+repeatedly failing is already waiting under the rule above, and should not be
+able to block sign-ins for everyone else. Anyone who already has access is
+unaffected: the schedule stays up and contributions still post. Only new
+sign-ins are refused, and the audit log records it.
+
+Both limits can be cleared, because they are blunt and you know things the
+server does not. Changing any password in Settings clears them by itself,
+which matters because that is the moment everyone holding the old password
+has just failed. If the password was right all along and the failures were
+your own attendees, the notice above the audit log has a button that forgets
+the attempts and starts accepting sign-ins again. Either way nobody is signed
+out: roles already granted are kept deliberately, so changing a password does
+not remove anyone's access mid-event.
+
+## Choosing passwords
+
+Leave a password blank and one is generated: four random words, which is
+stronger than anything worth typing and is the recommended answer. If you type
+your own, the form says what that password is worth. The viewer password is
+usually read aloud or shown on screen, so a short one is a fair trade. The
+admin password changes the event and deserves more length. If you pick one of
+the handful anybody would guess first, or the event's own name, the form says
+so, and still lets you save it. The length is your decision, because only you
+know how the password will be shared.
+
 ## Renaming an event
 
 An event's address is its slug — `/e/valley-2026` — and Settings can

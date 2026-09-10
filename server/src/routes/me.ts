@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Me, Role } from '../shared/types.js';
 import { audit } from '../audit.js';
+import { requireIdentity } from '../identity.js';
 import type { Ctx } from '../context.js';
 import { mintLinkCode, redeemLinkCode } from '../deviceLink.js';
 import { claimEventName } from '../eventIdentity.js';
@@ -36,7 +37,7 @@ export function meRoutes(ctx: Ctx): Router {
     res.json(me(req.identity, req.identity.display_name));
   });
 
-  router.patch('/me', limit(ctx.limiter, 'write'), (req, res) => {
+  router.patch('/me', requireIdentity, limit(ctx.limiter, 'write'), (req, res) => {
     const { displayName } = parse(renameSchema, req.body);
     ctx.db
       .prepare('UPDATE identities SET display_name = ? WHERE id = ?')
@@ -46,7 +47,7 @@ export function meRoutes(ctx: Ctx): Router {
 
   /** Show a phrase on this device so another one can become you (SPEC §3.1
    *  follow-up; spec identity-and-people, A1). */
-  router.post('/me/link-code', limit(ctx.limiter, 'write'), (req, res) => {
+  router.post('/me/link-code', requireIdentity, limit(ctx.limiter, 'write'), (req, res) => {
     const code = mintLinkCode(ctx.db, req.identity.id);
     audit(ctx.db, {
       identityId: req.identity.id,
@@ -79,7 +80,7 @@ export function meRoutes(ctx: Ctx): Router {
     const identity = redeemLinkCode(ctx.db, phrase);
     if (!identity) {
       audit(ctx.db, {
-        identityId: req.identity.id,
+        identityId: req.identity.id === 0 ? null : req.identity.id,
         eventId: null,
         action: 'link_failed',
         entity: 'identity',
@@ -112,7 +113,7 @@ export function meRoutes(ctx: Ctx): Router {
 export function eventMeRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
 
-  router.patch('/me', limit(ctx.limiter, 'write'), (req, res) => {
+  router.patch('/me', requireIdentity, limit(ctx.limiter, 'write'), (req, res) => {
     const { displayName } = parse(renameSchema, req.body);
     claimEventName(ctx.db, req.event.id, req.identity.id, displayName);
     res.json({ displayName });

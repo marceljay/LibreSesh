@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { AuditEntryDto, AuditItemDto } from '@shared/types';
 import { api } from '../lib/api';
+import { LoginHealthNotice } from '../components/LoginHealthNotice';
 import { auditActorHref, auditSubjectHref } from '../lib/auditLinks';
 import { relativeTime, rowId, uid } from '../lib/format';
 import { plural, pluralForm } from '../lib/plural';
@@ -301,6 +302,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
           : `Who created, edited, deleted or restored what, plus the password and device-phrase attempts that failed. Nobody can edit this list, including organisers — but it keeps the newest ${auditKeep.toLocaleString()} entries and drops the rest, which Settings can change.`
       }
     >
+      <LoginHealthNotice slug={slug} />
       {entries === null ? (
         <Spinner label="Loading the log…" />
       ) : entries.length === 0 ? (

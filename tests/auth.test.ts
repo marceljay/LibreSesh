@@ -138,27 +138,35 @@ describe('event auth endpoint', () => {
     expect((await agent.get('/api/me')).body.roles.testconf).toBe('viewer');
   });
 
-  it('rate limits the 6th failed attempt with Retry-After', async () => {
+  // The login route's only limit is per address (D3 §1a): five
+  // free attempts, two minutes, five more, a quarter of an hour. The `auth`
+  // token bucket that used to sit here as well imposed three minutes at the
+  // sixth attempt whatever those waits said, and its per-identity half never
+  // bound an attacker anyway — a cookie is free to discard. The waits itself
+  // is pinned in loginBackoff.test.ts; these two are about the route.
+  it('holds the sixth wrong password from one address', async () => {
     const agent = agentFor(harness);
     for (let i = 0; i < 5; i++) {
       await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
     }
     const res = await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(429);
     expect(res.body.error.code).toBe('rate_limited');
-    expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);
+    expect(Number(res.headers['retry-after'])).toBe(120);
   });
 
-  it('refunds the attempt budget when a password is correct', async () => {
+  it('clears the count when a password is correct', async () => {
     const agent = agentFor(harness);
     for (let i = 0; i < 4; i++) {
       await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
     }
-    // A success returns its token, so the next wrong guess is still the 5th.
     await agent
       .post('/api/e/testconf/auth')
       .send({ password: 'user-pw', displayName: nextUsername() })
       .expect(200);
-    await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+    // Five free attempts again, not one: entering resets what came before.
+    for (let i = 0; i < 5; i++) {
+      await agent.post('/api/e/testconf/auth').send({ password: 'wrong' }).expect(403);
+    }
   });
 
   it('viewing requires a role', async () => {
@@ -296,7 +304,14 @@ describe('demo mode', () => {
    * that event's organiser password has to mean something.
    */
   it('leaves every other event on the instance alone', async () => {
-    harness = makeHarness({ demoMode: true, demoEventSlugs: ['democonf-2026'] });
+    harness = makeHarness({
+      demoMode: true,
+      demoEventSlugs: ['democonf-2026'],
+      // The wrong password below starts this address's backoff, and the
+      // correct one follows within the second. Different addresses keep this
+      // test about demo mode rather than about D3 §1a.
+      trustProxy: true,
+    });
     seedEvent(harness.db);
     const agent = agentFor(harness);
     await agent.get('/api/me').expect(200);
@@ -304,13 +319,19 @@ describe('demo mode', () => {
     // No role picker here — the login page wants a password.
     await agent
       .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.1')
       .send({ role: 'admin', displayName: nextUsername() })
       .expect(400);
-    await agent.post('/api/e/testconf/auth').send({ password: 'nope' }).expect(403);
-    await agent.get('/api/e/testconf/bundle').expect(401);
+    await agent
+      .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.2')
+      .send({ password: 'nope' })
+      .expect(403);
+    await agent.get('/api/e/testconf/bundle').set('X-Forwarded-For', '10.0.2.3').expect(401);
 
     const ok = await agent
       .post('/api/e/testconf/auth')
+      .set('X-Forwarded-For', '10.0.2.4')
       .send({ password: 'admin-pw', displayName: nextUsername() })
       .expect(200);
     expect(ok.body.role).toBe('admin');

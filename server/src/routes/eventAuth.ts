@@ -5,6 +5,7 @@ import { isDemoEvent } from '../config.js';
 import type { Ctx } from '../context.js';
 import { claimEventName, eventDisplayName } from '../eventIdentity.js';
 import { HttpError, badRequest, forbidden } from '../errors.js';
+import { requireIdentity } from '../identity.js';
 import { factsFor, toPersonDto } from '../mappers.js';
 import {
   adoptProfile,
@@ -13,7 +14,14 @@ import {
   ownProfile,
   restoreOnEntry,
 } from '../people.js';
-import { LIMITS, keysFor, limit } from '../ratelimit.js';
+import {
+  ADDRESS_FAILURES_PER_HOUR,
+  LOGIN_CLOSED_MS,
+  LOGIN_DISTINCT_ADDRESSES,
+  LOGIN_FAILURES_PER_HOUR,
+  clientIp,
+  limit,
+} from '../ratelimit.js';
 import type { LoginDto } from '../shared/types.js';
 import { authSchema, demoAuthSchema, parse } from '../validation.js';
 
@@ -113,7 +121,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       .run(identityId, eventId, role, new Date().toISOString());
   };
 
-  router.post('/auth', (req, res) => {
+  router.post('/auth', requireIdentity, (req, res) => {
     // On a demo *event* the login page is a role picker, not a password prompt.
     // There is no secret to brute-force here, so no rate limiting either.
     // Scoped to the seeded fixtures: a real event on the same instance keeps
@@ -133,21 +141,80 @@ export function eventAuthRoutes(ctx: Ctx): Router {
       return;
     }
 
-    // Hand-rolled instead of the `limit` middleware so a correct password can
-    // refund its token — switching roles shouldn't burn the lockout allowance.
-    const keys = keysFor('auth', req);
-    let retryAfter = 0;
-    for (const key of keys) {
-      retryAfter = Math.max(retryAfter, ctx.limiter.consume(key, LIMITS.auth));
+    // Three checks, cheapest first, before any password is compared.
+    //
+    // 1. Has this event stopped accepting new sign-ins? A hundred addresses
+    //    defeat any per-address limit, so failures are also counted per
+    //    event. While it is stopped, no password is compared and no bcrypt is
+    //    spent on the attacker. Anyone who already holds a role is
+    //    unaffected.
+    const closedFor = ctx.tally.blockedFor(`event:${req.event.id}`);
+    if (closedFor > 0) {
+      res.setHeader('Retry-After', String(closedFor));
+      throw new HttpError(
+        429,
+        'login_closed',
+        'Too many wrong passwords for this event recently — it is not accepting new sign-ins for a few minutes',
+      );
     }
-    if (retryAfter > 0) {
-      res.setHeader('Retry-After', String(retryAfter));
-      throw new HttpError(429, 'rate_limited', 'Too many password attempts — try again later');
+
+    // 2. Has this *visitor* been failing at this event? Keyed on the cookie
+    //    as well as the address, because everyone behind one NAT presents the
+    //    same address: several hundred people signing in at once must not
+    //    share five attempts, and one of them mistyping must not delay the
+    //    others.
+    //
+    //    This is the only per-visitor limit here. The `auth` token bucket
+    //    used to sit below it and would impose three minutes at the sixth
+    //    attempt whatever the steps above said, which is a second lockout
+    //    with numbers nobody chose.
+    const ip = clientIp(req);
+    const backoffKey = `${req.event.id}:${ip}:${req.identity.id}`;
+    const waitFor = ctx.backoff.check(backoffKey);
+    if (waitFor > 0) {
+      res.setHeader('Retry-After', String(waitFor));
+      throw new HttpError(
+        429,
+        'rate_limited',
+        waitFor > 300
+          ? 'Too many wrong passwords — try again in about a quarter of an hour'
+          : 'Too many wrong passwords — try again in a couple of minutes',
+      );
+    }
+
+    // 3. And has this address been failing at this event whatever cookie it
+    //    presents? Keying step 2 on the cookie would otherwise be free to
+    //    escape: discard the cookie, get five more attempts. Sized for a
+    //    shared address rather than one person, so a burst of mistyped
+    //    passwords from one network never reaches it.
+    const addressKey = `address:${req.event.id}:${ip}`;
+    const addressBlocked = ctx.tally.blockedFor(addressKey);
+    if (addressBlocked > 0) {
+      res.setHeader('Retry-After', String(addressBlocked));
+      throw new HttpError(
+        429,
+        'rate_limited',
+        'Too many wrong passwords from this address — try again in about a quarter of an hour',
+      );
     }
 
     const { password, displayName, claimProfile } = parse(authSchema, req.body);
     const role = roleForPassword(req.event, password);
     if (!role) {
+      ctx.backoff.fail(backoffKey);
+      ctx.tally.fail(addressKey, {
+        threshold: ADDRESS_FAILURES_PER_HOUR,
+        blockMs: LOGIN_CLOSED_MS,
+      });
+      // The event stops accepting sign-ins only when the failures come from
+      // several addresses. One address cannot trigger it alone: that address
+      // is already waiting under step 2.
+      const closedAfter = ctx.tally.fail(`event:${req.event.id}`, {
+        threshold: LOGIN_FAILURES_PER_HOUR,
+        blockMs: LOGIN_CLOSED_MS,
+        source: ip,
+        distinctSources: LOGIN_DISTINCT_ADDRESSES,
+      });
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
@@ -155,10 +222,21 @@ export function eventAuthRoutes(ctx: Ctx): Router {
         entity: 'event',
         entityId: req.event.id,
       });
+      // Exactly one row per closure, carrying the count that caused it: this
+      // is what the organiser's notice and the audit log read.
+      if (closedAfter > 0) {
+        audit(ctx.db, {
+          identityId: null,
+          eventId: req.event.id,
+          action: 'login_closed',
+          entity: 'event',
+          entityId: closedAfter,
+        });
+      }
       throw forbidden('That password does not match');
     }
 
-    for (const key of keys) ctx.limiter.refund(key, LIMITS.auth);
+    ctx.backoff.succeed(backoffKey);
     claim(req, displayName, claimProfile);
     grant(req.identity.id, req.event.id, role);
     res.json({ role });

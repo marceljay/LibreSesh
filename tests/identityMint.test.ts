@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { LIMITS } from '../server/src/ratelimit.js';
 import { sweepIdleIdentities } from '../server/src/sweepIdentities.js';
 import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
@@ -28,20 +28,34 @@ describe('minting an identity is budgeted per address', () => {
   const countIdentities = (): number =>
     harness.db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM identities').get()!.n;
 
-  it('stops creating rows past the budget, and stays readable', async () => {
-    for (let i = 0; i < 300; i += 1) await cookieless();
-    expect(countIdentities()).toBe(300);
+  /**
+   * Spend the address's mint allowance without making 300 requests. Doing it
+   * over HTTP took seconds, and the bucket refills continuously — under a
+   * loaded suite enough tokens came back mid-run to mint again, which made
+   * these tests fail for a reason that had nothing to do with what they
+   * assert.
+   */
+  const drain = (ip: string): void => {
+    for (let i = 0; i < LIMITS.mint.capacity; i += 1) {
+      harness.app.ctx.limiter.consume(`mint:ip:${ip}`, LIMITS.mint);
+    }
+  };
 
+  it('stops creating rows once the allowance is spent, and stays readable', async () => {
+    expect((await cookieless()).status).toBe(200);
+    expect(countIdentities()).toBe(1);
+
+    drain('10.0.0.1');
     const res = await cookieless();
     expect(res.status).toBe(200);
-    expect(countIdentities()).toBe(300);
-    // No cookie is set for an identity that was never created.
+    // No row, and no cookie for an identity that was never created.
+    expect(countIdentities()).toBe(1);
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('answers 429 too_many_identities where a role is needed', async () => {
     seedEvent(harness.db, { slug: 'conf' });
-    for (let i = 0; i < 300; i += 1) await cookieless();
+    drain('10.0.0.1');
 
     const res = await request(harness.app.express)
       .get('/api/e/conf/bundle')
@@ -51,25 +65,19 @@ describe('minting an identity is budgeted per address', () => {
   });
 
   it('is per address: one exhausted address does not close another', async () => {
-    for (let i = 0; i < 320; i += 1) await cookieless('10.0.0.1');
-    const before = countIdentities();
-    expect(before).toBe(300);
+    drain('10.0.0.1');
+    expect((await cookieless('10.0.0.1')).headers['set-cookie']).toBeUndefined();
 
-    const res = await cookieless('10.0.0.2');
-    expect(res.status).toBe(200);
-    expect(countIdentities()).toBe(301);
+    const other = await cookieless('10.0.0.2');
+    expect(other.status).toBe(200);
+    expect(countIdentities()).toBe(1);
   });
 
   it('never refuses a visitor who already holds a cookie', async () => {
     const agent = agentFor(harness);
     const uid = (await agent.get('/api/me').set('X-Forwarded-For', '10.0.0.7')).body.uid;
 
-    // Drain the mint bucket for that address directly rather than through 300
-    // requests, which would also spend the `read` budget and prove the wrong
-    // thing. This isolates the claim: the mint budget is on *creating* a row.
-    for (let i = 0; i < 300; i += 1) {
-      harness.app.ctx.limiter.consume('mint:ip:10.0.0.7', LIMITS.mint);
-    }
+    drain('10.0.0.7');
 
     const res = await agent.get('/api/me').set('X-Forwarded-For', '10.0.0.7');
     expect(res.status).toBe(200);
@@ -136,5 +144,57 @@ describe('sweeping identities that never became anybody', () => {
     expect(alive(withRole)).toBe(true);
     expect(alive(withName)).toBe(true);
     expect(alive(withFeed)).toBe(true);
+  });
+});
+
+/**
+ * The sentinel's id is 0 and exists in no table, so any route inserting a row
+ * that references an identity fails on the foreign key. `requireRole` already
+ * answered 429 for this; the routes that run *before* a role exists did not,
+ * and answered 500. Entering an event is the one that matters — it is where
+ * a busy event meets the limit on minting.
+ */
+describe('routes that need a real identity row', () => {
+  let harness: Harness;
+
+  // One server for the three cases below. None of them writes anything that
+  // the next would see, and standing an Express app and a database up three
+  // times over is enough extra work to push the slow rendering suites past
+  // their timeout when the whole suite runs at once.
+  beforeAll(() => {
+    harness = makeHarness({ trustProxy: true });
+    seedEvent(harness.db, { slug: 'conf' });
+    for (let i = 0; i < LIMITS.mint.capacity; i += 1) {
+      harness.app.ctx.limiter.consume('mint:ip:10.0.0.1', LIMITS.mint);
+    }
+  });
+  afterAll(() => harness.close());
+
+  const anonymous = (method: 'post' | 'patch', path: string) =>
+    request(harness.app.express)[method](path).set('X-Forwarded-For', '10.0.0.1');
+
+  it('answers 429, not 500, when entering an event', async () => {
+    for (const password of ['nope', 'viewer-pw']) {
+      const res = await anonymous('post', '/api/e/conf/auth').send({
+        password,
+        displayName: 'someone',
+      });
+      expect(res.status).toBe(429);
+      expect(res.body.error.code).toBe('too_many_identities');
+    }
+  });
+
+  it('answers 429 for renaming and for minting a device phrase', async () => {
+    expect((await anonymous('patch', '/api/me').send({ displayName: 'someone' })).status).toBe(429);
+    expect((await anonymous('post', '/api/me/link-code').send({})).status).toBe(429);
+  });
+
+  it('still lets a phrase be redeemed, which is the way back in', async () => {
+    // Redeeming does not create anything keyed on this identity — it points
+    // the cookie at another one — and it is the recovery path, so it stays
+    // open even when the address has spent its allowance.
+    const res = await anonymous('post', '/api/me/link').send({ phrase: 'no-such-phrase' });
+    expect(res.status).not.toBe(429);
+    expect(res.status).not.toBe(500);
   });
 });
