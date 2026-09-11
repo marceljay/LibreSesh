@@ -26,6 +26,7 @@ explicitly *not* built to withstand a targeted attacker with time.
 | XSS via session or profile text | HTML escaped before markdown parsing; URL scheme allowlist; no `dangerouslySetInnerHTML` on unescaped input |
 | Open redirect | Every client navigation is prefixed with a literal `/e/` |
 | Reading a schedule you were not given | Viewing requires the viewer password; there is no public event view |
+| Reading a draft session | Only organisers, its creator and the people credited on it are sent one — not in the bundle, the stream, the calendar feed or a profile; the session's routes answer 404 to anyone else (ARCHITECTURE §Drafts). No credential grants more than its role did: a draft is withheld from roles that could already read the schedule |
 | Leaking one person's agenda | Stars and interest are never broadcast and never attributed in any payload; only aggregate counts are exposed |
 | A leaked calendar URL | The token grants only what its owner's role already allows, and only for that one event; revoking the role kills the feed |
 | A photographed invite QR or forwarded invite link | It *is* the event password: whoever has it holds that role until the password is changed. Changing it does not evict roles already granted. The panel that draws the code says so, loudest for the two codes that grant writing |

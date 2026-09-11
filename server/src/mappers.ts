@@ -280,6 +280,7 @@ export function toSessionDto(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     seriesId: row.series_id,
+    draft: row.draft === 1,
   };
 }
 

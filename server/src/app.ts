@@ -1,7 +1,7 @@
 import cookieParser from 'cookie-parser';
 import express, { Router, type Express } from 'express';
 import { existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadEvent, requireRole } from './auth.js';
 import type { Config } from './config.js';
@@ -117,7 +117,15 @@ export function createApp(db: Db, config: Config): App {
     // browser can answer a deep link.
     app.get('/{*splat}', (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(join(WEB_DIST, 'index.html'));
+      // `root` rather than an absolute path. With no root, `send` checks the
+      // *whole* path for dot segments and refuses one — so a checkout under
+      // any dotted directory (a worktree in `.claude/worktrees/`, an install
+      // under `~/.local`) answered every page with a 500 while the API beside
+      // it worked. With `root`, only the part beneath it is checked, which is
+      // `index.html`, so the dotfile guard still covers everything a request
+      // could name. Allowing dotfiles outright would also have cured the 500 —
+      // by switching the guard off.
+      res.sendFile('index.html', { root: WEB_DIST });
     });
   }
 

@@ -89,6 +89,29 @@ export class Broker {
     }
   }
 
+  /**
+   * Publish a frame chosen per stream, or none: `frameFor` is asked once for
+   * each open stream, with the identity it belongs to. For what not everyone
+   * reading the schedule may see — a draft session — where `publish` would
+   * hand it to the whole room.
+   */
+  publishEach(
+    slug: string,
+    frameFor: (identityId: number | undefined) => ChangeEvent | null,
+  ): void {
+    const set = this.channels.get(slug);
+    if (!set || set.size === 0) return;
+    for (const res of set) {
+      const change = frameFor(this.owner.get(res));
+      if (!change) continue;
+      try {
+        res.write(`event: change\ndata: ${JSON.stringify(change)}\n\n`);
+      } catch {
+        set.delete(res);
+      }
+    }
+  }
+
   subscriberCount(slug: string): number {
     return this.channels.get(slug)?.size ?? 0;
   }

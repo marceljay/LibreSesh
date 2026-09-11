@@ -1,0 +1,13 @@
+-- A draft: a session kept, and kept off the schedule.
+--
+-- Until now the only way to take a session off the programme was to delete
+-- it, and a delete is the wrong word for "not yet", or for "not any more, but
+-- do not lose it": it tells everyone who starred it that it was cancelled and
+-- files it in the trash. A draft keeps its room and its time, so publishing it
+-- puts it back where it was, but it claims neither — the overlap and hold
+-- rules skip it — and only the organisers, whoever added it and the people
+-- credited on it can see it (ARCHITECTURE §Drafts).
+--
+-- Off for every session that already exists, which is how every one of them
+-- behaved before this column.
+ALTER TABLE sessions ADD COLUMN draft INTEGER NOT NULL DEFAULT 0;

@@ -205,6 +205,7 @@ an open session can be a workshop, and an official one can be a jam.
 | `livestreams` | | Where it is streamed: `[{ "label": "Main camera", "url": "https://…" }]`, up to 6. Rarely on a printed programme; here so an export reads back whole |
 | `type` | | `official` (default) or `open` |
 | `blocksOpenBooking` | | `true` holds the floor: while this session runs, attendees can add nothing anywhere in the event. Official sessions only. Default `false` |
+| `draft` | | `true` keeps it off the schedule: only the organisers see it until one publishes it, and it clashes with nothing. Default `false` |
 | `date`, `start`, `end` | ✓ | Local date and wall-clock times — see below |
 | `startsAt`, `endsAt` | | ISO instants instead, for a document a program wrote |
 | `repeat` | | Say the row once, land it on every day it happens — see below |

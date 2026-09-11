@@ -426,6 +426,9 @@ export interface SessionWrite {
   /** Organisers only, official sessions only: while this runs, attendees may
    *  place nothing anywhere in the event. */
   blocksOpenBooking?: boolean;
+  /** Keep it off the schedule. Omit to leave it as it is on an edit; the
+   *  server refuses a change from anyone who could not delete the session. */
+  draft?: boolean;
   title: string;
   description?: string;
   /**

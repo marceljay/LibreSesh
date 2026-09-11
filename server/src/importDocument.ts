@@ -216,7 +216,14 @@ export function fromExport(body: unknown): { doc: unknown; warnings: string[] } 
       const row: Loose = {
         room: resolve('roomId', roomName, session.roomId),
         title: session.title,
-        ...present(session, ['description', 'type', 'blocksOpenBooking', 'startsAt', 'endsAt']),
+        ...present(session, [
+          'description',
+          'type',
+          'blocksOpenBooking',
+          'draft',
+          'startsAt',
+          'endsAt',
+        ]),
       };
       if (typeof session.trackId === 'number') {
         row.track = resolve('trackId', trackName, session.trackId);

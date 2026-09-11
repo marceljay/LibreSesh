@@ -155,6 +155,12 @@ curl -b jar -X POST https://example.org/api/e/democonf/sessions \
 (someone who is not, matched or created). `PATCH` the same shape; an omitted
 key is left alone, `[]` clears a list, `null` clears a nullable field.
 
+`"draft": true` keeps a session off the schedule. Only organisers, its creator
+and the people credited on it are ever sent it — in the bundle, on the stream,
+anywhere — and to everyone else its routes answer `404`. It claims no room or
+time until `PATCH`ed to `"draft": false`, which is checked like a new booking.
+Only the creator and organisers may change the flag.
+
 Three rules that will bite a program in particular:
 
 - **Times are UTC ISO-8601 strings, but every rule about them is evaluated in
@@ -194,6 +200,7 @@ change freely.
 | `room_in_use`, `room_missing` | 409 | Deleting a room that has sessions; restoring into a room that is gone |
 | `slug_taken`, `tag_exists`, `track_exists`, `format_exists` | 409 | The name is taken |
 | `placed` | 409 | That pitch is already on the schedule |
+| `draft` | 409 | Adding a note to a draft session; notes open once it is published |
 | `last_admin` | 409 | Refusing to remove the last organiser |
 | `archived` | 409 | The event is archived and read-only |
 | `too_large` | 413 | Over 256 KB |

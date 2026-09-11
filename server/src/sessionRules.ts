@@ -183,7 +183,9 @@ export function assertWithinTrackHours(
  * `user` writes only — admins may double-book, and the client badges the clash.
  *
  * Breaks are not sessions and never reach this rule: lunch does not occupy a
- * room, and an attendee who wants to run something through it may.
+ * room, and an attendee who wants to run something through it may. Nor does a
+ * draft: it holds its slot only as a note of where it would go, and a room
+ * that looks empty to everyone reading the schedule has to be bookable.
  */
 export function assertNoOverlap(
   db: Db,
@@ -195,7 +197,7 @@ export function assertNoOverlap(
   const clash = db
     .prepare<[number, number, string, string, number], { id: number }>(
       `SELECT id FROM sessions
-        WHERE event_id = ? AND room_id = ? AND deleted_at IS NULL
+        WHERE event_id = ? AND room_id = ? AND deleted_at IS NULL AND draft = 0
           AND starts_at < ? AND ends_at > ?
           AND id != ?`,
     )
@@ -232,7 +234,8 @@ export function assertMayBlock(type: 'official' | 'open', blocks: boolean | unde
  * for, and letting it through would make the rule decorative.
  *
  * Event-wide, deliberately. The room is not a parameter, because the point of
- * a plenary is that there is nowhere else to be.
+ * a plenary is that there is nowhere else to be. A draft holds nothing: a
+ * plenary nobody can see cannot be the reason the grid is closed.
  */
 export function findBlockingSession(
   db: Db,
@@ -243,7 +246,7 @@ export function findBlockingSession(
   return db
     .prepare<[number, string, string, number], SessionRow>(
       `SELECT * FROM sessions
-        WHERE event_id = ? AND blocks_open_booking = 1 AND deleted_at IS NULL
+        WHERE event_id = ? AND blocks_open_booking = 1 AND deleted_at IS NULL AND draft = 0
           AND starts_at < ? AND ends_at > ?
           AND id != ?
         ORDER BY starts_at
