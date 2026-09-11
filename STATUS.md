@@ -16,7 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1765**, lint clean, build clean.
+nothing local is unsaved. Suite at **1767**, lint clean, build clean.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

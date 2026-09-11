@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-09-11
+
+
+### Fixed
+
+- **Only a demo event says its data may be reset.** On an instance running in
+  demo mode, the About box on every event read "demo instance — the data here
+  is reset", including the real events that instance hosts, whose data is
+  never touched. The line now appears only on the demo events themselves, and
+  says "may": nothing reseeds even those on a schedule, only an operator
+  running `npm run seed`.
+
 ## [0.6.0] — 2026-09-11
 
 Upgrading runs one migration at boot: `022_session_drafts.sql` adds a

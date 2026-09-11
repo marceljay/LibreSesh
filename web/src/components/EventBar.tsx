@@ -120,7 +120,9 @@ export function EventBar({
           <NotificationBell slug={slug} ping={ping} />
           <ProfileMenu
             onTour={onTour}
-            demo={me?.demoMode === true}
+            // This event, not the instance: a demo instance also hosts real
+            // events, and those are neither open nor ever reseeded.
+            demoEvent={me?.demoEventSlugs?.includes(slug) === true}
             onCalendar={setCalendar}
             displayName={bundle.displayName}
             slug={slug}

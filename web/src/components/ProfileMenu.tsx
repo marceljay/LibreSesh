@@ -46,8 +46,9 @@ export interface ProfileMenuProps {
   /** Asked before the menu takes you to another page. Manage Event's
    *  Settings tab has unsaved edits to lose; nowhere else objects. */
   beforeNavigate?: () => Promise<boolean>;
-  /** Whether this instance resets its data, shown in About. */
-  demo: boolean;
+  /** Whether *this event* is one of the demo fixtures — never the instance's
+   *  `demoMode`, which is also on for the real events a demo instance hosts. */
+  demoEvent: boolean;
 }
 
 /**
@@ -68,7 +69,7 @@ export function ProfileMenu({
   onSignOut,
   onTour,
   beforeNavigate,
-  demo,
+  demoEvent,
 }: ProfileMenuProps) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -276,7 +277,7 @@ export function ProfileMenu({
       )}
 
       {linking && <DeviceLinkModal onClose={() => setLinking(false)} />}
-      {about && <AboutModal demo={demo} onClose={() => setAbout(false)} />}
+      {about && <AboutModal demoEvent={demoEvent} onClose={() => setAbout(false)} />}
     </div>
   );
 }
