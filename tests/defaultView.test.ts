@@ -166,7 +166,9 @@ describe('the schedule reads the default off the event', () => {
   );
 
   it('no longer guesses from the width of the window', () => {
-    expect(schedule).toContain("filters.view ?? event?.defaultView ?? 'list'");
+    // The reader's own last choice on the device sits between the URL and
+    // the default; see lastView.test.ts.
+    expect(schedule).toContain("filters.view ?? remembered.view ?? event?.defaultView ?? 'list'");
     expect(schedule).not.toContain('window.innerWidth < 640');
   });
 });
