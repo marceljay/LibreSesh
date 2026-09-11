@@ -1391,7 +1391,7 @@ export function SchedulePage() {
                   aria-expanded={!folded}
                   aria-label={folded ? 'Show the day picker' : 'Fold the day picker away'}
                   title={folded ? 'Show the day picker' : 'Fold the day picker away'}
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+                  className="flex h-[34px] shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
                 >
                   {/* A calendar and an arrow, at both states and at every width.
                     The folded button used to carry the day as text, which made
