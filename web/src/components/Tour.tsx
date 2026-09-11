@@ -12,6 +12,19 @@ const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.m
 
 const selectorFor = (id: string): string => `[data-tour="${id}"]`;
 
+/**
+ * The target for a step, or `null` when there is nothing to point at. A
+ * control the role does not get is not rendered at all; one the viewport does
+ * not get — the organiser's Arrange button below `sm`, folded into the
+ * + Session menu there — is rendered and `display: none`, and a coach-mark on
+ * that would sit over an empty corner of the page.
+ */
+const find = (id: string): HTMLElement | null => {
+  const el = document.querySelector<HTMLElement>(selectorFor(id));
+  if (!el || window.getComputedStyle(el).display === 'none') return null;
+  return el;
+};
+
 interface Placement {
   top: number;
   left: number;
@@ -23,9 +36,7 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   const cardRef = useRef<HTMLDivElement>(null);
   // Freeze the step list to those actually on screen now, so a role-conditional
   // control that isn't rendered never becomes a dead step.
-  const [resolved] = useState(() =>
-    steps.filter((s) => document.querySelector(selectorFor(s.target))),
-  );
+  const [resolved] = useState(() => steps.filter((s) => find(s.target)));
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
@@ -40,7 +51,7 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
   const resolveFrom = useCallback(
     (from: number, dir: 1 | -1): number => {
       for (let i = from; i >= 0 && i < resolved.length; i += dir) {
-        if (document.querySelector(selectorFor(resolved[i].target))) return i;
+        if (find(resolved[i].target)) return i;
       }
       return -1;
     },
@@ -72,8 +83,7 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
       finish();
       return;
     }
-    const selector = selectorFor(step.target);
-    const el = document.querySelector<HTMLElement>(selector);
+    const el = find(step.target);
     if (!el) {
       const n = resolveFrom(index + 1, 1);
       if (n === -1) finish();
@@ -83,7 +93,7 @@ export function Tour({ steps, onClose }: { steps: TourStep[]; onClose: () => voi
     el.scrollIntoView({ block: 'center', inline: 'nearest' });
 
     const measure = () => {
-      const node = document.querySelector<HTMLElement>(selector);
+      const node = find(step.target);
       if (!node) {
         const n = resolveFrom(index + 1, 1);
         if (n === -1) finish();
