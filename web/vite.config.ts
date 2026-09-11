@@ -27,7 +27,9 @@ const pkg = JSON.parse(
 // keeps the footer honest rather than blank.
 const buildTag =
   process.env.BUILD_TAG || git('git describe --tags --abbrev=0') || `v${pkg.version}`;
-const buildCommit = process.env.BUILD_COMMIT || git('git rev-parse --short HEAD') || 'unknown';
+// A platform passes the full 40-character SHA; trim it to what `--short` gives.
+const buildCommit =
+  process.env.BUILD_COMMIT?.slice(0, 7) || git('git rev-parse --short HEAD') || 'unknown';
 const buildDirty = process.env.BUILD_COMMIT ? false : git('git status --porcelain') !== '';
 const buildTime = new Date().toISOString();
 
