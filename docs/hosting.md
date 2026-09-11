@@ -332,10 +332,14 @@ Then, in the platform dashboard:
 - **Leave `PORT` alone.** The platform injects it and the app reads it; the Dockerfile's
   `ENV PORT=3000` is only a local default. The server already binds `0.0.0.0`.
 - `DATABASE_PATH=/data/app.db` and `SERVE_STATIC=1` are set in the Dockerfile already.
-- **The build stamp fills itself in.** The Dockerfile declares `RAILWAY_GIT_COMMIT_SHA`
-  as a build arg, which the platform supplies, so the About page shows the deployed
-  commit with nothing to set. On any other PaaS, set `BUILD_COMMIT` as a service
-  variable to whatever commit variable that platform injects.
+- **The commit on the About page fills itself in.** The image is built without
+  `.git`, and Railway forwards only the variables set on the service to the build,
+  not its own `RAILWAY_GIT_COMMIT_SHA` — so the bundle cannot stamp itself. The
+  server reads that variable from its runtime environment instead and the page
+  takes it from there. Nothing to set. Optionally, a reference variable
+  `BUILD_COMMIT=${{RAILWAY_GIT_COMMIT_SHA}}` on the service stamps the bundle at
+  build time as well. On any other PaaS, set `BUILD_COMMIT` to whatever commit
+  variable that platform injects.
 
 No Caddy, no `SITE_ADDRESS` — the platform handles TLS and routing. Everything in §6
 (backups) still applies and is now *more* urgent, since you no longer control the host:

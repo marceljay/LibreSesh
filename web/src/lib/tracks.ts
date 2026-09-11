@@ -9,10 +9,9 @@ export type TrackFactsInput = Pick<TrackDto, 'description'>;
  * what to bring — or '' when there is none.
  *
  * The twin of `roomNote`, and deliberately the same shape: a track column and
- * a room column are the same furniture on the schedule, so the one thing that
- * does not fit on the card belongs behind the same info button in both. What
- * is already on the card — the session count, the hours — stays off the panel,
- * because a panel that repeats the header gives a reader nothing for the tap.
+ * a room column are the same furniture on the schedule, so what does not fit
+ * on the card belongs behind the same info button in both. The card is the
+ * name alone; the session count and the hours sit behind the ⓘ with this.
  */
 export const trackNote = (track: TrackFactsInput): string => track.description.trim();
 

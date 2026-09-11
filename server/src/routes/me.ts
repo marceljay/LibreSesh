@@ -31,6 +31,7 @@ export function meRoutes(ctx: Ctx): Router {
     roles: rolesFor(ctx, identity.id),
     demoMode: ctx.config.demoMode,
     demoEventSlugs: ctx.config.demoEventSlugs,
+    commit: ctx.config.buildCommit,
   });
 
   router.get('/me', limit(ctx.limiter, 'read'), (req, res) => {

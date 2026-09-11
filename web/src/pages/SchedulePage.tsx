@@ -10,7 +10,7 @@ import type {
 } from '@shared/types';
 import { can } from '@shared/capabilities';
 import { dateRange, zonedTimeToUtc } from '@shared/time';
-import { windowLabel, windowOn } from '@shared/trackHours';
+import { windowLabel, windowOn, type DayWindow } from '@shared/trackHours';
 import { ApiError, api, type SessionWrite } from '../lib/api';
 import {
   dayAfter,
@@ -27,6 +27,7 @@ import { matchesLens } from '../lib/sessionLens';
 import { lensParams, useFilters } from '../lib/useFilters';
 import { plural } from '../lib/plural';
 import { roomHasInfo, roomNote, seatsLabel } from '../lib/rooms';
+import { readLastView, writeLastView } from '../lib/lastView';
 import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
@@ -90,35 +91,42 @@ function RoomInfo({ room }: { room: RoomDto }) {
 }
 
 /**
- * What a track is for, and what the hours on its card do not say for
- * themselves: that they are a rule rather than a description, who it binds,
- * and whether this day keeps its own window. The times themselves stay on the
- * card, so they are not repeated here.
+ * What a track is for, how much is on it, and the hours it keeps today.
+ *
+ * The count and the hours used to sit on the card under the name, and the
+ * panel only explained them. They are all behind the ⓘ now — the card is a
+ * name, as a room's is, and the name opens the track's own page — so the
+ * panel says the hours as well as what they mean: that they are a rule rather
+ * than a description, who it binds, and whether this day keeps its own window.
  */
 function TrackInfo({
   track,
   day,
   note,
+  count,
   hours,
 }: {
   track: TrackDto;
   day: string;
   /** The organiser's context for the strand, or '' if they gave none. */
   note: string;
-  /** Whether the card is showing hours that need explaining. */
-  hours: boolean;
+  /** Sessions on the track across the whole event. */
+  count: number;
+  /** The window the track keeps on `day`, or null when it takes any hour. */
+  hours: DayWindow | null;
 }) {
   const ownDay = track.windows.some((w) => w.date === day);
   return (
     <div className="space-y-1.5">
       {/* The organiser's words first: a reader who tapped the button wants to
-          know what the strand is, and the hours are a footnote to that. */}
+          know what the strand is, and the facts are a footnote to that. */}
       {note && <p className="whitespace-pre-line">{note}</p>}
+      <p>{count} in the programme, every day counted.</p>
       {hours && (
         <>
           <p>
-            The hours on the card are a rule: a session outside them is refused, unless an organiser
-            places it.
+            Today takes sessions <span className="tabular-nums">{windowLabel(hours)}</span>. That is
+            a rule: a session outside it is refused, unless an organiser places it.
           </p>
           {ownDay && <p>Today keeps its own window — other days differ.</p>}
           {!ownDay && track.windows.length > 0 && (
@@ -224,7 +232,19 @@ export function SchedulePage() {
   /** Drafts this reader can see — the bundle carries only theirs. At zero the
    *  + Session menu does not mention drafts at all. */
   const draftCount = (bundle?.sessions ?? []).filter((s) => s.draft).length;
-  const axis: 'room' | 'track' = hasTracks && filters.axis === 'track' ? 'track' : 'room';
+  /** The reader's last explicit view and axis here, read once per event. It
+   *  only matters while the URL says nothing; the moment a choice is made the
+   *  URL carries it, and this is written for the next bare visit. */
+  const remembered = useMemo(() => readLastView(slug), [slug]);
+  useEffect(() => {
+    if (filters.view === null && filters.axis === null) return;
+    writeLastView(slug, {
+      ...(filters.view !== null ? { view: filters.view } : {}),
+      ...(filters.axis !== null ? { axis: filters.axis } : {}),
+    });
+  }, [slug, filters.view, filters.axis]);
+  const axis: 'room' | 'track' =
+    hasTracks && (filters.axis ?? remembered.axis) === 'track' ? 'track' : 'room';
 
   /* Where a reader who has not picked a view lands. It used to be a guess
      about the device — under 640px the list, above it the grid — which is the
@@ -233,8 +253,14 @@ export function SchedulePage() {
      unconference is a column of empty grid on a desktop. The organiser sets it
      in Manage Event → Settings, and until they do it is the list, the view
      that survives every shape of event. The switch still works either way, and
-     a chosen view goes in the URL, which is what a shared link reproduces. */
-  const view = filters.view ?? event?.defaultView ?? 'list';
+     a chosen view goes in the URL, which is what a shared link reproduces.
+
+     Between the URL and the organiser's default sits the reader's own last
+     choice on this device. Every way back to the schedule — a track's page, a
+     profile, Manage Event, the event bar — links to the bare `/e/:slug`, and a
+     bare URL used to mean the default again: read the grid, open something,
+     come back, and you were in the list. */
+  const view = filters.view ?? remembered.view ?? event?.defaultView ?? 'list';
 
   /** The day after the one being read, for the button at the end of the
    *  list. Absent on the last day, which has nothing after it. */
@@ -299,43 +325,35 @@ export function SchedulePage() {
       // on a day with its own window the default is not the rule, and printing
       // it under the column would be a lie about what will be accepted.
       const hours = windowOn(track, day);
-      // The strand's own context, exactly as a room's directions are handled:
-      // the session count and the hours are on the card, so the panel carries
-      // what the card has no room for.
+      // The card is the track's name, and the name opens the track's page.
+      // The count and the hours are behind the ⓘ with the organiser's note,
+      // exactly as a room's seats and directions are: facts about the column,
+      // together, off the card.
       const note = trackNote(track);
+      const count = sessions.filter((x) => x.trackId === track.id).length;
       return {
         id: track.id,
         name: track.name,
         color: track.color,
-        detail: (
-          <div className="text-xs text-stone-600">
-            <div className="truncate">
-              {sessions.filter((x) => x.trackId === track.id).length} in the programme
-            </div>
-            {hours && <div className="truncate tabular-nums">{windowLabel(hours)}</div>}
-          </div>
-        ),
-        info:
-          note || hours ? (
-            <TrackInfo track={track} day={day} note={note} hours={Boolean(hours)} />
-          ) : undefined,
+        href: `/e/${slug}/t/${track.id}`,
+        info: <TrackInfo track={track} day={day} note={note} count={count} hours={hours} />,
       };
     });
     if (sessions.some((x) => x.trackId === null)) {
+      const count = sessions.filter((x) => x.trackId === null).length;
       cols.push({
         id: UNTRACKED,
         name: 'Unassigned',
         color: '#E7E5E4',
-        detail: (
-          <div className="truncate text-xs text-stone-600">
-            {sessions.filter((x) => x.trackId === null).length} with no track
-          </div>
-        ),
-        info: undefined,
+        // The same list for the sessions still waiting for a strand — search
+        // already answers `?track=-1`, and it is the question an organiser
+        // asks most from this column.
+        href: `/e/${slug}/search?track=${UNTRACKED}`,
+        info: <p>{count} with no track yet, every day counted.</p>,
       });
     }
     return cols;
-  }, [axis, bundle?.rooms, bundle?.tracks, bundle?.sessions, day]);
+  }, [axis, bundle?.rooms, bundle?.tracks, bundle?.sessions, day, slug]);
 
   const columnOf = useCallback(
     (session: SessionDto) => (axis === 'room' ? session.roomId : (session.trackId ?? UNTRACKED)),
@@ -1373,7 +1391,7 @@ export function SchedulePage() {
                   aria-expanded={!folded}
                   aria-label={folded ? 'Show the day picker' : 'Fold the day picker away'}
                   title={folded ? 'Show the day picker' : 'Fold the day picker away'}
-                  className="flex shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
+                  className="flex h-[34px] shrink-0 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 text-xs font-medium text-stone-600 hover:border-stone-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-stone-500"
                 >
                   {/* A calendar and an arrow, at both states and at every width.
                     The folded button used to carry the day as text, which made
@@ -1462,6 +1480,10 @@ export function SchedulePage() {
                       <SettingsIcon className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Manage Event</span>
                     </Link>
+                    {/* Below `sm` this was a bare `↕`, and the + Session menu
+                      now carries Arrange with its words, so the phone drops
+                      the button wherever that menu is offered. `canWrite` is
+                      the menu's own condition for the row. */}
                     {canArrange && (
                       <button
                         type="button"
@@ -1470,7 +1492,7 @@ export function SchedulePage() {
                         aria-pressed={arrange}
                         aria-label={arrange ? 'Done arranging' : 'Arrange sessions'}
                         title={arrange ? 'Done arranging' : 'Arrange sessions'}
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        className={`${canWrite ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
                           arrange
                             ? 'border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
                             : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'

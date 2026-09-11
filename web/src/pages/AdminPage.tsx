@@ -2540,6 +2540,9 @@ function TagEditor({
  * run mornings, except Saturday, when they have the afternoon" is one row and
  * not a special case. Only days without a row are offered, because two windows
  * on one date would have no defined winner.
+ *
+ * The row for adding one is a button until pressed. Most tracks never need it,
+ * and its three fields sat open under every track's hours as if they did.
  */
 function TrackHoursFields({
   start,
@@ -2565,6 +2568,7 @@ function TrackHoursFields({
 }) {
   const taken = new Set(windows.map((w) => w.date));
   const free = days.filter((d) => !taken.has(d));
+  const [adding, setAdding] = useState(false);
   const [day, setDay] = useState(free[0] ?? '');
   const [from, setFrom] = useState(start);
   const [to, setTo] = useState(end);
@@ -2577,6 +2581,8 @@ function TrackHoursFields({
     ].sort((a, b) => a.date.localeCompare(b.date));
     onWindows(next);
     setDay(free.filter((d) => d !== day)[0] ?? '');
+    // Back to the button: the row just added is now in the list above it.
+    setAdding(false);
   };
 
   return (
@@ -2624,7 +2630,19 @@ function TrackHoursFields({
         </ul>
       )}
 
-      {free.length > 0 && (
+      {/* A button until it is wanted. Most tracks keep one window every day,
+          and three empty fields and an Add day under every track's hours said
+          otherwise — the row is a question, and it is asked when pressed. */}
+      {free.length > 0 && !adding && (
+        <SecondaryButton
+          className="px-3 py-1.5"
+          onClick={() => setAdding(true)}
+          aria-expanded={false}
+        >
+          + A day that differs
+        </SecondaryButton>
+      )}
+      {free.length > 0 && adding && (
         <FormRow>
           <Field label="A day that differs">
             <Select value={day} onValueChange={(v) => v != null && setDay(v)}>
@@ -2661,6 +2679,13 @@ function TrackHoursFields({
           <SecondaryButton onClick={addDay} disabled={!day || minutesOf(to) <= minutesOf(from)}>
             Add day
           </SecondaryButton>
+          <button
+            type="button"
+            onClick={() => setAdding(false)}
+            className="text-xs font-medium text-stone-500 underline hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+          >
+            Cancel
+          </button>
         </FormRow>
       )}
     </div>

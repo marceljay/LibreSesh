@@ -27,6 +27,7 @@ const ImportPage = named(() => import('./pages/ImportPage'), 'ImportPage');
 const SchedulePage = named(() => import('./pages/SchedulePage'), 'SchedulePage');
 const SearchPage = named(() => import('./pages/SearchPage'), 'SearchPage');
 const AgendaPage = named(() => import('./pages/AgendaPage'), 'AgendaPage');
+const TrackPage = named(() => import('./pages/TrackPage'), 'TrackPage');
 const ProposalBoard = named(() => import('./components/ProposalBoard'), 'ProposalBoard');
 const ProfilePage = named(() => import('./pages/ProfilePage'), 'ProfilePage');
 const AdminPage = named(() => import('./pages/AdminPage'), 'AdminPage');
@@ -62,6 +63,9 @@ export function App() {
                       than a panel for the same reason search is one: it spans every
                       day, and the schedule is day-scoped by construction. */}
                   <Route path="/e/:slug/agenda" element={<AgendaPage />} />
+                  {/* One track across every day, which the day-scoped grid
+                      cannot show. Opened from the track's column card. */}
+                  <Route path="/e/:slug/t/:trackId" element={<TrackPage />} />
                   <Route path="/e/:slug/proposals" element={<ProposalBoard />} />
                   <Route path="/e/:slug/p/:personId" element={<ProfilePage />} />
                   <Route path="/e/:slug/admin" element={<AdminPage />} />
