@@ -32,7 +32,7 @@ function build(): { tag: string; commit: string; built: string } {
  * menu, which is where someone who wants it will look and out of everyone
  * else's way.
  */
-export function AboutModal({ demo, onClose }: { demo: boolean; onClose: () => void }) {
+export function AboutModal({ demoEvent, onClose }: { demoEvent: boolean; onClose: () => void }) {
   const { tag, commit, built } = build();
 
   return (
@@ -42,9 +42,12 @@ export function AboutModal({ demo, onClose }: { demo: boolean; onClose: () => vo
           A simple, open-source scheduling tool for conferences and unconferences. Everyone reads
           the same live schedule; anyone with a link can follow it, and nobody needs an account.
         </p>
-        {demo && (
+        {/* Only on a demo fixture. The instance-wide flag used to drive this, so
+            every real event on a demo instance claimed its data was reset. And
+            "may": nothing reseeds on a schedule — only `npm run seed` does. */}
+        {demoEvent && (
           <p className="inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-            demo instance — the data here is reset
+            demo event — the data here may be reset
           </p>
         )}
         {/* `select-all`: the first thing anyone is asked for when they report
