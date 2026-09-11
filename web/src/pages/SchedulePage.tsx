@@ -62,6 +62,7 @@ import {
 } from '../lib/sessionPerms';
 import { Tour, type TourStep } from '../components/Tour';
 import { EmptyState, Spinner, useConfirm, useToast } from '../components/ui';
+import { ViewSwitch } from '../components/ViewSwitch';
 
 const NOW_TICK_MS = 30_000;
 
@@ -1060,12 +1061,9 @@ export function SchedulePage() {
     {
       target: 'view',
       title: 'Grid or list',
-      body: 'Grid shows the rooms side by side; list is a plain agenda that reads better on a phone.',
-    },
-    {
-      target: 'axis',
-      title: 'Rooms or tracks',
-      body: 'This event has tracks, so the grid can lay its columns out either way. Reading by track, each block says which room it is in.',
+      body: hasTracks
+        ? 'Grid shows the columns side by side; list is a plain agenda that reads better on a phone. This event has tracks, so Grid asks whether to lay its columns out by room or by track — reading by track, each block says which room it is in.'
+        : 'Grid shows the rooms side by side; list is a plain agenda that reads better on a phone.',
     },
     /* One step, because it is one button now — and conditional, because it is
        not always there: an event can turn the board off, and not everyone may
@@ -1301,57 +1299,23 @@ export function SchedulePage() {
                     </Rail>
                   </div>
 
-                  <div
-                    data-tour="view"
-                    className="flex rounded-lg border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 p-0.5"
-                  >
-                    {(['cal', 'list'] as const).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => {
-                          filters.set({ view: v });
-                          // Leaving the grid also leaves Arrange, rather than
-                          // holding a drag mode open behind a button that is no
-                          // longer on screen to turn it off.
-                          if (v !== 'cal') setArrange(false);
-                        }}
-                        aria-pressed={view === v}
-                        className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                          view === v
-                            ? 'bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
-                            : 'text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        {v === 'cal' ? 'Grid' : 'List'}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Only when the event has tracks, and only in the grid — the list
-                    is an agenda in time order, with no columns to lay out. */}
-                  {hasTracks && view === 'cal' && (
-                    <div
-                      data-tour="axis"
-                      className="flex rounded-lg border border-stone-300 bg-white p-0.5 dark:border-stone-600 dark:bg-stone-900"
-                    >
-                      {(['room', 'track'] as const).map((a) => (
-                        <button
-                          key={a}
-                          type="button"
-                          onClick={() => filters.set({ axis: a })}
-                          aria-pressed={axis === a}
-                          className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                            axis === a
-                              ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                              : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
-                          }`}
-                        >
-                          {a === 'room' ? 'Rooms' : 'Tracks'}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {/* List, Grid, and — with tracks — which way the grid's columns
+                    run, from a small menu on the Grid button. The axis was a
+                    second segmented control that appeared beside this one in
+                    the grid and vanished in the list, and on a phone the row
+                    wrapped under it every time it came. */}
+                  <ViewSwitch
+                    view={view}
+                    axis={axis}
+                    hasTracks={hasTracks}
+                    onChange={(next) => {
+                      filters.set(next);
+                      // Leaving the grid also leaves Arrange, rather than
+                      // holding a drag mode open behind a button that is no
+                      // longer on screen to turn it off.
+                      if (next.view !== 'cal') setArrange(false);
+                    }}
+                  />
 
                   {/* Both ways of putting a session into the world, behind one
                     button. They were a row apart, then side by side, and they

@@ -37,7 +37,7 @@ describe('Arrange belongs to the grid', () => {
   it('turns the mode off on the way out of the grid', () => {
     // Otherwise the drag mode stays open behind a button that is no longer on
     // screen to close it.
-    expect(schedule).toContain("if (v !== 'cal') setArrange(false);");
+    expect(schedule).toContain("if (next.view !== 'cal') setArrange(false);");
   });
 
   it('is read by the grid and by nothing in the list', () => {
