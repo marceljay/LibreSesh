@@ -45,6 +45,25 @@ export interface Config {
    * a forgotten volume rather than a decision.
    */
   allowEphemeralDb: boolean;
+  /**
+   * The commit this process is running, if the environment can say. The web
+   * bundle stamps itself at build time, but an image built without `.git` and
+   * without build args — a PaaS builds it that way — has nothing to stamp,
+   * and the About page reads "unknown". The same platform does put the commit
+   * in the runtime environment, so the server reads it there and hands it to
+   * the page. Short form, seven characters, as `git rev-parse --short` gives.
+   */
+  buildCommit: string | null;
+}
+
+/**
+ * `BUILD_COMMIT` first, so any platform can be told; then Railway's own
+ * variable, so that one needs no telling. Whitespace and empty strings count
+ * as unset — a reference variable that resolved to nothing is not a commit.
+ */
+function buildCommit(): string | null {
+  const raw = (process.env.BUILD_COMMIT || process.env.RAILWAY_GIT_COMMIT_SHA || '').trim();
+  return raw ? raw.slice(0, 7) : null;
 }
 
 function required(name: string, fallback?: string): string {
@@ -135,5 +154,6 @@ export function loadConfig(): Config {
     demoEventSlugs: isDemo ? demoEventSlugs() : [],
     seedDemoEvent: process.env.SEED_DEMO_EVENT !== '0',
     allowEphemeralDb: !isProd || process.env.ALLOW_EPHEMERAL_DB === '1',
+    buildCommit: buildCommit(),
   };
 }

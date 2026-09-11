@@ -1,3 +1,4 @@
+import { useMe } from '@/lib/useMe';
 import { Modal } from './Modal';
 import { linkClass } from './ui';
 
@@ -10,13 +11,22 @@ const REPO_URL = 'https://github.com/marceljay/LibreSesh';
  *
  * Defaulted rather than asserted: a missing stamp should read "unknown", not
  * take the page down with it.
+ *
+ * The commit has a second source. An image built without `.git` and without
+ * build args — which is how a PaaS builds it — leaves the bundle's stamp
+ * empty, so it read "unknown" in production for as long as it existed. The
+ * server knows the commit from its runtime environment and says so on `/me`;
+ * that fills the gap. The bundle's own stamp still wins where it exists, since
+ * it is the only one that can say "-dirty".
  */
-function build(): { tag: string; commit: string; built: string } {
+function build(serverCommit: string | null): { tag: string; commit: string; built: string } {
   const dirty = import.meta.env.VITE_BUILD_DIRTY === 'true';
   const at = new Date(import.meta.env.VITE_BUILD_TIME ?? '');
+  const stamped = import.meta.env.VITE_BUILD_COMMIT;
+  const commit = stamped && stamped !== 'unknown' ? stamped : (serverCommit ?? 'unknown');
   return {
     tag: import.meta.env.VITE_BUILD_TAG ?? 'unknown',
-    commit: (import.meta.env.VITE_BUILD_COMMIT ?? 'unknown') + (dirty ? '-dirty' : ''),
+    commit: commit + (dirty ? '-dirty' : ''),
     built: Number.isNaN(at.getTime())
       ? 'unknown'
       : `${at.toISOString().slice(0, 16).replace('T', ' ')} UTC`,
@@ -33,7 +43,8 @@ function build(): { tag: string; commit: string; built: string } {
  * else's way.
  */
 export function AboutModal({ demoEvent, onClose }: { demoEvent: boolean; onClose: () => void }) {
-  const { tag, commit, built } = build();
+  const { me } = useMe();
+  const { tag, commit, built } = build(me?.commit ?? null);
 
   return (
     <Modal title="About LibreSesh" onClose={onClose}>

@@ -105,7 +105,7 @@ your cookie jar already held.
 | `GET /api/e/:slug/sessions/:id` | One session **plus its contributions** — the only thing not in the bundle |
 | `GET /api/e/:slug/export.json` | Organisers only; `?include=sessions,people,proposals,contributions` |
 | `GET /api/events` | Public. Every event on the instance, names and dates only — no schedule |
-| `GET /api/me` | Who this cookie is, and its roles |
+| `GET /api/me` | Who this cookie is, its roles, and the commit the server runs |
 
 The bundle carries `role` and a `permissions` map (capability → the roles
 allowed to use it), so you can tell what you are allowed to do without

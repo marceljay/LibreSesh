@@ -26,6 +26,10 @@ export interface Me {
   /** Public-demo instance. Only labels the build as a demo — it does **not**
    *  mean this event's login page is open; see `demoEventSlugs`. */
   demoMode: boolean;
+  /** The commit the server is running, short form, when its environment says
+   *  — the About page falls back to this where the bundle's own stamp is
+   *  missing. `null` where nothing said. */
+  commit: string | null;
   /** The events whose login page offers roles as buttons instead of asking for a
    *  password. Everything else on a demo instance is a real event with real
    *  passwords. Empty unless the instance is in demo mode. */
