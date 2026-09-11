@@ -33,6 +33,8 @@ function byCode(err: ApiError): string | null {
     }
     case 'claim_pending':
       return 'That request is already waiting for an organiser';
+    case 'draft':
+      return 'Notes open once the session is on the schedule';
     case 'format_exists':
       return 'A format with that name already exists';
     case 'last_admin':

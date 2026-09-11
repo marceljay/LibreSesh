@@ -188,6 +188,12 @@ export function SessionModal({
   const [blocksOpenBooking, setBlocksOpenBooking] = useState(session?.blocksOpenBooking ?? false);
   const [blockHelp, setBlockHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Taking a session off the schedule is for whoever may delete it — the
+  // server holds it to the same rule — so the draft button is offered on a
+  // new session, which is theirs, and on an edit only alongside Delete. A
+  // co-speaker gets neither: being credited is a claim on the words.
+  const canDraft = !session || onDelete !== undefined;
+  const isDraft = session?.draft === true;
 
   // The server refuses a hold on an open session rather than quietly dropping
   // it, so the form never offers the combination: switching the type to open
@@ -242,7 +248,9 @@ export function SessionModal({
     ? checkRepeat(day, repeat, { eventEndDate: lastDay, max: MAX_REPEAT_DAYS })
     : null;
 
-  const save = () => {
+  /** `asDraft` is which of the two buttons was pressed: the primary one puts
+   *  the session on the schedule, the one beside it keeps it off. */
+  const save = (asDraft = false) => {
     if (!title.trim()) {
       setError('A title is required');
       return;
@@ -290,6 +298,7 @@ export function SessionModal({
         roomId,
         type: isAdmin ? type : undefined,
         ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
+        ...(canDraft ? { draft: asDraft } : {}),
         title: title.trim(),
         speakers,
         description: description.trim(),
@@ -328,7 +337,9 @@ export function SessionModal({
       }
       onClose={onCancel}
       wide
-      onSubmit={save}
+      // Enter is the primary button: on the schedule. Keeping it off is a
+      // button pressed on purpose, never a key that happened to be.
+      onSubmit={() => save(false)}
       footer={
         <>
           {error && <FormError className="basis-full">{error}</FormError>}
@@ -341,11 +352,37 @@ export function SessionModal({
             </DangerButton>
           )}
           <SecondaryButton onClick={onCancel}>Cancel</SecondaryButton>
+          {/* Between Cancel and the primary: the middle way, and a separate
+              button rather than a checkbox up in the form, so what a press
+              does is written on the thing pressed. On a published session it
+              is how one comes off the schedule without being deleted. */}
+          {canDraft && (
+            <SecondaryButton
+              onClick={() => save(true)}
+              disabled={saving || allowedRooms.length === 0 || repeatProblem !== null}
+            >
+              {!session
+                ? runCount > 1
+                  ? `Save ${runCount} as drafts`
+                  : 'Save as draft'
+                : isDraft
+                  ? 'Save draft'
+                  : 'Move to drafts'}
+            </SecondaryButton>
+          )}
           <PrimaryButton
             type="submit"
             disabled={saving || allowedRooms.length === 0 || repeatProblem !== null}
           >
-            {saving ? 'Saving…' : runCount > 1 ? `Create ${runCount} sessions` : 'Save'}
+            {saving
+              ? 'Saving…'
+              : !session
+                ? runCount > 1
+                  ? `Add ${runCount} sessions`
+                  : 'Add session'
+                : isDraft && canDraft
+                  ? 'Publish'
+                  : 'Save'}
           </PrimaryButton>
         </>
       }
@@ -494,6 +531,16 @@ export function SessionModal({
                 </HelpNote>
               )}
             </Field>
+          )}
+
+          {/* Whether it is one is decided by the buttons at the bottom; this
+              only says what being one means, to someone editing a draft. */}
+          {isDraft && (
+            <p className="rounded-lg border border-dashed border-stone-400 px-3 py-2 text-xs text-stone-600 dark:border-stone-500 dark:text-stone-300">
+              This is a draft. Only the organisers, whoever added it and the people credited on it
+              can see it, and it keeps this room and time without holding either until it is
+              published.
+            </p>
           )}
 
           <Field label="Title">

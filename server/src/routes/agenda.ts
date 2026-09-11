@@ -8,7 +8,7 @@ import { buildCalendar, type IcsEvent } from '../ical.js';
 import { requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import { speakersBySession } from '../mappers.js';
-import { getSession } from '../sessionRules.js';
+import { getVisibleSession } from '../drafts.js';
 
 /**
  * Personal agenda: starring sessions, and the iCal feed built from either the
@@ -23,7 +23,13 @@ export function agendaRoutes(ctx: Ctx): Router {
   const star = [requireCapability(ctx.db, 'session.star'), limit(ctx.limiter, 'write')];
 
   router.put('/sessions/:id/star', ...star, (req, res) => {
-    const session = getSession(ctx.db, req.event.id, Number(req.params.id));
+    const session = getVisibleSession(
+      ctx.db,
+      req.event.id,
+      Number(req.params.id),
+      req.identity.id,
+      req.role,
+    );
     ctx.db
       .prepare(
         `INSERT INTO stars (identity_id, session_id, created_at) VALUES (?, ?, ?)
@@ -84,18 +90,23 @@ export function calendarRoutes(ctx: Ctx): Router {
     if (identityId === undefined) throw unauthorized('This calendar needs the event password');
 
     const mine = req.query.mine === '1';
+    // A calendar is the published schedule, for everyone including the people
+    // who may see a draft: an entry in a phone's calendar is the one copy that
+    // does not vanish when the session is taken off, so it is never put there.
     const sessions = mine
       ? ctx.db
           .prepare<[number, number], SessionRow>(
             `SELECT s.* FROM sessions s
                JOIN stars st ON st.session_id = s.id
               WHERE s.event_id = ? AND st.identity_id = ? AND s.deleted_at IS NULL
+                AND s.draft = 0
               ORDER BY s.starts_at`,
           )
           .all(event.id, identityId)
       : ctx.db
           .prepare<[number], SessionRow>(
-            'SELECT * FROM sessions WHERE event_id = ? AND deleted_at IS NULL ORDER BY starts_at',
+            `SELECT * FROM sessions WHERE event_id = ? AND deleted_at IS NULL AND draft = 0
+              ORDER BY starts_at`,
           )
           .all(event.id);
 

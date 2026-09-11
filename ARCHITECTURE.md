@@ -73,7 +73,7 @@ rows, open the database file in a read-only viewer (a copy for production:
 | `rooms`, `tags` | Per event, soft-deleted |
 | `session_formats` | What kind of thing a session is — talk, workshop, panel. A name and a colour, nothing else. Per event, soft-deleted, in the organiser's running order rather than by name. A session wears one (`sessions.format_id`, nullable); deleting a format clears it from them (migrations 014, 015) |
 | `breaks` | Lunch and friends: a label and local minutes of day, `date` null meaning every day. No room, no author, hard-deleted |
-| `sessions` | Scheduled: always has a room and a time; `blocks_open_booking` holds the floor against attendees |
+| `sessions` | Scheduled: always has a room and a time; `blocks_open_booking` holds the floor against attendees; `draft` keeps it off the schedule (§Drafts) |
 | `proposals` | Pitched: no room, no time, until an organiser places it |
 | `people` | One per identity that has entered the event (made at the login page, migration 010), plus organiser-typed shells nobody has claimed yet. Holds the full name; the username lives on `event_identities`. `archived_at` files a row out of the lists without deleting it (migration 013). Manage → People lists these and nothing else |
 | `contributions` | Notes, links, questions; `hidden` for moderation |
@@ -200,6 +200,42 @@ Three decisions in it are easy to get wrong later:
 
 Speakers pass the rule (`atLeast(role, 'speaker')`). A speaker with a talk to
 give is part of the programme, not someone it is being protected from.
+
+### Drafts
+
+`sessions.draft` (migration 022) keeps a session off the schedule without
+deleting it: one being written, or one that fell out of the programme and
+should not be lost. Before it, delete was the only way off, and a delete tells
+every starrer the session was cancelled and files it in the trash.
+`server/src/drafts.ts` holds the rule.
+
+- **It is a session, not a pitch.** It keeps its room and time — `NOT NULL`
+  stays true, §Why proposals are a separate table — so publishing puts it back
+  where it was. It **claims neither**: `assertNoOverlap` and
+  `findBlockingSession` skip it, since a room that looks empty to everyone
+  reading the schedule has to be bookable, and the grid neither badges it as a
+  clash nor draws a hold band for it. Publishing is therefore a placement:
+  for an attendee it meets every rule a new booking does.
+- **Seen by who has a hand in it.** Organisers, whoever added it, and whoever
+  `canMutate` lets edit it — so anyone credited on it. Everyone else is told
+  nothing on every read path: the bundle (and its star and note counts), `GET
+  /sessions/:id` and the write routes (404, not 403), a profile's session list,
+  and the stream, where `publishSession` sends it stream by stream and sends
+  the rest a `session.deleted` — an update is how a published session becomes a
+  draft, and their copy has to go. The calendar feed leaves drafts out for
+  everyone, their authors included: an entry in a phone's calendar is the one
+  copy that would not vanish when the session is taken off.
+- **Drafting is deleting's permission.** Only the creator and the organisers
+  may change the flag (`assertMayMutate` without `speaksHere`), the same line
+  §Who may change a session draws for delete: being credited is a claim on the
+  words, not on whether the session runs.
+- **Nobody is told about a draft.** Taking one off the schedule tells its
+  speakers and starrers, once — to them it is a cancellation. A draft that
+  moves, or is deleted, tells nobody; a mention in one is sent when it is
+  published, and a draft takes no stars or notes from anyone who cannot see it.
+- **It is per session.** A linked edit never carries the flag to the siblings,
+  a repeated run is all drafts or none, and an export writes `draft: true`
+  (only when set) so that a round trip does not publish what was kept back.
 
 ### Breaks
 

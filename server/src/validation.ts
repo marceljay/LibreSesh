@@ -362,6 +362,9 @@ export const sessionSchema = z.object({
   /** What kind of session it is. `null` clears it; absent leaves it alone on
    *  a PATCH, the way the track does. */
   formatId: z.number().int().positive().nullable().optional(),
+  /** Keep it off the schedule. Absent leaves it as it is on a PATCH; on a
+   *  create it means published, which is what every session was before. */
+  draft: z.boolean().optional(),
 });
 export const sessionPatchSchema = sessionSchema.partial().extend({
   expectedUpdatedAt: isoInstantSchema.optional(),

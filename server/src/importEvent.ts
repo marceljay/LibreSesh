@@ -154,6 +154,8 @@ const importSessionSchema = z
     type: z.enum(['official', 'open']).optional(),
     /** Holds the floor: attendees can place nothing while this one runs. */
     blocksOpenBooking: z.boolean().optional(),
+    /** Kept off the schedule until an organiser publishes it. */
+    draft: z.boolean().optional(),
     /** Retired: breaks are their own top-level list now, not a session flag.
      *  Still accepted so an older document imports, and warned about. */
     background: z.boolean().optional(),
@@ -561,8 +563,8 @@ export function importEvent(
       `INSERT INTO sessions
         (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
          description, speaker, livestreams, starts_at, ends_at,
-         created_by, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
+         created_by, created_at, updated_at, draft)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
     );
     const insertSessionSpeaker = db.prepare(
       'INSERT OR IGNORE INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
@@ -674,6 +676,7 @@ export function importEvent(
           actorIdentityId,
           now,
           now,
+          session.draft ? 1 : 0,
         ).lastInsertRowid,
       );
       for (const tagId of new Set(resolvedTags)) linkTag.run(sessionId, tagId);
@@ -692,15 +695,19 @@ export function importEvent(
         );
       }
 
-      const inRoom = placed.get(roomId) ?? [];
-      const clash = inRoom.find(
-        (other) => other.startsAt < endsAt.getTime() && other.endsAt > startsAt.getTime(),
-      );
-      if (clash) {
-        warn(`${warnLabel} overlaps ${clash.label} in "${session.room}"`);
+      // A draft claims no slot here any more than on the grid, so it neither
+      // clashes nor is clashed with.
+      if (!session.draft) {
+        const inRoom = placed.get(roomId) ?? [];
+        const clash = inRoom.find(
+          (other) => other.startsAt < endsAt.getTime() && other.endsAt > startsAt.getTime(),
+        );
+        if (clash) {
+          warn(`${warnLabel} overlaps ${clash.label} in "${session.room}"`);
+        }
+        inRoom.push({ startsAt: startsAt.getTime(), endsAt: endsAt.getTime(), label: warnLabel });
+        placed.set(roomId, inRoom);
       }
-      inRoom.push({ startsAt: startsAt.getTime(), endsAt: endsAt.getTime(), label: warnLabel });
-      placed.set(roomId, inRoom);
     }
 
     // Every profile in a brand-new event was made by this import, from a

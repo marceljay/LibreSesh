@@ -1,7 +1,8 @@
 import { audit } from './audit.js';
 import type { Db, PersonRow, SessionRow } from './db.js';
 import { settleSpeakerCodeAfterMerge } from './deviceLink.js';
-import { loadProposalDtos, loadSessionDto } from './mappers.js';
+import { publishSession } from './drafts.js';
+import { loadProposalDtos } from './mappers.js';
 import { rekeyIdentityWork } from './mergeIdentityWork.js';
 import type { Broker } from './sse.js';
 import type { PersonDto } from './shared/types.js';
@@ -120,7 +121,7 @@ export function broadcastMerge(
       .prepare<[number], SessionRow>('SELECT * FROM sessions WHERE id = ?')
       .get(sessionId);
     if (row && row.deleted_at === null) {
-      broker.publish(slug, 'session.updated', loadSessionDto(db, row));
+      publishSession(db, broker, { id: eventId, slug }, 'session.updated', row);
     }
   }
 }
