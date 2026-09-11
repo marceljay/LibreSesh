@@ -96,6 +96,19 @@ describe('where the page offers it', () => {
     expect(header).toContain('arranging={arrange}');
   });
 
+  it('lets the phone drop the bare ↕ once the menu carries Arrange', () => {
+    // Below `sm` the header button had no words; the menu row has them and
+    // the same toggle. Hidden, not unrendered: `canWrite` is the menu's own
+    // condition for the row, and the Tour skips a target with no box.
+    expect(header).toContain("${canWrite ? 'hidden sm:flex' : 'flex'} items-center");
+    const tour = readFileSync(
+      join(__dirname, '..', 'web', 'src', 'components', 'Tour.tsx'),
+      'utf8',
+    );
+    expect(tour).toContain("window.getComputedStyle(el).display === 'none') return null");
+    expect(tour).not.toContain('querySelector(selectorFor');
+  });
+
   it('leaves it off the full-page session, which has no grid to drag on', () => {
     const copy = fullPage.slice(fullPage.indexOf('<NewSessionMenu'), fullPage.indexOf('/>'));
     expect(copy).not.toContain('onArrange');

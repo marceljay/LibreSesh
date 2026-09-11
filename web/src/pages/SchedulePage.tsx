@@ -1480,6 +1480,10 @@ export function SchedulePage() {
                       <SettingsIcon className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Manage Event</span>
                     </Link>
+                    {/* Below `sm` this was a bare `↕`, and the + Session menu
+                      now carries Arrange with its words, so the phone drops
+                      the button wherever that menu is offered. `canWrite` is
+                      the menu's own condition for the row. */}
                     {canArrange && (
                       <button
                         type="button"
@@ -1488,7 +1492,7 @@ export function SchedulePage() {
                         aria-pressed={arrange}
                         aria-label={arrange ? 'Done arranging' : 'Arrange sessions'}
                         title={arrange ? 'Done arranging' : 'Arrange sessions'}
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
+                        className={`${canWrite ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium ${
                           arrange
                             ? 'border-stone-900 bg-stone-900 dark:bg-stone-100 dark:text-stone-900 text-white'
                             : 'border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-900 text-stone-600 dark:text-stone-300 hover:border-stone-400 dark:hover:border-stone-500'
