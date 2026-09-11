@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -46,5 +46,32 @@ describe.skipIf(!existsSync(WEB_DIST))('serving the built app', () => {
   it('lets a hashed asset be cached hard and index.html not at all', async () => {
     const html = await request(h.app.express).get('/').expect(200);
     expect(html.headers['cache-control']).toBe('no-cache');
+  });
+});
+
+/**
+ * A checkout under any dotted directory — a worktree in `.claude/worktrees/`,
+ * an install under `~/.local` — answered every page with a 500 while the API
+ * beside it worked. `res.sendFile(absolutePath)` makes `send` check the whole
+ * path for dot segments and refuse one; passing `root` scopes that check to
+ * what lies beneath the build.
+ *
+ * Pinned by shape so it runs everywhere, not only where a build happens to
+ * exist: the block above skips without one, which is exactly how this went
+ * unseen — the behavioural tests only ever ran in checkouts that could not
+ * reproduce it.
+ */
+describe('the SPA fallback in a dotted checkout', () => {
+  const app = readFileSync(join(import.meta.dirname, '..', 'server', 'src', 'app.ts'), 'utf8');
+
+  it('scopes the dotfile check to the build, not to the whole path', () => {
+    expect(app).toContain("res.sendFile('index.html', { root: WEB_DIST })");
+    expect(app).not.toMatch(/sendFile\(join\(WEB_DIST/);
+  });
+
+  it('keeps the guard on rather than switching it off', () => {
+    // `dotfiles: 'allow'` would also have cured the 500, by disabling the one
+    // check that stops a request from naming a dotfile.
+    expect(app).not.toMatch(/dotfiles:\s*'allow'/);
   });
 });
