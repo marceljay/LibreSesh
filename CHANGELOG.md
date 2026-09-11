@@ -4,6 +4,142 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-11
+
+Upgrading runs one migration at boot: `022_session_drafts.sql` adds a
+`draft` column to sessions, off for every session that already exists. No
+operator action, nobody is signed out.
+
+### Added
+
+- **An instance now explains itself to AI agents.** Four documents, served by
+  the running instance rather than kept in the repository, because the programs
+  that need them arrive over HTTP with no checkout. They are four because the
+  conventions that grew up around agent access answer different questions, and
+  an agent tends to arrive knowing only one of the names: `/llms.txt` says what
+  this site is, `/agents.md` is the operating manual, `/SKILL.md` is the same
+  in the packaged-skill format, and `/api.md` is the full HTTP reference —
+  every endpoint, every error code, the limits. Each links to the other three.
+  Nothing new is exposed: this is the interface the web app has always used,
+  written down.
+
+  They lead with the three things that keep a program out of trouble — fetch a
+  schedule in one request rather than crawling it, subscribe to changes rather
+  than polling for them, keep your cookie — and they end with what a program
+  should not do on a person's behalf. Reading a schedule for someone is what
+  this is for; a pitch or a question appears under their name to a room of
+  people who will answer it; and stars and interest are private signals the
+  event uses to decide what gets a bigger room, so an agent manufacturing them
+  corrupts the thing they are for. A test walks the server's routes and fails
+  when one is missing from the reference.
+- **A session can be a draft.** The session form has a **Draft** switch, on a
+  new session and on an edit: *Keep this off the schedule for now*. A draft is
+  seen by the organisers, whoever added it and the people credited on it, and
+  by nobody else — not on the schedule, not in anyone's calendar feed, not on
+  a speaker's profile. It keeps its room and time, drawn greyed and dashed
+  for the people who can see it, but holds neither: someone else may book the
+  slot, and publishing it is checked the way booking it would be. It is also
+  the way to take a session off the programme without deleting it — the
+  people who starred it are told it was taken off, once, and it keeps its
+  words, speakers and slot for when it goes back on. Only whoever added it
+  and the organisers may draft or publish a session; a co-speaker can still
+  edit its words.
+- **View drafts, from the + Session menu.** While you have drafts, the menu
+  gains a row that lists them all — title, day, time and room, earliest
+  first — and opens the one you pick. With none, the menu is unchanged.
+
+### Changed
+
+- **Arrange sessions is in the + Session menu too.** An organiser on the
+  grid finds it under a rule at the bottom, after any drafts, worded the same
+  as the button a row further down and toggling the same mode: *Arrange
+  sessions* with a sentence on what dragging does, *Done arranging* while it
+  is on. That button is a bare `↕` on a phone; the menu row is where it gets
+  its words. The full-page session view keeps the menu without the row, as
+  there is no grid under it to drag on, and nobody but an admin in the grid
+  view sees it anywhere.
+- **The login page warns before it makes you wait, and shows the wait as a
+  clock.** Five wrong passwords cost nothing and the sixth costs two minutes,
+  but nothing said so until it happened: the fifth miss answered "that password
+  doesn't match", and the wait was discovered by pressing again. The last two
+  free attempts now say what is coming — *"Two more tries before a two-minute
+  wait"* — and the miss that starts a wait carries the wait with it, so the
+  page begins counting down on the same answer rather than on the next press.
+  Every wait the server imposes is shown the same way, the visitor's and the
+  address's and the whole event's, as a reason and a running clock on the
+  button and beside the box.
+- **The view switch reads List then Grid, and Grid asks rooms or tracks
+  itself.** On an event with tracks the choice used to be a second pair of
+  buttons that appeared beside the switch in the grid and vanished in the
+  list, and on a phone the row wrapped under it every time it came. The Grid
+  button now carries a small arrow and opens a two-row menu — *Rooms*,
+  *Tracks*, a sentence each, the one showing ticked — so the row is one width
+  in both views. Without tracks nothing changes but the order: Grid is the
+  plain button it was, with no arrow. The tour's separate stop on the old
+  pair is folded into its stop on the switch, worded for tracks only when
+  the event has them.
+- **The schedule header on a phone.** A long event used to spend two rows on
+  choosing a day — a rail of week chips, and that week's days scrolling
+  sideways under it — and both sat between the event bar and the first session.
+  Past the week threshold (default 8 days) they become one control,
+  `‹ Wed 18 Sep ›`, holding every day of the event grouped under its week with
+  the session counts and dimming the strip carried. The chevrons keep the
+  neighbouring day one tap away, which is the only thing the old strip was
+  better at. Under the threshold nothing changes: the day strip stays, and it
+  now has the arrows the week rail has always had, so a day past its edge is no
+  longer a day you never find. A desktop keeps both rows. [LIB-189, LIB-192]
+- **One button for adding a session and pitching one.** *Add a session* and
+  *Pitch a session* were the same question asked twice — do you have a room and
+  a time, or only an idea? They are one `+ Session` menu now, with a sentence
+  each, which is the only place that difference could actually be explained.
+  Where only one of the two is open to you it is a plain button that does that
+  one thing. It also appears on a session's own page, which until now had no
+  way out but backwards. [LIB-193]
+- **"Propose a session" is gone.** It was a synonym for *pitch* three taps from
+  the pitch board, and it was untrue besides: with the capability and a room
+  open for booking, a session goes straight onto the grid with nobody reviewing
+  it. The form says **Add session** to everyone now, because it is the same act
+  whoever does it. [LIB-191]
+- **The grid and the list say which day they are showing.** The day picker
+  folds away as soon as you scroll into the day, and nothing else on screen
+  named the day — a tab left open overnight, or a screenshot of a grid, said
+  nothing at all. It sits in the space above the first session, and on the
+  list's first time row, so it costs no height in either.
+- **The header's controls are one height.** They were 30, 32 and 34 pixels in a
+  row of siblings that should read as one line: the padding matched everywhere
+  and the box model did not. The search field also stops demanding space it has
+  to take from its neighbours, so an attendee's Now button no longer wraps to a
+  second row on a 360px phone.
+- **An attendee's `+` no longer gets a row to itself.** Manage and Arrange are
+  organiser-only, so everyone else fell through to a full-width line holding
+  one right-aligned `+` and nothing else. [LIB-190]
+
+### Fixed
+
+- **The About page names the deployed commit on Railway.** It read "unknown"
+  there: the image is built without the git history, and nothing on the
+  platform handed the build the commit it was building. The Dockerfile now
+  asks Railway for its own commit variable and stamps the build with it, and
+  prints what it received into the build log so a missing stamp can be traced
+  rather than guessed at. Nothing to configure.
+- **People on one wifi no longer use up each other's allowance.** Every limit
+  on how fast you can do something was counted twice: once against you, and
+  once against the network address you came from. At a conference that second
+  count is the whole room behind one access point, sharing a budget the size of
+  one person's — so thirty changes a minute was the entire room registering
+  interest in the pitches together, and ten comments a minute was the entire
+  room asking questions during a talk. Whoever got there first spent it, and
+  everyone else was told to slow down at the busiest moment of the day. The
+  address is still counted, at a hundred times the size: enough that no room
+  will reach it, and still there if a single machine tries to flood the server.
+  What one person may do on their own is unchanged. Password attempts are
+  deliberately left as they were — those are counted per address on purpose,
+  because that is how guessing is caught.
+- **Starring a session moves the number beside it.** The star turned amber
+  under a tally that did not budge, which reads as the click not having worked
+  — and because stars carry no server change event, nothing corrected it until
+  the next reload.
+
 ## [0.5.0] — 2026-09-10
 
 ### Security
