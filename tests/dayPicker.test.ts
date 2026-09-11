@@ -32,7 +32,8 @@ const picker = readFileSync(join(WEB, 'components', 'DayPicker.tsx'), 'utf8');
 /** The day strip's box, from its tour marker to the view toggle after it. */
 const strip = ((): string => {
   const from = schedule.indexOf('data-tour="days"');
-  const to = schedule.indexOf('data-tour="view"');
+  // The switch itself carries the marker now, so its mount is the edge.
+  const to = schedule.indexOf('<ViewSwitch');
   expect(from).toBeGreaterThan(-1);
   expect(to).toBeGreaterThan(from);
   return schedule.slice(from, to);

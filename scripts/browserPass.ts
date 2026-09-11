@@ -128,7 +128,9 @@ await step('demo gate hands out organiser', async () => {
   await go(`/e/${SLUG}`);
   await page.getByLabel('Username').fill(`Pass ${Date.now().toString(36)}`);
   await page.getByRole('button', { name: /Organiser/ }).click();
-  await page.getByRole('button', { name: /Add session/ }).waitFor({ timeout: 10_000 });
+  // The organiser's way in is the + Session control, whatever it is called
+  // today — a plain button on an event with the board off, a menu otherwise.
+  await page.locator('[data-tour="add"]').waitFor({ timeout: 10_000 });
 });
 await step('schedule', async () => {
   await go(`/e/${SLUG}`);
@@ -166,7 +168,14 @@ await step('admin', async () => {
 });
 await step('time box masks 0930 to 09:30', async () => {
   await go(`/e/${SLUG}`);
-  await page.getByRole('button', { name: /Add session/ }).click();
+  // The schedule lands on the current session and folds the header's upper
+  // rows away, and the control lives in one of them.
+  const unfold = page.getByRole('button', { name: 'Show the day picker' });
+  if (await unfold.count()) await unfold.click();
+  await page.locator('[data-tour="add"]').click();
+  // With pitches on, that opened a menu rather than the form.
+  const addRow = page.getByRole('menu').getByRole('button', { name: 'Add a session' });
+  if (await addRow.count()) await addRow.click();
   const start = page.getByLabel('Start').first();
   await start.click();
   await start.press('Control+a');
