@@ -225,7 +225,17 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
         // a card's height below the one it belongs to. The interactions stay
         // on the button; only the geometry comes from here.
         ref={refs.setPositionReference}
-        className="rounded-lg border border-stone-200/80 px-3 py-2 dark:border-stone-700"
+        // With an `href` the whole card is the link, not just the name: the
+        // anchor is the name's text, and its `after` pseudo-element is
+        // stretched over the card, so a press anywhere on it goes where the
+        // name goes and the card lifts under the pointer. The ⓘ sits above
+        // that layer so it still opens its own panel. Nesting a button inside
+        // the anchor would be the obvious markup and is not allowed.
+        className={`relative rounded-lg border border-stone-200/80 px-3 py-2 dark:border-stone-700 ${
+          column.href
+            ? 'transition-[box-shadow,filter] hover:shadow-md hover:brightness-95 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-1 has-[a:focus-visible]:outline-stone-500'
+            : ''
+        }`}
         // The palette is already washed out; 'cc'/'22' keep it that way
         // in light and dark without maintaining two palettes.
         style={{ background: `${column.color}cc`, borderColor: column.color }}
@@ -236,7 +246,7 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
               <Link
                 to={column.href}
                 title={`Every session on ${column.name}`}
-                className="rounded-sm hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
+                className="outline-none after:absolute after:inset-0 after:rounded-lg after:content-['']"
               >
                 {column.name}
               </Link>
@@ -250,7 +260,7 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
               type="button"
               aria-label={`About ${column.name}`}
               aria-expanded={open}
-              className="-m-1 shrink-0 rounded-full p-1 text-stone-600 hover:text-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
+              className="relative z-10 -m-1 shrink-0 rounded-full p-1 text-stone-600 hover:text-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
               // The tap, and only the tap: hover, focus and every way of
               // dismissing this belong to `usePopover`.
               {...getReferenceProps({ onClick: () => setOpen((v) => !v) })}
