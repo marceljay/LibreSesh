@@ -35,11 +35,14 @@ describe('one button for both ways in', () => {
     expect(menu).toContain('aria-label={label}');
   });
 
-  it('keeps the open-pitch count the board link carried', () => {
-    // The one thing on that button that is news rather than an instruction.
-    expect(menu).toMatch(
-      /\{pitchCount > 0 && <span className="opacity-60">\{pitchCount\}<\/span>\}/,
-    );
+  it('keeps the open-pitch count on the row inside, never on the button', () => {
+    // The count rode on the button for a while, and every digit made it
+    // wider on a phone where it already fights the view switch for the row.
+    const trigger = menu.slice(menu.indexOf('ref={refs.setReference}'), menu.indexOf('{open && ('));
+    expect(trigger).not.toContain('pitchCount');
+    expect(trigger).not.toContain('draftCount');
+    const rows = menu.slice(menu.indexOf('{open && ('));
+    expect(rows).toContain('{pitchCount}');
     expect(schedule).toContain('pitchCount={openPitchCount}');
   });
 });

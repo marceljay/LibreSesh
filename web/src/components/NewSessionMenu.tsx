@@ -175,11 +175,11 @@ export function NewSessionMenu({
             <span className="hidden sm:inline">Pitch a session</span>
           </>
         )}
+        {/* No counts out here. The open-pitch count rode along for a while,
+            and every digit made the button wider on a phone where it is
+            already fighting the view switch for the row. The counts live on
+            their rows inside, next to the thing they count. */}
         <ChevronDownIcon className="h-3 w-3" />
-        {/* The count the board link used to carry. It is the one thing on this
-            button that is news rather than an instruction, so it survives the
-            merge even though its label did not. */}
-        {pitchCount > 0 && <span className="opacity-60">{pitchCount}</span>}
       </button>
 
       {open && (
