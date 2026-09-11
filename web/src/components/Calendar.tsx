@@ -6,6 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
+import { Link } from 'react-router-dom';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
 import { dayFullLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { laneLayout } from '../lib/laneLayout';
@@ -162,12 +163,15 @@ export interface CalendarColumn {
   id: number;
   name: string;
   color: string;
-  /** Second line on the column card, for a fact that changes with the day: a
-   *  track's session count and the hours it is keeping. Rooms leave this unset
-   *  — a room card is its name, and everything else is behind the ⓘ. */
-  detail?: ReactNode;
+  /** Where the name goes when pressed — a track's own page, every day of it as
+   *  a list. Rooms leave this unset: a room card is its name and nothing more.
+   *  The card itself is not the link, because the ⓘ lives inside it. */
+  href?: string;
   /** Everything the card does not say. Present only when there is something to
-   *  say; the info button appears with it and is absent without it. */
+   *  say; the info button appears with it and is absent without it. The card
+   *  is a name and nothing else, for rooms and tracks alike: a track's session
+   *  count and hours used to sit under the name as a second line, and the
+   *  card was the busiest 176px on the schedule for it. */
   info?: ReactNode;
 }
 
@@ -221,14 +225,34 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
         // a card's height below the one it belongs to. The interactions stay
         // on the button; only the geometry comes from here.
         ref={refs.setPositionReference}
-        className="rounded-lg border border-stone-200/80 px-3 py-2 dark:border-stone-700"
+        // With an `href` the whole card is the link, not just the name: the
+        // anchor is the name's text, and its `after` pseudo-element is
+        // stretched over the card, so a press anywhere on it goes where the
+        // name goes and the card lifts under the pointer. The ⓘ sits above
+        // that layer so it still opens its own panel. Nesting a button inside
+        // the anchor would be the obvious markup and is not allowed.
+        className={`relative rounded-lg border border-stone-200/80 px-3 py-2 dark:border-stone-700 ${
+          column.href
+            ? 'transition-[box-shadow,filter] hover:shadow-md hover:brightness-95 has-[a:focus-visible]:outline has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-1 has-[a:focus-visible]:outline-stone-500'
+            : ''
+        }`}
         // The palette is already washed out; 'cc'/'22' keep it that way
         // in light and dark without maintaining two palettes.
         style={{ background: `${column.color}cc`, borderColor: column.color }}
       >
         <div className="flex items-center gap-1">
           <div className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-900">
-            {column.name}
+            {column.href ? (
+              <Link
+                to={column.href}
+                title={`Every session on ${column.name}`}
+                className="outline-none after:absolute after:inset-0 after:rounded-lg after:content-['']"
+              >
+                {column.name}
+              </Link>
+            ) : (
+              column.name
+            )}
           </div>
           {hasInfo && (
             <button
@@ -236,7 +260,7 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
               type="button"
               aria-label={`About ${column.name}`}
               aria-expanded={open}
-              className="-m-1 shrink-0 rounded-full p-1 text-stone-600 hover:text-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
+              className="relative z-10 -m-1 shrink-0 rounded-full p-1 text-stone-600 hover:text-stone-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
               // The tap, and only the tap: hover, focus and every way of
               // dismissing this belong to `usePopover`.
               {...getReferenceProps({ onClick: () => setOpen((v) => !v) })}
@@ -245,7 +269,6 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
             </button>
           )}
         </div>
-        {column.detail}
       </div>
       {hasInfo && open && (
         // Positioned rather than placed. It used to be `absolute` inside the

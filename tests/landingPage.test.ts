@@ -65,12 +65,13 @@ describe('the logo goes home, and the list keeps its own way back', () => {
 
   it('keeps the "back to the list" links pointing at the list', () => {
     // These are not the logo: they are the way back to where you came from,
-    // and they were correct before the logo moved. Seven of them, counting
-    // the landing page's own call to action and the login page's "All events".
+    // and they were correct before the logo moved. Eight of them, counting
+    // the landing page's own call to action, the login page's "All events"
+    // and the track page's error state.
     const backLinks = tsxFiles(WEB_SRC).flatMap((file) =>
       [...readFileSync(file, 'utf8').matchAll(/to="\/events"/g)].map(() => file),
     );
-    expect(backLinks).toHaveLength(7);
+    expect(backLinks).toHaveLength(8);
   });
 
   it('keeps the list one click from `/`', () => {
