@@ -27,6 +27,7 @@ import { matchesLens } from '../lib/sessionLens';
 import { lensParams, useFilters } from '../lib/useFilters';
 import { plural } from '../lib/plural';
 import { roomHasInfo, roomNote, seatsLabel } from '../lib/rooms';
+import { readLastView, writeLastView } from '../lib/lastView';
 import { UNTRACKED, trackNote } from '../lib/tracks';
 import { useMe } from '../lib/useMe';
 import { useSpeakerLink } from '../lib/useSpeakerLink';
@@ -224,7 +225,19 @@ export function SchedulePage() {
   /** Drafts this reader can see — the bundle carries only theirs. At zero the
    *  + Session menu does not mention drafts at all. */
   const draftCount = (bundle?.sessions ?? []).filter((s) => s.draft).length;
-  const axis: 'room' | 'track' = hasTracks && filters.axis === 'track' ? 'track' : 'room';
+  /** The reader's last explicit view and axis here, read once per event. It
+   *  only matters while the URL says nothing; the moment a choice is made the
+   *  URL carries it, and this is written for the next bare visit. */
+  const remembered = useMemo(() => readLastView(slug), [slug]);
+  useEffect(() => {
+    if (filters.view === null && filters.axis === null) return;
+    writeLastView(slug, {
+      ...(filters.view !== null ? { view: filters.view } : {}),
+      ...(filters.axis !== null ? { axis: filters.axis } : {}),
+    });
+  }, [slug, filters.view, filters.axis]);
+  const axis: 'room' | 'track' =
+    hasTracks && (filters.axis ?? remembered.axis) === 'track' ? 'track' : 'room';
 
   /* Where a reader who has not picked a view lands. It used to be a guess
      about the device — under 640px the list, above it the grid — which is the
@@ -233,8 +246,14 @@ export function SchedulePage() {
      unconference is a column of empty grid on a desktop. The organiser sets it
      in Manage Event → Settings, and until they do it is the list, the view
      that survives every shape of event. The switch still works either way, and
-     a chosen view goes in the URL, which is what a shared link reproduces. */
-  const view = filters.view ?? event?.defaultView ?? 'list';
+     a chosen view goes in the URL, which is what a shared link reproduces.
+
+     Between the URL and the organiser's default sits the reader's own last
+     choice on this device. Every way back to the schedule — a track's page, a
+     profile, Manage Event, the event bar — links to the bare `/e/:slug`, and a
+     bare URL used to mean the default again: read the grid, open something,
+     come back, and you were in the list. */
+  const view = filters.view ?? remembered.view ?? event?.defaultView ?? 'list';
 
   /** The day after the one being read, for the button at the end of the
    *  list. Absent on the last day, which has nothing after it. */
