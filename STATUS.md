@@ -503,14 +503,18 @@ they left behind landed 2026-09-05 as R26).
   message still says codes "work once and expire after 10 minutes", which
   was never true of a speaker code.
 
-- **R39 · The event login's failure limits.** [LIB-101] D3 phase 2, merged
-  into `dev` on 2026-09-10 and never seen in a browser. Get an event password
-  wrong six times: the sixth answer should name a two-minute wait, and five
-  wrong ones after that a fifteen-minute one. A correct password clears the
-  count. On Manage Event → Audit, an organiser whose event is being guessed at
-  sees a notice with a button that clears the failures. Check New event and
-  Settings in the same pass: the password fields now lead with the generated
-  phrase and carry the advice that replaced the withdrawn policy.
+- **R39 · The event login's failure limits, and what they say.** [LIB-101] D3
+  phase 2, merged into `dev` on 2026-09-10; you walked it on 2026-09-10 and
+  asked for two things, both now in. Get an event password wrong three times:
+  the answer should read *"Two more tries before a two-minute wait."*, and once
+  more *"One more try…"*. The fifth wrong password should start a clock on that
+  same answer — *"You can try again in 2:00."*, ticking, with the button
+  reading *Try again in 1:59* — rather than making you press again to find out.
+  Five more wrong ones after the wait should warn the same way about a
+  fifteen-minute one. Still unchecked in a browser by you: the organiser's
+  notice with its reset on Manage Event → Audit, and the password fields on New
+  event and Settings, which lead with the generated phrase and carry the advice
+  that replaced the withdrawn policy.
 
 ## Blockers
 

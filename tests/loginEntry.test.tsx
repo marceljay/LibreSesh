@@ -130,6 +130,53 @@ describe('the login page, pressed', () => {
     expect(screen.queryByLabelText('Event password')).toBeNull();
   });
 
+  it('warns before the wait, then counts it down', async () => {
+    await visitor();
+    open(`/e/${SLUG}`);
+
+    const box = await screen.findByLabelText('Event password');
+    // The press, and then the wait for the button to come back from
+    // "Checking…" — which is what says the answer has been rendered.
+    const miss = async () => {
+      fireEvent.change(box, { target: { value: 'nope' } });
+      fireEvent.click(await screen.findByRole('button', { name: /Continue|Try again in/ }));
+      await screen.findByRole('button', { name: /Continue|Try again in/ });
+    };
+
+    // The first two misses say only that the password is wrong: there are
+    // still three attempts in hand, and naming a wait that far out is noise.
+    await miss();
+    expect(await screen.findByText('That password doesn’t match this event.')).toBeTruthy();
+    await miss();
+    expect(screen.queryByText(/more tr(y|ies) before/)).toBeNull();
+
+    // The third leaves two, which is where the warning starts.
+    await miss();
+    expect(
+      await screen.findByText(
+        'That password doesn’t match this event. Two more tries before a two-minute wait.',
+      ),
+    ).toBeTruthy();
+    await miss();
+    expect(
+      await screen.findByText(
+        'That password doesn’t match this event. One more try before a two-minute wait.',
+      ),
+    ).toBeTruthy();
+
+    // The fifth buys the wait, and the clock starts on that same answer
+    // rather than on the next press.
+    await miss();
+    expect(
+      await screen.findByText('That password doesn’t match this event. You can try again in 2:00.'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again in 2:00' })).toBeTruthy();
+
+    // And it ticks. The interval is a real one, so this waits for it rather
+    // than sleeping a fixed second and hoping the machine kept up.
+    expect(await screen.findByText(/You can try again in 1:5\d\./)).toBeTruthy();
+  });
+
   it('shows a device that already holds a name here the same first card', async () => {
     // Entered once, then signed out of the event: the identity keeps the name
     // it claimed. That is a reason to skip the *second* step, never a reason to
