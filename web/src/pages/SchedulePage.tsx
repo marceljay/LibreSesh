@@ -10,7 +10,7 @@ import type {
 } from '@shared/types';
 import { can } from '@shared/capabilities';
 import { dateRange, zonedTimeToUtc } from '@shared/time';
-import { windowLabel, windowOn } from '@shared/trackHours';
+import { windowLabel, windowOn, type DayWindow } from '@shared/trackHours';
 import { ApiError, api, type SessionWrite } from '../lib/api';
 import {
   dayAfter,
@@ -90,35 +90,42 @@ function RoomInfo({ room }: { room: RoomDto }) {
 }
 
 /**
- * What a track is for, and what the hours on its card do not say for
- * themselves: that they are a rule rather than a description, who it binds,
- * and whether this day keeps its own window. The times themselves stay on the
- * card, so they are not repeated here.
+ * What a track is for, how much is on it, and the hours it keeps today.
+ *
+ * The count and the hours used to sit on the card under the name, and the
+ * panel only explained them. They are all behind the ⓘ now — the card is a
+ * name, as a room's is, and the name opens the track's own page — so the
+ * panel says the hours as well as what they mean: that they are a rule rather
+ * than a description, who it binds, and whether this day keeps its own window.
  */
 function TrackInfo({
   track,
   day,
   note,
+  count,
   hours,
 }: {
   track: TrackDto;
   day: string;
   /** The organiser's context for the strand, or '' if they gave none. */
   note: string;
-  /** Whether the card is showing hours that need explaining. */
-  hours: boolean;
+  /** Sessions on the track across the whole event. */
+  count: number;
+  /** The window the track keeps on `day`, or null when it takes any hour. */
+  hours: DayWindow | null;
 }) {
   const ownDay = track.windows.some((w) => w.date === day);
   return (
     <div className="space-y-1.5">
       {/* The organiser's words first: a reader who tapped the button wants to
-          know what the strand is, and the hours are a footnote to that. */}
+          know what the strand is, and the facts are a footnote to that. */}
       {note && <p className="whitespace-pre-line">{note}</p>}
+      <p>{count} in the programme, every day counted.</p>
       {hours && (
         <>
           <p>
-            The hours on the card are a rule: a session outside them is refused, unless an organiser
-            places it.
+            Today takes sessions <span className="tabular-nums">{windowLabel(hours)}</span>. That is
+            a rule: a session outside it is refused, unless an organiser places it.
           </p>
           {ownDay && <p>Today keeps its own window — other days differ.</p>}
           {!ownDay && track.windows.length > 0 && (
@@ -299,43 +306,35 @@ export function SchedulePage() {
       // on a day with its own window the default is not the rule, and printing
       // it under the column would be a lie about what will be accepted.
       const hours = windowOn(track, day);
-      // The strand's own context, exactly as a room's directions are handled:
-      // the session count and the hours are on the card, so the panel carries
-      // what the card has no room for.
+      // The card is the track's name, and the name opens the track's page.
+      // The count and the hours are behind the ⓘ with the organiser's note,
+      // exactly as a room's seats and directions are: facts about the column,
+      // together, off the card.
       const note = trackNote(track);
+      const count = sessions.filter((x) => x.trackId === track.id).length;
       return {
         id: track.id,
         name: track.name,
         color: track.color,
-        detail: (
-          <div className="text-xs text-stone-600">
-            <div className="truncate">
-              {sessions.filter((x) => x.trackId === track.id).length} in the programme
-            </div>
-            {hours && <div className="truncate tabular-nums">{windowLabel(hours)}</div>}
-          </div>
-        ),
-        info:
-          note || hours ? (
-            <TrackInfo track={track} day={day} note={note} hours={Boolean(hours)} />
-          ) : undefined,
+        href: `/e/${slug}/t/${track.id}`,
+        info: <TrackInfo track={track} day={day} note={note} count={count} hours={hours} />,
       };
     });
     if (sessions.some((x) => x.trackId === null)) {
+      const count = sessions.filter((x) => x.trackId === null).length;
       cols.push({
         id: UNTRACKED,
         name: 'Unassigned',
         color: '#E7E5E4',
-        detail: (
-          <div className="truncate text-xs text-stone-600">
-            {sessions.filter((x) => x.trackId === null).length} with no track
-          </div>
-        ),
-        info: undefined,
+        // The same list for the sessions still waiting for a strand — search
+        // already answers `?track=-1`, and it is the question an organiser
+        // asks most from this column.
+        href: `/e/${slug}/search?track=${UNTRACKED}`,
+        info: <p>{count} with no track yet, every day counted.</p>,
       });
     }
     return cols;
-  }, [axis, bundle?.rooms, bundle?.tracks, bundle?.sessions, day]);
+  }, [axis, bundle?.rooms, bundle?.tracks, bundle?.sessions, day, slug]);
 
   const columnOf = useCallback(
     (session: SessionDto) => (axis === 'room' ? session.roomId : (session.trackId ?? UNTRACKED)),

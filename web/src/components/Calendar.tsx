@@ -6,6 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
+import { Link } from 'react-router-dom';
 import type { BreakDto, SessionDto, TagDto } from '@shared/types';
 import { dayFullLabel, fmtMin, place, speakerLine } from '../lib/format';
 import { laneLayout } from '../lib/laneLayout';
@@ -162,12 +163,15 @@ export interface CalendarColumn {
   id: number;
   name: string;
   color: string;
-  /** Second line on the column card, for a fact that changes with the day: a
-   *  track's session count and the hours it is keeping. Rooms leave this unset
-   *  — a room card is its name, and everything else is behind the ⓘ. */
-  detail?: ReactNode;
+  /** Where the name goes when pressed — a track's own page, every day of it as
+   *  a list. Rooms leave this unset: a room card is its name and nothing more.
+   *  The card itself is not the link, because the ⓘ lives inside it. */
+  href?: string;
   /** Everything the card does not say. Present only when there is something to
-   *  say; the info button appears with it and is absent without it. */
+   *  say; the info button appears with it and is absent without it. The card
+   *  is a name and nothing else, for rooms and tracks alike: a track's session
+   *  count and hours used to sit under the name as a second line, and the
+   *  card was the busiest 176px on the schedule for it. */
   info?: ReactNode;
 }
 
@@ -228,7 +232,17 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
       >
         <div className="flex items-center gap-1">
           <div className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-900">
-            {column.name}
+            {column.href ? (
+              <Link
+                to={column.href}
+                title={`Every session on ${column.name}`}
+                className="rounded-sm hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-500"
+              >
+                {column.name}
+              </Link>
+            ) : (
+              column.name
+            )}
           </div>
           {hasInfo && (
             <button
@@ -245,7 +259,6 @@ function ColumnCard({ column }: { column: CalendarColumn }) {
             </button>
           )}
         </div>
-        {column.detail}
       </div>
       {hasInfo && open && (
         // Positioned rather than placed. It used to be `absolute` inside the

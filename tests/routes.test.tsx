@@ -178,6 +178,25 @@ describe('event pages', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Ada Lovelace' })).toBeTruthy();
   });
 
+  it('/e/:slug/t/:trackId lists the track across every day', async () => {
+    const track = await admin.post(`/api/e/${SLUG}/tracks`).send({ name: 'Build' }).expect(201);
+    await admin
+      .patch(`/api/e/${SLUG}/sessions/${sessionId}`)
+      .send({ trackId: track.body.id })
+      .expect(200);
+    await viewer();
+    open(`/e/${SLUG}/t/${track.body.id}`);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Build' })).toBeTruthy();
+    expect(await screen.findByText('Keynote')).toBeTruthy();
+    expect(screen.getByText('1 session')).toBeTruthy();
+  });
+
+  it('/e/:slug/t/:trackId says so when the track is gone', async () => {
+    await viewer();
+    open(`/e/${SLUG}/t/999`);
+    expect(await screen.findByText(/No such track/)).toBeTruthy();
+  });
+
   it('shows a viewer the composer once the organiser grants contribution.create', async () => {
     // The production bug: the composer was gated on the role's name, so the
     // grant the organiser made in the Permissions tab changed nothing on the
