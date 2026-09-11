@@ -37,6 +37,7 @@ export function makeHarness(overrides: Partial<Config> = {}): Harness {
     demoEventSlugs: overrides.demoMode ? ['testconf'] : [],
     seedDemoEvent: false,
     allowEphemeralDb: true,
+    buildCommit: null,
     ...overrides,
   };
   const app = createApp(db, config);
