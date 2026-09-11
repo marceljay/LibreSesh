@@ -1366,7 +1366,13 @@ export function SchedulePage() {
                     it on an event that has turned pitches off — the pitches
                     themselves are untouched, but there is nothing to walk
                     into — and the menu becomes a plain button when only one of
-                    the two is open to this viewer. */}
+                    the two is open to this viewer.
+
+                    Arrange joins it for the organiser on the grid — the same
+                    toggle as the button a row down, which below `sm` is a bare
+                    `↕`; here it has its words and a sentence. Not on the
+                    full-page copy below: there is no grid under that one to
+                    drag on. */}
                   <NewSessionMenu
                     canAdd={canWrite}
                     pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
@@ -1374,6 +1380,8 @@ export function SchedulePage() {
                     draftCount={draftCount}
                     onDrafts={() => setShowDrafts(true)}
                     onAdd={() => setEditing({})}
+                    arranging={arrange}
+                    onArrange={canArrange ? () => setArrange((a) => !a) : undefined}
                   />
                 </div>
               </div>

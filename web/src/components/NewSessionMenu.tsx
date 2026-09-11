@@ -26,6 +26,15 @@ import { popoverPanelClass, usePopover } from './Popover';
  * **One option is not a menu.** An event with the board switched off, or a
  * viewer who may pitch but not book, gets a plain button that does the one
  * thing — never a dropdown that opens onto a single row.
+ *
+ * **Arrange rides along for the organiser.** It is not a way of putting a
+ * session into the world — it moves the ones already there — so it sits
+ * under a rule at the bottom, but it is the other thing an organiser does to
+ * the grid from this corner of the header, and the button for it sits a row
+ * further down where, on a phone, it is a bare `↕`. Here it gets its words
+ * and its sentence. Offered only alongside *Add a session*: the page passes
+ * `onArrange` only for an admin on the grid, who may always add, so the row
+ * never has to stand as a menu of one.
  */
 export function NewSessionMenu({
   canAdd,
@@ -34,6 +43,8 @@ export function NewSessionMenu({
   draftCount = 0,
   onAdd,
   onDrafts,
+  arranging = false,
+  onArrange,
   className = '',
 }: {
   canAdd: boolean;
@@ -46,6 +57,14 @@ export function NewSessionMenu({
   onAdd: () => void;
   /** Open the list of drafts. */
   onDrafts?: () => void;
+  /** Whether the grid's drag mode is on right now; the row reads accordingly. */
+  arranging?: boolean;
+  /**
+   * Toggle the grid's drag mode. Absent wherever arranging is not on offer —
+   * the list view, the full-page session, anyone but an admin — and the menu
+   * then has no row for it. Only read while `canAdd` is true.
+   */
+  onArrange?: () => void;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -63,8 +82,9 @@ export function NewSessionMenu({
     'flex w-full flex-col items-start gap-0.5 rounded-lg px-2.5 py-2 text-start hover:bg-stone-100 dark:hover:bg-stone-800';
 
   const hasDrafts = draftCount > 0 && onDrafts !== undefined;
+  const hasArrange = canAdd && onArrange !== undefined;
 
-  if (!hasDrafts) {
+  if (!hasDrafts && !hasArrange) {
     if (!canAdd && pitchHref === null) return null;
 
     // Only the board. The outline button it always was, words and all.
@@ -106,7 +126,8 @@ export function NewSessionMenu({
   }
 
   // Only drafts: someone credited on one who may neither book nor pitch. The
-  // same rule — one thing to do is a button, not a menu.
+  // same rule — one thing to do is a button, not a menu. (`hasArrange` needs
+  // `canAdd`, so it cannot be what brought us past the block above.)
   if (!canAdd && pitchHref === null) {
     return (
       <button
@@ -128,7 +149,9 @@ export function NewSessionMenu({
       : canAdd
         ? 'Add a session'
         : 'Pitch a session';
-  const label = hasDrafts ? `${doing}, or open a draft` : doing;
+  const label = [doing, hasDrafts && 'open a draft', hasArrange && 'arrange the grid']
+    .filter((part): part is string => typeof part === 'string')
+    .join(', or ');
 
   return (
     <div className={`shrink-0 ${className}`}>
@@ -204,28 +227,52 @@ export function NewSessionMenu({
                 </span>
               </Link>
             )}
-            {/* Below a rule: the rows above start something, this one goes
-                back to what was started. */}
-            {hasDrafts && (
+            {/* Below a rule: the rows above start something, these go back
+                to what was started — a draft to finish, or the grid itself to
+                move around. */}
+            {(hasDrafts || hasArrange) && (
               <div className="mt-1 border-t border-stone-200 pt-1 dark:border-stone-700">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onDrafts?.();
-                    setOpen(false);
-                  }}
-                  className={item}
-                >
-                  <span className="flex items-center gap-1.5 text-xs font-semibold">
-                    View drafts
-                    <span className="font-normal text-stone-400 dark:text-stone-500">
-                      {draftCount}
+                {hasDrafts && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onDrafts?.();
+                      setOpen(false);
+                    }}
+                    className={item}
+                  >
+                    <span className="flex items-center gap-1.5 text-xs font-semibold">
+                      View drafts
+                      <span className="font-normal text-stone-400 dark:text-stone-500">
+                        {draftCount}
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-[11px] text-stone-500 dark:text-stone-400">
-                    Kept off the schedule until someone publishes them.
-                  </span>
-                </button>
+                    <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                      Kept off the schedule until someone publishes them.
+                    </span>
+                  </button>
+                )}
+                {hasArrange && (
+                  <button
+                    type="button"
+                    aria-pressed={arranging}
+                    onClick={() => {
+                      onArrange?.();
+                      setOpen(false);
+                    }}
+                    className={item}
+                  >
+                    <span className="flex items-center gap-1.5 text-xs font-semibold">
+                      <span aria-hidden="true">{arranging ? '✓' : '↕'}</span>
+                      {arranging ? 'Done arranging' : 'Arrange sessions'}
+                    </span>
+                    <span className="text-[11px] text-stone-500 dark:text-stone-400">
+                      {arranging
+                        ? 'Drag mode is on. Turn it off when the grid is how you want it.'
+                        : 'Drag a block to another time or room, or its bottom edge to change its length.'}
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
