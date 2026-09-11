@@ -29,7 +29,10 @@ describe('one button for both ways in', () => {
   });
 
   it('names itself for what it opens onto', () => {
-    expect(menu).toContain('aria-label="Add or pitch a session"');
+    // Computed now that drafts can join the menu; with none, and both ways
+    // in open, it is still exactly this.
+    expect(menu).toContain("? 'Add or pitch a session'");
+    expect(menu).toContain('aria-label={label}');
   });
 
   it('keeps the open-pitch count the board link carried', () => {

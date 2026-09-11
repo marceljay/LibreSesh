@@ -10,3 +10,6 @@
   words, speakers and slot for when it goes back on. Only whoever added it
   and the organisers may draft or publish a session; a co-speaker can still
   edit its words.
+- **View drafts, from the + Session menu.** While you have drafts, the menu
+  gains a row that lists them all — title, day, time and room, earliest
+  first — and opens the one you pick. With none, the menu is unchanged.

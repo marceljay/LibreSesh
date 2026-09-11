@@ -7,9 +7,10 @@ import type { SessionWrite } from '../web/src/lib/api';
 import { installBrowserShims } from './dom';
 
 /**
- * The Draft switch in the session form: offered to whoever may take the
- * session off the schedule, and sent only by them. The server holds the same
- * line (`sessionDrafts.test.ts`); this is the form not offering what it would
+ * The draft button in the session form's footer, between Cancel and the
+ * primary: offered to whoever may take the session off the schedule, and the
+ * only way the form ever sends `draft: true`. The server holds the same line
+ * (`sessionDrafts.test.ts`); this is the form not offering what it would
  * refuse.
  */
 
@@ -36,6 +37,7 @@ const parked: SessionDto = {
   seriesId: null,
   draft: true,
 };
+const onSchedule: SessionDto = { ...parked, draft: false };
 
 let saved: SessionWrite[];
 const props = (over: Partial<SessionModalProps> = {}): SessionModalProps => ({
@@ -57,7 +59,13 @@ const props = (over: Partial<SessionModalProps> = {}): SessionModalProps => ({
   onSave: (body) => saved.push(body),
   ...over,
 });
-const toggle = () => screen.queryByRole('checkbox', { name: 'Keep this off the schedule for now' });
+const button = (name: string) => screen.getByRole('button', { name });
+/** The footer's buttons, in the order they are drawn. */
+const footer = () =>
+  screen
+    .getAllByRole('button')
+    .map((b) => b.textContent ?? '')
+    .filter((t) => /Cancel|draft|Add session|Publish|Save|Delete/.test(t));
 
 beforeEach(() => {
   installBrowserShims();
@@ -68,30 +76,53 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('the Draft switch', () => {
-  it('saves a new session as a draft', () => {
+describe('a new session', () => {
+  const withTitle = () => {
     render(<SessionModal {...props()} />);
     fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
       target: { value: 'Maybe later' },
     });
-    fireEvent.click(toggle()!);
-    fireEvent.click(screen.getByRole('button', { name: 'Save as draft' }));
-    expect(saved).toHaveLength(1);
+  };
+
+  it('is added by the primary button, with Save as draft between it and Cancel', () => {
+    withTitle();
+    expect(footer()).toEqual(['Cancel', 'Save as draft', 'Add session']);
+    fireEvent.click(button('Add session'));
+    expect(saved[0]).toMatchObject({ title: 'Maybe later', draft: false });
+  });
+
+  it('is kept off the schedule by Save as draft', () => {
+    withTitle();
+    fireEvent.click(button('Save as draft'));
     expect(saved[0]).toMatchObject({ title: 'Maybe later', draft: true });
   });
 
-  it('publishes a draft when it is switched off', () => {
+  it('has no checkbox for it any more', () => {
+    withTitle();
+    expect(screen.queryByRole('checkbox', { name: /off the schedule/i })).toBeNull();
+  });
+});
+
+describe('an existing session, for someone who may delete it', () => {
+  it('publishes a draft, or saves it as one', () => {
     render(<SessionModal {...props({ session: parked, onDelete: () => {} })} />);
-    expect((toggle() as HTMLInputElement).checked).toBe(true);
-    fireEvent.click(toggle()!);
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }));
-    expect(saved[0]).toMatchObject({ draft: false });
+    expect(footer()).toEqual(['Delete', 'Cancel', 'Save draft', 'Publish']);
+    fireEvent.click(button('Save draft'));
+    fireEvent.click(button('Publish'));
+    expect(saved.map((b) => b.draft)).toEqual([true, false]);
   });
 
-  it('is not offered to someone who may edit the session but not delete it', () => {
-    render(<SessionModal {...props({ session: { ...parked, draft: false } })} />);
-    expect(toggle()).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(saved[0]).not.toHaveProperty('draft');
+  it('moves a published session to the drafts without deleting it', () => {
+    render(<SessionModal {...props({ session: onSchedule, onDelete: () => {} })} />);
+    expect(footer()).toEqual(['Delete', 'Cancel', 'Move to drafts', 'Save']);
+    fireEvent.click(button('Move to drafts'));
+    expect(saved[0]).toMatchObject({ draft: true });
   });
+});
+
+it('offers no draft button to someone who may edit the session but not delete it', () => {
+  render(<SessionModal {...props({ session: parked })} />);
+  expect(footer()).toEqual(['Cancel', 'Save']);
+  fireEvent.click(button('Save'));
+  expect(saved[0]).not.toHaveProperty('draft');
 });

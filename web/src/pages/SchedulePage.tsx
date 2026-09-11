@@ -33,6 +33,7 @@ import { useSpeakerLink } from '../lib/useSpeakerLink';
 import { Calendar, PX_PER_MIN, timeClashPairs } from '../components/Calendar';
 import { DayPicker } from '../components/DayPicker';
 import { NewSessionMenu } from '../components/NewSessionMenu';
+import { DraftsModal } from '../components/DraftsModal';
 import { DetailSheet } from '../components/DetailSheet';
 import { EventBar } from '../components/EventBar';
 import { SessionDetail } from '../components/SessionDetail';
@@ -170,6 +171,7 @@ export function SchedulePage() {
   const [editing, setEditing] = useState<{ session?: SessionDto } | null>(null);
   // The session whose "Link matching sessions…" picker is open, over the editor.
   const [linkingExisting, setLinkingExisting] = useState<SessionDto | null>(null);
+  const [showDrafts, setShowDrafts] = useState(false);
   const [saving, setSaving] = useState(false);
   // The wall clock is state, not a counter, so everything derived from "now"
   // has a real dependency to recompute against.
@@ -218,6 +220,9 @@ export function SchedulePage() {
   const hasUntracked = (bundle?.sessions ?? []).some((s) => s.trackId === null);
   /** Pitches nobody has placed yet — the number beside the board's button. */
   const openPitchCount = (bundle?.proposals ?? []).filter((p) => p.placedSessionId === null).length;
+  /** Drafts this reader can see — the bundle carries only theirs. At zero the
+   *  + Session menu does not mention drafts at all. */
+  const draftCount = (bundle?.sessions ?? []).filter((s) => s.draft).length;
   const axis: 'room' | 'track' = hasTracks && filters.axis === 'track' ? 'track' : 'room';
 
   /* Where a reader who has not picked a view lands. It used to be a guess
@@ -1366,6 +1371,8 @@ export function SchedulePage() {
                     canAdd={canWrite}
                     pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
                     pitchCount={openPitchCount}
+                    draftCount={draftCount}
+                    onDrafts={() => setShowDrafts(true)}
                     onAdd={() => setEditing({})}
                   />
                 </div>
@@ -1531,6 +1538,8 @@ export function SchedulePage() {
               canAdd={canWrite}
               pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
               pitchCount={openPitchCount}
+              draftCount={draftCount}
+              onDrafts={() => setShowDrafts(true)}
               onAdd={() => setEditing({})}
             />
           </div>
@@ -1784,6 +1793,19 @@ export function SchedulePage() {
             }
           />
         </Suspense>
+      )}
+
+      {showDrafts && (
+        <DraftsModal
+          sessions={bundle.sessions}
+          rooms={bundle.rooms}
+          timezone={timezone}
+          onOpen={(id) => {
+            setShowDrafts(false);
+            openSession(id);
+          }}
+          onClose={() => setShowDrafts(false)}
+        />
       )}
 
       {linkingExisting && (
