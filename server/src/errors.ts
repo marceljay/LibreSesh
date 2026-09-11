@@ -19,8 +19,10 @@ export const badRequest = (message: string, code = 'validation') =>
   new HttpError(400, code, message);
 export const unauthorized = (message = 'This event needs a password') =>
   new HttpError(401, 'unauthorized', message);
-export const forbidden = (message = 'Your role does not allow that') =>
-  new HttpError(403, 'forbidden', message);
+export const forbidden = (
+  message = 'Your role does not allow that',
+  details?: Record<string, unknown>,
+) => new HttpError(403, 'forbidden', message, details);
 export const notFound = (message = 'Not found') => new HttpError(404, 'not_found', message);
 /**
  * `details` carries the moving parts of a message as data — the session that

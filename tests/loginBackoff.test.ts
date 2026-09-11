@@ -6,6 +6,7 @@ import {
   LOGIN_FAILURES_PER_HOUR,
   LOGIN_FREE_ATTEMPTS,
   Tally,
+  loginAttemptsLeft,
   loginBlockSeconds,
 } from '../server/src/ratelimit.js';
 import { agentFor, makeHarness, seedEvent, type Agent, type Harness } from './helpers.js';
@@ -89,6 +90,14 @@ describe('how long each failure costs', () => {
     expect([6, 7, 8, 9].map(loginBlockSeconds)).toEqual([0, 0, 0, 0]);
     expect(loginBlockSeconds(10)).toBe(900);
     expect(loginBlockSeconds(50)).toBe(900);
+  });
+
+  it('counts down the free attempts left before each wait', () => {
+    expect([0, 1, 2, 3, 4].map(loginAttemptsLeft)).toEqual([5, 4, 3, 2, 1]);
+    // The second run of free attempts, before the quarter of an hour.
+    expect([5, 6, 7, 8, 9].map(loginAttemptsLeft)).toEqual([5, 4, 3, 2, 1]);
+    // Past both, every failure costs the long wait and nothing is free.
+    expect([10, 11, 50].map(loginAttemptsLeft)).toEqual([0, 0, 0]);
   });
 });
 
@@ -228,6 +237,32 @@ describe('the login route, end to end', () => {
     expect(blocked.status).toBe(429);
     expect(blocked.headers['retry-after']).toBe('120');
     expect(blocked.body.error.message).toContain('couple of minutes');
+  });
+
+  it('warns on the last two free attempts, and not before', async () => {
+    // Nothing is said while there is room to spare: naming a wait four
+    // attempts out is noise on a mistyped phrase.
+    const first = await attempt('nope');
+    expect(first.status).toBe(403);
+    expect(first.body.error.details).toMatchObject({ attemptsLeft: 4, nextWaitSeconds: 120 });
+
+    await attempt('nope');
+    const third = await attempt('nope');
+    expect(third.body.error.details).toMatchObject({ attemptsLeft: 2, nextWaitSeconds: 120 });
+    const fourth = await attempt('nope');
+    expect(fourth.body.error.details).toMatchObject({ attemptsLeft: 1, nextWaitSeconds: 120 });
+  });
+
+  it('answers the failure that starts a wait with the wait itself', async () => {
+    // The fifth miss is still a 403 — the password was compared and it was
+    // wrong — but it carries `Retry-After`, so the page starts its clock then
+    // rather than springing the wait on the next press.
+    for (let i = 0; i < LOGIN_FREE_ATTEMPTS - 1; i += 1) {
+      expect((await attempt('nope')).headers['retry-after']).toBeUndefined();
+    }
+    const last = await attempt('nope');
+    expect(last.status).toBe(403);
+    expect(last.headers['retry-after']).toBe('120');
   });
 
   it('lets a mistyped password be corrected immediately', async () => {

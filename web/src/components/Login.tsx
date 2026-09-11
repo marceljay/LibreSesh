@@ -1,4 +1,4 @@
-import { plural } from '../lib/plural';
+import { plural, pluralForm } from '../lib/plural';
 import { errorText } from '../lib/errorText';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -49,6 +49,68 @@ const USERNAME_HELP =
   'What you’ll be called in this event — unique here, remembered on this device. No account, no password.';
 
 /** Full-screen password login page — an event's schedule is never public (SPEC §3.2). */
+/** A wait, as a clock: "1:59", "15:00". Digits, because it is counting. */
+function clock(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${m}:${String(rest).padStart(2, '0')}`;
+}
+
+const MINUTE_WORDS = [
+  '',
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+];
+
+/**
+ * The same wait as a word, for the sentence that warns one is coming — "a
+ * two-minute wait". Attributive, so "minute" never takes an s; the two waits
+ * the server imposes are two minutes and fifteen, and both are in the list.
+ */
+function minutesInWords(seconds: number): string {
+  const m = Math.max(1, Math.round(seconds / 60));
+  return MINUTE_WORDS[m] ?? String(m);
+}
+
+/**
+ * What the clock is counting down. The server's own messages name a rough
+ * wait ("a couple of minutes") because an API client has no clock to read;
+ * the page has one, so it says why and lets the digits say how long.
+ */
+function waitReason(err: ApiError): string {
+  if (err.status === 403) return 'That password doesn’t match this event.';
+  if (err.code === 'login_closed') return 'This event has stopped accepting new sign-ins.';
+  return 'Too many wrong tries.';
+}
+
+/**
+ * The sentence the server's `attemptsLeft` earns. Quiet until the last two
+ * attempts: naming the wait on the first miss is noise, and a person who has
+ * mistyped a four-word phrase twice is exactly who the warning is for.
+ */
+function attemptWarning(details: Record<string, unknown> | undefined): string | null {
+  const left = details?.attemptsLeft;
+  const next = details?.nextWaitSeconds;
+  if (typeof left !== 'number' || typeof next !== 'number') return null;
+  if (left < 1 || left > 2 || next < 1) return null;
+  // `left` is only ever 1 or 2 here, which is what makes two forms enough.
+  const tries = pluralForm(left, { one: 'One more try', other: 'Two more tries' });
+  return ` ${tries} before a ${minutesInWords(next)}-minute wait.`;
+}
+
 export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = false }: LoginProps) {
   const { refresh } = useMe();
   /**
@@ -68,6 +130,31 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(speakerLinkFailed ? SPEAKER_CODE_FAILED : null);
   const [busy, setBusy] = useState(false);
+  /**
+   * When the current wait runs out, and a tick to redraw the clock against.
+   * The wait is held as an instant rather than a countdown so that a redraw
+   * for any other reason cannot lose a second of it.
+   */
+  const [waitUntil, setWaitUntil] = useState<number | null>(null);
+  /** What to say above the clock — a wrong password reads differently from an
+   *  event that has stopped admitting anybody. */
+  const [waitPrefix, setWaitPrefix] = useState('');
+  const [tick, setTick] = useState(() => Date.now());
+
+  /**
+   * One interval, alive only while a wait is. `tick` exists to redraw the
+   * clock; nothing else reads it, which is why it holds the time rather than
+   * a counter.
+   */
+  useEffect(() => {
+    if (waitUntil === null) return;
+    const id = setInterval(() => {
+      const t = Date.now();
+      setTick(t);
+      if (t >= waitUntil) setWaitUntil(null);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [waitUntil]);
   /**
    * The login page's "is that you?": an organiser typed this exact name onto a
    * session before its owner arrived, and that unclaimed profile is on
@@ -199,8 +286,19 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
     return null;
   };
 
+  // Seconds still to wait, recomputed on every tick. `tick` is read here and
+  // nowhere else — that read is what ties the interval above to this number,
+  // and reading the clock directly instead would be an impure render.
+  const waitLeft = waitUntil === null ? 0 : Math.max(0, Math.ceil((waitUntil - tick) / 1000));
+  const waitLine = waitLeft > 0 ? `${waitPrefix} You can try again in ${clock(waitLeft)}.` : null;
+  const shownError = waitLine ?? error;
+
   const submit = async (claimProfile?: boolean) => {
     if (busy) return;
+    // A live wait is refused here rather than at the server, so the clock the
+    // page is already showing is the whole answer. The button stays live for
+    // the reason the one below it does: disabling it would swallow Enter.
+    if (waitLeft > 0) return;
     // The form submits from either box, and `noValidate` means the browser
     // will not point at an empty one — so this has to. Sentences rather than
     // silence: the button is live whatever the boxes hold, so a press that
@@ -227,11 +325,25 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
       onEntered();
     } catch (err) {
       if (!nameProblem(err)) {
-        setError(
-          err instanceof ApiError && (err.status === 429 || err.status === 404)
-            ? errorText(err)
-            : 'That password doesn’t match this event.',
-        );
+        if (err instanceof ApiError && err.retryAfter) {
+          // Every wait the server imposes arrives carrying `Retry-After` —
+          // this visitor's, this address's, or the whole event's — so one
+          // clock covers all three. The 403 is the wait a wrong password just
+          // bought, and says so; the 429s are refusals with nothing compared,
+          // and keep the server's own sentence.
+          setWaitUntil(Date.now() + err.retryAfter * 1000);
+          setTick(Date.now());
+          setWaitPrefix(waitReason(err));
+          setError(null);
+        } else {
+          setError(
+            err instanceof ApiError && (err.status === 429 || err.status === 404)
+              ? errorText(err)
+              : `That password doesn’t match this event.${
+                  err instanceof ApiError ? (attemptWarning(err.details) ?? '') : ''
+                }`,
+          );
+        }
       }
       setBusy(false);
     }
@@ -531,7 +643,7 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
                     one question at a time. */}
                 <div hidden={nameAsked}>
                   <Field label="Event password">
-                    <ControlShell invalid={Boolean(error)}>
+                    <ControlShell invalid={Boolean(shownError)}>
                       <PasswordInput
                         name="password"
                         autoComplete="current-password"
@@ -550,8 +662,13 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
                     the one case where `/login` handed a name back and both are
                     answerable in a single press. */}
                 {nameAsked && nameField}
-                {error && linkMode === 'none' && (
-                  <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</p>
+                {shownError && linkMode === 'none' && (
+                  <p
+                    className="mt-1.5 text-xs text-red-600 dark:text-red-400"
+                    role={waitLine ? 'status' : undefined}
+                  >
+                    {shownError}
+                  </p>
                 )}
                 {linkMode === 'none' && namesakePrompt}
                 {suggestion !== null && linkMode === 'none' && (
@@ -570,7 +687,13 @@ export function Login({ slug, eventName, me, onEntered, speakerLinkFailed = fals
                     the box as well as the press — and the sentence saying what
                     is missing is raised by the handler that would never run. */}
                 <PrimaryButton className="mt-4 w-full py-2 text-sm" type="submit" disabled={busy}>
-                  {busy ? 'Checking…' : nameAsked ? 'Enter schedule' : 'Continue'}
+                  {busy
+                    ? 'Checking…'
+                    : waitLeft > 0
+                      ? `Try again in ${clock(waitLeft)}`
+                      : nameAsked
+                        ? 'Enter schedule'
+                        : 'Continue'}
                 </PrimaryButton>
               </>
             )}

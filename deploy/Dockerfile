@@ -30,10 +30,20 @@ COPY scripts ./scripts
 # Without these it falls back to the package.json version and "unknown".
 #   docker build --build-arg BUILD_TAG="$(git describe --tags --abbrev=0)" \
 #                --build-arg BUILD_COMMIT="$(git rev-parse --short HEAD)" .
+#
+# Railway hands every service variable to the build as a build arg, but only
+# for names declared with ARG here — so declare its own commit variable and
+# let it be the default. An explicit BUILD_COMMIT still wins. The tag has no
+# platform equivalent; the package.json version stands in for it.
+ARG RAILWAY_GIT_COMMIT_SHA
 ARG BUILD_TAG
-ARG BUILD_COMMIT
+ARG BUILD_COMMIT=${RAILWAY_GIT_COMMIT_SHA}
 ENV BUILD_TAG=$BUILD_TAG
 ENV BUILD_COMMIT=$BUILD_COMMIT
+
+# Into the build log, so a footer reading "unknown" can be traced to the arg
+# that never arrived rather than guessed at from the outside.
+RUN echo "build stamp: tag=${BUILD_TAG:-<unset>} commit=${BUILD_COMMIT:-<unset>}"
 
 RUN npm run build
 
