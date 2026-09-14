@@ -10,11 +10,11 @@ import type {
   FormatDto,
   TagDto,
 } from '@shared/types';
-import { fmtMin, place, relativeTime } from '../lib/format';
+import { fmtInstant, fmtMin, place, relativeTime } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { MentionText, PersonLink, personByUsername } from './MentionText';
 import { MentionTextArea } from './MentionTextArea';
-import { EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
+import { ClockIcon, EditIcon, HideIcon, RemoveIcon, UnhideIcon } from './icons';
 import {
   ControlShell,
   FormatLabel,
@@ -85,6 +85,12 @@ export interface SessionDetailProps {
   starred: boolean;
   /** The event's word for the middle role, used in the upgrade prompt. */
   userLabel: string;
+  /** Whether the reader is an organiser. Decides where the history line
+   *  goes: on the full page for everyone, in the sheet for organisers alone —
+   *  the sheet is the quick look, and one more line of small print under the
+   *  time and room is noise to an attendee, while an organiser opening a
+   *  draft or an open booking wants to know whose it is at once. */
+  isAdmin: boolean;
   layout: SessionDetailLayout;
   /** Contributions per kind shown before collapsing; `null` shows all. */
   collapseAt: number | null;
@@ -122,6 +128,7 @@ export function SessionDetail({
   archived,
   starred,
   userLabel,
+  isAdmin,
   layout,
   collapseAt,
   headerActions,
@@ -297,6 +304,26 @@ export function SessionDetail({
                 </span>
               ))}
         </p>
+        {/* The speakers are who gives a session; who booked the slot is often
+            somebody else — the organiser who typed in a panel, the attendee
+            who pitched it — and until this line nothing on the session said
+            who. It is public, like a note's byline: a session on the
+            programme is a public act and its history is part of it. Where it
+            shows is `isAdmin`'s business, above. */}
+        {(page || isAdmin) && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-stone-500 dark:text-stone-400">
+            <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+            <span>
+              Created by{' '}
+              <PersonLink slug={slug} person={personByUsername(people, session.createdByName)}>
+                @{session.createdByName}
+              </PersonLink>{' '}
+              {fmtInstant(session.createdAt, timezone)}
+              {session.updatedAt !== session.createdAt &&
+                ` · edited ${relativeTime(session.updatedAt)}`}
+            </span>
+          </p>
+        )}
       </div>
       {/* The star sits under the sheet's close button rather than in a row of
           its own, which is where a control that acts on this session belongs —
