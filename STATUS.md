@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-10
+Last updated: 2026-09-14
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -831,30 +831,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   v1 non-goal (SPEC §Non-goals — no CRDT), but a small outbox that retries
   queued writes on reconnect would cover the hallway-wifi case without one.
 
-- **Dependency bumps — phases 0–3 done, 4–6 open.** [LIB-125] Plan and reasoning in
-  `_planning/plans/2026-09-05-dependency-bumps.md`. `npm audit` went **10 → 2**:
-  the vitest critical, the vite high and the esbuild/qs moderates are cleared,
-  by the versions that actually fix them rather than by `latest`. What is left:
-  - **Phase 4 — `react` + `react-dom` 18 → 19 ✅ done 2026-09-07** on
-    `chore/react-19`, behind a DOM smoke suite (`tests/routes.test.tsx`)
-    that mounts every route against the real server and fails on any
-    console.error. Two type edits, no runtime change, 1249 green. Still
-    wants a browser pass over the R-items below for what jsdom cannot show
-    (layout, drag, the time box) — and that pass exists now:
-    `npm run browser-pass` (`scripts/browserPass.ts`) boots the built app
-    and drives it through `/usr/bin/chromium`, which is in the dev container
-    image since the 2026-09-07 rebuild (`.devcontainer/` is gitignored, so
-    that line travels with the host, not the repo). First run under React 19:
-    fourteen steps green, console and network clean. Drag is still unpassed.
-  - **Phase 5 — server majors**, in order: zod, express, marked, bcryptjs,
-    better-sqlite3. Each one needs `npm run rebuild:native` after, because
-    `.npmrc` sets `ignore-scripts=true` and any install leaves better-sqlite3
-    without its binding (553 tests fail with "Could not locate the bindings
-    file" until you do).
-  - **Phase 6 — vite 6 → 7/8 and vitest 3 → 4/5.** The Node alignment they were
-    blocked on is done: production is on `node:22-bookworm-slim`, `engines` is
-    `>=22.13` and `@types/node` is 22.x. No advisory is behind either bump now,
-    so they can wait behind Phase 4.
 - **Cloning still demands all three passwords.** [LIB-126] Creating an event lets you
   leave any of them blank — a four-word phrase is generated and shown once on
   a confirmation screen — but `POST /events/:slug/clone` kept the old

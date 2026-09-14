@@ -427,9 +427,18 @@ and the dev container was already on 22.23. What would have happened is an
 set, so it warns rather than fails). The conclusion — decide Node first — held;
 the reason was thinner than it was written.
 
-**Still open:** vite 6 → 7/8 and vitest 3 → 4/5, now unblocked. They are a
-straight bump with no advisory behind them, so they wait their turn behind
-Phase 4.
+**Phase 6, the packages ✅ done 2026-09-14.** vitest 3.2.7 → **5.0.0** first,
+because by then it was the one with an advisory (GHSA-82fw-gwwq-j7x9, a path
+traversal in `@vitest/mocker`; 5 is the version that fixes it) and its peer
+range still accepted vite 6.4. `poolOptions` became the top-level
+`maxWorkers`; nothing else in the suite met a vitest 4 or 5 break. Then vite
+6.4.3 → **8.3.0** with `@vitejs/plugin-react` 4.7.0 → **6.1.1** in one
+commit — plugin-react 5 stops at vite 7 and 6 starts at 8, so there is no
+pairing that lets either move alone. The vitest config's `esbuild.jsx` is now
+`oxc.jsx`. Checked past the suite: a clean `vite build`, the headless-Chromium
+browser pass green with console and network clean, and `vite dev` on a spare
+port serving refresh-wrapped modules and answering a dead API with a 502.
+Suite 1789, lint clean, audit **0**.
 
 ## Not doing, and why
 - **`@types/express` 5 / `@types/react` 19 ahead of their runtimes.** Types
