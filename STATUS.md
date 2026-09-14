@@ -43,49 +43,20 @@ nothing local is unsaved. Suite at **1789**, lint clean, build clean.
   collection): eight items cleared, three bad, two faults on a fourth — the
   fixes are the top backlog group.
 
-- **Branch `fix/review-round-2`** is all shipped: seven commits in **0.3.6**
-  (PR #55), the last two — the login page wearing the logo and a link to the other
-  events (**R36**), the audit log linking to what it names (**R37**) — into
-  `dev` via PR #57 (`561c9ac`). Still queued for your eyes as **R31–R37**:
-  shipped is not seen. The worktree `.claude/worktrees/review-fixes` can go.
+Four items left this list on 2026-09-14, checked against `dev` by content
+rather than by branch: the branches were rebased on merge, so their shas are
+not ancestors of `dev` and `--is-ancestor` says "no" about work that is plainly
+there. `fix/review-round-2` (the audit log's links are in dev's CHANGELOG),
+`fix/now-line-placement` (dev's `ListView.tsx` carries the R31 rework, dated in
+its own comment), **Permissions, page side** [LIB-182]
+(`tests/permissionParity.test.ts` is on `dev`) and `chore/react-19` (`dev` runs
+React 19.2.8). None of them needs landing; what is left of each is the browser
+pass, already queued under **Awaiting your review** as R31–R38.
 
-- **Permissions, page side** [LIB-182] (2026-09-08, on `dev`): you found a viewer
-  could not add notes in production despite the matrix allowing it. Every
-  control the page gated by the role's *name* now reads the matrix instead —
-  see CHANGELOG `[Unreleased]` → Fixed — and `tests/permissionParity.test.ts`
-  holds page and server to the same answer for every capability and role
-  (48 cases), with the production case itself pinned under jsdom. Queued for
-  your eyes as **R38**: grant viewers *Add notes, links and questions* and
-  open a session as a viewer.
-
-- **Branch `chore/react-19`** (2026-09-07, off `561c9ac`, `origin/dev`
-  merged in at `2a84e69`): the DOM smoke suite, React 19, and
-  `npm run browser-pass` — the built app driven through the container's
-  Chromium, fourteen steps on desktop and phone, console and network clean
-  under React 19 with the time-mask fix in. Local `dev` had been left
-  pointing at `main`'s merge commit (`35d08b5`) rather than at `origin/dev`,
-  so the work went on a branch; land it with `git branch -f dev origin/dev`
-  then `git merge chore/react-19` on `dev`.
-
-- **Branch `fix/now-line-placement`** [LIB-157] (2026-09-08, worktree
-  `.claude/worktrees/review`, off `dev` at `5255ae7`): the two fixes from the
-  2026-09-08 review, one commit each, both in CHANGELOG `[Unreleased]`. The
-  **R31 verdict** — the list's now line crosses every running card instead
-  of sitting under the row (your two follow-ups the same morning: no time
-  chip on it, every running session's card, not one row, the line where the
-  minute is rather than snapped to a seam, which had put it below the card,
-  and behind the card's text, paler); on the grid the time chip moved into
-  the time gutter — and the
-  **comment box's
-  *Post as*** naming the instance seed instead of the event name (on the
-  sheet as **R38**; R31 reworded for the new rule). Checked in headless
-  Chromium at four clock times, desktop, phone and dark. Suite green, lint
-  clean. Land it with `git merge fix/now-line-placement` on `dev`. Two
-  `serveStatic` tests fail *in that worktree only*: Express's `sendFile`
-  refuses a path with a dot-directory segment (`.claude/worktrees/…`), so the
-  built index never serves from there — an environment quirk, not a
-  regression, though `dotfiles: 'allow'` on that one `sendFile` would spare
-  the next worktree.
+The dot-path note that used to hang off the last of them is settled too: the
+`serveStatic` failure under `.claude/worktrees/…` was Express refusing a path
+with a dot segment, and `sendFile` now passes `root` instead (PR #86), so a
+worktree serves the built app like anywhere else.
 
 Off this list because they are **done**, not because they were forgotten: the
 form-layer overhaul and the Base UI migration are both written up in CHANGELOG
@@ -450,11 +421,6 @@ reused number would repoint a filename and every link to it. Rule recorded in
   open before the switch. Everything else on the board — reading, interest,
   placing what is already there — is untouched. Keep the guard, or drop it?
 
-*Resolved and removed:* **push `dev`** (it is pushed — `origin/dev` matches, and
-its reflog shows a push after each commit) and **start forms Phase 2** (phases
-0–3 landed 2026-09-04; 4–6 were overtaken by the Base UI migration, and what
-they left behind landed 2026-09-05 as R26).
-
 - **D4 · Per-device sign-in, decided — build behind D3.** [LIB-103] Settled
   2026-09-09. Approach **B**: one random token per device, issued at
   redemption, stored hashed in a `devices` table (identity, hashed token,
@@ -706,13 +672,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   And `SUGGESTED_FORMATS` in `shared/formats.ts` is the seed list — suggestions
   an organiser clicks, never rows created for them — so adding to it is free.
 
-- **Mentions in pitches.** [LIB-110] Delivery landed 2026-09-05 (the bell, R29);
-  descriptions and bios followed on 2026-09-07 (`fix/review-round-2`, R34):
-  `renderMarkdown` takes the event's names and links a mention in the
-  rendered prose (`linkMentionsInHtml`, skipping code and links), the
-  description and bio boxes are `MentionTextArea`s, and `notifyMentionsIn`
-  tells a newly named person once, for a `session` or a `person` subject.
-  What is left is the same three steps for a pitch (`ProposalBoard`,
+- **Mentions in pitches.** [LIB-110] Mentions resolve in descriptions, bios and
+  notifications; a pitch is the one place they do not. What is left is the
+  same three steps for a pitch (`ProposalBoard`,
   `ProposalModal`, `routes/proposals.ts`): the `people` list where it
   renders, the composer, and a notify call on its write route with a
   `proposal` subject — which the bell already knows how to open. And
@@ -777,11 +739,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   grow without limit — slowly (they are all rare actions), but forever.
 
 - **The importer still only creates an event.** [LIB-117, LIB-118]
-  Repeats landed 2026-08-31 in both front doors — a `repeat` key on a document
-  row, and the **Repeat** control in the session form — so a long programme's
-  daily officials and fixed track hours are a few rows or a few clicks rather
-  than sixty of either. The Import page (file picker, dry run, address field)
-  shipped with R26. What is left of that job:
+  What is left of that job:
   - **Importing into an _existing_ event.** The route only creates, so a whole
     transcribed programme still cannot be dropped into the event you are
     already running; the session form is the only way in, one session (or one
@@ -879,8 +837,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   From 2026-09-01, none of it seen in a browser:
   - the **info button on a column card**: that the ⓘ appears only on rooms with
     a description and tracks with hours, and that hover, focus and tap all open
-    the panel. The touch half is the point — it is the bug fixed on 2026-09-01
-    by moving the card onto `usePopover`, and a real finger is the only thing
+    the panel. The touch half is the point — it is the 2026-09-01 change that
+    moved the card onto `usePopover`, and a real finger is the only thing
     that proves it, since the tap is a synthesised mouse sequence no test here
     can produce. Watch too that the panel still opens flush under _its own_
     card in a row of different-height cards (the `c7ae002` bug, now `shift`'s
@@ -970,20 +928,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 ## Medium Priority
 
-- **Day navigation on a phone.** [LIB-189, LIB-192] Raised 2026-09-09, built
-  the same day. A long event navigated in two rows — a rail of week chips, and
-  that week's days scrolling sideways under it — which on a phone were most of
-  what stood between the event bar and the day's first session. LIB-189 folded
-  the rail into a button and gave the strip the `Rail` arrows it had never had;
-  LIB-192 then replaced both rows with one control, `‹ Wed 18 Sep ›`, holding
-  every day of the event grouped under its week with the counts and dimming the
-  strip carried. The chevrons are the load-bearing half: reaching tomorrow in
-  one tap is the only thing the strip was better at, and a bare dropdown would
-  have been worse than what it replaced. Only past `weekRailFrom` (default 8
-  days), where the strip cannot show the event anyway; under it nothing changes
-  and the arrows still serve. Desktop keeps both rows.
-
-  Still open on LIB-189, deliberately: a Sunday-start event splits every
+- **What a "week" means in a long event.** [LIB-189] Two edge cases left
+  behind when the day picker shipped: a Sunday-start event splits every
   weekend, because the boundaries fall every seven days from day one; and a
   tail chunk can be a single day (15 days → 7 / 7 / 1), so "Week 3" labels one
   date. Both change what a week *means*, which is worth deciding rather than
@@ -992,32 +938,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   possible, and calendar alignment is what would turn a Wednesday fortnight
   into three of them.
 
-- **An attendee's action row is a whole line holding one `+`.** [LIB-190] Raised
-  2026-09-09. Manage / Arrange / Add sit in a `basis-full` block
-  (`SchedulePage.tsx:1420`) so the organiser's three buttons take their own
-  line below `sm` — sound for an organiser, except Manage and Arrange are both
-  admin-only, so an attendee gets a full-width row holding one right-aligned
-  `+` hanging under the Now button. It is the wrong neighbour too: `+` and
-  **Pitch a session** are the two ways an attendee puts a session into the
-  world, and they sit a row apart. Move the `+` beside Pitch for anyone who is
-  not an organiser, minding the event that has the board switched off and the
-  attendee with no open-booking room.
-
-- **"Propose" and "Pitch" are the same word for two different acts.** [LIB-191]
-  Raised 2026-09-09. `SessionModal` heads itself *Propose a session* for a
-  non-organiser while the board beside it says *Pitch a session* — synonyms,
-  offered a few taps apart, for two genuinely different things. Worse, nothing
-  is proposed: `canCreateSession` wants `session.create_open` and a room with
-  `openBooking`, and with those the session lands on the grid unreviewed, so
-  the word promises an approval step the code does not have. *Pitch* was chosen
-  deliberately for the board and stays; *propose* is the one to retire. The
-  open question is how far the rename travels — the route is `/proposals`, the
-  components are `Proposal*` and the capability is `proposal.create`, while the
-  setting is `pitchesEnabled`.
-
 - **Generate `/openapi.json` from the zod schemas.** [LIB-198] `web/public/api.md`
-  shipped 2026-09-10 and says outright that there is no OpenAPI document; this
-  is it. Every request body already has a zod schema and zod 4 has
+  (in the tree since 2026-09-10) says outright that there is no OpenAPI
+  document; this is it. Every request body already has a zod schema and zod 4 has
   `z.toJSONSchema`, so the generated half is nearly free — follow `npm run
   schema`, which regenerates `docs/schema.md` and fails a test when the copy is
   behind. What needs deciding is the rest: paths live in the routers, responses
@@ -1026,8 +949,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   prose once, so the parts that matter get modelled first.
 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
-  The ×100 address multiplier that shipped on 2026-09-10 is a stopgap standing
-  in for a rule: key on the address while there is no identity yet (`auth`,
+  The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a
+  rule: key on the address while there is no identity yet (`auth`,
   `mint` — both meter a secret), key on the person once there is (`read`,
   `write`, `session`, `contribution` — all of them behind `requireRole`
   already). It leaves one bucket instead of two, and nothing left to mis-size.
@@ -1035,6 +958,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   bucket alone: roughly 150 writes a minute rather than 30, since `auth` still
   caps them at about five fresh identities a quarter hour. SECURITY.md already
   names the audit log and soft deletes as the answer to that person.
+  Decided 2026-09-14: the `read` bucket goes entirely [LIB-202] — a room on
+  one access point must never be refused a read — so this rule is left with
+  the write-shaped limits only.
 
 - **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
   `useEventData.ts:380` refetches the entire event on every stream reconnect —
@@ -1046,7 +972,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   that nobody is being throttled — this is about the traffic itself.
 
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
-  that landed on 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
+  from 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
   format and expected-person rows): typing a name the event does not know into
   the speaker field should offer to create that person there, rather than
   sending the organiser to the People tab and back. Same control, harder host —
@@ -1295,7 +1221,7 @@ w-48`, the other `w-full` — so they are exempted by name in
   dependency actually asks for it.
 
 - **Show an organiser the old addresses an event still answers to.** [LIB-145] Renaming
-  an event landed 2026-09-01 and every former slug goes on resolving, but
+  an event has existed since 2026-09-01, and every former slug goes on resolving, but
   nothing in the UI lists them — the only trail is the _renamed_ rows in the
   audit log. `formerSlugs` was written for this and then removed rather than
   left as dead code (`git show` the rename commit for the four lines). Worth it
