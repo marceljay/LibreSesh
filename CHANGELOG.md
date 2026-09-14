@@ -4,8 +4,31 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.7.3] — 2026-09-14
+
+A patch number that understates two things: `POST /api/events/:slug/clone`
+is gone, so any script that called it must move to export-then-import, and
+the bundle is now built for Chrome 111, Firefox 114 and Safari 16.4. No
+migration, and nothing an operator has to do at deploy time.
+
 ### Added
 
+- **The dev server names the checkout it serves.** Under `npm run dev` a
+  strip along the bottom of every page says which working tree and branch
+  this is, the commit the tree sits on (with a note when it has uncommitted
+  changes) and when the server came up, read from git as you go rather than
+  stamped at start. With several worktrees each running a server, the tab
+  alone did not say which checkout was on screen. The × folds it to a corner
+  tab that brings it back. Only the dev server has it; a production build
+  carries neither the bar nor its request.
+- **A session says who created it, and when.** Under the time and room, a
+  history line behind a small clock: *Created by @name* with the moment on
+  the event's clock, and *edited …* once it has been changed since. The
+  speakers are who gives a session; the person who booked the slot is often
+  somebody else, and until now nothing on the session said who. The full
+  page carries the line for everyone; the panel over the grid shows it to
+  organisers alone, so an attendee's quick look stays as short as it was.
+  Each row of the Drafts list names its creator the same way.
 - **The export carries the whole frame.** Alongside the settings it always
   wrote, an event's JSON export now has its audit retention, whether it badges
   official sessions, whether it runs a pitch board, and the **permission
@@ -54,6 +77,19 @@ All notable changes to this project are documented here.
   the instance password, as every other way of making an event does; the
   clone was the one path that did not. Searching Manage Event for "duplicate"
   or "clone" now leads to Backup. Old audit rows still read "duplicated".
+
+### Changed
+
+- **The build and test tools took their last two majors.** Vitest 3 → 5
+  carried the two moderate advisories `npm audit` still listed, a path
+  traversal in its module mocker that only a running test process could
+  reach; the audit reads **0** again. Vite 6 → 8 swaps esbuild and Rollup
+  for Oxc and Rolldown underneath, and raises the browsers the bundle is
+  built for to Chrome 111, Firefox 114 and Safari 16.4 — anything older
+  gets the same app it did before only if it can run that syntax. Nothing
+  in the served output changes on purpose: the built app was driven through
+  headless Chromium with console and network clean, and the dev server's
+  API proxy behaves as before. Neither package runs in the deployed image.
 
 ## [0.7.0] — 2026-09-14
 
