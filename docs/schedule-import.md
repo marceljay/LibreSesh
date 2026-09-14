@@ -411,19 +411,24 @@ Three things to know:
   unclaimed profile each, without bio or links), **pitches**, **contributions**
   and every **star count**. If those matter, the encrypted whole-database backup
   is the restore path — this one moves a programme.
-- **To run the event again, export the frame alone and give it new dates.**
-  Leave every part unticked in Manage Event → Backup (`?include=` with
-  nothing after it) and the file is the settings, permissions, rooms, tracks,
-  tags, formats and breaks with no sessions; on `/import` fill in **Name**,
-  **Start date** and **End date** (or edit `event`). Breaks and track windows
+- **To run the event again, export the setup and give it new dates.**
+  In Manage Event → Backup untick Sessions, People, Pitches and
+  Contributions — or drop any other part next year should not inherit, the
+  permissions say — and the file is the setup alone
+  (`?include=settings,permissions,rooms,tracks,tags,formats,breaks`); on
+  `/import` fill in **Name**, **Start date** and **End date** (or edit
+  `event`). Breaks and track windows
   pinned to a day of the old edition are then left out, each named in a
   warning, rather than refused — every dated row of last year's file is wrong
   for this year's. Breaks with no date, which run every day, come along. This
   replaced the Duplicate button: one creation path, and nothing it forgets.
 
-If the export is being taken *for* a restore, tick only **Sessions** in
-Manage Event → Backup (or `?include=sessions`): the file then carries exactly
-what will land, and the dry run has nothing to warn about.
+If the export is being taken *for* a restore, untick **People**, **Pitches**
+and **Contributions** in Manage Event → Backup: the file then carries exactly
+what will land, and the dry run has nothing to warn about. Every part is a
+checkbox; only the event's name, address, timezone and dates are always
+written, and a part left out is pointed at by nothing else in the file — a
+session exported without the tags names no tags.
 
 An export that has been edited by hand and left a session pointing at a room
 it no longer lists is refused naming the row, the way an undeclared room name

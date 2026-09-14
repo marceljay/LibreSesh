@@ -436,34 +436,38 @@ export interface BundleDto {
  *
  * Carries no secrets by construction — see `exportEvent` for the list.
  *
- * `sessions`, `people`, `proposals` and `contributions` are each **absent**
- * when the export was asked to leave them out (`?include=`, or the checkboxes
- * in Manage Event → Backup) and `[]` when the event simply has none — a reader
- * must not confuse the two. The rest is always present: it is the frame the
- * four hang off, and there is no reason to withhold it.
+ * Every part is **absent** when the export was asked to leave it out
+ * (`?include=`, or the checkboxes in Manage Event → Backup) and `[]` when the
+ * event simply has none — a reader must not confuse the two. Only `event`'s
+ * identity lines are always present. A session's `trackId`, `formatId` and
+ * `tagIds` are null or empty when that part was left out, and a pitch's
+ * `placedSessionId` likewise without sessions: what is not in the file is
+ * not pointed at from the file.
  */
 export interface EventExport {
   format: 'libresesh.event';
   version: 1;
   exportedAt: string;
+  /** Always present: the four lines that make the file importable at all.
+   *  The rest of Settings is the `settings` part, absent when left out. */
   event: {
     slug: string;
     name: string;
     timezone: string;
     startDate: string;
     endDate: string;
-    dayStartMin: number;
-    dayEndMin: number;
-    weekRailFrom: number;
-    userRoleLabel: string;
-    defaultView: ViewMode;
-    /** Audit entries kept; 0 keeps everything. A preference about how the
-     *  organiser keeps records, so it travels with the rest of the setup. */
-    auditKeep: number;
-    showOfficialBadge: boolean;
-    pitchesEnabled: boolean;
     archived: boolean;
     createdAt: string;
+    dayStartMin?: number;
+    dayEndMin?: number;
+    weekRailFrom?: number;
+    userRoleLabel?: string;
+    defaultView?: ViewMode;
+    /** Audit entries kept; 0 keeps everything. A preference about how the
+     *  organiser keeps records, so it travels with the rest of the setup. */
+    auditKeep?: number;
+    showOfficialBadge?: boolean;
+    pitchesEnabled?: boolean;
   };
   /**
    * Who may do what, as the effective matrix — every capability, with the
@@ -471,8 +475,8 @@ export interface EventExport {
    * its own. Roles themselves (who *holds* admin) are not here: they are bound
    * to identities, like the password hashes.
    */
-  permissions: PermissionMatrix;
-  rooms: {
+  permissions?: PermissionMatrix;
+  rooms?: {
     id: number;
     name: string;
     description: string;
@@ -481,7 +485,7 @@ export interface EventExport {
     openBooking: boolean;
     sortOrder: number;
   }[];
-  tracks: {
+  tracks?: {
     id: number;
     name: string;
     description: string;
@@ -492,11 +496,11 @@ export interface EventExport {
     endMin: number | null;
     windows: TrackWindowDto[];
   }[];
-  tags: { id: number; name: string; color: string }[];
+  tags?: { id: number; name: string; color: string }[];
   /** What kinds of session this event runs, in the organiser's order. */
-  formats: { id: number; name: string; color: string }[];
+  formats?: { id: number; name: string; color: string }[];
   /** Local minutes of day; `date` null means every day of the event. */
-  breaks: { id: number; label: string; startMin: number; endMin: number; date: string | null }[];
+  breaks?: { id: number; label: string; startMin: number; endMin: number; date: string | null }[];
   people?: {
     id: number;
     name: string;

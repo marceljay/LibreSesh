@@ -19,6 +19,15 @@ All notable changes to this project are documented here.
   skipped with a warning rather than refused, so an old export keeps opening.
   A `series` label on session rows links them on landing, under a fresh id,
   and an export's `seriesId` becomes that label at the door.
+- **Every part of the export is a checkbox.** Settings, permissions, rooms,
+  tracks, tags, formats and breaks join sessions, people, pitches and
+  contributions as things an export can leave out; only the event's name,
+  address, timezone and dates are always written. Untick everything and the
+  file is those four lines. What is left out is pointed at by nothing that
+  stays: a session exported without tags names none, a pitch exported without
+  sessions has no placed session. Sessions need rooms and contributions need
+  sessions, and the boxes say so. On the route, `?include=` takes any of the
+  eleven names.
 - **The import page takes a new name and dates,** next to the address it
   already took. Blank means "as written". With new dates, breaks and track
   hours pinned to a day of the old ones are left out rather than refused, and

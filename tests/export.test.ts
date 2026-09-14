@@ -90,8 +90,8 @@ describe('per-event JSON export', () => {
     await admin.post('/api/e/testconf/tracks').send({ name: 'Talks' }).expect(201);
 
     const dump = await fetchExport(admin);
-    expect(dump.tracks.map((t) => t.name)).toEqual(['Workshops', 'Talks']);
-    expect(dump.tracks.map((t) => t.description)).toEqual(['Hands-on. Bring a laptop.', '']);
+    expect(dump.tracks!.map((t) => t.name)).toEqual(['Workshops', 'Talks']);
+    expect(dump.tracks!.map((t) => t.description)).toEqual(['Hands-on. Bring a laptop.', '']);
   });
 
   it('carries the rest of Settings, and who may do what', async () => {
@@ -113,9 +113,9 @@ describe('per-event JSON export', () => {
       pitchesEnabled: false,
     });
     // The effective matrix, every capability present, not just the override.
-    expect(dump.permissions['session.star']).toEqual(['user', 'speaker', 'admin']);
-    expect(dump.permissions['proposal.vote']).toEqual(['viewer', 'user', 'speaker', 'admin']);
-    expect(Object.keys(dump.permissions)).toContain('contribution.moderate');
+    expect(dump.permissions!['session.star']).toEqual(['user', 'speaker', 'admin']);
+    expect(dump.permissions!['proposal.vote']).toEqual(['viewer', 'user', 'speaker', 'admin']);
+    expect(Object.keys(dump.permissions!)).toContain('contribution.moderate');
   });
 
   it('says which sessions are one linked run', async () => {
@@ -227,8 +227,20 @@ describe('per-event JSON export', () => {
     it('is everything unless asked otherwise', async () => {
       const dump = await fetchExport(admin);
       expect(Object.keys(dump)).toEqual(
-        expect.arrayContaining(['sessions', 'people', 'proposals', 'contributions']),
+        expect.arrayContaining([
+          'permissions',
+          'rooms',
+          'tracks',
+          'tags',
+          'formats',
+          'breaks',
+          'sessions',
+          'people',
+          'proposals',
+          'contributions',
+        ]),
       );
+      expect(dump.event.dayStartMin).toBe(480);
     });
 
     it('leaves a part out entirely — absent, not empty', async () => {
@@ -238,9 +250,61 @@ describe('per-event JSON export', () => {
       expect('sessions' in dump).toBe(false);
       expect('proposals' in dump).toBe(false);
       expect('contributions' in dump).toBe(false);
-      // The frame is not a choice.
-      expect(dump.rooms.map((r) => r.name)).toEqual(['Main hall']);
+      expect('rooms' in dump).toBe(false);
+      expect('permissions' in dump).toBe(false);
+      // The identity is not a choice.
       expect(dump.event.slug).toBe('testconf');
+      expect('dayStartMin' in dump.event).toBe(false);
+    });
+
+    it('leaves the settings and the matrix out when asked, and keeps the rest', async () => {
+      const res = await admin.get('/api/e/testconf/export.json?include=rooms,tags').expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      expect(Object.keys(dump).sort()).toEqual([
+        'event',
+        'exportedAt',
+        'format',
+        'rooms',
+        'tags',
+        'version',
+      ]);
+      expect(dump.rooms!.map((r) => r.name)).toEqual(['Main hall']);
+    });
+
+    it('points at nothing that was left out', async () => {
+      const tagId = seedTag(harness.db, eventId, 'Deep dive');
+      const track = await admin.post('/api/e/testconf/tracks').send({ name: 'Talks' }).expect(201);
+      await admin
+        .post('/api/e/testconf/sessions')
+        .send({
+          roomId,
+          trackId: (track.body as { id: number }).id,
+          tagIds: [tagId],
+          title: 'Tagged',
+          startsAt: at(DAY_ONE, 11 * 60),
+          endsAt: at(DAY_ONE, 12 * 60),
+        })
+        .expect(201);
+      const res = await admin
+        .get('/api/e/testconf/export.json?include=rooms,sessions,proposals')
+        .expect(200);
+      const dump = JSON.parse(res.text) as EventExport;
+      const tagged = dump.sessions!.find((s) => s.title === 'Tagged')!;
+      // Tags and tracks were not asked for, so the session names none.
+      expect(tagged.tagIds).toEqual([]);
+      expect(tagged.trackId).toBeNull();
+      // A pitch's link to its placed session survives only with the sessions.
+      const without = JSON.parse(
+        (await admin.get('/api/e/testconf/export.json?include=proposals').expect(200)).text,
+      ) as EventExport;
+      expect(without.proposals!.every((p) => p.placedSessionId === null)).toBe(true);
+      // And it reads back whole, because nothing in it points outside it.
+      const importer = await actorWithRole(harness, 'testconf', 'viewer-pw');
+      await importer
+        .post('/api/events/import?dryRun=1')
+        .set('X-Instance-Key', 'instance-pw')
+        .send({ ...dump, event: { ...dump.event, slug: 'testconf-thin' } })
+        .expect(200);
     });
 
     it('takes a list, in any order, with room for a stray space', async () => {
@@ -253,20 +317,18 @@ describe('per-event JSON export', () => {
       expect('people' in dump).toBe(false);
     });
 
-    it('is the frame alone when asked for nothing else', async () => {
+    it('is the identity alone when asked for nothing else', async () => {
       const res = await admin.get('/api/e/testconf/export.json?include=').expect(200);
       const dump = JSON.parse(res.text) as EventExport;
-      expect(Object.keys(dump).sort()).toEqual([
-        'breaks',
-        'event',
-        'exportedAt',
-        'format',
-        'formats',
-        'permissions',
-        'rooms',
-        'tags',
-        'tracks',
-        'version',
+      expect(Object.keys(dump).sort()).toEqual(['event', 'exportedAt', 'format', 'version']);
+      expect(Object.keys(dump.event).sort()).toEqual([
+        'archived',
+        'createdAt',
+        'endDate',
+        'name',
+        'slug',
+        'startDate',
+        'timezone',
       ]);
     });
 
@@ -275,7 +337,7 @@ describe('per-event JSON export', () => {
     });
 
     it('imports back whatever was chosen', async () => {
-      const res = await admin.get('/api/e/testconf/export.json?include=sessions').expect(200);
+      const res = await admin.get('/api/e/testconf/export.json?include=rooms,sessions').expect(200);
       const dump = JSON.parse(res.text) as EventExport;
       const importer = await actorWithRole(harness, 'testconf', 'viewer-pw');
       const result = await importer

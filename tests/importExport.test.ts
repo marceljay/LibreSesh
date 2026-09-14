@@ -277,7 +277,13 @@ describe('an export imports back', () => {
   it('re-dated for the next edition, keeps the frame and leaves the dated rows behind', async () => {
     await buildProgramme();
     const frame = JSON.parse(
-      (await admin.get('/api/e/testconf/export.json?include=').expect(200)).text,
+      (
+        await admin
+          .get(
+            '/api/e/testconf/export.json?include=settings,permissions,rooms,tracks,tags,formats,breaks',
+          )
+          .expect(200)
+      ).text,
     ) as EventExport;
     expect('sessions' in frame).toBe(false);
 

@@ -258,7 +258,9 @@ describe('R26 · Export what you choose', () => {
     open(`/e/${SLUG}/admin?tab=backup`);
 
     const link = await screen.findByRole('link', { name: /Download Test Conf as JSON/ });
-    expect(link.getAttribute('href')).toContain('include=sessions,people,proposals,contributions');
+    expect(link.getAttribute('href')).toContain(
+      'include=settings,permissions,rooms,tracks,tags,formats,breaks,sessions,people,proposals,contributions',
+    );
 
     fireEvent.click(screen.getByRole('checkbox', { name: /Sessions/ }));
 
@@ -268,13 +270,42 @@ describe('R26 · Export what you choose', () => {
     expect(contributions.disabled).toBe(true);
     expect(contributions.checked).toBe(false);
     expect(screen.getByText('Only with the sessions they were posted on.')).toBeTruthy();
-    expect(link.getAttribute('href')).toContain('include=people,proposals');
+    expect(link.getAttribute('href')).toContain(
+      'include=settings,permissions,rooms,tracks,tags,formats,breaks,people,proposals',
+    );
 
     // And it comes back the moment the sessions do.
     fireEvent.click(screen.getByRole('checkbox', { name: /Sessions/ }));
     expect(
       (screen.getByRole('checkbox', { name: /Contributions/ }) as HTMLInputElement).checked,
     ).toBe(true);
+
+    // Rooms carry the sessions, which carry the contributions: unticking the
+    // first greys out both, and the link drops all three.
+    fireEvent.click(screen.getByRole('checkbox', { name: /Rooms/ }));
+    expect((screen.getByRole('checkbox', { name: /Sessions/ }) as HTMLInputElement).disabled).toBe(
+      true,
+    );
+    expect(contributions.disabled).toBe(true);
+    expect(screen.getByText('Only with the rooms they are placed in.')).toBeTruthy();
+    expect(link.getAttribute('href')).toContain(
+      'include=settings,permissions,tracks,tags,formats,breaks,people,proposals',
+    );
+
+    // Everything off: the file is the event's name, address and dates alone.
+    for (const name of [
+      /Settings/,
+      /Permissions/,
+      /Tracks/,
+      /Tags/,
+      /Formats/,
+      /Breaks/,
+      /People/,
+      /Pitches/,
+    ]) {
+      fireEvent.click(screen.getByRole('checkbox', { name }));
+    }
+    expect(link.getAttribute('href')).toMatch(/include=$/);
   });
 });
 

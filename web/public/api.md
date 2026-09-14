@@ -103,7 +103,7 @@ your cookie jar already held.
 | `GET /api/e/:slug/bundle` | The whole event, one response |
 | `GET /api/e/:slug/stream` | SSE; patch your copy from it |
 | `GET /api/e/:slug/sessions/:id` | One session **plus its contributions** — the only thing not in the bundle |
-| `GET /api/e/:slug/export.json` | Organisers only; `?include=sessions,people,proposals,contributions` |
+| `GET /api/e/:slug/export.json` | Organisers only; `?include=` names the parts, from `settings,permissions,rooms,tracks,tags,formats,breaks,sessions,people,proposals,contributions`; absent means all |
 | `GET /api/events` | Public. Every event on the instance, names and dates only — no schedule |
 | `GET /api/me` | Who this cookie is, its roles, and the commit the server runs |
 
@@ -313,7 +313,7 @@ browser-side callers on another origin will not work — this is for server-side
 clients. No pagination anywhere: the bundle is the whole event by design. No
 bulk edit of an existing event; `POST /api/events/import` builds a new one and
 is the only bulk path. No copy route either: running an event again is an
-export with `?include=` left empty, imported under a new slug, name and dates.
+export of the setup parts, imported under a new slug, name and dates.
 
 Nothing here is a public read. Viewing a schedule requires the viewer password,
 by design — there is no anonymous view of an event.

@@ -1,7 +1,7 @@
 import { errorText } from '../lib/errorText';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { ExportPart } from '@shared/exportParts';
+import { EXPORT_PART_NEEDS, type ExportPart } from '@shared/exportParts';
 import { api } from '../lib/api';
 import {
   ControlShell,
@@ -16,11 +16,27 @@ import {
 } from '../components/ui';
 
 /**
- * The four parts an export can leave out, in the order they are offered. The
- * frame — settings, rooms, tracks, tags, formats, breaks — is not a choice:
- * it is a few hundred bytes and nothing in it is anyone's but the organiser's.
+ * Every part an export can leave out, in the order they are offered: the
+ * setup first, then the record of the event being used. What is not a choice
+ * is the event's own identity — name, address, timezone, dates — because a
+ * file without it cannot be imported as anything.
  */
 const EXPORT_CHOICES: { id: ExportPart; label: string; hint: string }[] = [
+  {
+    id: 'settings',
+    label: 'Settings',
+    hint: 'Visible hours, the week rail, the attendee label, the default view, audit retention, the official badge and whether pitches are on.',
+  },
+  {
+    id: 'permissions',
+    label: 'Permissions',
+    hint: 'Who may do what: every capability with the roles allowed it. Never who holds a role.',
+  },
+  { id: 'rooms', label: 'Rooms', hint: 'Names, capacities, colours and which allow booking.' },
+  { id: 'tracks', label: 'Tracks', hint: 'With the hours they keep and the days that differ.' },
+  { id: 'tags', label: 'Tags', hint: 'Names and colours.' },
+  { id: 'formats', label: 'Formats', hint: 'What kinds of session this event runs.' },
+  { id: 'breaks', label: 'Breaks', hint: 'Lunch, coffee, dinner — daily and one-day.' },
   {
     id: 'sessions',
     label: 'Sessions',
@@ -42,6 +58,12 @@ const EXPORT_CHOICES: { id: ExportPart; label: string; hint: string }[] = [
     hint: 'Notes, links and questions posted on sessions, with the name that wrote them.',
   },
 ];
+
+/** Why a part is greyed out: the part it needs is not ticked. */
+const NEEDS_HINT: Partial<Record<ExportPart, string>> = {
+  sessions: 'Only with the rooms they are placed in.',
+  contributions: 'Only with the sessions they were posted on.',
+};
 
 /**
  * The two backups, which are deliberately not the same thing.
@@ -70,11 +92,14 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
       else next.add(id);
       return next;
     });
-  // A contribution is a note *on a session*, addressed by that session's id;
-  // without the sessions it would point at nothing.
-  const chosen = EXPORT_CHOICES.map((c) => c.id).filter(
-    (id) => parts.has(id) && (id !== 'contributions' || parts.has('sessions')),
-  );
+  // A contribution is a note *on a session* and a session is placed *in a
+  // room*, each addressed by the parent's id; without the parent the child
+  // would point at nothing. Ticked but parentless is left out of the link.
+  const allowed = (id: ExportPart): boolean => {
+    const needs = EXPORT_PART_NEEDS[id];
+    return needs === undefined || (parts.has(needs) && allowed(needs));
+  };
+  const chosen = EXPORT_CHOICES.map((c) => c.id).filter((id) => parts.has(id) && allowed(id));
 
   const ready = instanceKey.length > 0 && passphrase.length >= 12 && passphrase === confirm;
 
@@ -104,12 +129,12 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
     <>
       <Section
         title="Export this event"
-        description="One JSON file, with no passwords, identity tokens or speaker codes in it — safe to hand to a co-organiser. The event's settings, rooms, tracks, tags, formats and breaks are always in it; choose what else goes."
+        description="One JSON file, with no passwords, identity tokens or speaker codes in it — safe to hand to a co-organiser. The event's name, address, timezone and dates are always in it; tick what else goes. A part left out is absent from the file, not empty."
         className="mb-6"
       >
         <div className="mb-4 grid gap-2 sm:grid-cols-2">
           {EXPORT_CHOICES.map(({ id, label, hint }) => {
-            const disabled = id === 'contributions' && !parts.has('sessions');
+            const disabled = !allowed(id);
             return (
               <label
                 key={id}
@@ -130,7 +155,7 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
                     {label}
                   </span>
                   <span className="block text-stone-500 dark:text-stone-400">
-                    {disabled ? 'Only with the sessions they were posted on.' : hint}
+                    {disabled ? NEEDS_HINT[id] : hint}
                   </span>
                 </span>
               </label>
@@ -157,9 +182,9 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
           <strong className="font-semibold text-stone-600 dark:text-stone-300">
             To run this event again
           </strong>
-          , untick all four, download, and import the file with a new address, name and dates.
-          Rooms, tracks, tags, formats, daily breaks, settings and permissions carry over; anything
-          pinned to a date of this edition is left behind.
+          , untick Sessions, People, Pitches and Contributions, download, and import the file with a
+          new address, name and dates. Whatever is ticked carries over; anything pinned to a date of
+          this edition is left behind.
         </p>
       </Section>
 
