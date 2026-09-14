@@ -137,28 +137,6 @@ describe('session formats', () => {
     for (const session of res.body.sessions) expect(session.formatId).toBe(format.body.id);
   });
 
-  it('carries formats into a clone, and no sessions with them', async () => {
-    await admin.post('/api/e/testconf/formats').send({ name: 'Talk' }).expect(201);
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'testconf-2',
-        newName: 'Testconf 2',
-        startDate: DAY_ONE,
-        endDate: DAY_TWO,
-        viewerPassword: 'viewer-pw-2',
-        userPassword: 'user-pw-2',
-        adminPassword: 'admin-pw-2',
-      })
-      .expect(201);
-
-    const clone = await actorWithRole(harness, 'testconf-2', 'admin-pw-2');
-    const bundle = await clone.get('/api/e/testconf-2/bundle').expect(200);
-    expect(bundle.body.formats).toHaveLength(1);
-    expect(bundle.body.formats[0].name).toBe('Talk');
-    expect(bundle.body.sessions).toEqual([]);
-  });
-
   it('exports the formats and what each session calls itself', async () => {
     const format = await admin.post('/api/e/testconf/formats').send({ name: 'Talk' }).expect(201);
     await newSession({ formatId: format.body.id }).expect(201);

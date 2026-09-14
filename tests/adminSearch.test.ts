@@ -22,7 +22,10 @@ describe('findSettings', () => {
     expect(idsFor('retention')[0]).toBe('audit-keep');
     expect(idsFor('unconference')[0]).toBe('pitches');
     expect(idsFor('qr')[0]).toBe('invite');
-    expect(idsFor('clone')[0]).toBe('duplicate');
+    // Running an event again is an export and an import, so that is where
+    // the old word for it leads.
+    expect(idsFor('clone')[0]).toBe('backup');
+    expect(idsFor('duplicate')[0]).toBe('backup');
     expect(idsFor('url')[0]).toBe('slug');
   });
 

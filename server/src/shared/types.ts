@@ -1,5 +1,7 @@
 /** API payload types shared by the server and the web client. */
 
+import type { PermissionMatrix } from './capabilities.js';
+
 export type Role = 'viewer' | 'user' | 'speaker' | 'admin';
 export type SessionType = 'official' | 'open';
 export type ContributionKind = 'note' | 'link' | 'question';
@@ -434,31 +436,47 @@ export interface BundleDto {
  *
  * Carries no secrets by construction — see `exportEvent` for the list.
  *
- * `sessions`, `people`, `proposals` and `contributions` are each **absent**
- * when the export was asked to leave them out (`?include=`, or the checkboxes
- * in Manage Event → Backup) and `[]` when the event simply has none — a reader
- * must not confuse the two. The rest is always present: it is the frame the
- * four hang off, and there is no reason to withhold it.
+ * Every part is **absent** when the export was asked to leave it out
+ * (`?include=`, or the checkboxes in Manage Event → Backup) and `[]` when the
+ * event simply has none — a reader must not confuse the two. Only `event`'s
+ * identity lines are always present. A session's `trackId`, `formatId` and
+ * `tagIds` are null or empty when that part was left out, and a pitch's
+ * `placedSessionId` likewise without sessions: what is not in the file is
+ * not pointed at from the file.
  */
 export interface EventExport {
   format: 'libresesh.event';
   version: 1;
   exportedAt: string;
+  /** Always present: the four lines that make the file importable at all.
+   *  The rest of Settings is the `settings` part, absent when left out. */
   event: {
     slug: string;
     name: string;
     timezone: string;
     startDate: string;
     endDate: string;
-    dayStartMin: number;
-    dayEndMin: number;
-    weekRailFrom: number;
-    userRoleLabel: string;
-    defaultView: ViewMode;
     archived: boolean;
     createdAt: string;
+    dayStartMin?: number;
+    dayEndMin?: number;
+    weekRailFrom?: number;
+    userRoleLabel?: string;
+    defaultView?: ViewMode;
+    /** Audit entries kept; 0 keeps everything. A preference about how the
+     *  organiser keeps records, so it travels with the rest of the setup. */
+    auditKeep?: number;
+    showOfficialBadge?: boolean;
+    pitchesEnabled?: boolean;
   };
-  rooms: {
+  /**
+   * Who may do what, as the effective matrix — every capability, with the
+   * roles allowed it — rather than the stored overrides, so the file reads on
+   * its own. Roles themselves (who *holds* admin) are not here: they are bound
+   * to identities, like the password hashes.
+   */
+  permissions?: PermissionMatrix;
+  rooms?: {
     id: number;
     name: string;
     description: string;
@@ -467,7 +485,7 @@ export interface EventExport {
     openBooking: boolean;
     sortOrder: number;
   }[];
-  tracks: {
+  tracks?: {
     id: number;
     name: string;
     description: string;
@@ -478,11 +496,11 @@ export interface EventExport {
     endMin: number | null;
     windows: TrackWindowDto[];
   }[];
-  tags: { id: number; name: string; color: string }[];
+  tags?: { id: number; name: string; color: string }[];
   /** What kinds of session this event runs, in the organiser's order. */
-  formats: { id: number; name: string; color: string }[];
+  formats?: { id: number; name: string; color: string }[];
   /** Local minutes of day; `date` null means every day of the event. */
-  breaks: { id: number; label: string; startMin: number; endMin: number; date: string | null }[];
+  breaks?: { id: number; label: string; startMin: number; endMin: number; date: string | null }[];
   people?: {
     id: number;
     name: string;
@@ -499,6 +517,7 @@ export interface EventExport {
     trackId: number | null;
     formatId: number | null;
     type: SessionType;
+    blocksOpenBooking: boolean;
     title: string;
     description: string;
     /** Everyone giving it, in credit order. `speaker` is the first of them,
@@ -510,10 +529,16 @@ export interface EventExport {
     startsAt: string;
     endsAt: string;
     tagIds: number[];
+    /** Shared by the sessions of one linked run; null for a session on its
+     *  own. Opaque — it means nothing outside this file except "these go
+     *  together", which is what an import needs to link them again. */
+    seriesId: string | null;
     createdByName: string;
     createdAt: string;
     updatedAt: string;
     starCount: number;
+    /** Only when set: a published session reads exactly as it always has. */
+    draft?: true;
   }[];
   proposals?: {
     id: number;

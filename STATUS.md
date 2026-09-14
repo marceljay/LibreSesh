@@ -776,11 +776,12 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   Noticed 2026-08-31: `pruneAudit` deletes by `event_id`, so these rows also
   grow without limit — slowly (they are all rare actions), but forever.
 
-- **The importer still only creates an event, and is still curl-only.** [LIB-117, LIB-118, LIB-119, LIB-120]
+- **The importer still only creates an event.** [LIB-117, LIB-118]
   Repeats landed 2026-08-31 in both front doors — a `repeat` key on a document
   row, and the **Repeat** control in the session form — so a long programme's
   daily officials and fixed track hours are a few rows or a few clicks rather
-  than sixty of either. What is left of that job:
+  than sixty of either. The Import page (file picker, dry run, address field)
+  shipped with R26. What is left of that job:
   - **Importing into an _existing_ event.** The route only creates, so a whole
     transcribed programme still cannot be dropped into the event you are
     already running; the session form is the only way in, one session (or one
@@ -788,20 +789,10 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     rather than the instance key, matching rooms/tracks/tags to the existing
     ones by name instead of creating duplicates — same transaction and same
     `dryRun` as now.
-  - **A UI for the importer itself.** `POST /events/import` is curl plus a JSON
-    file, which is right for a transcription and wrong for everything else.
   - **Duplicate a day.** The repeat control repeats _one_ session; copying a
     whole day's programme onto other days is still hand work. Same expansion,
     a different front door — an action on the day rail rather than in the
     session form.
-
-  Two smaller things noticed alongside: `POST /events/:slug/clone` copies rooms
-  and tags but **not tracks**, which post-date it and look simply forgotten;
-  and a track carries no time of its own, so "Tech runs 14:00–16:00" is said by
-  a repeating session rather than by the track. Track defaults in the import
-  document would be cheap; `start_min`/`end_min` on the `tracks` table is the
-  bigger version and changes what a track means in the session form, the grid
-  and the filters — worth doing only to make the app _enforce_ track hours.
 
 - **Compact button overrides do nothing.** [LIB-121] `SecondaryButton className="py-1"`
   and the `py-1.5` variants in DetailSheet, ProfilePage, ProposalBoard and
@@ -830,14 +821,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   load with no connectivity renders nothing. Full offline editing is an explicit
   v1 non-goal (SPEC §Non-goals — no CRDT), but a small outbox that retries
   queued writes on reconnect would cover the hallway-wifi case without one.
-
-- **Cloning still demands all three passwords.** [LIB-126] Creating an event lets you
-  leave any of them blank — a four-word phrase is generated and shown once on
-  a confirmation screen — but `POST /events/:slug/clone` kept the old
-  all-required schema. Deliberate for now: the clone UI has nowhere to reveal
-  a generated secret, and an organiser who never sees one cannot hand it out.
-  Wants the same reveal screen, then `resolveEventPasswords` wired into the
-  clone route so the two creation paths stop disagreeing.
 
 - **Manual browser pass — now with a specific backlog.** [LIB-183] Automated coverage is
   server-side, so everything below shipped on a read-through alone (no browser

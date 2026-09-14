@@ -38,6 +38,7 @@ const ACTIONS: Record<string, string> = {
   place: 'scheduled',
   reorder: 'reordered',
   merge: 'merged',
+  // The clone route is gone; rows it wrote are still in the log.
   clone: 'duplicated',
   export: 'exported',
   import: 'imported',

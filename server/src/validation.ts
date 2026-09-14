@@ -149,22 +149,6 @@ export const createEventSchema = z
   })
   .superRefine(distinctPasswordsRefinement);
 
-export const cloneEventSchema = z
-  .object({
-    newSlug: slugSchema,
-    newName: trimmed(120),
-    startDate: dateSchema,
-    endDate: dateSchema,
-    viewerPassword: passwordSchema,
-    userPassword: passwordSchema,
-    adminPassword: passwordSchema,
-  })
-  .refine((v) => v.endDate >= v.startDate, {
-    message: 'End date must not be before the start date',
-    path: ['endDate'],
-  })
-  .superRefine(distinctPasswordsRefinement);
-
 /** Demo instances hand out a role on a click; there is no password to check. */
 /** Answering the login page's "is that you?": adopt the unclaimed profile that
  *  carries your name instead of starting a fresh one. */

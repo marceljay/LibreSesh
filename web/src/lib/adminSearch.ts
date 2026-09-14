@@ -148,13 +148,6 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     anchor: 'invite',
   },
   {
-    id: 'duplicate',
-    label: 'Duplicate event',
-    tab: 'settings',
-    keywords: 'clone copy next year reuse repeat same again',
-    anchor: 'duplicate',
-  },
-  {
     id: 'archive',
     label: 'Archive',
     tab: 'settings',
@@ -207,7 +200,10 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     id: 'backup',
     label: 'Backup and import',
     tab: 'backup',
-    keywords: 'export import json download restore file document',
+    // "Duplicate" and "clone" land here on purpose: running an event again
+    // is an export without the sessions, imported with new dates.
+    keywords:
+      'export import json download restore file document duplicate clone copy next year reuse same again',
   },
   {
     id: 'trash',

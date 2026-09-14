@@ -4,6 +4,57 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **The export carries the whole frame.** Alongside the settings it always
+  wrote, an event's JSON export now has its audit retention, whether it badges
+  official sessions, whether it runs a pitch board, and the **permission
+  matrix** — every capability with the roles allowed it, as the effective
+  matrix rather than the stored overrides, so the file reads on its own. Roles
+  themselves stay out: who holds admin is bound to identities, like the
+  password hashes. Sessions carry their `seriesId`, so a linked run is one run
+  in the file too.
+- **The importer reads all of it back.** The four settings and the matrix are
+  optional keys on the document; a capability this version no longer knows is
+  skipped with a warning rather than refused, so an old export keeps opening.
+  A `series` label on session rows links them on landing, under a fresh id,
+  and an export's `seriesId` becomes that label at the door.
+- **Every part of the export is a checkbox.** Settings, permissions, rooms,
+  tracks, tags, formats and breaks join sessions, people, pitches and
+  contributions as things an export can leave out; only the event's name,
+  address, timezone and dates are always written. Untick everything and the
+  file is those four lines. What is left out is pointed at by nothing that
+  stays: a session exported without tags names none, a pitch exported without
+  sessions has no placed session. Sessions need rooms and contributions need
+  sessions, and the boxes say so. On the route, `?include=` takes any of the
+  eleven names.
+- **The import rehearsal has a box per part.** After *Check it*, the parts
+  the document carries — settings, permissions, rooms, tracks, tags, formats,
+  breaks, sessions — are checkboxes; unticking one leaves it out and runs the
+  check again, so the counts on screen are always the counts of what Import
+  sends. What goes takes its references with it: a session loses its track,
+  tags or format when that part is left out, and the sessions go with the
+  rooms. Profiles, pitches and contributions are not offered because the
+  importer never reads them; the first warning still says so.
+- **The import page takes a new name and dates,** next to the address it
+  already took. Blank means "as written". With new dates, breaks and track
+  hours pinned to a day of the old ones are left out rather than refused, and
+  the check names each one — a lunch that runs every day comes along, last
+  year's Friday party does not.
+
+### Removed
+
+- **Duplicate Event.** The form on the Settings tab and `POST
+  /api/events/:slug/clone` are gone. Running an event again is the round trip:
+  Backup → untick all four parts → download, then Import with a new address,
+  name and dates. The clone was a second, hand-written copy of event creation
+  that had already fallen behind — it forgot tracks, breaks and the matrix and
+  demanded all three passwords when creating by hand no longer did — and the
+  round trip carries everything it did plus what it forgot. It also asks for
+  the instance password, as every other way of making an event does; the
+  clone was the one path that did not. Searching Manage Event for "duplicate"
+  or "clone" now leads to Backup. Old audit rows still read "duplicated".
+
 ## [0.7.0] — 2026-09-14
 
 

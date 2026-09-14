@@ -529,23 +529,11 @@ export function AdminPage() {
   const [viewerPassword, setViewerPassword] = useState('');
   const [userPassword, setUserPassword] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  // Holds the slug the settings form was filled from. Duplicating an event
-  // navigates straight to the new event's admin page, which re-renders this
-  // same component instance — so a plain boolean latch would leave the previous
-  // event's values in the form.
+  // Holds the slug the settings form was filled from. Navigating from one
+  // event's admin page to another's re-renders this same component instance,
+  // so a plain boolean latch would leave the previous event's values in the
+  // form.
   const [loadedForSlug, setLoadedForSlug] = useState<string | null>(null);
-
-  const [cloneName, setCloneName] = useState('');
-  const [cloneSlug, setCloneSlug] = useState('');
-  const [cloneStart, setCloneStart] = useState('');
-  const [cloneEnd, setCloneEnd] = useState('');
-  const [cloneViewer, setCloneViewer] = useState('');
-  const [cloneUser, setCloneUser] = useState('');
-  const [cloneAdmin, setCloneAdmin] = useState('');
-  const [cloning, setCloning] = useState(false);
-  // Duplicating happens once in an event's life, if ever; seven fields should
-  // not sit open above Trash for the whole of the rest of it.
-  const [cloneOpen, setCloneOpen] = useState(false);
 
   const [trash, setTrash] = useState<TrashDto | null>(null);
   const isAdmin = bundle?.role === 'admin';
@@ -710,16 +698,6 @@ export function AdminPage() {
   if (event && loadedForSlug !== event.slug) {
     setLoadedForSlug(event.slug);
     loadSettingsFrom(event);
-    // Clear the duplicate form too, so it isn't pre-filled after a clone.
-    setCloneName('');
-    setCloneSlug('');
-    setCloneStart('');
-    setCloneEnd('');
-    setCloneViewer('');
-    setCloneUser('');
-    setCloneAdmin('');
-    setCloning(false);
-    setCloneOpen(false);
   }
 
   const fail = (err: unknown) => toast.show(errorText(err));
@@ -1175,38 +1153,6 @@ export function AdminPage() {
       toast.show('Settings saved');
     } catch (err) {
       fail(err);
-    }
-  };
-
-  // The organiser on this page is already the event admin, so no instance key
-  // is needed — the endpoint accepts either.
-  const cloneSlugValue = cloneSlug || slugify(cloneName);
-  const cloneReady =
-    cloneName.trim().length > 0 &&
-    /^[a-z0-9-]{3,40}$/.test(cloneSlugValue) &&
-    cloneStart.length > 0 &&
-    cloneEnd.length > 0 &&
-    cloneViewer.length >= 6 &&
-    cloneUser.length >= 6 &&
-    cloneAdmin.length >= 6;
-
-  const cloneEvent = async () => {
-    setCloning(true);
-    try {
-      const created = await api.cloneEvent(slug, {
-        newName: cloneName.trim(),
-        newSlug: cloneSlugValue,
-        startDate: cloneStart,
-        endDate: cloneEnd,
-        viewerPassword: cloneViewer,
-        userPassword: cloneUser,
-        adminPassword: cloneAdmin,
-      });
-      toast.show('Event duplicated — you are its organiser');
-      navigate(`/e/${created.slug}/admin`);
-    } catch (err) {
-      fail(err);
-      setCloning(false);
     }
   };
 
@@ -2134,114 +2080,6 @@ export function AdminPage() {
 
             <SettingAnchor id="invite" flashed={flashed}>
               <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
-            </SettingAnchor>
-
-            <SettingAnchor id="duplicate" flashed={flashed}>
-              <Section
-                title="Duplicate Event/Conf"
-                description="Rooms and tags carry over to the new event; sessions and contributions do not."
-                className="mb-6"
-                actions={
-                  <SecondaryButton
-                    className="shrink-0 py-1.5"
-                    onClick={() => setCloneOpen(!cloneOpen)}
-                    aria-expanded={cloneOpen}
-                  >
-                    {cloneOpen ? 'Close' : 'Duplicate…'}
-                  </SecondaryButton>
-                }
-              >
-                {cloneOpen && (
-                  <FormStack>
-                    <Field label="New name">
-                      <ControlShell>
-                        <TextInput
-                          value={cloneName}
-                          onChange={(e) => setCloneName(e.target.value)}
-                        />
-                      </ControlShell>
-                    </Field>
-                    <Field
-                      label="New slug"
-                      hint={`Used in the URL: /e/${cloneSlugValue || 'your-event'}`}
-                    >
-                      <ControlShell>
-                        <TextInput
-                          value={cloneSlug}
-                          onChange={(e) => setCloneSlug(slugify(e.target.value))}
-                          placeholder={slugify(cloneName) || 'your-event'}
-                        />
-                      </ControlShell>
-                    </Field>
-                    <FormGrid>
-                      <Field label="Start date">
-                        <ControlShell>
-                          <TextInput
-                            type="date"
-                            value={cloneStart}
-                            onChange={(e) => {
-                              setCloneStart(e.target.value);
-                              if (cloneEnd < e.target.value) setCloneEnd(e.target.value);
-                            }}
-                          />
-                        </ControlShell>
-                      </Field>
-                      <Field label="End date">
-                        <ControlShell>
-                          <TextInput
-                            type="date"
-                            value={cloneEnd}
-                            min={cloneStart}
-                            onChange={(e) => setCloneEnd(e.target.value)}
-                          />
-                        </ControlShell>
-                      </Field>
-                    </FormGrid>
-                    <div className="mt-1">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                        New passwords
-                      </p>
-                      <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                        At least 6 characters each.
-                      </p>
-                    </div>
-                    <FormGrid cols={3}>
-                      <Field label="Viewer">
-                        <ControlShell>
-                          <TextInput
-                            value={cloneViewer}
-                            onChange={(e) => setCloneViewer(e.target.value)}
-                          />
-                        </ControlShell>
-                      </Field>
-                      <Field label="User">
-                        <ControlShell>
-                          <TextInput
-                            value={cloneUser}
-                            onChange={(e) => setCloneUser(e.target.value)}
-                          />
-                        </ControlShell>
-                      </Field>
-                      <Field label="Admin">
-                        <ControlShell>
-                          <TextInput
-                            value={cloneAdmin}
-                            onChange={(e) => setCloneAdmin(e.target.value)}
-                          />
-                        </ControlShell>
-                      </Field>
-                    </FormGrid>
-                    <div>
-                      <PrimaryButton
-                        onClick={() => void cloneEvent()}
-                        disabled={!cloneReady || cloning}
-                      >
-                        {cloning ? 'Duplicating…' : 'Duplicate Event/Conf'}
-                      </PrimaryButton>
-                    </div>
-                  </FormStack>
-                )}
-              </Section>
             </SettingAnchor>
 
             <SettingAnchor id="archive" flashed={flashed}>

@@ -4,11 +4,22 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
 import { api, ApiError } from '../lib/api';
-import { parseDoc, withSlug, type DocSummary } from '../lib/importDoc';
+import {
+  IMPORT_PART_LABELS,
+  parseDoc,
+  partsIn,
+  withOverrides,
+  withParts,
+  type DocOverrides,
+  type DocSummary,
+  type ImportPart,
+} from '../lib/importDoc';
+import { EXPORT_PART_NEEDS } from '@shared/exportParts';
 import {
   ControlShell,
   Field,
   FormError,
+  FormGrid,
   PrimaryButton,
   SecondaryButton,
   TextArea,
@@ -67,16 +78,25 @@ export function ImportPage() {
   const [text, setText] = useState('');
   /** The file the text came from, when it came from one — for the label only. */
   const [fileName, setFileName] = useState<string | null>(null);
-  /** A new address for the event. Blank sends the document's own. */
+  /** A new address, name and dates for the event. Blank sends the document's
+   *  own. The address is what a restore needs; the name and dates are what
+   *  running an event again needs — the same frame, next year. */
   const [slug, setSlug] = useState('');
+  const [name, setName] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const overrides: DocOverrides = { slug, name, startDate, endDate };
+  /** Parts of the document unticked in the rehearsal — left out of the import. */
+  const [omitted, setOmitted] = useState<Set<ImportPart>>(() => new Set());
+  const overridesKey = JSON.stringify({ ...overrides, omitted: [...omitted].sort() });
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'check' | 'import' | null>(null);
   /** The dry run, and exactly what it was run against: the text and the
-   *  address, since either one changes what would be sent. */
+   *  overrides, since any of them changes what would be sent. */
   const [checked, setChecked] = useState<{
     text: string;
-    slug: string;
+    overridesKey: string;
     result: ImportResult;
   } | null>(null);
   const [done, setDone] = useState<{ slug: string; generated: GeneratedPasswords } | null>(null);
@@ -89,7 +109,28 @@ export function ImportPage() {
   const oversize = bytes > MAX_BYTES;
   /** A result only describes the box while the box still says what it said. */
   const rehearsal =
-    checked && checked.text === text && checked.slug === slug ? checked.result : null;
+    checked && checked.text === text && checked.overridesKey === overridesKey
+      ? checked.result
+      : null;
+  /** The parts this document carries, for the boxes in the rehearsal. */
+  const present: ImportPart[] = parsed.ok ? partsIn(parsed.doc) : [];
+  /** Unticked, or greyed because the part it needs is unticked. */
+  const isOut = (part: ImportPart): boolean => {
+    const needs = EXPORT_PART_NEEDS[part] as ImportPart | undefined;
+    return omitted.has(part) || (needs !== undefined && present.includes(needs) && isOut(needs));
+  };
+  /** Unticking re-runs the check on its own: the counts on screen must always
+   *  be the counts of what the Import button would send. */
+  const togglePart = (part: ImportPart) => {
+    const next = new Set(omitted);
+    if (next.has(part)) next.delete(part);
+    else next.add(part);
+    setOmitted(next);
+    void run(true, next);
+  };
+  /** During a re-check the last panel stays up, dimmed, rather than blinking. */
+  const shown =
+    rehearsal ?? (busy === 'check' && checked && checked.text === text ? checked.result : null);
 
   const readFile = (file: File | undefined) => {
     if (!file) return;
@@ -105,17 +146,20 @@ export function ImportPage() {
       setFileName(file.name);
       setError(null);
       setChecked(null);
+      setOmitted(new Set());
     });
   };
 
-  const run = async (dryRun: boolean) => {
+  const run = async (dryRun: boolean, leaveOut: Set<ImportPart> = omitted) => {
     if (!parsed.ok || oversize) return;
     setBusy(dryRun ? 'check' : 'import');
     setError(null);
+    const doc = withOverrides(withParts(parsed.doc, leaveOut), overrides);
+    const key = JSON.stringify({ ...overrides, omitted: [...leaveOut].sort() });
     try {
-      const result = await api.importEvent(instanceKey, withSlug(parsed.doc, slug), { dryRun });
+      const result = await api.importEvent(instanceKey, doc, { dryRun });
       if (dryRun) {
-        setChecked({ text, slug, result });
+        setChecked({ text, overridesKey: key, result });
         setBusy(null);
         return;
       }
@@ -185,8 +229,10 @@ export function ImportPage() {
         Builds a whole event — rooms, tracks, breaks and a full grid of sessions — from one JSON
         document. The document is written the way a schedule is <em>printed</em>: room names and
         wall-clock times, no ids. An export from another event's Manage Event → Backup works here
-        too — the programme comes across; profiles, pitches and contributions stay behind. Nothing
-        is written until you have checked it and said so.
+        too — settings, permissions and the programme come across; profiles, pitches and
+        contributions stay behind. To run an event again, export it without its sessions and give it
+        a new address, name and dates below. Nothing is written until you have checked it and said
+        so.
       </p>
 
       <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs dark:border-stone-700 dark:bg-stone-900">
@@ -252,6 +298,7 @@ export function ImportPage() {
                 setText(e.target.value);
                 setFileName(null);
                 setError(null);
+                setOmitted(new Set());
               }}
               spellCheck={false}
               rows={14}
@@ -269,7 +316,7 @@ export function ImportPage() {
               This document is {asKb(bytes)}, and this server accepts {asKb(MAX_BYTES)}.
             </p>
           )}
-          {summary && <Summary summary={summary} slug={slug.trim() || null} />}
+          {summary && <Summary summary={summary} overrides={overrides} />}
         </div>
 
         <div className="mt-4">
@@ -297,8 +344,70 @@ export function ImportPage() {
           </Field>
         </div>
 
+        <div className="mt-4">
+          <Field
+            label="Name"
+            hint="Optional. Overrides the name in the document — the next edition of an event usually wants the year in it."
+          >
+            <ControlShell>
+              <TextInput
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError(null);
+                }}
+                placeholder={summary?.name ?? 'Valley Conf 2026'}
+              />
+            </ControlShell>
+          </Field>
+        </div>
+
+        <FormGrid className="mt-4">
+          <Field
+            label="Start date"
+            hint="Optional. New dates for the whole event; breaks and track hours pinned to a day of the old ones are left out, and the check says which."
+          >
+            <ControlShell>
+              <TextInput
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  if (endDate !== '' && endDate < e.target.value) setEndDate(e.target.value);
+                  setError(null);
+                }}
+              />
+            </ControlShell>
+          </Field>
+          <Field label="End date">
+            <ControlShell>
+              <TextInput
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setError(null);
+                }}
+              />
+            </ControlShell>
+          </Field>
+        </FormGrid>
+
         {error && <FormError className="mt-4">{error}</FormError>}
-        {rehearsal && <Rehearsal result={rehearsal} />}
+        {shown && (
+          <Rehearsal
+            result={shown}
+            stale={shown !== rehearsal}
+            parts={present.map((id) => ({
+              id,
+              label: IMPORT_PART_LABELS[id],
+              checked: !isOut(id),
+              disabled: !omitted.has(id) && isOut(id),
+            }))}
+            onToggle={togglePart}
+          />
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <SecondaryButton
@@ -334,9 +443,14 @@ export function ImportPage() {
 }
 
 /** What is in the box, read locally. Not a verdict — that is the dry run's.
- *  `slug` is the Address field when it is filled in, which wins. */
-function Summary({ summary, slug }: { summary: DocSummary; slug: string | null }) {
-  const address = slug ?? summary.slug;
+ *  A filled-in override wins over what the document says, as it will on import. */
+function Summary({ summary, overrides }: { summary: DocSummary; overrides: DocOverrides }) {
+  const pick = (wanted: string | undefined, written: string | null): string | null =>
+    wanted?.trim() ? wanted.trim() : written;
+  const address = pick(overrides.slug, summary.slug);
+  const name = pick(overrides.name, summary.name);
+  const start = pick(overrides.startDate, summary.dates?.[0] ?? null);
+  const end = pick(overrides.endDate, summary.dates?.[1] ?? null);
   const parts = [
     plural(summary.rooms, NOUNS.rooms),
     plural(summary.tracks, NOUNS.tracks),
@@ -347,14 +461,12 @@ function Summary({ summary, slug }: { summary: DocSummary; slug: string | null }
   ];
   return (
     <div className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-      <span className="font-medium text-stone-700 dark:text-stone-200">
-        {summary.name ?? 'Untitled'}
-      </span>
+      <span className="font-medium text-stone-700 dark:text-stone-200">{name ?? 'Untitled'}</span>
       {address && <span className="font-mono"> /e/{address}</span>}
-      {summary.dates && (
+      {start && end && (
         <span>
           {' · '}
-          {summary.dates[0]} → {summary.dates[1]}
+          {start} → {end}
         </span>
       )}
       {summary.timezone && <span> · {summary.timezone}</span>}
@@ -371,8 +483,32 @@ function Summary({ summary, slug }: { summary: DocSummary; slug: string | null }
   );
 }
 
-/** The dry run's answer: what would land, and what deserves a second look. */
-function Rehearsal({ result }: { result: ImportResult }) {
+/** One box in the rehearsal: a part of the document, and whether it goes in. */
+interface PartChoice {
+  id: ImportPart;
+  label: string;
+  checked: boolean;
+  /** Greyed: the part it needs is unticked, so it cannot go in on its own. */
+  disabled: boolean;
+}
+
+/**
+ * The dry run's answer: what would land, and what deserves a second look —
+ * with a box per part of the document, so what next year should not inherit
+ * can be left out here rather than by editing the file. Unticking one runs
+ * the check again, so the counts are always the counts of what Import sends.
+ */
+function Rehearsal({
+  result,
+  stale,
+  parts,
+  onToggle,
+}: {
+  result: ImportResult;
+  stale: boolean;
+  parts: PartChoice[];
+  onToggle: (part: ImportPart) => void;
+}) {
   const { counts, warnings } = result;
   const rows: [string, number][] = [
     ['Rooms', counts.rooms],
@@ -385,9 +521,38 @@ function Rehearsal({ result }: { result: ImportResult }) {
   return (
     <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-950/40">
       <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">
-        Checked — nothing was written. This is what importing would put on the grid:
+        {stale
+          ? 'Checking again…'
+          : 'Checked — nothing was written. This is what importing would put on the grid:'}
       </p>
-      <dl className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
+      {parts.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+          {parts.map(({ id, label, checked, disabled }) => (
+            <label
+              key={id}
+              className={`flex items-center gap-1.5 text-xs ${
+                disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
+              title={
+                disabled
+                  ? `Only with the ${IMPORT_PART_LABELS[EXPORT_PART_NEEDS[id] as ImportPart].toLowerCase()}`
+                  : undefined
+              }
+            >
+              {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={disabled}
+                onChange={() => onToggle(id)}
+                className="accent-stone-900 dark:accent-stone-100"
+              />
+              <span className="text-stone-700 dark:text-stone-200">{label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      <dl className={`mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 ${stale ? 'opacity-50' : ''}`}>
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt className="text-[0.65rem] uppercase tracking-wide text-stone-400 dark:text-stone-500">

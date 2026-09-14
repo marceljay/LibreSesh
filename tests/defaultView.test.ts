@@ -76,29 +76,6 @@ describe('an event says which view it opens in', () => {
     expect(res.body.event.defaultView).toBe('cal');
   });
 
-  it('carries into a clone, like the rest of the setup', async () => {
-    const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
-    await admin.patch('/api/e/testconf/settings').send({ defaultView: 'cal' }).expect(200);
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'testconf-copy',
-        newName: 'Test Conf Copy',
-        startDate: '2027-06-01',
-        endDate: '2027-06-02',
-        viewerPassword: 'viewer2',
-        userPassword: 'user222',
-        adminPassword: 'admin22',
-      })
-      .expect(201);
-    await admin
-      .post('/api/e/testconf-copy/auth')
-      .send({ password: 'admin22', displayName: nextUsername() })
-      .expect(200);
-    const res = await admin.get('/api/e/testconf-copy/bundle').expect(200);
-    expect(res.body.event.defaultView).toBe('cal');
-  });
-
   it('is in the export, and an import that carries it is honoured', async () => {
     const admin = await actorWithRole(harness, 'testconf', 'admin-pw');
     await admin.patch('/api/e/testconf/settings').send({ defaultView: 'cal' }).expect(200);

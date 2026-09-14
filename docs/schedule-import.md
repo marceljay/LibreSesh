@@ -26,9 +26,15 @@ hand, because it makes an event rather than editing one.
 if you have a schedule rather than a terminal. Choose the `.json` file, drop it
 on the box, or paste the document; give the event a different **Address** if
 the document's own is taken (an export's always is, on the instance it came
-from); press **Check it** and read what would land. **Import** unlocks once
-that rehearsal succeeds and locks again the moment you edit the document or the
-address, so what you approve is always what you send.
+from), and a new **Name** and dates if this is the next edition of one; press
+**Check it** and read what would land. The rehearsal has a box per part the
+document carries — settings, permissions, rooms, tracks, tags, formats,
+breaks, sessions — and unticking one leaves it out and runs the check again,
+so the counts are always the counts of what Import will send; a session keeps
+its room but loses its track, tags or format when that part goes, and
+sessions go with the rooms. **Import** unlocks once a rehearsal succeeds and
+locks again the moment you edit the document or any field, so what you
+approve is always what you send.
 
 ### From the command line
 
@@ -89,11 +95,33 @@ Unknown top-level keys are refused rather than ignored, so `"session"` for
 | `dayStartMin`, `dayEndMin` | | Minutes from midnight for the visible hours. Default `480`–`1320` (08:00–22:00) |
 | `userRoleLabel` | | What this event calls its middle role. Default `attendee` |
 | `defaultView` | | Which view the schedule opens in for a reader who has not picked one: `list` or `cal`. Default `list` |
+| `weekRailFrom` | | Days before the day tabs become a week rail, 1–90. Default `8` |
+| `auditKeep` | | Audit entries kept: `0` for everything, else 100–1,000,000. Default `1000` |
+| `showOfficialBadge` | | Whether the grid and list badge official sessions. Default `false` |
+| `pitchesEnabled` | | Whether the event runs a pitch board. Default `true` |
 | `viewerPassword`, `userPassword`, `adminPassword` | | Leave any out and a four-word phrase is generated for it and returned once. All three must differ |
 
 The importer does **not** become an organiser by virtue of importing. Roles are
 earned at the login page, so whoever holds the admin phrase is the organiser — hand it
 over the same way you would for any event.
+
+### `permissions`
+
+Who may do what: each capability with the roles allowed it, the shape an
+export writes and the Permissions tab shows.
+
+```json
+"permissions": {
+  "session.star": ["user", "speaker", "admin"],
+  "proposal.create": ["admin"]
+}
+```
+
+A capability left out keeps its default. Admin is always on, listed or not. A
+capability this version no longer knows is skipped with a warning rather than
+refused, so an old export keeps opening; a role name that does not exist is
+refused. None of this is on a printed schedule — it is here so an export reads
+back whole, and so an event run again keeps its rules.
 
 ### `rooms`
 
@@ -157,7 +185,7 @@ nothing — a session may still run through lunch.
 | --- | --- | --- |
 | `label` | ✓ | Up to 60 characters — `Lunch`, `Coffee`, `Dinner` |
 | `start`, `end` | ✓ | Wall-clock `HH:MM`, on the 5-minute grid. `end` must be after `start` |
-| `date` | | One day only, `YYYY-MM-DD`. **Omit it for every day of the event**, which is the usual case |
+| `date` | | One day only, `YYYY-MM-DD`. **Omit it for every day of the event**, which is the usual case. A day the event does not have is left out with a warning, not refused |
 
 ```json
 "breaks": [
@@ -209,6 +237,7 @@ an open session can be a workshop, and an official one can be a jam.
 | `date`, `start`, `end` | ✓ | Local date and wall-clock times — see below |
 | `startsAt`, `endsAt` | | ISO instants instead, for a document a program wrote |
 | `repeat` | | Say the row once, land it on every day it happens — see below |
+| `series` | | Any label. Rows sharing one land as a linked run, so an edit to one can offer itself to the rest. The label is not kept — the run gets an id of its own — and an export's `seriesId` becomes this on the way in |
 
 **Rooms, tracks, tags and formats are declared once and referred to by name.** Matching
 ignores case and collapses whitespace, because transcription is not consistent —
@@ -331,6 +360,14 @@ anyway, because both are things an organiser is allowed to do:
 - *excepting that day does nothing* — a `repeat.except` date the run never
   reaches, which is the shape a mistyped date takes and is otherwise invisible:
   the grid just quietly has that day.
+- *is outside the event dates …, so it was left out* — a break, or a track's
+  hours for one day, pinned to a date the event does not have. Unlike a
+  session, it is dropped rather than refused: an export given next year's
+  dates carries last year's, and none of them can be right. The row is named
+  so a typed slip is caught the same way.
+- *is not something this version can grant, skipped* — a `permissions` key
+  naming a capability this version does not have, which an older or newer
+  export may carry. Everything else in the matrix still lands.
 
 A warning about a repeating row is reported once and names the rule rather than
 a date — `sessions[0] "Morning circle" (repeats every day) runs outside the
@@ -364,24 +401,39 @@ export is a record keyed by ids, with minutes where this document has `HH:MM`
 exactly as if you had typed it. Nothing about the export changes: one made a
 year ago imports the same way.
 
-Two things to know:
+Three things to know:
 
 - **Give it a new address.** An export names the event it came from, and a
   slug that is taken — including on the same instance — is refused with a
   `409`. On `/import` that is the **Address** field; from the command line,
   edit `event.slug`. It is the only edit a restore needs.
-- **The programme comes across; the record of it being used does not.** Rooms,
-  tracks (with their hours), tags, formats, breaks and every session — title,
-  description, speakers, streams, tags, type and whether it held the floor —
-  all land. What an import has no field for is left behind and said so in the
+- **The programme comes across; the record of it being used does not.**
+  Settings, the permission matrix, rooms, tracks (with their hours), tags,
+  formats, breaks and every session — title, description, speakers, streams,
+  tags, type, whether it held the floor and which run it belongs to — all
+  land. What an import has no field for is left behind and said so in the
   first `warning`: **profiles** (speakers are credited by name and get a fresh
   unclaimed profile each, without bio or links), **pitches**, **contributions**
   and every **star count**. If those matter, the encrypted whole-database backup
   is the restore path — this one moves a programme.
+- **To run the event again, export the setup and give it new dates.**
+  In Manage Event → Backup untick Sessions, People, Pitches and
+  Contributions — or drop any other part next year should not inherit, the
+  permissions say — and the file is the setup alone
+  (`?include=settings,permissions,rooms,tracks,tags,formats,breaks`); on
+  `/import` fill in **Name**, **Start date** and **End date** (or edit
+  `event`). Breaks and track windows
+  pinned to a day of the old edition are then left out, each named in a
+  warning, rather than refused — every dated row of last year's file is wrong
+  for this year's. Breaks with no date, which run every day, come along. This
+  replaced the Duplicate button: one creation path, and nothing it forgets.
 
-If the export is being taken *for* an import, tick only **Sessions** in
-Manage Event → Backup (or `?include=sessions`): the file then carries exactly
-what will land, and the dry run has nothing to warn about.
+If the export is being taken *for* a restore, untick **People**, **Pitches**
+and **Contributions** in Manage Event → Backup: the file then carries exactly
+what will land, and the dry run has nothing to warn about. Every part is a
+checkbox; only the event's name, address, timezone and dates are always
+written, and a part left out is pointed at by nothing else in the file — a
+session exported without the tags names no tags.
 
 An export that has been edited by hand and left a session pointing at a room
 it no longer lists is refused naming the row, the way an undeclared room name
