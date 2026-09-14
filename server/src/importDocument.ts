@@ -61,6 +61,8 @@ const exportDocumentSchema = z
       )
       .optional(),
     people: z.array(z.unknown()).optional(),
+    /** Passed through as it is; the import schema checks every role name. */
+    permissions: z.unknown().optional(),
     sessions: z
       .array(
         z
@@ -73,6 +75,7 @@ const exportDocumentSchema = z
             speakers: z.array(z.unknown()).optional(),
             speaker: z.unknown().optional(),
             livestreams: z.array(z.unknown()).optional(),
+            seriesId: z.string().nullable().optional(),
             starCount: z.number().optional(),
           })
           .passthrough(),
@@ -121,6 +124,10 @@ const EVENT_KEYS = [
   'dayEndMin',
   'userRoleLabel',
   'defaultView',
+  'weekRailFrom',
+  'auditKeep',
+  'showOfficialBadge',
+  'pitchesEnabled',
 ] as const;
 
 /** Copy the keys that are set: the importer's optional fields want an absent
@@ -166,6 +173,9 @@ export function fromExport(body: unknown): { doc: unknown; warnings: string[] } 
     version: 1,
     event: present(src.event as Loose, EVENT_KEYS),
   };
+  if (src.permissions !== undefined && src.permissions !== null) {
+    doc.permissions = src.permissions;
+  }
 
   // Array order is column order, so `sortOrder` travels as position.
   if (rooms.length > 0) {
@@ -242,6 +252,12 @@ export function fromExport(body: unknown): { doc: unknown; warnings: string[] } 
       }
       if (session.livestreams && session.livestreams.length > 0) {
         row.livestreams = session.livestreams;
+      }
+      // The run's id is as good a label as any: the importer mints a fresh
+      // one per distinct label, so the sessions link again without the old
+      // id ever landing in the new database.
+      if (typeof session.seriesId === 'string' && session.seriesId !== '') {
+        row.series = session.seriesId;
       }
       return row;
     });

@@ -150,7 +150,16 @@ export function AdminBackup({ slug, eventName }: { slug: string; eventName: stri
           <Link to="/import" className={`${linkClass} underline`}>
             Import a schedule
           </Link>
-          : the programme comes across; people, pitches and contributions do not.
+          : the settings, permissions and programme come across; people, pitches and contributions
+          do not.
+        </p>
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          <strong className="font-semibold text-stone-600 dark:text-stone-300">
+            To run this event again
+          </strong>
+          , untick all four, download, and import the file with a new address, name and dates.
+          Rooms, tracks, tags, formats, daily breaks, settings and permissions carry over; anything
+          pinned to a date of this edition is left behind.
         </p>
       </Section>
 

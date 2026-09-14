@@ -1,5 +1,7 @@
 /** API payload types shared by the server and the web client. */
 
+import type { PermissionMatrix } from './capabilities.js';
+
 export type Role = 'viewer' | 'user' | 'speaker' | 'admin';
 export type SessionType = 'official' | 'open';
 export type ContributionKind = 'note' | 'link' | 'question';
@@ -455,9 +457,21 @@ export interface EventExport {
     weekRailFrom: number;
     userRoleLabel: string;
     defaultView: ViewMode;
+    /** Audit entries kept; 0 keeps everything. A preference about how the
+     *  organiser keeps records, so it travels with the rest of the setup. */
+    auditKeep: number;
+    showOfficialBadge: boolean;
+    pitchesEnabled: boolean;
     archived: boolean;
     createdAt: string;
   };
+  /**
+   * Who may do what, as the effective matrix — every capability, with the
+   * roles allowed it — rather than the stored overrides, so the file reads on
+   * its own. Roles themselves (who *holds* admin) are not here: they are bound
+   * to identities, like the password hashes.
+   */
+  permissions: PermissionMatrix;
   rooms: {
     id: number;
     name: string;
@@ -499,6 +513,7 @@ export interface EventExport {
     trackId: number | null;
     formatId: number | null;
     type: SessionType;
+    blocksOpenBooking: boolean;
     title: string;
     description: string;
     /** Everyone giving it, in credit order. `speaker` is the first of them,
@@ -510,10 +525,16 @@ export interface EventExport {
     startsAt: string;
     endsAt: string;
     tagIds: number[];
+    /** Shared by the sessions of one linked run; null for a session on its
+     *  own. Opaque — it means nothing outside this file except "these go
+     *  together", which is what an import needs to link them again. */
+    seriesId: string | null;
     createdByName: string;
     createdAt: string;
     updatedAt: string;
     starCount: number;
+    /** Only when set: a published session reads exactly as it always has. */
+    draft?: true;
   }[];
   proposals?: {
     id: number;

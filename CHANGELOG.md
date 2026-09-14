@@ -4,6 +4,27 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **The export carries the whole frame.** Alongside the settings it always
+  wrote, an event's JSON export now has its audit retention, whether it badges
+  official sessions, whether it runs a pitch board, and the **permission
+  matrix** — every capability with the roles allowed it, as the effective
+  matrix rather than the stored overrides, so the file reads on its own. Roles
+  themselves stay out: who holds admin is bound to identities, like the
+  password hashes. Sessions carry their `seriesId`, so a linked run is one run
+  in the file too.
+- **The importer reads all of it back.** The four settings and the matrix are
+  optional keys on the document; a capability this version no longer knows is
+  skipped with a warning rather than refused, so an old export keeps opening.
+  A `series` label on session rows links them on landing, under a fresh id,
+  and an export's `seriesId` becomes that label at the door.
+- **The import page takes a new name and dates,** next to the address it
+  already took. Blank means "as written". With new dates, breaks and track
+  hours pinned to a day of the old ones are left out rather than refused, and
+  the check names each one — a lunch that runs every day comes along, last
+  year's Friday party does not.
+
 ## [0.7.0] — 2026-09-14
 
 

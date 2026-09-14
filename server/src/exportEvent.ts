@@ -12,6 +12,7 @@ import type {
 } from './db.js';
 import { NameResolver } from './eventIdentity.js';
 import { parseLinks, speakerNames, speakersBySession, tagIdsBySession } from './mappers.js';
+import { getPermissions } from './permissions.js';
 import { trackWindowsFor } from './trackHours.js';
 import { EXPORT_PARTS, type ExportPart } from './shared/exportParts.js';
 import type { EventExport } from './shared/types.js';
@@ -90,9 +91,15 @@ export function exportEvent(
       weekRailFrom: event.week_rail_from,
       userRoleLabel: event.user_role_label,
       defaultView: event.default_view === 'cal' ? 'cal' : 'list',
+      auditKeep: event.audit_keep,
+      showOfficialBadge: event.show_official_badge === 1,
+      pitchesEnabled: event.pitches_enabled === 1,
       archived: event.archived === 1,
       createdAt: event.created_at,
     },
+    // The effective matrix, not the stored overrides: a reader should not
+    // need this version's defaults to know what the event allowed.
+    permissions: getPermissions(db, eventId),
     rooms: rooms.map((r) => ({
       id: r.id,
       name: r.name,
@@ -182,6 +189,7 @@ export function exportEvent(
       startsAt: s.starts_at,
       endsAt: s.ends_at,
       tagIds: sessionTags.get(s.id) ?? [],
+      seriesId: s.series_id,
       createdByName: names.get(s.created_by),
       createdAt: s.created_at,
       updatedAt: s.updated_at,

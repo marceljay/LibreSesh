@@ -4,6 +4,7 @@ import {
   actorWithRole,
   at,
   DAY_ONE,
+  DAY_TWO,
   makeHarness,
   seedEvent,
   seedRoom,
@@ -91,6 +92,58 @@ describe('per-event JSON export', () => {
     const dump = await fetchExport(admin);
     expect(dump.tracks.map((t) => t.name)).toEqual(['Workshops', 'Talks']);
     expect(dump.tracks.map((t) => t.description)).toEqual(['Hands-on. Bring a laptop.', '']);
+  });
+
+  it('carries the rest of Settings, and who may do what', async () => {
+    await admin
+      .patch('/api/e/testconf/settings')
+      .send({ weekRailFrom: 21, auditKeep: 500, showOfficialBadge: true, pitchesEnabled: false })
+      .expect(200);
+    // Withdraw starring from viewers; everything else stays at its default.
+    await admin
+      .patch('/api/e/testconf/permissions')
+      .send({ 'session.star': ['user', 'speaker', 'admin'] })
+      .expect(200);
+
+    const dump = await fetchExport(admin);
+    expect(dump.event).toMatchObject({
+      weekRailFrom: 21,
+      auditKeep: 500,
+      showOfficialBadge: true,
+      pitchesEnabled: false,
+    });
+    // The effective matrix, every capability present, not just the override.
+    expect(dump.permissions['session.star']).toEqual(['user', 'speaker', 'admin']);
+    expect(dump.permissions['proposal.vote']).toEqual(['viewer', 'user', 'speaker', 'admin']);
+    expect(Object.keys(dump.permissions)).toContain('contribution.moderate');
+  });
+
+  it('says which sessions are one linked run', async () => {
+    const ids: number[] = [];
+    for (const day of [DAY_ONE, DAY_TWO]) {
+      const res = await admin
+        .post('/api/e/testconf/sessions')
+        .send({ roomId, title: 'Morning yoga', startsAt: at(day, 8 * 60), endsAt: at(day, 9 * 60) })
+        .expect(201);
+      ids.push((res.body as { id: number }).id);
+    }
+    await admin
+      .post('/api/e/testconf/sessions')
+      .send({
+        roomId,
+        title: 'On its own',
+        startsAt: at(DAY_ONE, 10 * 60),
+        endsAt: at(DAY_ONE, 11 * 60),
+      })
+      .expect(201);
+    await admin.post('/api/e/testconf/sessions/link').send({ sessionIds: ids }).expect(200);
+
+    const dump = await fetchExport(admin);
+    const yoga = dump.sessions!.filter((s) => s.title === 'Morning yoga');
+    expect(yoga).toHaveLength(2);
+    expect(yoga[0]!.seriesId).toEqual(expect.any(String));
+    expect(yoga[1]!.seriesId).toBe(yoga[0]!.seriesId);
+    expect(dump.sessions!.find((s) => s.title === 'On its own')!.seriesId).toBeNull();
   });
 
   it('keeps contributions with the name that wrote them', async () => {
@@ -209,6 +262,7 @@ describe('per-event JSON export', () => {
         'exportedAt',
         'format',
         'formats',
+        'permissions',
         'rooms',
         'tags',
         'tracks',

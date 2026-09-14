@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { explainJsonError, parseDoc, summarise, withSlug } from '../web/src/lib/importDoc.js';
+import { explainJsonError, parseDoc, summarise, withOverrides } from '../web/src/lib/importDoc.js';
 
 /** The template the import docs point at, which the server suite also dry-runs. */
 const EXAMPLE = 'docs/examples/schedule-import.example.json';
@@ -50,17 +50,33 @@ describe('parsing a pasted schedule', () => {
     expect(summarise({ event: { name: 'Photo Conf' } }).exportedAt).toBeNull();
   });
 
-  it('replaces the address only when one is given', () => {
+  it('replaces the address, name and dates only when one is given', () => {
     const doc = { event: { name: 'Photo Conf', slug: 'photoconf' }, rooms: [] };
-    expect(withSlug(doc, '')).toBe(doc);
-    expect(withSlug(doc, '   ')).toBe(doc);
-    expect(withSlug(doc, ' photoconf-2 ')).toEqual({
+    expect(withOverrides(doc, {})).toBe(doc);
+    expect(withOverrides(doc, { slug: '', name: '   ' })).toBe(doc);
+    expect(withOverrides(doc, { slug: ' photoconf-2 ' })).toEqual({
       event: { name: 'Photo Conf', slug: 'photoconf-2' },
+      rooms: [],
+    });
+    // Running the event again: the same frame with next year's name and dates.
+    expect(
+      withOverrides(doc, {
+        name: 'Photo Conf 2027',
+        startDate: '2027-06-01',
+        endDate: '2027-06-02',
+      }),
+    ).toEqual({
+      event: {
+        name: 'Photo Conf 2027',
+        slug: 'photoconf',
+        startDate: '2027-06-01',
+        endDate: '2027-06-02',
+      },
       rooms: [],
     });
     // A document with no `event` at all still gets one, so the server's
     // message is about the fields it lacks rather than about the slug.
-    expect(withSlug({}, 'x')).toEqual({ event: { slug: 'x' } });
+    expect(withOverrides({}, { slug: 'x' })).toEqual({ event: { slug: 'x' } });
   });
 
   it('gives a date range only when both ends are readable', () => {

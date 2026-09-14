@@ -25,6 +25,7 @@
  * Contradictions inside the document are errors; things that are merely
  * suspicious are warnings, returned alongside the result rather than thrown.
  */
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { hashPassword, setRole } from './auth.js';
 import { audit } from './audit.js';
@@ -32,6 +33,8 @@ import { type Config, isDemoEvent } from './config.js';
 import type { Db, EventRow } from './db.js';
 import { badRequest, conflict, HttpError } from './errors.js';
 import { resolveEventPasswords } from './eventPasswords.js';
+import { setPermissions, type PermissionMatrix } from './permissions.js';
+import { isCapability } from './shared/capabilities.js';
 import { assertValidTimes } from './sessionRules.js';
 import { describeRepeat, repeatDays, repeatSchema } from './repeat.js';
 import { slugTaken } from './slugs.js';
@@ -40,6 +43,7 @@ import type { ImportResult } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedTimeToUtc } from './shared/time.js';
 import { resolveSpeakers } from './speakers.js';
 import {
+  auditKeepSchema,
   colorSchema,
   dateSchema,
   defaultViewSchema,
@@ -53,6 +57,7 @@ import {
   slugSchema,
   timezoneSchema,
   trimmed,
+  weekRailFromSchema,
 } from './validation.js';
 
 /** 24-hour wall clock. `24:00` is allowed as an end: it means midnight closing
@@ -179,6 +184,11 @@ const importSessionSchema = z
     endsAt: isoInstantSchema.optional(),
     /** Say the row once, land it on every day it happens. */
     repeat: repeatSchema.optional(),
+    /** Rows sharing a label land as one linked run, the way an edit to one
+     *  of them can offer itself to the rest. The label itself is not kept:
+     *  an export writes the id the app gave the run, and a typed document
+     *  can use any word. */
+    series: trimmed(80).optional(),
   })
   .superRefine((v, ctx) => {
     const local = v.date !== undefined || v.start !== undefined || v.end !== undefined;
@@ -226,6 +236,12 @@ export const eventImportSchema = z
         dayEndMin: minuteOfDaySchema.optional(),
         userRoleLabel: roleLabelSchema.optional(),
         defaultView: defaultViewSchema.optional(),
+        // The rest of Settings. None of it is on a printed schedule; all of
+        // it is in an export, and an event run again keeps its habits.
+        weekRailFrom: weekRailFromSchema.optional(),
+        auditKeep: auditKeepSchema.optional(),
+        showOfficialBadge: z.boolean().optional(),
+        pitchesEnabled: z.boolean().optional(),
         // Blank fields are filled in and handed back once, exactly as when an
         // event is created by hand — nobody transcribing a schedule should
         // have to invent three passwords to get it in.
@@ -249,6 +265,15 @@ export const eventImportSchema = z
     formats: z.array(importFormatSchema).max(60).optional(),
     breaks: z.array(importBreakSchema).max(40).optional(),
     sessions: z.array(importSessionSchema).max(1000).optional(),
+    /**
+     * Who may do what: each capability with the roles allowed it, the shape
+     * an export writes. A capability left out keeps its default; one this
+     * version no longer knows is skipped with a warning rather than refused,
+     * so an old export keeps opening. Admin is always on whatever is listed.
+     */
+    permissions: z
+      .record(z.string(), z.array(z.enum(['viewer', 'user', 'speaker', 'admin'])).max(4))
+      .optional(),
   })
   .strict();
 
@@ -422,8 +447,9 @@ export function importEvent(
           `INSERT INTO events
             (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
              viewer_pw_hash, user_pw_hash, admin_pw_hash, archived, user_role_label,
-             default_view, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+             default_view, week_rail_from, audit_keep, show_official_badge,
+             pitches_enabled, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           doc.event.slug,
@@ -438,12 +464,28 @@ export function importEvent(
           hashPassword(passwords.adminPassword),
           doc.event.userRoleLabel ?? 'attendee',
           doc.event.defaultView ?? 'list',
+          // The same defaults the columns carry, spelled out so a document
+          // that says nothing lands exactly as an event made by hand.
+          doc.event.weekRailFrom ?? 8,
+          doc.event.auditKeep ?? 1000,
+          doc.event.showOfficialBadge ? 1 : 0,
+          (doc.event.pitchesEnabled ?? true) ? 1 : 0,
           now,
         ).lastInsertRowid,
     );
     const event = db
       .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
       .get(eventId) as EventRow;
+
+    if (doc.permissions) {
+      const matrix: Partial<PermissionMatrix> = {};
+      for (const [capability, roles] of Object.entries(doc.permissions)) {
+        if (isCapability(capability)) matrix[capability] = roles;
+        else warn(`permissions: "${capability}" is not something this version can grant, skipped`);
+      }
+      // Stores only what differs from the defaults, and never admin.
+      setPermissions(db, eventId, matrix);
+    }
 
     assertNamesDistinct(rooms, 'rooms');
     const roomIds = new Map<string, number>();
@@ -494,10 +536,15 @@ export function importEvent(
       trackIds.set(key(track.name), Number(id));
       for (const [i, w] of (track.windows ?? []).entries()) {
         const label = `tracks[${order}] "${track.name}" windows[${i}]`;
+        // A day that is not in the event: left out and said so, not refused.
+        // An export given new dates carries last edition's exceptions, and
+        // none of them can be right for this one — see `breaks` below.
         if (w.date < event.start_date || w.date > event.end_date) {
-          throw badRequest(
-            `${label}: ${w.date} is outside the event dates ${event.start_date}…${event.end_date}`,
+          warn(
+            `${label}: ${w.date} is outside the event dates ${event.start_date}…${event.end_date}, ` +
+              'so that day was left out',
           );
+          continue;
         }
         const startMin = minuteOfDay(w.start);
         const endMin = minuteOfDay(w.end);
@@ -536,13 +583,22 @@ export function importEvent(
       `INSERT INTO breaks (event_id, label, start_min, end_min, date, created_at)
        VALUES (?, ?, ?, ?, ?, ?)`,
     );
+    let breaksLanded = 0;
     for (const [index, row] of breaks.entries()) {
+      // A dated break outside the event is dropped with a warning rather
+      // than refused. In a typed document it is a slip the dry run shows; in
+      // an export re-dated for next year it is every dated row, and refusing
+      // would make "run this event again" a hand edit of the file first.
+      // Sessions outside the dates are still refused: a programme on the
+      // wrong days is not an event run again, it is the wrong document.
       if (row.date && (row.date < event.start_date || row.date > event.end_date)) {
-        throw badRequest(
+        warn(
           `breaks[${index}] "${row.label}": ${row.date} is outside the event dates ` +
-            `${event.start_date}…${event.end_date}`,
+            `${event.start_date}…${event.end_date}, so it was left out`,
         );
+        continue;
       }
+      breaksLanded += 1;
       const startMin = minuteOfDay(row.start);
       const endMin = minuteOfDay(row.end);
       if (startMin % 5 !== 0 || endMin % 5 !== 0) {
@@ -563,9 +619,19 @@ export function importEvent(
       `INSERT INTO sessions
         (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
          description, speaker, livestreams, starts_at, ends_at,
-         created_by, created_at, updated_at, draft)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+         created_by, created_at, updated_at, draft, series_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
+    /** The document's series labels, each given the id the app would have. */
+    const seriesIds = new Map<string, string>();
+    const seriesIdFor = (label: string | undefined): string | null => {
+      if (label === undefined) return null;
+      const known = seriesIds.get(key(label));
+      if (known) return known;
+      const fresh = randomUUID();
+      seriesIds.set(key(label), fresh);
+      return fresh;
+    };
     const insertSessionSpeaker = db.prepare(
       'INSERT OR IGNORE INTO session_speakers (session_id, person_id, sort_order) VALUES (?, ?, ?)',
     );
@@ -677,6 +743,7 @@ export function importEvent(
           now,
           now,
           session.draft ? 1 : 0,
+          seriesIdFor(session.series),
         ).lastInsertRowid,
       );
       for (const tagId of new Set(resolvedTags)) linkTag.run(sessionId, tagId);
@@ -725,7 +792,7 @@ export function importEvent(
         tracks: tracks.length,
         tags: tags.length,
         formats: formats.length,
-        breaks: breaks.length,
+        breaks: breaksLanded,
         sessions: planned.length,
         people: people.n,
       },
