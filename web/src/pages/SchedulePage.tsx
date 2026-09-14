@@ -1559,6 +1559,7 @@ export function SchedulePage() {
             archived={event.archived}
             starred={starredIds.has(selected.id)}
             userLabel={event.userRoleLabel}
+            isAdmin={role === 'admin'}
             layout="page"
             collapseAt={null}
             onToggleStar={canStar ? () => void toggleStar(selected) : undefined}
@@ -1740,6 +1741,7 @@ export function SchedulePage() {
           archived={event.archived}
           starred={starredIds.has(selected.id)}
           userLabel={event.userRoleLabel}
+          isAdmin={role === 'admin'}
           expandTo={`/e/${slug}/s/${selected.id}/full`}
           onClose={closeSession}
           onToggleStar={canStar ? () => void toggleStar(selected) : undefined}
