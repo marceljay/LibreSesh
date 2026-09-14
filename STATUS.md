@@ -951,16 +951,15 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a
   rule: key on the address while there is no identity yet (`auth`,
-  `mint` — both meter a secret), key on the person once there is (`read`,
-  `write`, `session`, `contribution` — all of them behind `requireRole`
-  already). It leaves one bucket instead of two, and nothing left to mis-size.
+  `mint` — both meter a secret), key on the person once there is (`write`,
+  `session`, `contribution` — all of them behind `requireRole` already). It
+  leaves one bucket instead of two, and nothing left to mis-size.
   The cost is that a role-holder on one address is bounded by their personal
   bucket alone: roughly 150 writes a minute rather than 30, since `auth` still
   caps them at about five fresh identities a quarter hour. SECURITY.md already
   names the audit log and soft deletes as the answer to that person.
-  Decided 2026-09-14: the `read` bucket goes entirely [LIB-202] — a room on
-  one access point must never be refused a read — so this rule is left with
-  the write-shaped limits only.
+  The `read` bucket is already gone [LIB-202], shipped 2026-09-14, so this
+  rule is left with the write-shaped limits only.
 
 - **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
   `useEventData.ts:380` refetches the entire event on every stream reconnect —

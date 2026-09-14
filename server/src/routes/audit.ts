@@ -132,32 +132,27 @@ export function auditRoutes(ctx: Ctx): Router {
    * answers zeroes and the page shows nothing: this is a notice, not a
    * dashboard.
    */
-  router.get(
-    '/login-health',
-    requireRole(ctx.db, 'admin'),
-    limit(ctx.limiter, 'read'),
-    (req, res) => {
-      const since = new Date(Date.now() - 60 * 60_000).toISOString();
-      const failures = ctx.db
-        .prepare<[number, string], { n: number }>(
-          `SELECT COUNT(*) AS n FROM audit
+  router.get('/login-health', requireRole(ctx.db, 'admin'), (req, res) => {
+    const since = new Date(Date.now() - 60 * 60_000).toISOString();
+    const failures = ctx.db
+      .prepare<[number, string], { n: number }>(
+        `SELECT COUNT(*) AS n FROM audit
             WHERE event_id = ? AND action = 'auth_failed' AND at >= ?`,
-        )
-        .get(req.event.id, since)!.n;
-      const closure = ctx.db
-        .prepare<[number, string], { at: string; entity_id: number | null }>(
-          `SELECT at, entity_id FROM audit
+      )
+      .get(req.event.id, since)!.n;
+    const closure = ctx.db
+      .prepare<[number, string], { at: string; entity_id: number | null }>(
+        `SELECT at, entity_id FROM audit
             WHERE event_id = ? AND action = 'login_closed' AND at >= ?
             ORDER BY at DESC LIMIT 1`,
-        )
-        .get(req.event.id, since);
-      res.json({
-        failuresLastHour: failures,
-        closedSecondsRemaining: ctx.tally.blockedFor(`event:${req.event.id}`),
-        lastClosure: closure ? { at: closure.at, afterFailures: closure.entity_id } : null,
-      });
-    },
-  );
+      )
+      .get(req.event.id, since);
+    res.json({
+      failuresLastHour: failures,
+      closedSecondsRemaining: ctx.tally.blockedFor(`event:${req.event.id}`),
+      lastClosure: closure ? { at: closure.at, afterFailures: closure.entity_id } : null,
+    });
+  });
 
   /**
    * Forget every failed attempt counted against this event, and start
@@ -186,7 +181,7 @@ export function auditRoutes(ctx: Ctx): Router {
     },
   );
 
-  router.get('/audit', requireRole(ctx.db, 'admin'), limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/audit', requireRole(ctx.db, 'admin'), (req, res) => {
     const { before } = parse(querySchema, req.query);
 
     /*

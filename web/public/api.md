@@ -25,10 +25,11 @@ Three sentences will keep you out of every wall in this document:
 3. **Keep your cookie jar.** Identity is a cookie. A client that discards it
    gets `401` on every request and mints a junk identity row each time.
 
-An agent that does those three things cannot hit a rate limit. One that polls
-`/bundle` in a loop with no cookie will exhaust the identity-minting budget for
-its whole network address, which hurts the people sitting next to it more than
-it hurts itself.
+Reads are not rate limited, so an agent that does those three things cannot hit
+a rate limit at all. Polling `/bundle` in a loop will not be refused either —
+but do it with no cookie and you will exhaust the identity-minting budget for
+your whole network address, which hurts the people sitting next to you more than
+it hurts you. Subscribe to the stream instead; it is cheaper for both of us.
 
 Say you are a program. Put something recognisable in your `User-Agent`, and if
 you enter an event under a display name, let it read like software rather than
@@ -213,11 +214,17 @@ A `429` always carries `Retry-After` in seconds. Honour it; do not spin.
 
 ## Rate limits
 
-Two buckets per request: one for you, one much larger for your network address.
+**Reads are not limited.** No `GET` is metered — not `/bundle`, not
+`/sessions/:id`, not `/calendar.ics`, not the audit list or the export, and not
+`/stream`. A conference is a room of people behind one access point, and a read
+ceiling high enough never to refuse that room would not be protecting anything.
+Read as often as you need to; `/stream` is still the cheaper way to stay current.
+
+Writes and password attempts are limited, in two buckets per request: one for
+you, one much larger for your network address.
 
 | Bucket | Per person | Per address |
 | --- | --- | --- |
-| Reads | 300 / min | 30,000 / min |
 | Writes | 30 / min | 3,000 / min |
 | Sessions (create + edit) | 12 / min | 1,200 / min |
 | Contributions | 10 / min | 1,000 / min |
@@ -229,8 +236,7 @@ a second personal allowance — a conference is a room of people behind one
 access point, and they must not throttle each other. Password attempts are
 counted per address on purpose: that is how guessing is caught.
 
-`GET /stream` is not rate limited. It is one long-lived connection; hold one,
-not many.
+`GET /stream` is one long-lived connection; hold one, not many.
 
 ## Every endpoint
 

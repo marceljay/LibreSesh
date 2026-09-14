@@ -116,5 +116,5 @@ Errors are always `{"error":{"code":…,"message":…}}` — branch on `code`.
 - `403 forbidden` — wrong password, or your role is not enough.
 - `409 stale` — someone edited it since you read it. Re-read, then decide.
 - `409 name_taken` — that display name is in use here. Pick another.
-- `429 rate_limited` — honour `Retry-After`. If you are hitting this, you are
-  polling something you should be subscribing to.
+- `429 rate_limited` — honour `Retry-After`. Only writes are metered; reads
+  never are, so this means you are writing too fast, not reading too often.

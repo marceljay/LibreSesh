@@ -32,7 +32,6 @@ import {
 } from '../mappers.js';
 import { loadClaims } from '../claims.js';
 import { getPermissions } from '../permissions.js';
-import { limit } from '../ratelimit.js';
 import { trackWindowsFor } from '../trackHours.js';
 import { getVisibleSession, sessionVisibility } from '../drafts.js';
 
@@ -41,7 +40,7 @@ import { getVisibleSession, sessionVisibility } from '../drafts.js';
 export function bundleRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
 
-  router.get('/bundle', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/bundle', (req, res) => {
     const eventId = req.event.id;
     const rooms = ctx.db
       .prepare<[number], RoomRow>(
@@ -165,7 +164,7 @@ export function bundleRoutes(ctx: Ctx): Router {
     res.json(bundle);
   });
 
-  router.get('/sessions/:id', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/sessions/:id', (req, res) => {
     const session = getVisibleSession(
       ctx.db,
       req.event.id,

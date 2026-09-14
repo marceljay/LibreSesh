@@ -99,7 +99,7 @@ export function peopleRoutes(ctx: Ctx): Router {
       );
   };
 
-  router.get('/people/:id', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/people/:id', (req, res) => {
     const person = load(req.event.id, Number(req.params.id));
     const sessions = ctx.db
       .prepare<[number, number], SessionRow>(
