@@ -32,6 +32,10 @@ const ProposalBoard = named(() => import('./components/ProposalBoard'), 'Proposa
 const ProfilePage = named(() => import('./pages/ProfilePage'), 'ProfilePage');
 const AdminPage = named(() => import('./pages/AdminPage'), 'AdminPage');
 
+/** Dev server only. The guard is a build-time constant, so the production
+ *  bundle drops both the branch and the chunk behind it. */
+const DevBar = import.meta.env.DEV ? named(() => import('./components/DevBar'), 'DevBar') : null;
+
 export function App() {
   // Always mounted, so a sunset (or another tab's toggle) reaches every page.
   useFollowSystemTheme();
@@ -77,6 +81,11 @@ export function App() {
                 </Routes>
               </Suspense>
             </AppErrorBoundary>
+            {DevBar && (
+              <Suspense fallback={null}>
+                <DevBar />
+              </Suspense>
+            )}
           </ConfirmProvider>
         </ToastProvider>
       </MeProvider>
