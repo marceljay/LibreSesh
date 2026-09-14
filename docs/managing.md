@@ -9,9 +9,9 @@ co-organiser on the same one.
 | Programme | Rooms, tracks and tags |
 | People | Everyone who has joined, plus speaker and host profiles: who holds each, at what role, and whether their code is still unused |
 | Permissions | Which roles may do what at this event |
-| Settings | Name, address, dates, day bounds, passwords, audit retention, duplicate, archive |
+| Settings | Name, address, dates, day bounds, passwords, audit retention, archive |
 | Trash | Deleted sessions and contributions, with restore |
-| Backup | The event as JSON, and the encrypted whole-instance download |
+| Backup | The event as JSON — also how an event is run again — and the encrypted whole-instance download |
 | Audit | Who created, edited, deleted or restored what, by name and UID |
 
 Browser backups and the host-side ones: [deploy.md](deploy.md#backups).
@@ -83,8 +83,8 @@ against the event, not against its name, so organisers stay organisers and
 starred agendas stay starred. Open browsers follow the rename without a
 reload.
 
-A slug that still redirects cannot be claimed by a new event, a duplicate
-or a JSON import, so an old link can never be quietly re-pointed at
+A slug that still redirects cannot be claimed by a new event or a JSON
+import, so an old link can never be quietly re-pointed at
 somebody else's event. Renames appear in the audit log under their own
 word, *renamed*.
 
@@ -155,3 +155,11 @@ imported as the programme it describes. Give it a new address — the **Address*
 field on `/import` — since its own is taken; profiles,
 pitches, contributions and star counts stay behind, and the first warning says
 so. See [schedule-import.md §Importing an export](schedule-import.md#importing-an-export).
+
+**To run an event again** — next year's edition, next month's meetup — there
+is no copy button: on Backup, untick all four parts and download the frame
+alone (settings, permissions, rooms, tracks with their hours, tags, formats and
+breaks), then on `/import` give it a new **Address**, **Name** and dates.
+Anything pinned to a date of the old edition — a one-day break, a track's
+hours for one day — is left out and named by the check; a break that runs
+every day comes along.

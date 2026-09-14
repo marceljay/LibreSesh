@@ -247,7 +247,6 @@ resolving, so a client written against the old name keeps working. Read
 | `GET /api/events` | Public list of events |
 | `POST /api/events` | Create one. `X-Instance-Key` |
 | `POST /api/events/import` | Build a whole event from one document. `X-Instance-Key`, `?dryRun=1` first |
-| `POST /api/events/:slug/clone` | Copy rooms, tags and formats into a new event |
 | `POST /api/backup` | Encrypted whole-database download. `X-Instance-Key` |
 | `GET /api/me`, `PATCH /api/me` | This cookie's identity, and its display name |
 | `POST /api/me/link-code`, `POST /api/me/link` | Mint and redeem a device phrase |
@@ -313,7 +312,8 @@ No OpenAPI document yet. No CORS headers and cookies are `SameSite=Lax`, so
 browser-side callers on another origin will not work — this is for server-side
 clients. No pagination anywhere: the bundle is the whole event by design. No
 bulk edit of an existing event; `POST /api/events/import` builds a new one and
-is the only bulk path.
+is the only bulk path. No copy route either: running an event again is an
+export with `?include=` left empty, imported under a new slug, name and dates.
 
 Nothing here is a public read. Viewing a schedule requires the viewer password,
 by design — there is no anonymous view of an event.

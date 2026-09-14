@@ -816,10 +816,17 @@ into the authoring document — ids to the names they stood for, minutes to
 stays an archive keyed by ids, every export ever downloaded becomes importable,
 and there is one importer to keep right. The translation says what it cannot
 carry as the first warning: profiles, pitches, contributions and star counts
-are a record of an event being used, which is not what an import builds. The
-one decision it hands back is the slug — an export names the event it came
-from, and the importer refuses a taken one like any other. The round trip is
-pinned in `tests/importExport.test.ts`: export, import, export, compare.
+are a record of an event being used, which is not what an import builds.
+Everything else in the file lands: the settings, the permission matrix, the
+frame, the sessions with their links. The decisions it hands back are the
+slug, the name and the dates — an export names the event it came from, and the
+importer refuses a taken slug like any other; new dates are how an event is
+run again, and a break or a track window pinned to a day that is no longer in
+the event is left out with a warning rather than refused, because every dated
+row of last year's export is wrong for this year's. That round trip replaced
+the clone route: one creation path instead of a second, hand-written
+one that had fallen behind it. The round trip is pinned in
+`tests/importExport.test.ts`: export, import, export, compare.
 
 ### Linked sessions
 

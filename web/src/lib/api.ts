@@ -121,26 +121,6 @@ export const api = {
     request<ImportResult>('POST', `/events/import${dryRun ? '?dryRun=1' : ''}`, doc, {
       'X-Instance-Key': instanceKey,
     }),
-  cloneEvent: (
-    slug: string,
-    body: {
-      newSlug: string;
-      newName: string;
-      startDate: string;
-      endDate: string;
-      viewerPassword: string;
-      userPassword: string;
-      adminPassword: string;
-    },
-    instanceKey?: string,
-  ) =>
-    request<EventSummary>(
-      'POST',
-      `/events/${encode(slug)}/clone`,
-      body,
-      instanceKey ? { 'X-Instance-Key': instanceKey } : {},
-    ),
-
   /** `displayName` is claimed inside the event, where names are unique. A 409
    *  means someone here already has it — nothing is granted, so the login page can
    *  ask again. */

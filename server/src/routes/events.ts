@@ -1,21 +1,13 @@
 import { Router } from 'express';
 import type { EventRow } from '../db.js';
-import {
-  getEventBySlug,
-  getRole,
-  requireInstanceKey,
-  tryInstanceKey,
-  hashPassword,
-  pathParam,
-  setRole,
-} from '../auth.js';
+import { getEventBySlug, requireInstanceKey, hashPassword, setRole } from '../auth.js';
 import { audit } from '../audit.js';
 import { isDemoEvent } from '../config.js';
 import type { Ctx } from '../context.js';
-import { badRequest, conflict, forbidden, notFound } from '../errors.js';
+import { conflict } from '../errors.js';
 import { toEventSummary } from '../mappers.js';
 import { limit } from '../ratelimit.js';
-import { cloneEventSchema, createEventSchema, parse } from '../validation.js';
+import { createEventSchema, parse } from '../validation.js';
 import { resolveEventPasswords } from '../eventPasswords.js';
 
 export function eventRoutes(ctx: Ctx): Router {
@@ -86,102 +78,6 @@ export function eventRoutes(ctx: Ctx): Router {
     // The only time these leave the server: they are hashed on the way in and
     // unrecoverable afterwards, so the creator has to see them now or never.
     res.status(201).json({ ...toEventSummary(row as EventRow), generatedPasswords: generated });
-  });
-
-  /** Copy rooms, tags and formats into a fresh event — never sessions or
-   *  contributions. */
-  router.post('/events/:slug/clone', limit(ctx.limiter, 'write'), (req, res) => {
-    const source = getEventBySlug(ctx.db, pathParam(req, 'slug'));
-    if (!source) throw notFound('No such event');
-
-    // Either the event's own admin, or the instance password. Only the
-    // second is rate-limited and audited, so an admin cloning their own event
-    // spends nothing (`tryInstanceKey`).
-    const isEventAdmin = getRole(ctx.db, req.identity.id, source.id) === 'admin';
-    if (!isEventAdmin && !tryInstanceKey(ctx, req, res)) {
-      throw forbidden('Only this event’s admins can clone it');
-    }
-
-    const body = parse(cloneEventSchema, req.body);
-    if (getEventBySlug(ctx.db, body.newSlug)) {
-      throw conflict('That slug is already taken', 'slug_taken');
-    }
-    if (body.newSlug === source.slug) throw badRequest('Pick a different slug');
-
-    const now = new Date().toISOString();
-    const newId = ctx.db.transaction((): number => {
-      const info = ctx.db
-        .prepare(
-          `INSERT INTO events
-            (slug, name, timezone, start_date, end_date, day_start_min, day_end_min,
-             week_rail_from, viewer_pw_hash, user_pw_hash, admin_pw_hash, archived,
-             user_role_label, audit_keep, default_view, show_official_badge,
-             pitches_enabled, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
-        )
-        .run(
-          body.newSlug,
-          body.newName,
-          source.timezone,
-          body.startDate,
-          body.endDate,
-          source.day_start_min,
-          source.day_end_min,
-          source.week_rail_from,
-          hashPassword(body.viewerPassword),
-          hashPassword(body.userPassword),
-          hashPassword(body.adminPassword),
-          source.user_role_label,
-          // A retention choice is a preference about how this organiser keeps
-          // records, so it carries over with the rest of the setup.
-          source.audit_keep,
-          // As does how the copy opens: a clone is the same event again.
-          source.default_view,
-          // And whether it badges its programme — the same event runs the same
-          // shape, so the same marking is right or wrong for both.
-          source.show_official_badge,
-          // And whether it takes pitches. A copy of an event with a fixed
-          // programme should not open a board the original deliberately shut.
-          source.pitches_enabled,
-          now,
-        );
-      const id = Number(info.lastInsertRowid);
-      ctx.db
-        .prepare(
-          `INSERT INTO rooms (event_id, name, description, capacity, color, open_booking, sort_order)
-           SELECT ?, name, description, capacity, color, open_booking, sort_order
-             FROM rooms WHERE event_id = ? AND deleted_at IS NULL`,
-        )
-        .run(id, source.id);
-      ctx.db
-        .prepare(
-          `INSERT INTO tags (event_id, name, color)
-           SELECT ?, name, color FROM tags WHERE event_id = ? AND deleted_at IS NULL`,
-        )
-        .run(id, source.id);
-      // Formats are setup, like rooms and tags: the same event again runs the
-      // same kinds of session, even though none of the sessions come along.
-      ctx.db
-        .prepare(
-          `INSERT INTO session_formats (event_id, name, color, sort_order)
-           SELECT ?, name, color, sort_order
-             FROM session_formats WHERE event_id = ? AND deleted_at IS NULL`,
-        )
-        .run(id, source.id);
-      return id;
-    })();
-
-    setRole(ctx.db, req.identity.id, newId, 'admin');
-    audit(ctx.db, {
-      identityId: req.identity.id,
-      eventId: newId,
-      action: 'clone',
-      entity: 'event',
-      entityId: source.id,
-    });
-
-    const row = ctx.db.prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?').get(newId);
-    res.status(201).json(toEventSummary(row as EventRow));
   });
 
   return router;

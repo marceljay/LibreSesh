@@ -66,21 +66,6 @@ describe('event passwords must tell the roles apart', () => {
     }).expect(201);
   });
 
-  it('rejects a clone whose passwords collide', async () => {
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'clone-conf',
-        newName: 'Clone Conf',
-        startDate: '2026-09-01',
-        endDate: '2026-09-02',
-        viewerPassword: 'dup-pass',
-        userPassword: 'dup-pass',
-        adminPassword: 'admin11',
-      })
-      .expect(400);
-  });
-
   describe('changing them later', () => {
     it('rejects a new attendee password that is already the admin password', async () => {
       const res = await admin

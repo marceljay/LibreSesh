@@ -160,7 +160,11 @@ Four rules apply across the rows:
   from the proxy and the per-IP rate limit becomes a single shared bucket.
 - **The instance password is required for event creation** and the whole-database
   backup, and is compared in constant time. It is not a user account; it is a
-  deploy-level secret.
+  deploy-level secret. Every path that makes an event asks for it — by hand,
+  by import — without exception: the per-event copy route that let an
+  event's organiser create a second event on the organiser password alone is
+  gone, and an organiser who wants to run an event again exports it and
+  imports the file, which asks like any other creation.
 - **A whole-database backup is a credential, not a document.** It is the file
   the point above calls the room key, so the download encrypts it and the UI
   says so in as many words. The per-event JSON export is the opposite by

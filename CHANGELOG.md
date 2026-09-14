@@ -25,6 +25,19 @@ All notable changes to this project are documented here.
   the check names each one — a lunch that runs every day comes along, last
   year's Friday party does not.
 
+### Removed
+
+- **Duplicate Event.** The form on the Settings tab and `POST
+  /api/events/:slug/clone` are gone. Running an event again is the round trip:
+  Backup → untick all four parts → download, then Import with a new address,
+  name and dates. The clone was a second, hand-written copy of event creation
+  that had already fallen behind — it forgot tracks, breaks and the matrix and
+  demanded all three passwords when creating by hand no longer did — and the
+  round trip carries everything it did plus what it forgot. It also asks for
+  the instance password, as every other way of making an event does; the
+  clone was the one path that did not. Searching Manage Event for "duplicate"
+  or "clone" now leads to Backup. Old audit rows still read "duplicated".
+
 ## [0.7.0] — 2026-09-14
 
 
