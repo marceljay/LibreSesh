@@ -4,6 +4,58 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-14
+
+
+### Added
+
+- **A track has its own page.** Pressing a track's name on the grid's column
+  card opens every session on it, all days at once, as a list grouped by day
+  in running order — the grid shows a strand one day at a time, and "what is
+  this track" is a question about the whole event. The page leads with what
+  the strand is for in the organiser's words, the hours it keeps and the days
+  that keep their own, and a session opens on the schedule on its day. The
+  *Unassigned* column's name opens the search page on the sessions still
+  waiting for a track. On the card itself the session count and the hours
+  have moved behind the ⓘ, next to the organiser's note: the card is the
+  track's name, as a room's is.
+
+### Changed
+
+- **The + Session button carries no count.** The number of open pitches
+  used to ride on it, and every digit made the button wider on a phone where
+  it already shares a row with the view switch. The count is still on the
+  *Pitch a session* row inside the menu, as the drafts count is on its row.
+- **The phone drops the bare `↕`.** Below the tablet width the header's
+  Arrange button had no words, and since 0.6.0 the + Session menu carries the
+  same toggle as *Arrange sessions* with a sentence. On a phone the button is
+  gone wherever that menu offers it; on a desktop it stays. The tour no
+  longer stops on a control the viewport has hidden.
+- **A track's "day that differs" is a button until you want it.** The
+  editor used to keep a day picker, two time boxes and *Add day* open under
+  every track's hours, as if every track kept a different window somewhere.
+  Most never do. The row is now a single **+ A day that differs** button; it
+  opens into the fields when pressed, and folds back once the day is added or
+  cancelled. Days already added are listed as before.
+
+### Fixed
+
+- **The About page names the deployed commit without a variable being set.**
+  The 0.6.0 fix only took where a `BUILD_COMMIT` reference variable had been
+  added to the service by hand: Railway forwards the variables set on a
+  service to the image build, not its own commit variable, so a service
+  without that one still read "unknown". The commit is in the server's
+  environment once it runs, so the server reads it there and the page takes
+  it from the server wherever its own stamp is missing. Nothing to configure
+  on any service.
+- **The schedule comes back in the view you left it in.** Every way back to
+  it — a track's page, a profile, Manage Event, the link in the event bar —
+  opened the bare schedule, and the bare schedule meant the organiser's
+  default view again: read the grid, open something, come back, and you were
+  in the list. The view and the rooms-or-tracks axis you last chose are now
+  remembered on the device, per event, and used whenever the link says
+  nothing. A shared link that names a view still wins.
+
 ## [0.6.1] — 2026-09-11
 
 
