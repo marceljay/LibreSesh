@@ -8,7 +8,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./web/src', import.meta.url)),
     },
   },
-  esbuild: { jsx: 'automatic' },
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     // Node by default; a file that renders components opts into jsdom with a
     // `// @vitest-environment jsdom` docblock, so the other hundred stay fast.
@@ -16,7 +16,7 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     // better-sqlite3 is a native addon; forks keep each file's DB isolated.
     pool: 'forks',
-    poolOptions: { forks: { maxForks: 3, minForks: 1 } },
+    maxWorkers: 3,
     // Hashing dominates the suite otherwise; the algorithm under test is the same.
     env: { BCRYPT_COST: '4' },
   },
