@@ -8,7 +8,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./web/src', import.meta.url)),
     },
   },
-  esbuild: { jsx: 'automatic' },
+  oxc: { jsx: { runtime: 'automatic' } },
   test: {
     // Node by default; a file that renders components opts into jsdom with a
     // `// @vitest-environment jsdom` docblock, so the other hundred stay fast.
