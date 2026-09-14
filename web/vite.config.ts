@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
-import { devInfoPlugin } from './devInfo';
+import { devInfoPlugin } from './devInfo.ts';
 
 const apiTarget = process.env.API_URL ?? 'http://127.0.0.1:3001';
 
