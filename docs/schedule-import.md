@@ -27,9 +27,14 @@ if you have a schedule rather than a terminal. Choose the `.json` file, drop it
 on the box, or paste the document; give the event a different **Address** if
 the document's own is taken (an export's always is, on the instance it came
 from), and a new **Name** and dates if this is the next edition of one; press
-**Check it** and read what would land. **Import** unlocks once that rehearsal
-succeeds and locks again the moment you edit the document or any of those
-fields, so what you approve is always what you send.
+**Check it** and read what would land. The rehearsal has a box per part the
+document carries — settings, permissions, rooms, tracks, tags, formats,
+breaks, sessions — and unticking one leaves it out and runs the check again,
+so the counts are always the counts of what Import will send; a session keeps
+its room but loses its track, tags or format when that part goes, and
+sessions go with the rooms. **Import** unlocks once a rehearsal succeeds and
+locks again the moment you edit the document or any field, so what you
+approve is always what you send.
 
 ### From the command line
 

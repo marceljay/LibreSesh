@@ -4,7 +4,17 @@ import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { GeneratedPasswords, ImportResult } from '@shared/types';
 import { api, ApiError } from '../lib/api';
-import { parseDoc, withOverrides, type DocOverrides, type DocSummary } from '../lib/importDoc';
+import {
+  IMPORT_PART_LABELS,
+  parseDoc,
+  partsIn,
+  withOverrides,
+  withParts,
+  type DocOverrides,
+  type DocSummary,
+  type ImportPart,
+} from '../lib/importDoc';
+import { EXPORT_PART_NEEDS } from '@shared/exportParts';
 import {
   ControlShell,
   Field,
@@ -76,7 +86,9 @@ export function ImportPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const overrides: DocOverrides = { slug, name, startDate, endDate };
-  const overridesKey = JSON.stringify(overrides);
+  /** Parts of the document unticked in the rehearsal — left out of the import. */
+  const [omitted, setOmitted] = useState<Set<ImportPart>>(() => new Set());
+  const overridesKey = JSON.stringify({ ...overrides, omitted: [...omitted].sort() });
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<'check' | 'import' | null>(null);
@@ -100,6 +112,25 @@ export function ImportPage() {
     checked && checked.text === text && checked.overridesKey === overridesKey
       ? checked.result
       : null;
+  /** The parts this document carries, for the boxes in the rehearsal. */
+  const present: ImportPart[] = parsed.ok ? partsIn(parsed.doc) : [];
+  /** Unticked, or greyed because the part it needs is unticked. */
+  const isOut = (part: ImportPart): boolean => {
+    const needs = EXPORT_PART_NEEDS[part] as ImportPart | undefined;
+    return omitted.has(part) || (needs !== undefined && present.includes(needs) && isOut(needs));
+  };
+  /** Unticking re-runs the check on its own: the counts on screen must always
+   *  be the counts of what the Import button would send. */
+  const togglePart = (part: ImportPart) => {
+    const next = new Set(omitted);
+    if (next.has(part)) next.delete(part);
+    else next.add(part);
+    setOmitted(next);
+    void run(true, next);
+  };
+  /** During a re-check the last panel stays up, dimmed, rather than blinking. */
+  const shown =
+    rehearsal ?? (busy === 'check' && checked && checked.text === text ? checked.result : null);
 
   const readFile = (file: File | undefined) => {
     if (!file) return;
@@ -115,19 +146,20 @@ export function ImportPage() {
       setFileName(file.name);
       setError(null);
       setChecked(null);
+      setOmitted(new Set());
     });
   };
 
-  const run = async (dryRun: boolean) => {
+  const run = async (dryRun: boolean, leaveOut: Set<ImportPart> = omitted) => {
     if (!parsed.ok || oversize) return;
     setBusy(dryRun ? 'check' : 'import');
     setError(null);
+    const doc = withOverrides(withParts(parsed.doc, leaveOut), overrides);
+    const key = JSON.stringify({ ...overrides, omitted: [...leaveOut].sort() });
     try {
-      const result = await api.importEvent(instanceKey, withOverrides(parsed.doc, overrides), {
-        dryRun,
-      });
+      const result = await api.importEvent(instanceKey, doc, { dryRun });
       if (dryRun) {
-        setChecked({ text, overridesKey, result });
+        setChecked({ text, overridesKey: key, result });
         setBusy(null);
         return;
       }
@@ -266,6 +298,7 @@ export function ImportPage() {
                 setText(e.target.value);
                 setFileName(null);
                 setError(null);
+                setOmitted(new Set());
               }}
               spellCheck={false}
               rows={14}
@@ -362,7 +395,19 @@ export function ImportPage() {
         </FormGrid>
 
         {error && <FormError className="mt-4">{error}</FormError>}
-        {rehearsal && <Rehearsal result={rehearsal} />}
+        {shown && (
+          <Rehearsal
+            result={shown}
+            stale={shown !== rehearsal}
+            parts={present.map((id) => ({
+              id,
+              label: IMPORT_PART_LABELS[id],
+              checked: !isOut(id),
+              disabled: !omitted.has(id) && isOut(id),
+            }))}
+            onToggle={togglePart}
+          />
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <SecondaryButton
@@ -438,8 +483,32 @@ function Summary({ summary, overrides }: { summary: DocSummary; overrides: DocOv
   );
 }
 
-/** The dry run's answer: what would land, and what deserves a second look. */
-function Rehearsal({ result }: { result: ImportResult }) {
+/** One box in the rehearsal: a part of the document, and whether it goes in. */
+interface PartChoice {
+  id: ImportPart;
+  label: string;
+  checked: boolean;
+  /** Greyed: the part it needs is unticked, so it cannot go in on its own. */
+  disabled: boolean;
+}
+
+/**
+ * The dry run's answer: what would land, and what deserves a second look —
+ * with a box per part of the document, so what next year should not inherit
+ * can be left out here rather than by editing the file. Unticking one runs
+ * the check again, so the counts are always the counts of what Import sends.
+ */
+function Rehearsal({
+  result,
+  stale,
+  parts,
+  onToggle,
+}: {
+  result: ImportResult;
+  stale: boolean;
+  parts: PartChoice[];
+  onToggle: (part: ImportPart) => void;
+}) {
   const { counts, warnings } = result;
   const rows: [string, number][] = [
     ['Rooms', counts.rooms],
@@ -452,9 +521,38 @@ function Rehearsal({ result }: { result: ImportResult }) {
   return (
     <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-950/40">
       <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">
-        Checked — nothing was written. This is what importing would put on the grid:
+        {stale
+          ? 'Checking again…'
+          : 'Checked — nothing was written. This is what importing would put on the grid:'}
       </p>
-      <dl className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
+      {parts.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+          {parts.map(({ id, label, checked, disabled }) => (
+            <label
+              key={id}
+              className={`flex items-center gap-1.5 text-xs ${
+                disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              }`}
+              title={
+                disabled
+                  ? `Only with the ${IMPORT_PART_LABELS[EXPORT_PART_NEEDS[id] as ImportPart].toLowerCase()}`
+                  : undefined
+              }
+            >
+              {/* eslint-disable-next-line no-restricted-syntax -- checkbox, not a text field */}
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={disabled}
+                onChange={() => onToggle(id)}
+                className="accent-stone-900 dark:accent-stone-100"
+              />
+              <span className="text-stone-700 dark:text-stone-200">{label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      <dl className={`mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 ${stale ? 'opacity-50' : ''}`}>
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt className="text-[0.65rem] uppercase tracking-wide text-stone-400 dark:text-stone-500">

@@ -15,6 +15,8 @@
  * a document the server would have accepted would be worse than useless.
  */
 
+import { EXPORT_PART_NEEDS } from '@shared/exportParts';
+
 /** What the paste box could make of the text, for the panel above the button. */
 export interface DocSummary {
   name: string | null;
@@ -147,4 +149,108 @@ export function withOverrides(doc: unknown, overrides: DocOverrides): unknown {
     changed = true;
   }
   return changed ? { ...root, event: next } : doc;
+}
+
+/**
+ * The parts of a document an import can be asked to leave out, in the order
+ * they are offered. The importer itself reads nothing else — profiles,
+ * pitches and contributions in an export are dropped at the door and the
+ * first warning says so — so those are not choices here.
+ */
+export const IMPORT_PARTS = [
+  'settings',
+  'permissions',
+  'rooms',
+  'tracks',
+  'tags',
+  'formats',
+  'breaks',
+  'sessions',
+] as const;
+export type ImportPart = (typeof IMPORT_PARTS)[number];
+
+export const IMPORT_PART_LABELS: Record<ImportPart, string> = {
+  settings: 'Settings',
+  permissions: 'Permissions',
+  rooms: 'Rooms',
+  tracks: 'Tracks',
+  tags: 'Tags',
+  formats: 'Formats',
+  breaks: 'Breaks',
+  sessions: 'Sessions',
+};
+
+/** The keys of `event` that are Settings rather than identity. The passwords
+ *  are neither: they are how the new event is entered, not a preference. */
+const SETTINGS_KEYS = [
+  'dayStartMin',
+  'dayEndMin',
+  'weekRailFrom',
+  'userRoleLabel',
+  'defaultView',
+  'auditKeep',
+  'showOfficialBadge',
+  'pitchesEnabled',
+] as const;
+
+/** What a session row says about a part, in either spelling: the authoring
+ *  document names things, an export numbers them. */
+const SESSION_REFS: Partial<Record<ImportPart, readonly string[]>> = {
+  tracks: ['track', 'trackId'],
+  tags: ['tags', 'tagIds'],
+  formats: ['format', 'formatId'],
+};
+
+const hasItems = (value: unknown): boolean => Array.isArray(value) && value.length > 0;
+
+/** The parts this document actually carries — the ones worth a checkbox. */
+export function partsIn(doc: unknown): ImportPart[] {
+  const root = (doc ?? {}) as Record<string, unknown>;
+  const event = (root.event ?? {}) as Record<string, unknown>;
+  const present: ImportPart[] = [];
+  if (SETTINGS_KEYS.some((key) => event[key] !== undefined && event[key] !== null)) {
+    present.push('settings');
+  }
+  if (root.permissions !== undefined && root.permissions !== null) present.push('permissions');
+  for (const part of ['rooms', 'tracks', 'tags', 'formats', 'breaks', 'sessions'] as const) {
+    if (hasItems(root[part])) present.push(part);
+  }
+  return present;
+}
+
+/**
+ * The document with `omit` taken out — what the page sends when a box in the
+ * rehearsal is unticked. Mirrors the export's rule that what is left out is
+ * pointed at by nothing that stays: a session keeps its room but loses its
+ * track, tags or format when that part goes, so the importer never meets a
+ * name it was not given. Sessions need rooms, so leaving the rooms out leaves
+ * the sessions out with them. Nothing omitted returns the same object.
+ */
+export function withParts(doc: unknown, omit: ReadonlySet<ImportPart>): unknown {
+  if (omit.size === 0) return doc;
+  const root = { ...((doc ?? {}) as Record<string, unknown>) };
+  const gone = new Set(omit);
+  for (const part of IMPORT_PARTS) {
+    const needs = EXPORT_PART_NEEDS[part];
+    if (needs && gone.has(needs as ImportPart)) gone.add(part);
+  }
+  if (gone.has('settings')) {
+    const event = { ...((root.event ?? {}) as Record<string, unknown>) };
+    for (const key of SETTINGS_KEYS) delete event[key];
+    root.event = event;
+  }
+  for (const part of gone) {
+    if (part !== 'settings') delete root[part];
+  }
+  if (Array.isArray(root.sessions)) {
+    const strip = IMPORT_PARTS.filter((part) => gone.has(part) && SESSION_REFS[part]);
+    if (strip.length > 0) {
+      root.sessions = root.sessions.map((row) => {
+        const next = { ...((row ?? {}) as Record<string, unknown>) };
+        for (const part of strip) for (const key of SESSION_REFS[part] ?? []) delete next[key];
+        return next;
+      });
+    }
+  }
+  return root;
 }

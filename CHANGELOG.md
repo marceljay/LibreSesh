@@ -28,6 +28,14 @@ All notable changes to this project are documented here.
   sessions has no placed session. Sessions need rooms and contributions need
   sessions, and the boxes say so. On the route, `?include=` takes any of the
   eleven names.
+- **The import rehearsal has a box per part.** After *Check it*, the parts
+  the document carries — settings, permissions, rooms, tracks, tags, formats,
+  breaks, sessions — are checkboxes; unticking one leaves it out and runs the
+  check again, so the counts on screen are always the counts of what Import
+  sends. What goes takes its references with it: a session loses its track,
+  tags or format when that part is left out, and the sessions go with the
+  rooms. Profiles, pitches and contributions are not offered because the
+  importer never reads them; the first warning still says so.
 - **The import page takes a new name and dates,** next to the address it
   already took. Blank means "as written". With new dates, breaks and track
   hours pinned to a day of the old ones are left out rather than refused, and
