@@ -1175,6 +1175,10 @@ export function SchedulePage() {
           bundle={bundle}
           me={me}
           ping={data.notificationPing}
+          // The full page is narrower than the grid, and the bar takes the
+          // page's measure so its logo shares a left edge with the content
+          // under it, as on every other page of the event.
+          width={fullPage ? 'max-w-5xl' : 'max-w-6xl'}
           onTour={() => setTourOpen(true)}
           onSignOut={() => void api.logout(slug).then(() => void data.reload())}
           sub={
@@ -1513,7 +1517,7 @@ export function SchedulePage() {
       </header>
 
       {fullPage && selected ? (
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-3 py-6 sm:px-4">
           {/* This page drops the header's rows, so until now the only way out
               of it was backwards. Reading somebody else's session is one of
               the likelier moments to want one of your own — or to want to

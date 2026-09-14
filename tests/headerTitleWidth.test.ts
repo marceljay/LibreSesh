@@ -55,7 +55,13 @@ describe('the header gives its width to the event name on a phone', () => {
     // The schedule is the widest page; every other one hands the bar its own
     // narrower measure so the logo lines up with the content's left edge.
     expect(bar).toContain("width = 'max-w-6xl'");
-    expect(schedule).not.toMatch(/<EventBar[\s\S]*?width=/);
+    // The full-page session view is one of those narrower pages, and it is
+    // the same `<EventBar>` as the grid's: the bar was left at the grid's
+    // width there, and the content sat 64px inside the logo on a desktop.
+    expect(schedule).toMatch(/<EventBar[\s\S]*?width=\{fullPage \? 'max-w-5xl' : 'max-w-6xl'\}/);
+    // And below sm it tightens its padding with the bar, or the logo and the
+    // title under it sit 4px apart.
+    expect(schedule).toMatch(/<main className="mx-auto w-full max-w-5xl[^"]*px-3 py-6 sm:px-4"/);
   });
 
   it('leaves the grid body full-bleed, which was already right', () => {
