@@ -128,8 +128,16 @@ event.updated     permissions.updated
 ```
 
 Each frame's `data` is the same DTO the bundle uses for that thing. Heartbeats
-arrive every 25 seconds. On reconnect, refetch the bundle — there is no replay
-yet.
+arrive every 25 seconds.
+
+**Reconnecting.** Every frame carries an `id`, and the server keeps a short ring
+of recent frames per event — the last 200, up to five minutes back. Send the
+last id you saw as `Last-Event-ID` and you are handed what you missed; a browser
+`EventSource` does this for you. Where the gap cannot be filled — an id older
+than the ring, or one from before a server restart — you get a single
+`event: resync` frame instead, and that one means refetch the bundle. Do not
+refetch on every reconnect: a room of devices doing that to one wobbling access
+point is the most expensive thing an event can do to its own server.
 
 Stars and pitch interest are private: they are never broadcast and never
 attributed in any payload. Only aggregate counts leave the server. Do not build

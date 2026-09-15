@@ -16,8 +16,29 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1808**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1823**, lint clean, build clean. Most
 recent cut: **0.7.4**.
+
+- **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
+  commits on `dev`). It already caught a route that threw, but it sat inside
+  the router and the three providers, so a `MeProvider` fetch or the theme
+  effect throwing still blanked every page at once; a second mount around
+  `<App />` closes that. A caught error also used to outlive the page that
+  caused it — Back drew the same apology forever — and now clears when the
+  path changes. `tests/errorBoundary.test.tsx` is the first test that renders
+  the boundary rather than reading its source, which is the point: the crash
+  this exists for (2026-08-30) passed the whole suite green. Both halves of
+  the old item are done, so it has left High Priority. Nothing here needs your
+  eyes.
+
+- **A reconnect no longer refetches the bundle** [LIB-197] (landed
+  2026-09-15, `dev`). The small version of the two the item offered:
+  `Last-Event-ID` replay from a per-event ring of the last 200 frames, five
+  minutes deep, with the old refetch kept as a `resync` fallback for a gap too
+  old to fill or an id from before a restart. A first connection is handed a
+  position immediately, so the quiet-event case — nothing happening all
+  morning, the wifi dropping anyway — costs nothing either. The `?since=`
+  bundle is not needed. Nothing here needs your eyes.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -892,16 +913,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
   VPS deploy as their test. Railway notes: `docs/hosting.md` §10.
-- **No component test coverage, and no error boundary.** [LIB-128] 703 tests as of
-  2026-09-01, and the web-side ones cover pure functions or assert on source
-  text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a
-  component. The drag maths, the SSE reducer and the clash detection are the
-  parts most likely to regress silently, and the Calendar column refactor on
-  2026-08-30 went in on a read-through alone. The build-stamp crash the same
-  day — a component that threw on every render, blanking the page, while the
-  whole suite stayed green — is what the gap costs. A React error boundary
-  would have contained it; there is still none.
-
 - **`X-Forwarded-For` is unguarded, and the login limits now depend on it.**
   [LIB-129] With `TRUST_PROXY=1` the app reads the address from the header, so
   an instance also reachable off-proxy lets a caller write their own address.
@@ -961,15 +972,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   names the audit log and soft deletes as the answer to that person.
   Scope is the write-shaped limits only — `write`, `session`, `contribution`,
   `auth` and `mint`. There is no read bucket to key.
-
-- **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
-  `useEventData.ts:380` refetches the entire event on every stream reconnect —
-  right when it was written, and the reason the shared limit was ever felt.
-  With `retry: 3000`, a room on bad wifi turns that into a bundle build per
-  device per reconnect: 4.44 ms of server CPU and 6.1 KB gzipped each, times
-  everyone in the room. `Last-Event-ID` replay from a short per-event ring is
-  the small version; a `?since=` bundle is the thorough one. Not urgent now
-  that nobody is being throttled — this is about the traffic itself.
 
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   from 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
@@ -1112,10 +1114,21 @@ w-48`, the other `w-full` — so they are exempted by name in
   bulk of the 18 kB, so the cheap middle option is to keep `useDismiss`/
   `useRole` and do focus return by hand.
 
-  Measure before deciding: most of the win may be elsewhere. Nothing is
-  code-split — one chunk carries the admin pages, the calendar and the login page
-  alike, and a route-level `React.lazy` on the admin section would likely dwarf
-  18 kB. Check that first; the popover dep may not be the thing worth cutting.
+  **Measured 2026-09-15, and the premise has moved.** "Measure before
+  deciding: most of the win may be elsewhere" was right. Every route is a
+  `React.lazy` chunk now, so the single 489 kB / 152.5 kB-gzipped bundle is
+  gone: first paint pulls `index` (251.8 kB raw, 80.0 kB gzipped), `icons`
+  (13.8 / 4.8) and the one route asked for — about **87 kB gzipped for the
+  landing page** against 152.5 for everything. And Floating UI is not in the
+  entry chunk at all: its `floating-ui-focusable` / `-inert` markers appear
+  only in `EventBar`, `Modal`, `TimeField`, `Calendar`, `FilterMenu`,
+  `SearchBox`, `QrCode`, `AdminPage` and `SchedulePage`, all of them lazy. So
+  the 18.2 kB is paid on the first route with a popover in it, never on the
+  first paint this item was about. **Recommendation: keep `@floating-ui/react`
+  whole and close this.** Trading `useDismiss`, `useRole` and
+  `FloatingFocusManager` for the four hand-rolled Escape effects and no focus
+  return would now buy nothing a phone on venue wifi can feel. Worth reopening
+  only if the entry chunk itself grows — that is the number to watch.
 
 - **A track window cannot close a day.** [LIB-141] Noted 2026-09-01 when track hours
   landed. An override row is a window and a window must end after it starts, so

@@ -1,6 +1,7 @@
 import { errorText } from './errorText';
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { RESYNC_EVENT } from '@shared/types';
 import type {
   BreakDto,
   BundleDto,
@@ -397,13 +398,18 @@ export interface EventData extends State {
 }
 
 /**
- * Loads an event's bundle and keeps it fresh from the SSE stream. On a stream
- * reconnect the whole bundle is refetched — cheap, and simpler than replaying
- * missed events (SPEC §6).
+ * Loads an event's bundle and keeps it fresh from the SSE stream (SPEC §6).
+ *
+ * A reconnect used to refetch the whole bundle. It was the simple call and the
+ * wrong one at this scale: the stream retries three seconds after a drop, so a
+ * room on venue wifi turned one bad access point into a bundle build per device
+ * per reconnect. The server keeps a short ring of recent frames per event and
+ * the browser sends back the last id it saw, so a reconnect is now answered
+ * with the two or three frames that were missed. The refetch is what happens
+ * when that is not possible — the `resync` frame below.
  */
 export function useEventData(slug: string): EventData {
   const [state, dispatch] = useReducer(reducer, initial);
-  const hadError = useRef(false);
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
 
@@ -460,10 +466,12 @@ export function useEventData(slug: string): EventData {
 
     source.addEventListener('open', () => {
       dispatch({ kind: 'connected', connected: true });
-      if (hadError.current) {
-        hadError.current = false;
-        void reload();
-      }
+    });
+    // The server could not replay the gap — the tab was away too long, or the
+    // server restarted under it — so the bundle is the only way back to the
+    // truth. This is the refetch that used to happen on every reconnect.
+    source.addEventListener(RESYNC_EVENT, () => {
+      void reload();
     });
     source.addEventListener('change', (ev) => {
       const change = JSON.parse((ev as MessageEvent<string>).data) as ChangeEvent;
@@ -479,7 +487,6 @@ export function useEventData(slug: string): EventData {
       }
     });
     source.addEventListener('error', () => {
-      hadError.current = true;
       dispatch({ kind: 'connected', connected: false });
     });
 

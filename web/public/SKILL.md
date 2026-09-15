@@ -53,6 +53,10 @@ To stay current, subscribe rather than poll:
 curl -N -b jar "$HOST/api/e/$SLUG/stream"     # Server-Sent Events, unlimited
 ```
 
+If the stream drops, reconnect with the last frame's `id` as `Last-Event-ID`:
+the server replays what you missed. Refetch the bundle only when it answers
+`event: resync`, which means the gap was too big to replay.
+
 ## Answering questions from the bundle
 
 Everything below is local work on that one response.

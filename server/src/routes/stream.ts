@@ -13,7 +13,11 @@ export function streamRoutes(ctx: Ctx): Router {
     req.socket.setKeepAlive(true);
 
     // Named, so the broker can address a notification to this person alone.
-    const unsubscribe = ctx.broker.subscribe(req.event.slug, res, req.identity.id);
+    // `Last-Event-ID` is sent by the browser itself on a reconnect and says
+    // where to resume; the broker replays from there rather than leaving the
+    // client to refetch the whole event.
+    const resume = req.get('last-event-id');
+    const unsubscribe = ctx.broker.subscribe(req.event.slug, res, req.identity.id, resume);
     req.on('close', unsubscribe);
   });
 
