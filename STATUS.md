@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -16,7 +16,8 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1800**, lint clean, build clean.
+nothing local is unsaved. Suite at **1808**, lint clean, build clean. Most
+recent cut: **0.7.4**.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -958,8 +959,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   bucket alone: roughly 150 writes a minute rather than 30, since `auth` still
   caps them at about five fresh identities a quarter hour. SECURITY.md already
   names the audit log and soft deletes as the answer to that person.
-  The `read` bucket is already gone [LIB-202], shipped 2026-09-14, so this
-  rule is left with the write-shaped limits only.
+  Scope is the write-shaped limits only — `write`, `session`, `contribution`,
+  `auth` and `mint`. There is no read bucket to key.
 
 - **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
   `useEventData.ts:380` refetches the entire event on every stream reconnect —

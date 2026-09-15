@@ -123,6 +123,9 @@ await step('landing', async () => {
 await step('events list', async () => {
   await go('/events');
   await page.getByText('DemoConf 2026').first().waitFor();
+  // Both seeded fixtures are demo events, so on this instance the whole list
+  // is the demo pile and the heading over it is the one thing to check.
+  await page.getByRole('heading', { name: /Demo events/ }).waitFor();
 });
 await step('demo gate hands out organiser', async () => {
   await go(`/e/${SLUG}`);

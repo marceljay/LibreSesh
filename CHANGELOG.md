@@ -4,6 +4,61 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.7.4] — 2026-09-15
+
+A patch number that understates one thing: read rate limiting is gone. The
+`read` token bucket no longer exists, so no `GET` is metered and no operator
+knob turns it back on. Writes, password attempts and identity minting are
+limited as before. No migration, and nothing to do at deploy time.
+
+### Changed
+
+- **Reads are no longer rate limited.** Every `GET` — the bundle, a session,
+  the calendar feed, the audit list, the per-event export, the landing page's
+  event list, `/me` and the login prefill — is now served without being
+  metered, and the `read` token bucket is gone. It allowed 300 a minute per
+  person and, since the address bucket became 100× the personal one, 30,000 a
+  minute per address. Neither number defends anything: the limiter runs inside
+  the process it would protect and is not a denial-of-service defence, so the
+  only thing a read ceiling could do was refuse a real room — a hundred people
+  on one conference wifi opening pages, with their agents reading alongside
+  them. Writes, password attempts and identity minting are limited as before.
+  `SECURITY.md`, `/api.md`, `/agents.md` and the agent skill say so.
+- **The event list separates the demo fixtures and puts the archive behind a
+  button.** It was one flat list in start-date order, which stood three
+  unlike things side by side: the conference you are running, the seeded
+  samples that exist to be clicked around in, and every event that has
+  already finished. On a demo instance the samples outnumbered the real
+  events; on a long-lived one the archive buried them. Live events come
+  first, the demo ones follow under their own heading with a line saying
+  their login asks for no password and their data is reset, and the archived
+  ones sit behind an **Archived (2)** button that starts closed. An instance
+  with no demo events is labelled as little as before: one plain list, no
+  headings. An event only counts as a demo where its login really does hand
+  out roles on a click, so the same fixture on an ordinary instance — where
+  it asks for a password like any other event — is listed like any other
+  event.
+
+### Fixed
+
+- **The full-page session view lines up with its own header.** Opening a
+  session as a full page left the event bar at the schedule grid's width while
+  the content under it took the narrower page measure, so on a desktop the
+  logo and the profile chip sat 64px outside the title, the back link and the
+  composer — the header and the body read as two pages stacked. The bar now
+  takes the page's measure, as it already did on the agenda, search, a track
+  and Manage Event, and below `sm` the page tightens its padding with the bar
+  so the two share a left edge on a phone as well.
+- **An open session no longer refetches itself in a loop.** Selecting a session
+  loaded its contributions, and loading them dispatched the session it had just
+  read back into the bundle — which replaced the selected object, which the
+  effect watched, which loaded them again. The panel fetched
+  `/sessions/:id` about eighty times a second for as long as it was open, until
+  the read rate limit refused it and the page showed "Too many requests". The
+  effect now watches the selected session's id, which does not change when its
+  contents do. Removing the read limit is what made this visible: with nothing
+  left to refuse it, the loop no longer stopped on its own.
+
 ## [0.7.3] — 2026-09-14
 
 A patch number that understates two things: `POST /api/events/:slug/clone`

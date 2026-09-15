@@ -1,6 +1,6 @@
 {
   "name": "libresesh",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "private": true,
   "description": "LibreSesh — a lightweight (un)conference scheduler",
   "license": "MIT",
