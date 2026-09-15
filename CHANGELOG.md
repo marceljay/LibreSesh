@@ -4,6 +4,26 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **A dropped stream is caught up, not answered with the whole event again.**
+  Reconnecting refetched the entire bundle — 102 KB, 6.1 KB gzipped, 4.4 ms of
+  server CPU — every time. The stream tells browsers to retry three seconds
+  after a drop, so one wobbling access point meant a bundle build per device
+  per wobble, and 200 people in a room reconnecting once a minute meant 200 of
+  them a minute from a single venue. Every frame now carries an `id`, each
+  event keeps a ring of its recent frames (the last 200, up to five minutes
+  back), and a browser sends the last id it saw back as `Last-Event-ID` by
+  itself — so a stream that dropped for a moment is handed the two or three
+  frames it missed. A quiet event costs nothing at all: a first connection is
+  given a position straight away, so a tab that has seen no frames still has an
+  id to come back with. The refetch survives as the fallback, asked for with a
+  `resync` frame, for a gap too old to replay or an id from before a restart.
+  A draft is still replayed only to someone who may see it: the ring records
+  the question each frame was addressed with, not the frame, and asks it again
+  of whoever is reconnecting. Nothing to do at deploy time; `/api.md`,
+  `/agents.md` and the agent skill document the header.
+
 ### Fixed
 
 - **Navigating away from a page that failed leaves the failure behind.** A

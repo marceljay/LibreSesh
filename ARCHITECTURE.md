@@ -921,12 +921,37 @@ in §Breaks.
 
 ## Realtime
 
-One SSE channel per event slug, held in a `Map<slug, Set<Response>>` in
+One SSE channel per event slug, held in a `Map<slug, Channel>` in
 `server/src/sse.ts`. Every write publishes the fresh entity; clients hold one
-bundle and patch it by id, so replaying an event twice is harmless. On
-reconnect the client refetches the whole bundle rather than replaying a missed
-range — an entire event is one modest JSON payload, and this removes a whole
-class of gap-detection bugs.
+bundle and patch it by id, so replaying an event twice is harmless.
+
+A reconnect is caught up rather than answered with a fresh bundle. Every frame
+carries an `id` of the form `<epoch>-<n>`, each channel keeps the last 200
+frames from the past five minutes, and a browser sends the last id it saw back
+as `Last-Event-ID` on its own — so a stream that dropped for three seconds is
+handed the frames it missed. Refetching the bundle used to be the answer to
+every reconnect, which was the honest simple call and the wrong one at this
+scale: the retry hint is 3s, so one wobbling access point meant a bundle build
+per device per wobble.
+
+Three things make it safe rather than merely cheap:
+
+- **The epoch.** Ids are positions in memory, so one minted before a restart
+  names a position in a history that no longer exists. Without the epoch its
+  number would match a position in the new one and the client would be told it
+  had missed nothing.
+- **`droppedThrough`.** Each channel remembers the highest id that has fallen
+  out of its ring, because "nothing happened since your id" and "what happened
+  since your id is gone" are the same empty list otherwise.
+- **Replay asks again who is listening.** The ring records the *question*
+  `publishEach` and `publishTo` were given, not the frames they produced, and
+  re-asks it for the identity now reconnecting — so a draft session is not
+  replayed to a room that was never sent it live.
+
+Where the gap cannot be filled — an unknown epoch, or an id older than the ring
+— the server sends a single `resync` frame and the client refetches the bundle,
+which is the old behaviour kept as the fallback. `RESYNC_EVENT` in
+`shared/types.ts` is the one string both sides must agree on.
 
 Heartbeat every 25s. Any proxy in front must keep idle timeouts above that or it
 will cut streams; the shipped `Caddyfile` sets 300s.

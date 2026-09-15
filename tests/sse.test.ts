@@ -184,3 +184,192 @@ describe('SSE stream', () => {
     expect(frames).not.toContain('Elsewhere');
   });
 });
+
+/**
+ * Read a stream that needs no trigger: what is being tested has already
+ * happened, and the question is what arrives on connecting. `lastEventId` is
+ * what a browser sends back by itself after a drop.
+ */
+async function readStream(
+  baseUrl: string,
+  cookie: string,
+  slug: string,
+  opts: { lastEventId?: string; until?: (frames: string) => boolean; timeoutMs?: number },
+): Promise<string> {
+  const controller = new AbortController();
+  const res = await fetch(`${baseUrl}/api/e/${slug}/stream`, {
+    headers: {
+      cookie,
+      accept: 'text/event-stream',
+      ...(opts.lastEventId ? { 'last-event-id': opts.lastEventId } : {}),
+    },
+    signal: controller.signal,
+  });
+  expect(res.status).toBe(200);
+
+  const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const until = opts.until;
+
+  const readUntil = (async () => {
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return buffer;
+        buffer += decoder.decode(value, { stream: true });
+        if (until?.(buffer)) return buffer;
+      }
+    } catch {
+      return buffer;
+    }
+  })();
+
+  // Without a predicate the point is what does *not* arrive, so the wait is
+  // the assertion and has to be long enough to mean something.
+  const timer = new Promise<string>((resolve) =>
+    setTimeout(() => resolve(buffer), opts.timeoutMs ?? (until ? 4000 : 700)),
+  );
+  const out = await Promise.race([readUntil, timer]);
+  controller.abort();
+  return out ?? buffer;
+}
+
+/** The position a stream would come back with: its most recent `id:` line. */
+function lastId(frames: string): string {
+  const ids = frames
+    .split('\n')
+    .filter((line) => line.startsWith('id: '))
+    .map((line) => line.slice('id: '.length).trim());
+  expect(ids.length).toBeGreaterThan(0);
+  return ids[ids.length - 1] as string;
+}
+
+/**
+ * A reconnect used to refetch the whole bundle — 102 KB and 4.4 ms of server
+ * CPU per device, from every device in a room at once, every time one access
+ * point wobbled. The stream retries three seconds after a drop, so that was the
+ * loudest thing a busy event did to its own server. Now the gap is replayed
+ * from a short per-event ring, and the refetch is the fallback.
+ */
+describe('catching up a reconnect', () => {
+  let harness: Harness;
+  let server: Server;
+  let baseUrl: string;
+  let admin: Client;
+  let roomId: number;
+
+  beforeEach(async () => {
+    harness = makeHarness();
+    const eventId = seedEvent(harness.db);
+    roomId = seedRoom(harness.db, eventId, { openBooking: 1 });
+
+    server = harness.app.express.listen(0, '127.0.0.1');
+    await new Promise((resolve) => server.once('listening', resolve));
+    const address = server.address();
+    baseUrl = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
+
+    admin = new Client(baseUrl);
+    await admin.enter('testconf', 'admin-pw');
+  });
+
+  afterEach(async () => {
+    harness.app.ctx.broker.close();
+    await new Promise((resolve) => server.close(resolve));
+    harness.close();
+  });
+
+  const newSession = (title: string, startMin: number, draft = false) =>
+    admin.request('POST', '/api/e/testconf/sessions', {
+      roomId,
+      title,
+      startsAt: at(DAY_ONE, startMin),
+      endsAt: at(DAY_ONE, startMin + 60),
+      ...(draft ? { draft: true } : {}),
+    });
+
+  it('gives a first connection a position, before anything has happened', async () => {
+    const frames = await readStream(baseUrl, admin.cookieHeader, 'testconf', {});
+
+    // The quiet event is the case that matters: nothing happens all morning,
+    // the wifi drops anyway, and a tab with no id would have to refetch to
+    // find out that nothing had changed.
+    expect(frames).toMatch(/\nid: /);
+    expect(frames).not.toContain('event: change');
+    expect(frames).not.toContain('event: resync');
+  });
+
+  it('replays the frames the gap missed, and only those', async () => {
+    const opening = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      until: (frames) => frames.includes('id: '),
+    });
+    const position = lastId(opening);
+
+    // The drop: nobody is listening for either of these.
+    await newSession('While away one', 600);
+    await newSession('While away two', 700);
+
+    const back = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      lastEventId: position,
+      until: (frames) => frames.includes('While away two'),
+    });
+
+    expect(back).toContain('While away one');
+    expect(back).toContain('While away two');
+    expect(back).not.toContain('event: resync');
+  });
+
+  it('does not replay what happened before the stream left', async () => {
+    await newSession('Before the drop', 800);
+    const opening = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      until: (frames) => frames.includes('id: '),
+    });
+
+    const back = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      lastEventId: lastId(opening),
+    });
+
+    // It is in the ring, and this stream has already seen it in the bundle.
+    expect(back).not.toContain('Before the drop');
+  });
+
+  it('asks for a refetch when the id is from a process that is gone', async () => {
+    // What a tab holds across a restart: the number still looks like a
+    // position, and pointing it at the new history would tell the tab it had
+    // missed nothing when it has in fact missed everything.
+    const frames = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      lastEventId: 'deadbeef-3',
+      until: (f) => f.includes('resync'),
+    });
+
+    expect(frames).toContain('event: resync');
+  });
+
+  it('replays a draft only to someone who may see it', async () => {
+    const viewer = new Client(baseUrl);
+    await viewer.enter('testconf', 'viewer-pw');
+
+    const viewerOpening = await readStream(baseUrl, viewer.cookieHeader, 'testconf', {
+      until: (frames) => frames.includes('id: '),
+    });
+    const adminOpening = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      until: (frames) => frames.includes('id: '),
+    });
+
+    await newSession('Hidden draft', 900, true);
+
+    // A replay is a second delivery, and the first one was addressed per
+    // stream. Replaying from a shared ring without asking again who is
+    // reconnecting would hand the room a draft it was never sent live.
+    const viewerBack = await readStream(baseUrl, viewer.cookieHeader, 'testconf', {
+      lastEventId: lastId(viewerOpening),
+    });
+    expect(viewerBack).not.toContain('Hidden draft');
+
+    const adminBack = await readStream(baseUrl, admin.cookieHeader, 'testconf', {
+      lastEventId: lastId(adminOpening),
+      until: (frames) => frames.includes('Hidden draft'),
+    });
+    expect(adminBack).toContain('Hidden draft');
+  });
+});

@@ -701,6 +701,14 @@ export interface ChangeEvent {
   entity: unknown;
 }
 
+/**
+ * The one SSE event name that is not a `change`: the server could not replay
+ * what a reconnecting stream missed, so the client has to refetch the bundle.
+ * Named here because both sides have to agree on the string, and a typo on
+ * either would show as a page that silently stops updating.
+ */
+export const RESYNC_EVENT = 'resync';
+
 export interface ApiError {
   error: { code: string; message: string };
 }

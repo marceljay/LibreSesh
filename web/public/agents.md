@@ -67,7 +67,9 @@ credential it is.
    `permissions` map telling you what your role may do. There is nothing to
    crawl and no pagination.
 3. `GET /api/e/<slug>/stream` — subscribe. Server-Sent Events, every change,
-   not rate limited. Patch your copy rather than re-reading.
+   not rate limited. Patch your copy rather than re-reading. When it drops,
+   reconnect with the last frame's `id` as `Last-Event-ID` and you are sent the
+   gap; refetch the bundle only if the server answers `event: resync`.
 4. Write only what the person asked for, using the endpoints in
    [`/api.md`](/api.md).
 

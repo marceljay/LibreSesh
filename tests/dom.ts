@@ -74,7 +74,13 @@ class FakeEventSource {
 
 /** Push one change frame to every open stream, as the broker would. */
 export function emitChange(change: { type: string; entity: unknown }): void {
-  for (const s of streams) s.deliver('change', JSON.stringify(change));
+  emitStream('change', JSON.stringify(change));
+}
+
+/** Push a frame of any name — `resync`, `open`, whatever the page listens for
+ *  besides a change. */
+export function emitStream(type: string, data = '{}'): void {
+  for (const s of streams) s.deliver(type, data);
 }
 
 type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';

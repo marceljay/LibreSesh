@@ -16,7 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1816**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1823**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
@@ -30,6 +30,15 @@ recent cut: **0.7.4**.
   this exists for (2026-08-30) passed the whole suite green. Both halves of
   the old item are done, so it has left High Priority. Nothing here needs your
   eyes.
+
+- **A reconnect no longer refetches the bundle** [LIB-197] (landed
+  2026-09-15, `dev`). The small version of the two the item offered:
+  `Last-Event-ID` replay from a per-event ring of the last 200 frames, five
+  minutes deep, with the old refetch kept as a `resync` fallback for a gap too
+  old to fill or an id from before a restart. A first connection is handed a
+  position immediately, so the quiet-event case — nothing happening all
+  morning, the wifi dropping anyway — costs nothing either. The `?since=`
+  bundle is not needed. Nothing here needs your eyes.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -963,15 +972,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   names the audit log and soft deletes as the answer to that person.
   Scope is the write-shaped limits only — `write`, `session`, `contribution`,
   `auth` and `mint`. There is no read bucket to key.
-
-- **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
-  `useEventData.ts:380` refetches the entire event on every stream reconnect —
-  right when it was written, and the reason the shared limit was ever felt.
-  With `retry: 3000`, a room on bad wifi turns that into a bundle build per
-  device per reconnect: 4.44 ms of server CPU and 6.1 KB gzipped each, times
-  everyone in the room. `Last-Event-ID` replay from a short per-event ring is
-  the small version; a `?since=` bundle is the thorough one. Not urgent now
-  that nobody is being throttled — this is about the traffic itself.
 
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   from 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
