@@ -20,7 +20,6 @@ import {
   LOGIN_DISTINCT_ADDRESSES,
   LOGIN_FAILURES_PER_HOUR,
   clientIp,
-  limit,
   loginAttemptsLeft,
   loginBlockSeconds,
 } from '../ratelimit.js';
@@ -107,7 +106,7 @@ export function eventAuthRoutes(ctx: Ctx): Router {
   };
 
   /** What this device already is here, for the login page to prefill. */
-  router.get('/login', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/login', (req, res) => {
     const dto: LoginDto = {
       heldName: eventDisplayName(ctx.db, req.event.id, req.identity.id) ?? null,
     };

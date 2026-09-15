@@ -499,9 +499,18 @@ export function SchedulePage() {
   const sheetUrl = selected ? `/e/${slug}/s/${selected.id}${window.location.search}` : `/e/${slug}`;
 
   const { loadContributions } = data;
+  const selectedId = selected?.id;
+  /*
+   * Keyed on the id alone, never on `selected` itself. `loadContributions`
+   * ends by dispatching a `session.updated` change carrying the session it
+   * just read, which replaces the entity in the bundle with a fresh object —
+   * so an effect that depended on `selected` re-ran on its own result and
+   * refetched forever. The `read` rate limit used to end that loop with a 429
+   * after 300 requests; with reads unmetered there is nothing to stop it.
+   */
   useEffect(() => {
-    if (selected) void loadContributions(selected.id);
-  }, [selected?.id, loadContributions, selected]);
+    if (selectedId !== undefined) void loadContributions(selectedId);
+  }, [selectedId, loadContributions]);
 
   /** The profiles this device holds. A person is credited on a session by
    *  profile id, not by identity, so this is the bridge between them. */

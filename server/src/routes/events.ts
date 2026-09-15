@@ -14,7 +14,7 @@ export function eventRoutes(ctx: Ctx): Router {
   const router = Router();
 
   // Public: enough to render the landing page. No schedule data.
-  router.get('/events', limit(ctx.limiter, 'read'), (_req, res) => {
+  router.get('/events', (_req, res) => {
     const rows = ctx.db
       .prepare<[], EventRow>('SELECT * FROM events ORDER BY start_date DESC, name ASC')
       .all();

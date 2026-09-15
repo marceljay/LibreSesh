@@ -17,7 +17,6 @@ import {
 } from '../backup.js';
 import type { Ctx } from '../context.js';
 import { exportEvent } from '../exportEvent.js';
-import { limit } from '../ratelimit.js';
 import { EXPORT_PARTS, type ExportPart } from '../shared/exportParts.js';
 import { parse } from '../validation.js';
 
@@ -57,34 +56,29 @@ const includeSchema = z
 export function exportRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
 
-  router.get(
-    '/export.json',
-    requireRole(ctx.db, 'admin'),
-    limit(ctx.limiter, 'read'),
-    (req, res) => {
-      const include = req.query.include;
-      const parts: ReadonlySet<ExportPart> =
-        include === undefined
-          ? new Set(EXPORT_PARTS)
-          : new Set(parse(includeSchema, Array.isArray(include) ? include.join(',') : include));
-      const payload = exportEvent(ctx.db, req.event, parts);
-      audit(ctx.db, {
-        identityId: req.identity.id,
-        eventId: req.event.id,
-        action: 'export',
-        entity: 'event',
-        entityId: req.event.id,
-      });
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${req.event.slug}-${new Date().toISOString().slice(0, 10)}.json"`,
-      );
-      res.setHeader('Cache-Control', 'no-store');
-      // Indented: an export is read by people at least as often as by programs.
-      res.send(JSON.stringify(payload, null, 2));
-    },
-  );
+  router.get('/export.json', requireRole(ctx.db, 'admin'), (req, res) => {
+    const include = req.query.include;
+    const parts: ReadonlySet<ExportPart> =
+      include === undefined
+        ? new Set(EXPORT_PARTS)
+        : new Set(parse(includeSchema, Array.isArray(include) ? include.join(',') : include));
+    const payload = exportEvent(ctx.db, req.event, parts);
+    audit(ctx.db, {
+      identityId: req.identity.id,
+      eventId: req.event.id,
+      action: 'export',
+      entity: 'event',
+      entityId: req.event.id,
+    });
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${req.event.slug}-${new Date().toISOString().slice(0, 10)}.json"`,
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    // Indented: an export is read by people at least as often as by programs.
+    res.send(JSON.stringify(payload, null, 2));
+  });
 
   return router;
 }

@@ -71,9 +71,10 @@ credential it is.
 4. Write only what the person asked for, using the endpoints in
    [`/api.md`](/api.md).
 
-An agent following those four steps cannot hit a rate limit. One that polls the
-bundle in a loop, or throws its cookie away between requests, will — and the
-cost lands on the people sharing its network, not on it.
+An agent following those four steps cannot hit a rate limit. Reads are not
+limited, so polling the bundle in a loop will not be refused — but throwing your
+cookie away between requests exhausts the identity-minting budget for your whole
+network address, and that cost lands on the people sharing it, not on you.
 
 ## What you should know before writing
 
@@ -91,12 +92,15 @@ cost lands on the people sharing its network, not on it.
 
 ## Limits
 
-Per person: 300 reads, 30 writes, 12 session edits and 10 contributions a
+Reads are not limited. Neither the bundle, a session, the calendar feed nor
+`/stream` is metered, because a conference is a room of people behind one access
+point and a ceiling high enough never to refuse that room protects nothing.
+
+Per person, writes are: 30 writes, 12 session edits and 10 contributions a
 minute. The same buckets keyed on your network address are a hundred times
-that, because a conference is a room of people behind one access point and they
-must not throttle each other — which is also why exceeding your share is
-antisocial here in a way it is not on most APIs. `/stream` is not limited: hold
-one connection, not many.
+that, for the same reason the room must not throttle itself — which is also why
+exceeding your share is antisocial here in a way it is not on most APIs. On
+`/stream`, hold one connection, not many.
 
 Password attempts are limited hard, per person and per address: five per
 quarter hour. Do not guess.

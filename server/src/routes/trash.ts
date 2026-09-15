@@ -17,7 +17,7 @@ export function trashRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
   const adminWrite = [requireRole(ctx.db, 'admin'), requireWritable, limit(ctx.limiter, 'write')];
 
-  router.get('/trash', requireRole(ctx.db, 'admin'), limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/trash', requireRole(ctx.db, 'admin'), (req, res) => {
     const names = new NameResolver(ctx.db, req.event.id);
     const sessions = ctx.db
       .prepare<[number], SessionRow>(

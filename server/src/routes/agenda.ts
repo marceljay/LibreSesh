@@ -73,7 +73,7 @@ export function agendaRoutes(ctx: Ctx): Router {
 export function calendarRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
 
-  router.get('/calendar.ics', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/calendar.ics', (req, res) => {
     const event: EventRow = req.event;
     const rawToken = req.query.token;
     let identityId: number | undefined;

@@ -306,7 +306,21 @@ export const LIMITS = {
   contribution: { capacity: 10, windowMs: 60_000 },
   session: { capacity: 12, windowMs: 60_000 },
   write: { capacity: 30, windowMs: 60_000 },
-  read: { capacity: 300, windowMs: 60_000 },
+  /*
+   * There is deliberately no `read` bucket, and no GET is metered.
+   *
+   * A read costs the process little and a refused one is the failure that
+   * matters: a hundred people on one conference wifi opening pages, and their
+   * agents reading alongside them, is the normal state of an event, not abuse.
+   * A per-address read ceiling large enough never to catch that room is not a
+   * defence against anything either — the limiter is not a denial-of-service
+   * defence and cannot be made into one (SECURITY.md), so the number would
+   * only wait to refuse a real room for no gain.
+   *
+   * The read-shaped limit still worth having is on held state rather than on
+   * requests: a cap on concurrent `/stream` connections per identity, because
+   * a socket is held open and a GET is not.
+   */
 } as const satisfies Record<string, BucketSpec>;
 
 export type LimitName = keyof typeof LIMITS;
@@ -338,8 +352,7 @@ export function keysFor(name: LimitName, req: Request): [string, string] {
  * does. It is not a flood defence — one runs after the cookie signature and
  * three lookups, inside the process it would be protecting, so a refused
  * request still costs about a sixth of a served one. That job belongs to the
- * reverse proxy. For `read` the backstop now sits above what one core can
- * serve, which only makes explicit what was already true.
+ * reverse proxy.
  *
  * Not every limit: see `PERSON_SIZED_ADDRESS`.
  */
