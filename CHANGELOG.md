@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The pitch board has a pitch board's address.** It answers at
+  `/e/<event>/pitches` now, not `/e/<event>/proposals`, and the components
+  behind it are named for pitches too. The old path redirects, so a link
+  handed out before this still opens the board. Nothing on the wire moved:
+  the API path, an export's contents and the permission ids are what they
+  were. The permission itself now reads *Pitch a session to the pitch board*,
+  and a pitch that is not there answers *No such pitch*. [LIB-191]
+
 ## [0.7.3] — 2026-09-14
 
 A patch number that understates two things: `POST /api/events/:slug/clone`
