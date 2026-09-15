@@ -1114,10 +1114,21 @@ w-48`, the other `w-full` — so they are exempted by name in
   bulk of the 18 kB, so the cheap middle option is to keep `useDismiss`/
   `useRole` and do focus return by hand.
 
-  Measure before deciding: most of the win may be elsewhere. Nothing is
-  code-split — one chunk carries the admin pages, the calendar and the login page
-  alike, and a route-level `React.lazy` on the admin section would likely dwarf
-  18 kB. Check that first; the popover dep may not be the thing worth cutting.
+  **Measured 2026-09-15, and the premise has moved.** "Measure before
+  deciding: most of the win may be elsewhere" was right. Every route is a
+  `React.lazy` chunk now, so the single 489 kB / 152.5 kB-gzipped bundle is
+  gone: first paint pulls `index` (251.8 kB raw, 80.0 kB gzipped), `icons`
+  (13.8 / 4.8) and the one route asked for — about **87 kB gzipped for the
+  landing page** against 152.5 for everything. And Floating UI is not in the
+  entry chunk at all: its `floating-ui-focusable` / `-inert` markers appear
+  only in `EventBar`, `Modal`, `TimeField`, `Calendar`, `FilterMenu`,
+  `SearchBox`, `QrCode`, `AdminPage` and `SchedulePage`, all of them lazy. So
+  the 18.2 kB is paid on the first route with a popover in it, never on the
+  first paint this item was about. **Recommendation: keep `@floating-ui/react`
+  whole and close this.** Trading `useDismiss`, `useRole` and
+  `FloatingFocusManager` for the four hand-rolled Escape effects and no focus
+  return would now buy nothing a phone on venue wifi can feel. Worth reopening
+  only if the entry chunk itself grows — that is the number to watch.
 
 - **A track window cannot close a day.** [LIB-141] Noted 2026-09-01 when track hours
   landed. An override row is a window and a window must end after it starts, so
