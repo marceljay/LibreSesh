@@ -56,7 +56,13 @@ export function makeHarness(overrides: Partial<Config> = {}): Harness {
 /** Insert an event directly, bypassing the instance-password endpoint. */
 export function seedEvent(
   db: Db,
-  overrides: Partial<{ slug: string; archived: number; startDate: string; endDate: string }> = {},
+  overrides: Partial<{
+    slug: string;
+    name: string;
+    archived: number;
+    startDate: string;
+    endDate: string;
+  }> = {},
 ): number {
   const info = db
     .prepare(
@@ -67,7 +73,7 @@ export function seedEvent(
     )
     .run(
       overrides.slug ?? 'testconf',
-      'Test Conf',
+      overrides.name ?? 'Test Conf',
       TEST_TIMEZONE,
       overrides.startDate ?? DAY_ONE,
       overrides.endDate ?? DAY_TWO,

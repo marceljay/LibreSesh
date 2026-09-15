@@ -4,6 +4,23 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The event list separates the demo fixtures and puts the archive behind a
+  button.** It was one flat list in start-date order, which stood three
+  unlike things side by side: the conference you are running, the seeded
+  samples that exist to be clicked around in, and every event that has
+  already finished. On a demo instance the samples outnumbered the real
+  events; on a long-lived one the archive buried them. Live events come
+  first, the demo ones follow under their own heading with a line saying
+  their login asks for no password and their data is reset, and the archived
+  ones sit behind an **Archived (2)** button that starts closed. An instance
+  with no demo events is labelled as little as before: one plain list, no
+  headings. An event only counts as a demo where its login really does hand
+  out roles on a click, so the same fixture on an ordinary instance — where
+  it asks for a password like any other event — is listed like any other
+  event.
+
 ## [0.7.3] — 2026-09-14
 
 A patch number that understates two things: `POST /api/events/:slug/clone`
