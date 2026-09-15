@@ -114,6 +114,7 @@ calendar section).
 | Speaker code (four words) | The person's identity, with the speaker role | Organiser, from the person's profile page | Until revoked, any number of uses | Revoke or regenerate on the profile page | Sign out devices already in — change the role for that |
 | Speaker link / QR `/e/:slug#c=<phrase>` | The same as typing that code, with nothing to type | Shown beside the code when it is minted | As long as the code | Revoking the code | Anything the code's revocation does not |
 | Calendar feed URL | Read access to one event's schedule, as the owner's role allows | The owner, from the calendar dialog | Until the role is removed | Removing the role | Stay working for a role the owner still holds |
+| Telegram bind code | Points this event's announcements at whichever group it is typed in | Organiser, Manage → Settings → Telegram | 15 minutes, one use | Expiry; minting another; **Disconnect** | Un-send anything already posted |
 
 Four rules apply across the rows:
 
@@ -143,6 +144,30 @@ Four rules apply across the rows:
   link, carries no event id (STATUS.md), and records neither address nor
   browser. So "has my code leaked?" is answered today only by the *code used*
   badge on the profile page and by what the organiser knows about the speaker.
+
+## What a connected Telegram group sees
+
+Connecting a group is a **publication decision**, and the only one an organiser
+can make that puts event content somewhere this app cannot reach. Manage Event
+says so in front of the control rather than in a tooltip.
+
+What leaves: session titles, speaker display names, room names and times, as
+plain messages, to everyone who can see that group — and onward to anyone they
+forward it to. What does not: drafts (never, under any trigger), deleted
+sessions, archived events, and every contribution, note, question, star and
+pitch interest. The links in the messages still land on the password gate; the
+message bodies do not.
+
+Two properties follow from Telegram rather than from us. A posted message is
+**not recallable by this app** — Disconnect stops the next one and changes
+nothing about the last one. And the bot token is an instance-level credential:
+anyone holding it can post as the bot into **every** group the bot is in, on
+every event, which is why it is an environment variable set by whoever deploys
+and never a column an organiser can read. `/revoke` in BotFather is the kill
+switch.
+
+The bot runs with Telegram's default privacy mode, so it receives only messages
+addressed to it — commands and replies — and not the group's conversation.
 
 ## Things that will bite you
 

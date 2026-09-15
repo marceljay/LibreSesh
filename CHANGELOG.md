@@ -4,6 +4,25 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- **An event can announce itself into a Telegram group.** Organisers connect
+  one from Manage → Settings → Telegram: add the bot, generate a code, type
+  `/bind <code>` in the group. The group is then told what is coming up, once
+  per start time, fifteen minutes ahead by default — every room starting at
+  10:00 in one message rather than five. `/next` answers in the group, and
+  `/unbind` stops it from there.
+
+  Needs `TELEGRAM_BOT_TOKEN` on the instance (and `PUBLIC_URL` for the messages
+  to carry links); without one the section says so and offers no controls.
+  There is nothing to deploy to Telegram — a bot is a token, and the loop runs
+  inside the app. One bot per instance: two processes sharing a token fight
+  over `getUpdates`.
+
+  Drafts, deleted sessions and archived events are never announced, and the
+  connection never travels in an export. What a connected group can see is in
+  SECURITY.md.
+
 ## [0.7.4] — 2026-09-15
 
 A patch number that understates one thing: read rate limiting is gone. The

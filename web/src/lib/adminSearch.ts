@@ -148,6 +148,13 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     anchor: 'invite',
   },
   {
+    id: 'telegram',
+    label: 'Telegram',
+    tab: 'settings',
+    keywords: 'telegram group bot announce chat message notify up next bind',
+    anchor: 'telegram',
+  },
+  {
     id: 'archive',
     label: 'Archive',
     tab: 'settings',

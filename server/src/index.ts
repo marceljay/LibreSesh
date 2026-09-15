@@ -4,6 +4,7 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
+import { Announcer, Poller } from './telegram.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -55,6 +56,24 @@ const sweep = (): void => {
 sweep();
 setInterval(sweep, 24 * 60 * 60_000).unref();
 
+// Telegram, if this instance has a bot. Nothing here runs on Telegram's side —
+// a bot is a token, not a program — so the clock and the commands are both
+// ours. Inert on an instance with no token.
+let telegram: { poller: { stop(): void } } | null = null;
+if (config.telegramBotToken) {
+  const announcer = new Announcer(db, config.telegramBotToken, config.publicUrl);
+  const poller = new Poller(db, config.telegramBotToken, announcer);
+  poller.start();
+  telegram = { poller };
+  setInterval(() => {
+    void announcer.tick();
+  }, 60_000).unref();
+  console.log('telegram: announcing for every event with a group bound');
+  if (!config.publicUrl) {
+    console.warn('telegram: no PUBLIC_URL, so announcements will carry no links');
+  }
+}
+
 // 0.0.0.0 so the port is reachable from outside a container.
 const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`libresesh listening on http://0.0.0.0:${config.port}`);
@@ -93,6 +112,7 @@ server.requestTimeout = 0;
 
 function shutdown(signal: string): void {
   console.log(`${signal} received, shutting down`);
+  telegram?.poller.stop();
   ctx.broker.close();
   server.close(() => {
     db.close();

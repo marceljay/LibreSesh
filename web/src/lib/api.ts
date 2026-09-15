@@ -28,6 +28,7 @@ import type {
   ViewMode,
   InboxDto,
   NotificationKind,
+  TelegramStatus,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
 import type { ExportPart } from '@shared/exportParts';
@@ -316,6 +317,19 @@ export const api = {
     request<void>('POST', `/e/${encode(slug)}/confirm-admin`, { password }),
   updateSettings: (slug: string, body: SettingsWrite) =>
     request<EventDto>('PATCH', `/e/${encode(slug)}/settings`, body),
+
+  // Telegram. Kept off the bundle on purpose: the bind code is a credential —
+  // anyone holding it can point this event at their own group — so it is read
+  // on the organiser's screen and nowhere else.
+  telegram: (slug: string) => request<TelegramStatus>('GET', `/e/${encode(slug)}/telegram`),
+  telegramCode: (slug: string) =>
+    request<TelegramStatus>('POST', `/e/${encode(slug)}/telegram/code`),
+  telegramSettings: (slug: string, body: { mode?: string; leadMin?: number }) =>
+    request<TelegramStatus>('PATCH', `/e/${encode(slug)}/telegram`, body),
+  telegramDisconnect: (slug: string) =>
+    request<TelegramStatus>('DELETE', `/e/${encode(slug)}/telegram`),
+  telegramTest: (slug: string) =>
+    request<{ ok: boolean }>('POST', `/e/${encode(slug)}/telegram/test`),
 
   // Proposal pool — the unconference pitch board (SPEC §8).
   createProposal: (slug: string, body: ProposalWrite) =>

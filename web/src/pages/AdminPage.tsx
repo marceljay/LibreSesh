@@ -394,6 +394,7 @@ const fieldProblem = (field: string, error: NumberFieldError): string =>
   `${field}: ${numberFieldMessage(error)}`;
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
+import { AdminTelegram } from './AdminTelegram';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminSearch } from './AdminSearch';
 import { ADMIN_TABS, type AdminSetting, type AdminTabId } from '../lib/adminSearch';
@@ -2080,6 +2081,10 @@ export function AdminPage() {
 
             <SettingAnchor id="invite" flashed={flashed}>
               <AdminInvite slug={slug} userRoleLabel={userRoleLabel.trim() || undefined} />
+            </SettingAnchor>
+
+            <SettingAnchor id="telegram" flashed={flashed}>
+              <AdminTelegram slug={slug} />
             </SettingAnchor>
 
             <SettingAnchor id="archive" flashed={flashed}>

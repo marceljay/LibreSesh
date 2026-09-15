@@ -705,6 +705,25 @@ export interface ApiError {
   error: { code: string; message: string };
 }
 
+/** What the Telegram section of Manage Event reads and writes. */
+export interface TelegramStatus {
+  /**
+   * Whether this instance has a bot at all. False means the operator has not
+   * set `TELEGRAM_BOT_TOKEN`, and no amount of clicking will help — so the
+   * section says that instead of offering a form that cannot work.
+   */
+  available: boolean;
+  /** Whether a group has said `/bind <code>` and been accepted. */
+  connected: boolean;
+  /** The preset the trigger set matches, or 'custom'. Derived, never stored. */
+  mode: string;
+  triggers: string[];
+  leadMin: number;
+  /** A live bind code, if one has been minted and not yet used or expired. */
+  bindCode: string | null;
+  bindExpires: string | null;
+}
+
 /** What `GET /e/:slug/login-health` answers (D3 §1c). */
 export interface LoginHealthDto {
   /** Failed password attempts at this event in the last hour, from the log. */

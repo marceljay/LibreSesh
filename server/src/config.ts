@@ -54,6 +54,23 @@ export interface Config {
    * the page. Short form, seven characters, as `git rev-parse --short` gives.
    */
   buildCommit: string | null;
+  /**
+   * The bot this instance announces through, or null for an instance that does
+   * not. Deliberately an env var and not a column: it is a credential, and
+   * anyone holding it can post as the bot into every group the bot is in. A
+   * column would be data, and data is exported, cloned and backed up.
+   *
+   * One bot per instance. Only one process may hold a token on `getUpdates` —
+   * a second gets 409 — so a staging instance sharing production's token means
+   * two pollers stealing each other's commands.
+   */
+  telegramBotToken: string | null;
+  /**
+   * Where this instance answers from, for links in announcements. The tick has
+   * no request to read a host off, unlike the iCal route. Without it the
+   * announcements simply carry no links.
+   */
+  publicUrl: string | null;
 }
 
 /**
@@ -155,5 +172,7 @@ export function loadConfig(): Config {
     seedDemoEvent: process.env.SEED_DEMO_EVENT !== '0',
     allowEphemeralDb: !isProd || process.env.ALLOW_EPHEMERAL_DB === '1',
     buildCommit: buildCommit(),
+    telegramBotToken: (process.env.TELEGRAM_BOT_TOKEN ?? '').trim() || null,
+    publicUrl: ((process.env.PUBLIC_URL ?? '').trim() || null)?.replace(/\/+$/, '') ?? null,
   };
 }
