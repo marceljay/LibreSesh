@@ -16,8 +16,20 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1808**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1816**, lint clean, build clean. Most
 recent cut: **0.7.4**.
+
+- **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
+  commits on `dev`). It already caught a route that threw, but it sat inside
+  the router and the three providers, so a `MeProvider` fetch or the theme
+  effect throwing still blanked every page at once; a second mount around
+  `<App />` closes that. A caught error also used to outlive the page that
+  caused it — Back drew the same apology forever — and now clears when the
+  path changes. `tests/errorBoundary.test.tsx` is the first test that renders
+  the boundary rather than reading its source, which is the point: the crash
+  this exists for (2026-08-30) passed the whole suite green. Both halves of
+  the old item are done, so it has left High Priority. Nothing here needs your
+  eyes.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -892,16 +904,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
   VPS deploy as their test. Railway notes: `docs/hosting.md` §10.
-- **No component test coverage, and no error boundary.** [LIB-128] 703 tests as of
-  2026-09-01, and the web-side ones cover pure functions or assert on source
-  text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a
-  component. The drag maths, the SSE reducer and the clash detection are the
-  parts most likely to regress silently, and the Calendar column refactor on
-  2026-08-30 went in on a read-through alone. The build-stamp crash the same
-  day — a component that threw on every render, blanking the page, while the
-  whole suite stayed green — is what the gap costs. A React error boundary
-  would have contained it; there is still none.
-
 - **`X-Forwarded-For` is unguarded, and the login limits now depend on it.**
   [LIB-129] With `TRUST_PROXY=1` the app reads the address from the header, so
   an instance also reachable off-proxy lets a caller write their own address.
