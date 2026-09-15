@@ -24,6 +24,24 @@ All notable changes to this project are documented here.
   of whoever is reconnecting. Nothing to do at deploy time; `/api.md`,
   `/agents.md` and the agent skill document the header.
 
+- **The served agent docs describe the shapes an agent actually has to guess.**
+  A fresh agent was pointed at a running instance with nothing but
+  `/llms.txt`, `/agents.md` and `/api.md`, and asked to read a programme, star
+  two sessions and post a note. It completed all three without a single `4xx`,
+  but guessed four times, and each guess is now written down. `/api.md` gains
+  the `{session, contributions}` shape of `GET /sessions/:id`, the request body
+  and `201` of `POST /sessions/:id/contributions`, the empty `204` of
+  `PUT`/`DELETE /sessions/:id/star`, the `GET /api/me` response, and a table
+  separating the bundle's `starredSessionIds` (yours) from `starCounts`
+  (everyone's) and `contributionCounts`. `/agents.md` folds `GET /api/me` into
+  step 1 of the flow, so a client that kept its cookie jar stops sending a
+  password it does not need, and warns that a tool's own timezone conversion
+  should be checked against `event.timezone` before it is trusted. `/SKILL.md`
+  carries the same two bundle fields and answers "what is on my agenda"
+  locally. `/llms.txt` moves its pointer to `/agents.md` above the description,
+  because the agent read most of the file before finding it. No API changed;
+  nothing the three tasks needed was missing.
+
 ### Fixed
 
 - **Navigating away from a page that failed leaves the failure behind.** A
@@ -42,7 +60,6 @@ All notable changes to this project are documented here.
   also rendered in the suite for the first time: a component that throws is
   mounted inside it and the fallback a visitor is left looking at is asserted,
   where before only its source text was read.
-
 ## [0.7.4] — 2026-09-15
 
 A patch number that understates one thing: read rate limiting is gone. The

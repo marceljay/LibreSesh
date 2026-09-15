@@ -957,8 +957,19 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   schema`, which regenerates `docs/schema.md` and fails a test when the copy is
   behind. What needs deciding is the rest: paths live in the routers, responses
   have no schemas (the DTOs are TypeScript interfaces), and per-endpoint roles
-  are middleware rather than data. Worth doing after a real agent has read the
-  prose once, so the parts that matter get modelled first.
+  are middleware rather than data. The precondition is met: the walk-through
+  [LIB-204] ran on 2026-09-15 and its comment names the order to model in —
+  the error envelope, `POST /auth`, the whole `/bundle` DTO set,
+  `GET /sessions/:id`, contributions, star, `/api/me`, `/api/events`, then
+  `PATCH /sessions/:id` with `expectedUpdatedAt`. It found no missing
+  endpoint, only missing prose, which is the case for describing responses
+  loosely at first rather than generating them from the TypeScript.
+
+- **`robots.txt` answers the SPA shell with status 200.** [LIB-206] There is
+  no `robots.txt` in `web/public/`, so `app.ts`'s catch-all hands the path
+  `index.html` with a `200` — a crawler or an agent reading it gets a page of
+  markup where it expected directives, and cannot tell the difference from the
+  status. Found by the [LIB-204] walk-through, which read it second.
 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a

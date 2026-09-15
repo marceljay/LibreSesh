@@ -110,7 +110,49 @@ your cookie jar already held.
 
 The bundle carries `role` and a `permissions` map (capability → the roles
 allowed to use it), so you can tell what you are allowed to do without
-provoking a `403` to find out.
+provoking a `403` to find out. Three of its fields are easy to miss, and two
+of them are about stars:
+
+| Field | |
+| --- | --- |
+| `starredSessionIds` | The sessions **this identity** has starred — your own agenda. Read it before starring, so you do not offer to star something twice |
+| `starCounts` | sessionId → how many people starred it. Everyone's interest, not yours |
+| `contributionCounts` | sessionId → how many visible contributions it has. The bodies are not in the bundle; fetch the session |
+
+`GET /api/e/:slug/sessions/:id` answers a wrapper, not a bare session — the
+DTO is under `session`:
+
+```json
+{
+  "session": { "id": 356, "title": "Schedules as commons", "roomId": 3, "updatedAt": "…" },
+  "contributions": [
+    {
+      "id": 98, "sessionId": 356, "kind": "note", "body": "…", "url": null,
+      "createdBy": 564, "createdByName": "scheduling-bot",
+      "createdAt": "…", "hidden": false
+    }
+  ]
+}
+```
+
+Hidden contributions are in the array for organisers and absent for everyone
+else.
+
+`GET /api/me` needs no role and answers:
+
+```json
+{
+  "id": 564, "uid": "a3f9c", "displayName": "scheduling-bot",
+  "roles": { "democonf-2026": "user" },
+  "demoMode": false, "demoEventSlugs": [], "commit": "f8dfba0"
+}
+```
+
+`roles` is keyed by event slug, which is how a client that kept its jar can
+tell it is already in: call `/api/me` first and send a password to `/auth`
+only when `roles` has no entry for the slug. `uid` is the 5-hex-character
+identifier the person sees in their own menu, and `displayName` here is the
+instance-wide one — inside an event the name that counts is the bundle's.
 
 For scale: a fourteen-day, 186-session event is one response of about 100 KB,
 6 KB compressed, built in under 5 ms.
@@ -182,6 +224,32 @@ Three rules that will bite a program in particular:
 - **Deletes are soft.** A deleted session is recoverable from
   `POST /api/e/:slug/sessions/:id/restore`, and it still owns its
   contributions and stars.
+
+### Notes, links and questions
+
+`POST /api/e/:slug/sessions/:id/contributions` takes:
+
+```json
+{ "kind": "note", "body": "Slides are on the wiki", "url": null }
+```
+
+`kind` is one of `note`, `link`, `question`. `body` is required, trimmed, up
+to 2000 characters. `url` is required when `kind` is `"link"` and ignored
+otherwise; it must be a plain `http` or `https` link. The response is `201`
+with the contribution DTO — the same shape the session detail and the
+`contribution.created` stream frame carry.
+
+A draft session takes none, and refuses them with `409 draft`. You may delete
+your own with `DELETE /contributions/:id`; organisers hide anyone's with
+`PATCH /contributions/:id/hidden`.
+
+### Stars
+
+`PUT /api/e/:slug/sessions/:id/star` and its `DELETE` take **no body** and
+answer **`204` with no content** — there is nothing to parse. `PUT` is
+idempotent, so starring twice is not an error. Stars are private to the
+identity that made them and stay reachable after an event is archived. What
+you have starred is `starredSessionIds` in the bundle.
 
 ## Errors
 
@@ -271,15 +339,15 @@ resolving, so a client written against the old name keeps working. Read
 | --- | --- |
 | `GET /login`, `POST /auth`, `POST /logout` | Entering and leaving |
 | `GET /bundle`, `GET /stream` | The whole event, and its changes |
-| `GET /sessions/:id` | One session with contributions |
+| `GET /sessions/:id` | One session with contributions — `{session, contributions}` |
 | `POST /sessions`, `PATCH /sessions/:id`, `DELETE /sessions/:id` | The programme |
 | `POST /sessions/repeat` | Repeat one across days |
 | `GET /sessions/:id/link-candidates`, `POST /sessions/link`, `POST /sessions/unlink` | Linked sessions |
-| `PUT`/`DELETE /sessions/:id/star` | Your own agenda (private) |
+| `PUT`/`DELETE /sessions/:id/star` | Your own agenda (private). No body, `204` |
 | `POST /proposals`, `PATCH`/`DELETE /proposals/:id` | The pitch board |
 | `PUT`/`DELETE /proposals/:id/interest` | Register interest (private) |
 | `POST /proposals/:id/place` | Give a pitch a room and a time |
-| `POST /sessions/:id/contributions` | Notes, links, questions |
+| `POST /sessions/:id/contributions` | Notes, links, questions. `{kind, body, url}` → `201` |
 | `DELETE /contributions/:id`, `PATCH /contributions/:id/hidden` | Delete your own; organisers moderate |
 | `POST /rooms`, `PATCH`/`DELETE /rooms/:id` | Rooms. Organisers |
 | `POST /tags`, `PATCH`/`DELETE /tags/:id` | Tags. Organisers |

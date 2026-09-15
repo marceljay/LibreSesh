@@ -61,7 +61,10 @@ credential it is.
 
 ## The flow
 
-1. `POST /api/e/<slug>/auth` — once, with the password you were given.
+1. `GET /api/me`, then `POST /api/e/<slug>/auth` if you need it. `/api/me`
+   needs no role and its `roles` map is keyed by event slug: if it already
+   names the slug you are going to, you are in and there is no password call
+   to make. Otherwise send the password you were given, once.
 2. `GET /api/e/<slug>/bundle` — **once**. This is the entire event in one
    response: rooms, tracks, tags, breaks, every session, people, pitches, and a
    `permissions` map telling you what your role may do. There is nothing to
@@ -82,7 +85,10 @@ network address, and that cost lands on the people sharing it, not on you.
 
 - **Times are UTC ISO-8601, but every rule about them is evaluated in the
   event's own timezone.** Session times must land on a 5-minute step in local
-  time. Do not do this arithmetic in UTC.
+  time. Do not do this arithmetic in UTC. Check your own tool's conversion
+  against `event.timezone` on a known session before you trust it — date
+  libraries and shell utilities differ on offsets and on daylight saving, and
+  a converter that is an hour out will read the programme an hour out.
 - **Send `expectedUpdatedAt` when you edit** — the `updatedAt` you read. You
   get `409 stale` instead of silently overwriting a person's work.
 - **Deletes are soft and reversible.** Nothing you remove is gone.
