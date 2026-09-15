@@ -1361,7 +1361,7 @@ export function SchedulePage() {
                     drag on. */}
                   <NewSessionMenu
                     canAdd={canWrite}
-                    pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+                    pitchHref={event.pitchesEnabled ? `/e/${slug}/pitches` : null}
                     pitchCount={openPitchCount}
                     draftCount={draftCount}
                     onDrafts={() => setShowDrafts(true)}
@@ -1534,7 +1534,7 @@ export function SchedulePage() {
             </Link>
             <NewSessionMenu
               canAdd={canWrite}
-              pitchHref={event.pitchesEnabled ? `/e/${slug}/proposals` : null}
+              pitchHref={event.pitchesEnabled ? `/e/${slug}/pitches` : null}
               pitchCount={openPitchCount}
               draftCount={draftCount}
               onDrafts={() => setShowDrafts(true)}

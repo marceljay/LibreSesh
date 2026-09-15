@@ -27,7 +27,7 @@ export function auditSubjectHref(slug: string, e: AuditEntryDto): string | null 
       return trashed ? admin('people') : `/e/${slug}/p/${e.entityId}`;
     case 'proposal':
       // The board holds no bin: a withdrawn pitch is gone.
-      return trashed ? null : `/e/${slug}/proposals`;
+      return trashed ? null : `/e/${slug}/pitches`;
     case 'room':
     case 'tag':
     case 'track':

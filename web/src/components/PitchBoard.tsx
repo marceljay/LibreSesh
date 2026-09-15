@@ -10,8 +10,8 @@ import { dayLabel, todayInZone } from '../lib/format';
 import { renderMarkdown } from '../lib/markdown';
 import { useMe } from '../lib/useMe';
 import { EventBar } from './EventBar';
-import { PlaceProposalModal } from './PlaceProposalModal';
-import { ProposalModal } from './ProposalModal';
+import { PlacePitchModal } from './PlacePitchModal';
+import { PitchModal } from './PitchModal';
 import {
   EmptyState,
   PrimaryButton,
@@ -25,8 +25,8 @@ import {
 type Status = 'loading' | 'login page' | 'error' | 'ready';
 
 /** The unconference pitch board (SPEC §8). A self-contained page: it fetches
- *  the bundle itself and is reached at `/e/:slug/proposals`. */
-export function ProposalBoard() {
+ *  the bundle itself and is reached at `/e/:slug/pitches`. */
+export function PitchBoard() {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -291,7 +291,7 @@ export function ProposalBoard() {
       </main>
 
       {editing && (
-        <ProposalModal
+        <PitchModal
           proposal={editing.proposal}
           people={bundle.people}
           role={bundle.role}
@@ -309,7 +309,7 @@ export function ProposalBoard() {
       )}
 
       {placing && (
-        <PlaceProposalModal
+        <PlacePitchModal
           proposal={placing}
           rooms={bundle.rooms}
           timezone={timezone}

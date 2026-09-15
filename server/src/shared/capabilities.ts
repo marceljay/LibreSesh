@@ -45,7 +45,7 @@ export const CAPABILITIES = [
   },
   {
     id: 'proposal.create',
-    label: 'Pitch a session to the proposal board',
+    label: 'Pitch a session to the pitch board',
     defaults: ['user', 'speaker', 'admin'],
   },
   {

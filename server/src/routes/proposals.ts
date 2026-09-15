@@ -46,7 +46,7 @@ export function proposalRoutes(ctx: Ctx): Router {
         'SELECT * FROM proposals WHERE id = ? AND event_id = ? AND deleted_at IS NULL',
       )
       .get(id, eventId);
-    if (!row) throw notFound('No such proposal');
+    if (!row) throw notFound('No such pitch');
     return row;
   };
 

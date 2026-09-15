@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
  * like "the button does nothing".
  *
  * That is exactly what happened: the notification bell sent a pitch
- * notification to `/e/:slug/pitches` while the route has always been
+ * notification to `/e/:slug/pitches` while the route was still
  * `/e/:slug/proposals`, so opening one bounced you to the front door. The
  * suite could not see it — there is no DOM here, and a route table is not the
  * kind of thing an integration test walks.

@@ -66,7 +66,7 @@ describe('one option is never a menu', () => {
 
   it('takes the board switch as a null href, not a missing sibling', () => {
     expect(schedule).toMatch(
-      /pitchHref=\{event\.pitchesEnabled \? `\/e\/\$\{slug\}\/proposals` : null\}/,
+      /pitchHref=\{event\.pitchesEnabled \? `\/e\/\$\{slug\}\/pitches` : null\}/,
     );
     expect(schedule).toContain('canAdd={canWrite}');
   });

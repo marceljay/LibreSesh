@@ -79,7 +79,7 @@ describe('the board’s way in', () => {
   const read = (...parts: string[]) =>
     readFileSync(join(__dirname, '..', 'web', 'src', ...parts), 'utf8');
   const schedule = read('pages', 'SchedulePage.tsx');
-  const board = read('components', 'ProposalBoard.tsx');
+  const board = read('components', 'PitchBoard.tsx');
   const menu = read('components', 'NewSessionMenu.tsx');
 
   it('says what you can do there, not what the place is called', () => {
@@ -100,7 +100,7 @@ describe('the board’s way in', () => {
     // The link is inside the merged control now, so the switch reaches it as a
     // null href rather than by not rendering a sibling.
     expect(schedule).toMatch(
-      /pitchHref=\{event\.pitchesEnabled \? `\/e\/\$\{slug\}\/proposals` : null\}/,
+      /pitchHref=\{event\.pitchesEnabled \? `\/e\/\$\{slug\}\/pitches` : null\}/,
     );
     expect(menu).toContain('if (pitchHref === null)');
     expect(board).toMatch(/if \(!event\.pitchesEnabled\) \{/);

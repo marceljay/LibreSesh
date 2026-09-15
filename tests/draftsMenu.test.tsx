@@ -37,7 +37,7 @@ afterEach(() => {
 
 describe('the + Session menu', () => {
   it('does not mention drafts while there are none', () => {
-    menu({ pitchHref: '/e/testconf/proposals' });
+    menu({ pitchHref: '/e/testconf/pitches' });
     fireEvent.click(screen.getByRole('button', { name: 'Add or pitch a session' }));
     expect(screen.getByText('Add a session')).toBeTruthy();
     expect(screen.queryByText('View drafts')).toBeNull();

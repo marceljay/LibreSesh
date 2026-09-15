@@ -95,7 +95,7 @@ here:
   (8, the primitives themselves) and the 3 `[&_a]:underline` in prose wrappers
   (links inside rendered markdown keep their underline deliberately). Today's
   spread (54 before the 3 prose wrappers come off): ProfilePage 7,
-  ProposalBoard 6, SessionDetail 5, AdminPage 5, SessionModal 4,
+  PitchBoard 6, SessionDetail 5, AdminPage 5, SessionModal 4,
   SchedulePage 4, LandingPage 3, AgendaPage 3, SearchPage 2, NewEventPage 2,
   ImportPage 2, MentionText 2, FilterMenu 2, EventListPage 2, AdminBackup 1,
   AdminAudit 1, NotificationBell 1, Tour 1, Login page 1.
@@ -674,8 +674,8 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 
 - **Mentions in pitches.** [LIB-110] Mentions resolve in descriptions, bios and
   notifications; a pitch is the one place they do not. What is left is the
-  same three steps for a pitch (`ProposalBoard`,
-  `ProposalModal`, `routes/proposals.ts`): the `people` list where it
+  same three steps for a pitch (`PitchBoard`,
+  `PitchModal`, `routes/proposals.ts`): the `people` list where it
   renders, the composer, and a notify call on its write route with a
   `proposal` subject — which the bell already knows how to open. And
   resolution is still by username only, so a mention of an unclaimed profile
@@ -720,9 +720,9 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   revert and could easily read as one.
 
 - **Pitch board.** [LIB-114, LIB-115] Showing the creator is done — a card reads "pitched by
-  {name}" (`ProposalBoard.tsx:332`). What is left is defaulting the creator as
+  {name}" (`PitchBoard.tsx:332`). What is left is defaulting the creator as
   host (a new pitch starts with an empty speaker field,
-  `ProposalModal.tsx:42`) and splitting the board into hot/new. The plan that
+  `PitchModal.tsx:42`) and splitting the board into hot/new. The plan that
   carried these was retired on 2026-09-04; its
   up/down-vote assumption is **withdrawn** (decided 2026-08-31): interest stays
   one-way, so no `proposal_votes` table, no migration, and `interestCount`
@@ -753,7 +753,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
     session form.
 
 - **Compact button overrides do nothing.** [LIB-121] `SecondaryButton className="py-1"`
-  and the `py-1.5` variants in DetailSheet, ProfilePage, ProposalBoard and
+  and the `py-1.5` variants in DetailSheet, ProfilePage, PitchBoard and
   AdminPermissions are dead: Tailwind emits `.py-1` and `.py-1.5` _before_ the
   primitives' `.py-2.5`, so the base always wins and those buttons are full
   height. Verified in the built CSS on 2026-08-31. Predates the button-height

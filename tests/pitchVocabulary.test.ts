@@ -17,8 +17,14 @@ import { describe, expect, it } from 'vitest';
  *
  * So "pitch" keeps the board — chosen deliberately, and the reason is written
  * beside it in SchedulePage — and "propose" is retired from what a person
- * reads. The route, the `Proposal*` components and the `proposal.create`
- * capability are internal names and a separate decision; they stay for now.
+ * reads. The route and the components have since followed: `/e/:slug/pitches`,
+ * `PitchBoard`, `PitchModal`, `PlacePitchModal`, with the old path redirected.
+ *
+ * What still says proposal is the wire: the API path, `ProposalDto`, the
+ * `proposal.*` change names, the `proposals` export part, the tables, and the
+ * `proposal.create` / `proposal.vote` capability ids, which are stored per
+ * event and published in an export. Renaming those breaks a contract other
+ * people hold, so it is a migration and a decision of its own, not a rename.
  * LIB-191.
  */
 const WEB = join(__dirname, '..', 'web', 'src');
@@ -60,9 +66,8 @@ describe('the word is gone from everything a person reads', () => {
 
   for (const [where, source] of copy) {
     it(`leaves none of it in ${where}`, () => {
-      // Only the prose. `proposals`/`ProposalBoard`/`proposal.create` are
-      // identifiers and route segments, and are deliberately untouched — the
-      // rename behind those is its own decision, with a redirect attached.
+      // Only the prose. `proposals` and `proposal.create` are wire names —
+      // an API path and a stored capability id — and are left alone here.
       const strings = prose(source).match(/'[^'\n]{12,}'|"[^"\n]{12,}"/g) ?? [];
       const guilty = strings.filter((s) => /\bpropos(e|es|ed|ing)\b/i.test(s));
       expect(guilty).toEqual([]);
@@ -83,6 +88,6 @@ describe('pitch still means the board, and only the board', () => {
     expect(read('components', 'NewSessionMenu.tsx')).toContain('Pitch a session');
     expect(schedule).toContain("title: 'Add or pitch a session'");
     expect(schedule).toContain('pitch an idea with neither');
-    expect(read('components', 'ProposalModal.tsx')).toContain("'Pitch a session'");
+    expect(read('components', 'PitchModal.tsx')).toContain("'Pitch a session'");
   });
 });

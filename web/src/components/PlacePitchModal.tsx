@@ -23,7 +23,7 @@ import {
   TextInput,
 } from './ui';
 
-export interface PlaceProposalModalProps {
+export interface PlacePitchModalProps {
   proposal: ProposalDto;
   rooms: RoomDto[];
   timezone: string;
@@ -39,7 +39,7 @@ export interface PlaceProposalModalProps {
 
 /** Organiser-only: turn a pitch into a real session by giving it a room and a
  *  slot. Fields mirror SessionModal, including the wall-clock → UTC conversion. */
-export function PlaceProposalModal({
+export function PlacePitchModal({
   proposal,
   rooms,
   timezone,
@@ -51,7 +51,7 @@ export function PlaceProposalModal({
   saving,
   onCancel,
   onPlace,
-}: PlaceProposalModalProps) {
+}: PlacePitchModalProps) {
   const [roomId, setRoomId] = useState<number>(rooms[0]?.id ?? 0);
   const [day, setDay] = useState(defaultDay);
   const [start, setStart] = useState(fmtMin(Math.max(dayStartMin, 14 * 60)));

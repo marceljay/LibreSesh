@@ -24,7 +24,7 @@ const ui = read('components', 'ui.tsx');
 const CALL_SITES = [
   ['components', 'SessionDetail.tsx'],
   ['components', 'ListView.tsx'],
-  ['components', 'ProposalBoard.tsx'],
+  ['components', 'PitchBoard.tsx'],
   ['pages', 'BoardPreview.tsx'],
 ];
 

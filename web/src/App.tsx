@@ -1,5 +1,5 @@
 import { type ComponentType, lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { ConfirmProvider, Spinner, ToastProvider } from './components/ui';
 import { MeProvider } from './lib/useMe';
@@ -28,13 +28,21 @@ const SchedulePage = named(() => import('./pages/SchedulePage'), 'SchedulePage')
 const SearchPage = named(() => import('./pages/SearchPage'), 'SearchPage');
 const AgendaPage = named(() => import('./pages/AgendaPage'), 'AgendaPage');
 const TrackPage = named(() => import('./pages/TrackPage'), 'TrackPage');
-const ProposalBoard = named(() => import('./components/ProposalBoard'), 'ProposalBoard');
+const PitchBoard = named(() => import('./components/PitchBoard'), 'PitchBoard');
 const ProfilePage = named(() => import('./pages/ProfilePage'), 'ProfilePage');
 const AdminPage = named(() => import('./pages/AdminPage'), 'AdminPage');
 
 /** Dev server only. The guard is a build-time constant, so the production
  *  bundle drops both the branch and the chunk behind it. */
 const DevBar = import.meta.env.DEV ? named(() => import('./components/DevBar'), 'DevBar') : null;
+
+/** `/e/:slug/proposals` → `/e/:slug/pitches`, keeping the slug. A rename of
+ *  our own must not turn somebody's saved link into the catch-all's trip back
+ *  to `/`, which is what `path="*"` would otherwise do with it. */
+function PitchesMoved() {
+  const { slug = '' } = useParams();
+  return <Navigate to={`/e/${slug}/pitches`} replace />;
+}
 
 export function App() {
   // Always mounted, so a sunset (or another tab's toggle) reaches every page.
@@ -70,7 +78,10 @@ export function App() {
                   {/* One track across every day, which the day-scoped grid
                       cannot show. Opened from the track's column card. */}
                   <Route path="/e/:slug/t/:trackId" element={<TrackPage />} />
-                  <Route path="/e/:slug/proposals" element={<ProposalBoard />} />
+                  <Route path="/e/:slug/pitches" element={<PitchBoard />} />
+                  {/* The board answered to `/proposals` until the rename.
+                      Every link handed out under the old path still opens it. */}
+                  <Route path="/e/:slug/proposals" element={<PitchesMoved />} />
                   <Route path="/e/:slug/p/:personId" element={<ProfilePage />} />
                   <Route path="/e/:slug/admin" element={<AdminPage />} />
                   {/* Home is `/`, the same place the logo goes, and a URL that no

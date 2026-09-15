@@ -166,10 +166,20 @@ describe('event pages', () => {
     expect(await screen.findByText('My agenda')).toBeTruthy();
   });
 
-  it('/e/:slug/proposals', async () => {
+  it('/e/:slug/pitches', async () => {
+    await viewer();
+    open(`/e/${SLUG}/pitches`);
+    expect(await screen.findByText(/pitch board|Proposal pool/)).toBeTruthy();
+  });
+
+  it('/e/:slug/proposals still lands on the board, at its new address', async () => {
+    // The board was renamed from proposals to pitches. A link handed out
+    // before that has to keep working, and the catch-all would otherwise
+    // answer it with a silent trip to `/`.
     await viewer();
     open(`/e/${SLUG}/proposals`);
     expect(await screen.findByText(/pitch board|Proposal pool/)).toBeTruthy();
+    expect(window.location.pathname).toBe(`/e/${SLUG}/pitches`);
   });
 
   it('/e/:slug/p/:personId', async () => {

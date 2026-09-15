@@ -16,7 +16,7 @@ import {
   TextInput,
 } from './ui';
 
-export interface ProposalModalProps {
+export interface PitchModalProps {
   proposal?: ProposalDto;
   people: PersonDto[];
   role: Role;
@@ -31,7 +31,7 @@ export interface ProposalModalProps {
 
 /** Pitch a session with no room or time yet — mirrors SessionModal's
  *  select-or-new speaker pattern (SPEC §8). */
-export function ProposalModal({
+export function PitchModal({
   proposal,
   people,
   role,
@@ -41,7 +41,7 @@ export function ProposalModal({
   onCancel,
   onSave,
   onDelete,
-}: ProposalModalProps) {
+}: PitchModalProps) {
   const [title, setTitle] = useState(proposal?.title ?? '');
   const [description, setDescription] = useState(proposal?.description ?? '');
   // A pitch is by one person, so this is a list of at most one — the control

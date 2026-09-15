@@ -83,7 +83,7 @@ export function NotificationBell({
 
   const go = (n: NotificationDto) => {
     setOpen(false);
-    if (n.subjectType === 'proposal') navigate(`/e/${slug}/proposals`);
+    if (n.subjectType === 'proposal') navigate(`/e/${slug}/pitches`);
     else if (n.subjectType === 'person') navigate(`/e/${slug}/p/${n.subjectId}`);
     else navigate(`/e/${slug}/s/${n.subjectId}`);
   };

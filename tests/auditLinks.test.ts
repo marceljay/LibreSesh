@@ -51,7 +51,7 @@ describe('where an audit line opens', () => {
   });
 
   it('a pitch opens the board, and a withdrawn one goes nowhere — the board has no bin', () => {
-    expect(auditSubjectHref('conf', line({ entity: 'proposal' }))).toBe('/e/conf/proposals');
+    expect(auditSubjectHref('conf', line({ entity: 'proposal' }))).toBe('/e/conf/pitches');
     expect(
       auditSubjectHref('conf', line({ entity: 'proposal', entityState: 'trashed' })),
     ).toBeNull();

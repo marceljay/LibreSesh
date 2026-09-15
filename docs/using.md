@@ -22,7 +22,7 @@ an event nobody can moderate cannot be created by accident.
 | Delete your own contributions | | ✓ | ✓ | ✓ |
 | Create sessions in rooms that allow booking | | ✓ | ✓ | ✓ |
 | Edit and delete your own sessions | | ✓ | ✓ | ✓ |
-| Pitch a session to the proposal board | | ✓ | ✓ | ✓ |
+| Pitch a session to the pitch board | | ✓ | ✓ | ✓ |
 | Hide anyone's contribution | | | | ✓ |
 
 The rest is structural and not configurable, because it is how an event is

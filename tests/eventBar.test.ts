@@ -25,7 +25,7 @@ const PAGES = [
   ['pages', 'SearchPage.tsx'],
   ['pages', 'ProfilePage.tsx'],
   ['pages', 'AdminPage.tsx'],
-  ['components', 'ProposalBoard.tsx'],
+  ['components', 'PitchBoard.tsx'],
 ] as const;
 
 describe('one event bar, on every page of an event', () => {
@@ -71,7 +71,7 @@ describe('one event bar, on every page of an event', () => {
     for (const [dir, file] of [
       ['pages', 'ProfilePage.tsx'],
       ['pages', 'AdminPage.tsx'],
-      ['components', 'ProposalBoard.tsx'],
+      ['components', 'PitchBoard.tsx'],
     ] as const) {
       expect(read(dir, file)).toMatch(
         /onSignOut=\{\(\) => void api\.logout\(slug\)\.then\(\(\) => navigate\(`\/e\/\$\{slug\}`\)\)\}/,

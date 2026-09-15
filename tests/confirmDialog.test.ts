@@ -16,7 +16,7 @@ const read = (...parts: string[]) => readFileSync(join(WEB, ...parts), 'utf8');
 const CALLERS = [
   ['pages', 'SchedulePage.tsx'],
   ['pages', 'AdminPage.tsx'],
-  ['components', 'ProposalBoard.tsx'],
+  ['components', 'PitchBoard.tsx'],
 ];
 
 describe('confirming something that cannot be taken back', () => {
@@ -47,7 +47,7 @@ describe('confirming something that cannot be taken back', () => {
     for (const kind of ['rooms', 'tracks', 'tags']) {
       expect(admin, kind).toContain(`The bin does not hold ${kind}`);
     }
-    expect(read('components', 'ProposalBoard.tsx')).toContain('the bin does not hold pitches');
+    expect(read('components', 'PitchBoard.tsx')).toContain('the bin does not hold pitches');
   });
 
   /**
