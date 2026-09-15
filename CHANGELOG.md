@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A provider that throws no longer blanks the whole app.** The error boundary
+  sat inside the router and the three context providers, so it caught a route
+  that threw but nothing thrown by `MeProvider`, the theme effect or the
+  router's own setup — and those are the failures that take every page at once
+  rather than one route. It is now mounted at the root as well, around the
+  whole app, so nothing below `createRoot` renders unguarded. The boundary is
+  also rendered in the suite for the first time: a component that throws is
+  mounted inside it and the fallback a visitor is left looking at is asserted,
+  where before only its source text was read.
+
 ## [0.7.4] — 2026-09-15
 
 A patch number that understates one thing: read rate limiting is gone. The
