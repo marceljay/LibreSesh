@@ -4,6 +4,12 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "noEmit": true,
+    // The Vite config imports `./devInfo.ts` by its real filename, which is
+    // what Vite's `configLoader: 'native'` requires and what Node's own
+    // TypeScript support resolves. Nothing here is emitted, so allowing the
+    // extension costs nothing; it permits the spelling, it does not ask for
+    // it, and every import under `src/` is untouched.
+    "allowImportingTsExtensions": true,
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
@@ -11,5 +17,11 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "../server/src/shared/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "devInfo.ts",
+    "../server/src/shared/**/*.ts"
+  ]
 }

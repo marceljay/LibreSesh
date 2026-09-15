@@ -122,6 +122,19 @@ export function relativeTime(iso: string, now: number = Date.now()): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+/** "20 May, 10:00" — an instant on the event's clock, for a session's history
+ *  line. The event's zone, not the reader's: the programme is read in it, so
+ *  "created at 10:00" should mean the 10:00 on that programme. */
+export function fmtInstant(iso: string, timezone: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: timezone,
+  });
+}
+
 /** Minutes since midnight in the event's timezone, at `instant`. */
 export const nowMinuteOfDay = (timezone: string, instant: Date = new Date()): number =>
   localMinuteOfDay(instant, timezone);

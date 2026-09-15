@@ -4,6 +4,93 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.7.3] — 2026-09-14
+
+A patch number that understates two things: `POST /api/events/:slug/clone`
+is gone, so any script that called it must move to export-then-import, and
+the bundle is now built for Chrome 111, Firefox 114 and Safari 16.4. No
+migration, and nothing an operator has to do at deploy time.
+
+### Added
+
+- **The dev server names the checkout it serves.** Under `npm run dev` a
+  strip along the bottom of every page says which working tree and branch
+  this is, the commit the tree sits on (with a note when it has uncommitted
+  changes) and when the server came up, read from git as you go rather than
+  stamped at start. With several worktrees each running a server, the tab
+  alone did not say which checkout was on screen. The × folds it to a corner
+  tab that brings it back. Only the dev server has it; a production build
+  carries neither the bar nor its request.
+- **A session says who created it, and when.** Under the time and room, a
+  history line behind a small clock: *Created by @name* with the moment on
+  the event's clock, and *edited …* once it has been changed since. The
+  speakers are who gives a session; the person who booked the slot is often
+  somebody else, and until now nothing on the session said who. The full
+  page carries the line for everyone; the panel over the grid shows it to
+  organisers alone, so an attendee's quick look stays as short as it was.
+  Each row of the Drafts list names its creator the same way.
+- **The export carries the whole frame.** Alongside the settings it always
+  wrote, an event's JSON export now has its audit retention, whether it badges
+  official sessions, whether it runs a pitch board, and the **permission
+  matrix** — every capability with the roles allowed it, as the effective
+  matrix rather than the stored overrides, so the file reads on its own. Roles
+  themselves stay out: who holds admin is bound to identities, like the
+  password hashes. Sessions carry their `seriesId`, so a linked run is one run
+  in the file too.
+- **The importer reads all of it back.** The four settings and the matrix are
+  optional keys on the document; a capability this version no longer knows is
+  skipped with a warning rather than refused, so an old export keeps opening.
+  A `series` label on session rows links them on landing, under a fresh id,
+  and an export's `seriesId` becomes that label at the door.
+- **Every part of the export is a checkbox.** Settings, permissions, rooms,
+  tracks, tags, formats and breaks join sessions, people, pitches and
+  contributions as things an export can leave out; only the event's name,
+  address, timezone and dates are always written. Untick everything and the
+  file is those four lines. What is left out is pointed at by nothing that
+  stays: a session exported without tags names none, a pitch exported without
+  sessions has no placed session. Sessions need rooms and contributions need
+  sessions, and the boxes say so. On the route, `?include=` takes any of the
+  eleven names.
+- **The import rehearsal has a box per part.** After *Check it*, the parts
+  the document carries — settings, permissions, rooms, tracks, tags, formats,
+  breaks, sessions — are checkboxes; unticking one leaves it out and runs the
+  check again, so the counts on screen are always the counts of what Import
+  sends. What goes takes its references with it: a session loses its track,
+  tags or format when that part is left out, and the sessions go with the
+  rooms. Profiles, pitches and contributions are not offered because the
+  importer never reads them; the first warning still says so.
+- **The import page takes a new name and dates,** next to the address it
+  already took. Blank means "as written". With new dates, breaks and track
+  hours pinned to a day of the old ones are left out rather than refused, and
+  the check names each one — a lunch that runs every day comes along, last
+  year's Friday party does not.
+
+### Removed
+
+- **Duplicate Event.** The form on the Settings tab and `POST
+  /api/events/:slug/clone` are gone. Running an event again is the round trip:
+  Backup → untick all four parts → download, then Import with a new address,
+  name and dates. The clone was a second, hand-written copy of event creation
+  that had already fallen behind — it forgot tracks, breaks and the matrix and
+  demanded all three passwords when creating by hand no longer did — and the
+  round trip carries everything it did plus what it forgot. It also asks for
+  the instance password, as every other way of making an event does; the
+  clone was the one path that did not. Searching Manage Event for "duplicate"
+  or "clone" now leads to Backup. Old audit rows still read "duplicated".
+
+### Changed
+
+- **The build and test tools took their last two majors.** Vitest 3 → 5
+  carried the two moderate advisories `npm audit` still listed, a path
+  traversal in its module mocker that only a running test process could
+  reach; the audit reads **0** again. Vite 6 → 8 swaps esbuild and Rollup
+  for Oxc and Rolldown underneath, and raises the browsers the bundle is
+  built for to Chrome 111, Firefox 114 and Safari 16.4 — anything older
+  gets the same app it did before only if it can run that syntax. Nothing
+  in the served output changes on purpose: the built app was driven through
+  headless Chromium with console and network clean, and the dev server's
+  API proxy behaves as before. Neither package runs in the deployed image.
+
 ## [0.7.0] — 2026-09-14
 
 

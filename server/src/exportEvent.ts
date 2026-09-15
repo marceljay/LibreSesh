@@ -12,6 +12,7 @@ import type {
 } from './db.js';
 import { NameResolver } from './eventIdentity.js';
 import { parseLinks, speakerNames, speakersBySession, tagIdsBySession } from './mappers.js';
+import { getPermissions } from './permissions.js';
 import { trackWindowsFor } from './trackHours.js';
 import { EXPORT_PARTS, type ExportPart } from './shared/exportParts.js';
 import type { EventExport } from './shared/types.js';
@@ -29,11 +30,12 @@ import type { EventExport } from './shared/types.js';
  * Soft-deleted rows are left out too: this is the event as it stands, not its
  * undo history, which lives in Manage Event → Trash.
  *
- * `parts` is what the organiser ticked: the frame — settings, rooms, tracks,
- * tags, formats, breaks — is always written, and each of the four parts in
- * `EXPORT_PARTS` is written only if asked for. A part left out is *absent*
- * from the file rather than empty, so a reader can tell "none" from "not
- * exported"; the queries for it are not run at all.
+ * `parts` is what the organiser ticked: each part in `EXPORT_PARTS` is
+ * written only if asked for, and only the event's identity — name, address,
+ * timezone, dates — is always there, because without it the file cannot be
+ * imported as anything. A part left out is *absent* from the file rather than
+ * empty, so a reader can tell "none" from "not exported"; the queries for it
+ * are not run at all, and nothing that is written points at it.
  */
 export function exportEvent(
   db: Db,
@@ -41,39 +43,6 @@ export function exportEvent(
   parts: ReadonlySet<ExportPart> = new Set(EXPORT_PARTS),
 ): EventExport {
   const eventId = event.id;
-
-  const rooms = db
-    .prepare<[number], RoomRow>(
-      'SELECT * FROM rooms WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
-    )
-    .all(eventId);
-  const breaks = db
-    .prepare<[number], BreakRow>(
-      'SELECT * FROM breaks WHERE event_id = ? ORDER BY start_min, date IS NOT NULL, id',
-    )
-    .all(eventId);
-  const tracks = db
-    .prepare<[number], TrackRow>(
-      'SELECT * FROM tracks WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
-    )
-    .all(eventId);
-  const trackWindows = trackWindowsFor(
-    db,
-    tracks.map((t) => t.id),
-  );
-  const tags = db
-    .prepare<[number], TagRow>(
-      'SELECT * FROM tags WHERE event_id = ? AND deleted_at IS NULL ORDER BY name',
-    )
-    .all(eventId);
-  const formats = db
-    .prepare<[number], FormatRow>(
-      'SELECT * FROM session_formats WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
-    )
-    .all(eventId);
-  // Authorship survives as a display name, so the resolver is only needed by
-  // the parts that carry one.
-  const names = new NameResolver(db, eventId);
 
   const dump: EventExport = {
     format: 'libresesh.event',
@@ -85,15 +54,36 @@ export function exportEvent(
       timezone: event.timezone,
       startDate: event.start_date,
       endDate: event.end_date,
-      dayStartMin: event.day_start_min,
-      dayEndMin: event.day_end_min,
-      weekRailFrom: event.week_rail_from,
-      userRoleLabel: event.user_role_label,
-      defaultView: event.default_view === 'cal' ? 'cal' : 'list',
       archived: event.archived === 1,
       createdAt: event.created_at,
+      ...(parts.has('settings')
+        ? {
+            dayStartMin: event.day_start_min,
+            dayEndMin: event.day_end_min,
+            weekRailFrom: event.week_rail_from,
+            userRoleLabel: event.user_role_label,
+            defaultView: event.default_view === 'cal' ? ('cal' as const) : ('list' as const),
+            auditKeep: event.audit_keep,
+            showOfficialBadge: event.show_official_badge === 1,
+            pitchesEnabled: event.pitches_enabled === 1,
+          }
+        : {}),
     },
-    rooms: rooms.map((r) => ({
+  };
+
+  if (parts.has('permissions')) {
+    // The effective matrix, not the stored overrides: a reader should not
+    // need this version's defaults to know what the event allowed.
+    dump.permissions = getPermissions(db, eventId);
+  }
+
+  if (parts.has('rooms')) {
+    const rooms = db
+      .prepare<[number], RoomRow>(
+        'SELECT * FROM rooms WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
+      )
+      .all(eventId);
+    dump.rooms = rooms.map((r) => ({
       id: r.id,
       name: r.name,
       description: r.description,
@@ -101,8 +91,20 @@ export function exportEvent(
       color: r.color,
       openBooking: r.open_booking === 1,
       sortOrder: r.sort_order,
-    })),
-    tracks: tracks.map((t) => ({
+    }));
+  }
+
+  if (parts.has('tracks')) {
+    const tracks = db
+      .prepare<[number], TrackRow>(
+        'SELECT * FROM tracks WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
+      )
+      .all(eventId);
+    const trackWindows = trackWindowsFor(
+      db,
+      tracks.map((t) => t.id),
+    );
+    dump.tracks = tracks.map((t) => ({
       id: t.id,
       name: t.name,
       description: t.description,
@@ -111,17 +113,45 @@ export function exportEvent(
       startMin: t.start_min,
       endMin: t.end_min,
       windows: trackWindows.get(t.id) ?? [],
-    })),
-    tags: tags.map((t) => ({ id: t.id, name: t.name, color: t.color })),
-    formats: formats.map((f) => ({ id: f.id, name: f.name, color: f.color })),
-    breaks: breaks.map((b) => ({
+    }));
+  }
+
+  if (parts.has('tags')) {
+    const tags = db
+      .prepare<[number], TagRow>(
+        'SELECT * FROM tags WHERE event_id = ? AND deleted_at IS NULL ORDER BY name',
+      )
+      .all(eventId);
+    dump.tags = tags.map((t) => ({ id: t.id, name: t.name, color: t.color }));
+  }
+
+  if (parts.has('formats')) {
+    const formats = db
+      .prepare<[number], FormatRow>(
+        'SELECT * FROM session_formats WHERE event_id = ? AND deleted_at IS NULL ORDER BY sort_order, id',
+      )
+      .all(eventId);
+    dump.formats = formats.map((f) => ({ id: f.id, name: f.name, color: f.color }));
+  }
+
+  if (parts.has('breaks')) {
+    const breaks = db
+      .prepare<[number], BreakRow>(
+        'SELECT * FROM breaks WHERE event_id = ? ORDER BY start_min, date IS NOT NULL, id',
+      )
+      .all(eventId);
+    dump.breaks = breaks.map((b) => ({
       id: b.id,
       label: b.label,
       startMin: b.start_min,
       endMin: b.end_min,
       date: b.date,
-    })),
-  };
+    }));
+  }
+
+  // Authorship survives as a display name, so the resolver is only needed by
+  // the parts that carry one.
+  const names = new NameResolver(db, eventId);
 
   if (parts.has('people')) {
     const people = db
@@ -170,8 +200,10 @@ export function exportEvent(
     dump.sessions = sessions.map((s) => ({
       id: s.id,
       roomId: s.room_id,
-      trackId: s.track_id,
-      formatId: s.format_id,
+      // A reference to a part left out of the file would point at nothing,
+      // and the importer refuses a file that points at nothing.
+      trackId: parts.has('tracks') ? s.track_id : null,
+      formatId: parts.has('formats') ? s.format_id : null,
       type: s.type,
       blocksOpenBooking: s.blocks_open_booking === 1,
       title: s.title,
@@ -181,7 +213,8 @@ export function exportEvent(
       livestreams: parseLinks(s.livestreams),
       startsAt: s.starts_at,
       endsAt: s.ends_at,
-      tagIds: sessionTags.get(s.id) ?? [],
+      tagIds: parts.has('tags') ? (sessionTags.get(s.id) ?? []) : [],
+      seriesId: s.series_id,
       createdByName: names.get(s.created_by),
       createdAt: s.created_at,
       updatedAt: s.updated_at,
@@ -230,8 +263,8 @@ export function exportEvent(
       description: p.description,
       speakerId: p.speaker_id,
       speaker: speakerName(p.speaker_id),
-      tagIds: proposalTags.get(p.id) ?? [],
-      placedSessionId: p.placed_session_id,
+      tagIds: parts.has('tags') ? (proposalTags.get(p.id) ?? []) : [],
+      placedSessionId: parts.has('sessions') ? p.placed_session_id : null,
       createdByName: names.get(p.created_by),
       createdAt: p.created_at,
       updatedAt: p.updated_at,

@@ -34,7 +34,7 @@ export function meRoutes(ctx: Ctx): Router {
     commit: ctx.config.buildCommit,
   });
 
-  router.get('/me', limit(ctx.limiter, 'read'), (req, res) => {
+  router.get('/me', (req, res) => {
     res.json(me(req.identity, req.identity.display_name));
   });
 

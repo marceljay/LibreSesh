@@ -72,26 +72,6 @@ describe('the pitch board is an event setting', () => {
     await admin.patch('/api/e/testconf/settings').send({ pitchesEnabled: true }).expect(200);
     await attendee.post('/api/e/testconf/proposals').send({ title: 'In time' }).expect(201);
   });
-
-  it('carries into a clone, which runs the same shape of event', async () => {
-    await admin.patch('/api/e/testconf/settings').send({ pitchesEnabled: false }).expect(200);
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'testconf-2',
-        newName: 'Testconf 2',
-        startDate: '2026-06-01',
-        endDate: '2026-06-02',
-        viewerPassword: 'viewer-pw-2',
-        userPassword: 'user-pw-2',
-        adminPassword: 'admin-pw-2',
-      })
-      .expect(201);
-
-    const clone = await actorWithRole(harness, 'testconf-2', 'admin-pw-2');
-    const bundle = await clone.get('/api/e/testconf-2/bundle').expect(200);
-    expect(bundle.body.event.pitchesEnabled).toBe(false);
-  });
 });
 
 /** No DOM in this suite, so the client half is pinned by shape. */

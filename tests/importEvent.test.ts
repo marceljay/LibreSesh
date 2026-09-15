@@ -281,6 +281,112 @@ describe('event import from JSON', () => {
     expect(await failure(doc, 400)).toMatch(/close after it opens/);
   });
 
+  it('takes the rest of Settings, and lands the defaults when it says nothing', async () => {
+    const doc = document();
+    const bare = await post(doc);
+    const settings = (slug: string) =>
+      harness.db
+        .prepare<[string], Record<string, number>>(
+          'SELECT week_rail_from, audit_keep, show_official_badge, pitches_enabled FROM events WHERE slug = ?',
+        )
+        .get(slug);
+    expect(settings(bare.slug)).toEqual({
+      week_rail_from: 8,
+      audit_keep: 1000,
+      show_official_badge: 0,
+      pitches_enabled: 1,
+    });
+
+    await post({
+      ...doc,
+      event: {
+        ...doc.event,
+        slug: 'photoconf-2',
+        weekRailFrom: 21,
+        auditKeep: 0,
+        showOfficialBadge: true,
+        pitchesEnabled: false,
+      },
+    });
+    expect(settings('photoconf-2')).toEqual({
+      week_rail_from: 21,
+      audit_keep: 0,
+      show_official_badge: 1,
+      pitches_enabled: 0,
+    });
+  });
+
+  it('applies who may do what, and skips a capability it does not know', async () => {
+    const doc = document();
+    const result = await post({
+      ...doc,
+      permissions: {
+        'session.star': ['user', 'speaker'],
+        'time.travel': ['admin'],
+      },
+    });
+    expect(result.warnings).toEqual([
+      'permissions: "time.travel" is not something this version can grant, skipped',
+    ]);
+    const admin = await actorWithRole(
+      harness,
+      'photoconf',
+      result.generatedPasswords.adminPassword!,
+    );
+    const bundle = await admin.get('/api/e/photoconf/bundle').expect(200);
+    // Admin is always on, listed or not; the rest is as the document said.
+    expect(bundle.body.permissions['session.star']).toEqual(['user', 'speaker', 'admin']);
+    expect(bundle.body.permissions['proposal.vote']).toEqual([
+      'viewer',
+      'user',
+      'speaker',
+      'admin',
+    ]);
+  });
+
+  it('refuses a role it does not have in permissions', async () => {
+    const doc = document();
+    await failure({ ...doc, permissions: { 'session.star': ['owner'] } }, 400);
+  });
+
+  it('links the rows that share a series label', async () => {
+    const doc = document();
+    doc.sessions = [
+      {
+        room: 'Main hall',
+        title: 'Morning yoga',
+        date: DAY_ONE,
+        start: '08:00',
+        end: '09:00',
+        series: 'yoga',
+      },
+      {
+        room: 'Main hall',
+        title: 'Morning yoga',
+        date: DAY_TWO,
+        start: '08:00',
+        end: '09:00',
+        series: 'Yoga ',
+      },
+      { room: 'Side room', title: 'On its own', date: DAY_ONE, start: '10:00', end: '11:00' },
+    ] as typeof doc.sessions;
+    const result = await post(doc);
+    const admin = await actorWithRole(
+      harness,
+      'photoconf',
+      result.generatedPasswords.adminPassword!,
+    );
+    const bundle = await admin.get('/api/e/photoconf/bundle').expect(200);
+    const sessions = bundle.body.sessions as { title: string; seriesId: string | null }[];
+    const yoga = sessions.filter((s) => s.title === 'Morning yoga');
+    expect(yoga).toHaveLength(2);
+    expect(yoga[0]!.seriesId).toEqual(expect.any(String));
+    expect(yoga[1]!.seriesId).toBe(yoga[0]!.seriesId);
+    // The label is not the id: nothing from the document lands as it was typed.
+    expect(yoga[0]!.seriesId).not.toBe('yoga');
+    expect(sessions.find((s) => s.title === 'On its own')!.seriesId).toBeNull();
+  });
+
   it('imports a session that carried the retired background flag, and says so', async () => {
     const doc = document();
     doc.sessions[0] = { ...doc.sessions[0]!, background: true };
@@ -338,12 +444,46 @@ describe('event import from JSON', () => {
       expect(message).toMatch(/official/i);
     });
 
-    it('refuses a break pinned to a day outside the event', async () => {
+    it('leaves out a break pinned to a day outside the event, and says so', async () => {
+      // Not refused: an export given next year's dates carries last year's
+      // dated breaks, and none of them can be right. A typed slip shows in
+      // the dry run the same way.
       const doc = document() as Record<string, unknown>;
-      doc.breaks = [{ label: 'Lunch', start: '12:00', end: '14:00', date: '2030-01-01' }];
-      const message = await failure(doc as Parameters<typeof failure>[0], 400);
-      expect(message).toContain('breaks[0] "Lunch"');
-      expect(message).toMatch(/outside the event dates/i);
+      doc.breaks = [
+        { label: 'Lunch', start: '12:00', end: '14:00' },
+        { label: 'Party', start: '20:00', end: '23:00', date: '2030-01-01' },
+      ];
+      const result = await post(doc, { dryRun: true });
+      expect(result.counts.breaks).toBe(1);
+      expect(result.warnings).toEqual([
+        expect.stringMatching(
+          /^breaks\[1\] "Party": 2030-01-01 is outside the event dates .* left out$/,
+        ),
+      ]);
+    });
+
+    it('leaves out a track window on a day outside the event, and says so', async () => {
+      const doc = document();
+      doc.tracks[0] = {
+        ...doc.tracks[0]!,
+        windows: [
+          { date: DAY_TWO, start: '14:00', end: '18:00' },
+          { date: '2030-01-01', start: '09:00', end: '12:00' },
+        ],
+      } as (typeof doc.tracks)[number];
+      const result = await post(doc);
+      expect(result.warnings).toEqual([
+        expect.stringMatching(/windows\[1\]: 2030-01-01 .* left out$/),
+      ]);
+      const admin = await actorWithRole(
+        harness,
+        'photoconf',
+        result.generatedPasswords.adminPassword!,
+      );
+      const bundle = await admin.get('/api/e/photoconf/bundle').expect(200);
+      expect(bundle.body.tracks[0].windows).toEqual([
+        { date: DAY_TWO, startMin: 14 * 60, endMin: 18 * 60 },
+      ]);
     });
 
     it('refuses an undeclared track or tag', async () => {

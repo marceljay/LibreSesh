@@ -111,6 +111,25 @@ describe('an export imports back', () => {
       })
       .expect(201);
 
+    // Two mornings of one thing, linked: the run is part of the programme.
+    const yoga: number[] = [];
+    for (const day of [DAY_ONE, DAY_TWO]) {
+      yoga.push(
+        await created(
+          await admin
+            .post('/api/e/testconf/sessions')
+            .send({
+              roomId: side,
+              title: 'Morning yoga',
+              startsAt: at(day, 8 * 60),
+              endsAt: at(day, 9 * 60),
+            })
+            .expect(201),
+        ),
+      );
+    }
+    await admin.post('/api/e/testconf/sessions/link').send({ sessionIds: yoga }).expect(200);
+
     // The record of the event being used, which an import cannot take.
     await admin
       .post('/api/e/testconf/proposals')
@@ -121,6 +140,18 @@ describe('an export imports back', () => {
       .send({ kind: 'note', body: 'A note from the room' })
       .expect(201);
     await admin.put(`/api/e/testconf/sessions/${opening}/star`).expect(204);
+
+    // The rest of Settings, and who may do what. None of it is on a printed
+    // schedule, all of it is in an export, and an event run again keeps it.
+    // Last, because closing the pitch board would have refused the pitch.
+    await admin
+      .patch('/api/e/testconf/settings')
+      .send({ weekRailFrom: 21, auditKeep: 500, showOfficialBadge: true, pitchesEnabled: false })
+      .expect(200);
+    await admin
+      .patch('/api/e/testconf/permissions')
+      .send({ 'session.star': ['user', 'speaker', 'admin'], 'proposal.create': ['admin'] })
+      .expect(200);
   };
 
   const fetchExport = async (agent: Agent, slug: string): Promise<EventExport> =>
@@ -173,7 +204,7 @@ describe('an export imports back', () => {
       tags: 1,
       formats: 1,
       breaks: 2,
-      sessions: 2,
+      sessions: 4,
       people: 2,
     });
 
@@ -185,8 +216,33 @@ describe('an export imports back', () => {
     const second = await fetchExport(copyAdmin, 'testconf-copy');
 
     // Ids differ by construction, so compare what they stand for: the
-    // authoring form of each, which has none.
-    expect(fromExport(renamed(second, 'x')).doc).toEqual(fromExport(renamed(first, 'x')).doc);
+    // authoring form of each, which has none — except the series label, which
+    // is the run's id and is minted afresh on import. Compared separately.
+    const authored = (dump: EventExport): unknown => {
+      const doc = fromExport(renamed(dump, 'x')).doc as { sessions: { series?: string }[] };
+      return { ...doc, sessions: doc.sessions.map(({ series: _series, ...rest }) => rest) };
+    };
+    expect(authored(second)).toEqual(authored(first));
+
+    // Settings and the matrix, whole.
+    expect(second.event).toMatchObject({
+      weekRailFrom: 21,
+      auditKeep: 500,
+      showOfficialBadge: true,
+      pitchesEnabled: false,
+    });
+    expect(second.permissions).toEqual(first.permissions);
+    expect(second.permissions['proposal.create']).toEqual(['admin']);
+
+    // The run is linked again, under an id of its own.
+    const yoga = second.sessions!.filter((s) => s.title === 'Morning yoga');
+    expect(yoga).toHaveLength(2);
+    expect(yoga[0]!.seriesId).toEqual(expect.any(String));
+    expect(yoga[1]!.seriesId).toBe(yoga[0]!.seriesId);
+    expect(yoga[0]!.seriesId).not.toBe(
+      first.sessions!.find((s) => s.title === 'Morning yoga')!.seriesId,
+    );
+    expect(second.sessions!.find((s) => s.title === 'Opening')!.seriesId).toBeNull();
 
     // And the specifics a lossy translation would have flattened.
     const opening = second.sessions!.find((s) => s.title === 'Opening')!;
@@ -210,6 +266,77 @@ describe('an export imports back', () => {
       ['Side room', second.rooms[1]!.color, true],
     ]);
     expect(second.formats.map((f) => f.name)).toEqual(['Talk']);
+  });
+
+  /**
+   * Running an event again: the frame alone, with next year's dates. This
+   * is what the clone route used to do, minus what it forgot (tracks,
+   * breaks, the matrix, three settings) and minus the dated rows, which
+   * belong to the edition they were dated for.
+   */
+  it('re-dated for the next edition, keeps the frame and leaves the dated rows behind', async () => {
+    await buildProgramme();
+    const frame = JSON.parse(
+      (
+        await admin
+          .get(
+            '/api/e/testconf/export.json?include=settings,permissions,rooms,tracks,tags,formats,breaks',
+          )
+          .expect(200)
+      ).text,
+    ) as EventExport;
+    expect('sessions' in frame).toBe(false);
+
+    const nextYear: EventExport = {
+      ...frame,
+      event: {
+        ...frame.event,
+        slug: 'testconf-2027',
+        name: 'Test Conf 2027',
+        startDate: '2027-06-01',
+        endDate: '2027-06-02',
+      },
+    };
+    const rehearsal = await post(nextYear, { dryRun: true });
+    expect(rehearsal.counts).toMatchObject({
+      rooms: 2,
+      tracks: 1,
+      tags: 1,
+      formats: 1,
+      breaks: 1,
+      sessions: 0,
+    });
+    expect(rehearsal.warnings).toEqual([
+      expect.stringMatching(/^tracks\[0\] "Workshops" windows\[0\]: .* left out$/),
+      expect.stringMatching(/^breaks\[1\] "Party": .* left out$/),
+    ]);
+
+    const result = await post(nextYear);
+    const nextAdmin = await actorWithRole(
+      harness,
+      'testconf-2027',
+      result.generatedPasswords.adminPassword!,
+    );
+    const bundle = await nextAdmin.get('/api/e/testconf-2027/bundle').expect(200);
+    expect(bundle.body.event).toMatchObject({
+      name: 'Test Conf 2027',
+      startDate: '2027-06-01',
+      weekRailFrom: 21,
+      showOfficialBadge: true,
+      pitchesEnabled: false,
+    });
+    expect(bundle.body.rooms.map((r: { name: string }) => r.name)).toEqual([
+      'Main hall',
+      'Side room',
+    ]);
+    expect(bundle.body.tracks[0]).toMatchObject({
+      name: 'Workshops',
+      startMin: 9 * 60,
+      windows: [],
+    });
+    expect(bundle.body.breaks.map((b: { label: string }) => b.label)).toEqual(['Lunch']);
+    expect(bundle.body.sessions).toEqual([]);
+    expect(bundle.body.permissions['proposal.create']).toEqual(['admin']);
   });
 
   it('says up front what an import cannot take from an export', async () => {
@@ -248,7 +375,7 @@ describe('an export imports back', () => {
       .send(broken)
       .expect(400);
     expect((res.body as { error: { message: string } }).error.message).toMatch(
-      /sessions\[1\] "Hallway track": roomId \d+ is not in this export/,
+      /sessions\[0\] "Morning yoga": roomId \d+ is not in this export/,
     );
   });
 

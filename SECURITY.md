@@ -22,7 +22,7 @@ explicitly *not* built to withstand a targeted attacker with time.
 | Guessing an event password | bcrypt (cost 10) on every comparison, so each guess costs real time. How many guesses are possible at all is the two rows above; the token bucket that used to sit here as well was removed with them, because it imposed a second lockout on numbers nobody chose |
 | Guessing a link phrase | Same 5-per-15-min rate limit as passwords; stored hashed. Device phrases are single-use and die in 10 minutes; speaker codes are four words (~37 bits) and revocable |
 | Casual vandalism of the programme | Soft deletes + restore; `audit` log with actor UIDs, readable by admins at Manage Event → Audit; `hidden` flag for contributions |
-| Spam / flooding | Token buckets **per person** on every write class and on reads: 10 contributions, 12 sessions, 30 other writes and 300 reads a minute. The same buckets keyed on the source address hold 100× that, because an address is not a person here — a conference is a room behind one access point, and an address bucket sized like a personal allowance makes attendees throttle each other at the busiest moment. It is a backstop against one address flooding the process, not a second allowance. `auth` and `mint` are the exceptions and stay person-sized per address: they meter a secret, not a workload. Server-enforced max lengths |
+| Spam / flooding | Token buckets **per person** on every write class: 10 contributions, 12 sessions and 30 other writes a minute. **Reads are not limited at all** — no GET is metered, including `/bundle`, `/sessions/:id`, `/calendar.ics`, the audit list and the per-event export. A conference is a room of people behind one access point, so a read ceiling high enough never to refuse that room defends against nothing (the limiter is not a denial-of-service defence — see **Out of scope, accepted**), and one low enough to defend would one day refuse a real room. The write buckets keyed on the source address hold 100× the personal ones, because an address is not a person here and a bucket sized like a personal allowance makes attendees throttle each other at the busiest moment. It is a backstop against one address flooding the process, not a second allowance. `auth` and `mint` are the exceptions and stay person-sized per address: they meter a secret, not a workload. Server-enforced max lengths |
 | XSS via session or profile text | HTML escaped before markdown parsing; URL scheme allowlist; no `dangerouslySetInnerHTML` on unescaped input |
 | Open redirect | Every client navigation is prefixed with a literal `/e/` |
 | Reading a schedule you were not given | Viewing requires the viewer password; there is no public event view |
@@ -160,7 +160,11 @@ Four rules apply across the rows:
   from the proxy and the per-IP rate limit becomes a single shared bucket.
 - **The instance password is required for event creation** and the whole-database
   backup, and is compared in constant time. It is not a user account; it is a
-  deploy-level secret.
+  deploy-level secret. Every path that makes an event asks for it — by hand,
+  by import — without exception: the per-event copy route that let an
+  event's organiser create a second event on the organiser password alone is
+  gone, and an organiser who wants to run an event again exports it and
+  imports the file, which asks like any other creation.
 - **A whole-database backup is a credential, not a document.** It is the file
   the point above calls the room key, so the download encrypts it and the UI
   says so in as many words. The per-event JSON export is the opposite by

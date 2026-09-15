@@ -77,17 +77,21 @@ describe('the drafts list', () => {
       startsAt,
       endsAt: startsAt.replace('T08', 'T09'),
       draft,
+      createdByName: 'ada',
     }) as SessionDto;
+  const three = [
+    session(1, 'Later draft', '2026-06-02T08:00:00.000Z', true),
+    session(2, 'Published', '2026-06-01T08:00:00.000Z', false),
+    session(3, 'Earlier draft', '2026-06-01T08:00:00.000Z', true),
+  ];
 
-  it('lists only drafts, in running order, and opens the one pressed', () => {
+  // A title and a slot do not say whose a draft is, so each row names who
+  // added it.
+  it('lists only drafts, in running order, each with its creator, and opens the one pressed', () => {
     const onOpen = vi.fn();
     render(
       <DraftsModal
-        sessions={[
-          session(1, 'Later draft', '2026-06-02T08:00:00.000Z', true),
-          session(2, 'Published', '2026-06-01T08:00:00.000Z', false),
-          session(3, 'Earlier draft', '2026-06-01T08:00:00.000Z', true),
-        ]}
+        sessions={three}
         rooms={[room]}
         timezone="Europe/Berlin"
         onOpen={onOpen}
@@ -97,8 +101,9 @@ describe('the drafts list', () => {
     const rows = screen.getAllByRole('listitem').map((li) => li.textContent ?? '');
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('Earlier draft');
-    expect(rows[0]).toContain('10:00–11:00 · Open Room');
+    expect(rows[0]).toContain('10:00–11:00 · Open Room · by @ada');
     expect(rows[1]).toContain('Later draft');
+    expect(rows[1]).toContain(' · by @ada');
     fireEvent.click(screen.getByText('Later draft'));
     expect(onOpen).toHaveBeenCalledWith(1);
   });

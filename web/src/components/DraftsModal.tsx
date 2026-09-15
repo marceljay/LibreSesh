@@ -14,6 +14,10 @@ import { Modal } from './Modal';
  *
  * It stays open over edits and publishes on the stream, and says so when the
  * last one has gone rather than closing under the reader's hand.
+ *
+ * A title and a slot do not say whose a draft is, so each row names who
+ * added it — the organiser's list holds everyone's, and a co-speaker's holds
+ * drafts someone else parked them on.
  */
 export function DraftsModal({
   sessions,
@@ -56,6 +60,7 @@ export function DraftsModal({
                   <span className="text-xs text-stone-500 dark:text-stone-400">
                     {dayFullLabel(at.date)} · {fmtMin(at.startMin)}–{fmtMin(at.endMin)} ·{' '}
                     {roomName.get(s.roomId) ?? '—'}
+                    {` · by @${s.createdByName}`}
                   </span>
                 </button>
               </li>

@@ -499,9 +499,18 @@ export function SchedulePage() {
   const sheetUrl = selected ? `/e/${slug}/s/${selected.id}${window.location.search}` : `/e/${slug}`;
 
   const { loadContributions } = data;
+  const selectedId = selected?.id;
+  /*
+   * Keyed on the id alone, never on `selected` itself. `loadContributions`
+   * ends by dispatching a `session.updated` change carrying the session it
+   * just read, which replaces the entity in the bundle with a fresh object —
+   * so an effect that depended on `selected` re-ran on its own result and
+   * refetched forever. The `read` rate limit used to end that loop with a 429
+   * after 300 requests; with reads unmetered there is nothing to stop it.
+   */
   useEffect(() => {
-    if (selected) void loadContributions(selected.id);
-  }, [selected?.id, loadContributions, selected]);
+    if (selectedId !== undefined) void loadContributions(selectedId);
+  }, [selectedId, loadContributions]);
 
   /** The profiles this device holds. A person is credited on a session by
    *  profile id, not by identity, so this is the bridge between them. */
@@ -1175,6 +1184,10 @@ export function SchedulePage() {
           bundle={bundle}
           me={me}
           ping={data.notificationPing}
+          // The full page is narrower than the grid, and the bar takes the
+          // page's measure so its logo shares a left edge with the content
+          // under it, as on every other page of the event.
+          width={fullPage ? 'max-w-5xl' : 'max-w-6xl'}
           onTour={() => setTourOpen(true)}
           onSignOut={() => void api.logout(slug).then(() => void data.reload())}
           sub={
@@ -1513,7 +1526,7 @@ export function SchedulePage() {
       </header>
 
       {fullPage && selected ? (
-        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-4 py-6">
+        <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-3 py-6 sm:px-4">
           {/* This page drops the header's rows, so until now the only way out
               of it was backwards. Reading somebody else's session is one of
               the likelier moments to want one of your own — or to want to
@@ -1559,6 +1572,7 @@ export function SchedulePage() {
             archived={event.archived}
             starred={starredIds.has(selected.id)}
             userLabel={event.userRoleLabel}
+            isAdmin={role === 'admin'}
             layout="page"
             collapseAt={null}
             onToggleStar={canStar ? () => void toggleStar(selected) : undefined}
@@ -1740,6 +1754,7 @@ export function SchedulePage() {
           archived={event.archived}
           starred={starredIds.has(selected.id)}
           userLabel={event.userRoleLabel}
+          isAdmin={role === 'admin'}
           expandTo={`/e/${slug}/s/${selected.id}/full`}
           onClose={closeSession}
           onToggleStar={canStar ? () => void toggleStar(selected) : undefined}

@@ -8,7 +8,6 @@ import {
   seedRoom,
   type Agent,
   type Harness,
-  nextUsername,
 } from './helpers.js';
 
 describe('contributions', () => {
@@ -427,28 +426,6 @@ describe('event settings and creation', () => {
       .expect(400);
   });
 
-  it('carries the week-rail threshold into a clone', async () => {
-    await admin.patch('/api/e/testconf/settings').send({ weekRailFrom: 21 }).expect(200);
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'testconf-rail',
-        newName: 'Test Conf Rail',
-        startDate: '2027-06-01',
-        endDate: '2027-06-30',
-        viewerPassword: 'viewer2',
-        userPassword: 'user222',
-        adminPassword: 'admin22',
-      })
-      .expect(201);
-    await admin
-      .post('/api/e/testconf-rail/auth')
-      .send({ password: 'admin22', displayName: nextUsername() })
-      .expect(200);
-    const res = await admin.get('/api/e/testconf-rail/bundle').expect(200);
-    expect(res.body.event.weekRailFrom).toBe(21);
-  });
-
   it('defaults the week-rail threshold to eight days', async () => {
     const res = await admin.get('/api/e/testconf/bundle').expect(200);
     expect(res.body.event.weekRailFrom).toBe(8);
@@ -472,40 +449,6 @@ describe('event settings and creation', () => {
     await admin.patch('/api/e/testconf/settings').send({ weekRailFrom: 14 }).expect(200);
     const res = await admin.patch('/api/e/testconf/settings').send({ name: 'Renamed' }).expect(200);
     expect(res.body.weekRailFrom).toBe(14);
-  });
-
-  it('clones rooms and tags but no sessions', async () => {
-    await admin.post('/api/e/testconf/rooms').send({ name: 'Hall', openBooking: true }).expect(201);
-    await admin.post('/api/e/testconf/tags').send({ name: 'AI' }).expect(201);
-    const room = (await admin.get('/api/e/testconf/bundle')).body.rooms[0];
-    await admin
-      .post('/api/e/testconf/sessions')
-      .send({
-        roomId: room.id,
-        title: 'Not copied',
-        startsAt: at(DAY_ONE, 600),
-        endsAt: at(DAY_ONE, 660),
-      })
-      .expect(201);
-
-    await admin
-      .post('/api/events/testconf/clone')
-      .send({
-        newSlug: 'testconf-2',
-        newName: 'Test Conf 2',
-        startDate: '2027-06-01',
-        endDate: '2027-06-02',
-        viewerPassword: 'viewer2',
-        userPassword: 'user222',
-        adminPassword: 'admin22',
-      })
-      .expect(201);
-
-    const clone = await admin.get('/api/e/testconf-2/bundle').expect(200);
-    expect(clone.body.rooms.map((r: { name: string }) => r.name)).toEqual(['Hall']);
-    expect(clone.body.tags.map((t: { name: string }) => t.name)).toEqual(['AI']);
-    expect(clone.body.sessions).toEqual([]);
-    expect(clone.body.event.startDate).toBe('2027-06-01');
   });
 
   it('changes passwords through settings', async () => {
@@ -532,7 +475,7 @@ describe('event settings and creation', () => {
       .expect(400);
   });
 
-  it('takes a user role label at creation and carries it into a clone', async () => {
+  it('takes a user role label at creation', async () => {
     await admin
       .post('/api/events')
       .set('X-Instance-Key', 'instance-pw')
@@ -550,21 +493,6 @@ describe('event settings and creation', () => {
       .expect(201);
     const bundle = await admin.get('/api/e/labelled/bundle').expect(200);
     expect(bundle.body.event.userRoleLabel).toBe('member');
-
-    await admin
-      .post('/api/events/labelled/clone')
-      .send({
-        newSlug: 'labelled-2',
-        newName: 'Labelled 2',
-        startDate: '2027-09-01',
-        endDate: '2027-09-02',
-        viewerPassword: 'viewer2',
-        userPassword: 'user222',
-        adminPassword: 'admin22',
-      })
-      .expect(201);
-    const clone = await admin.get('/api/e/labelled-2/bundle').expect(200);
-    expect(clone.body.event.userRoleLabel).toBe('member');
   });
 
   it('rejects an end date before the start', async () => {

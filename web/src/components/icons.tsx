@@ -52,6 +52,16 @@ export function CloseIcon({ className }: { className?: string }) {
   );
 }
 
+/** A clock face — when something happened. */
+export function ClockIcon({ className }: { className?: string }) {
+  return (
+    <Icon className={className}>
+      <circle cx="8" cy="8" r="5.75" />
+      <path d="M8 4.75V8l2.25 1.5" />
+    </Icon>
+  );
+}
+
 /** Open eye — the item is visible, and the button hides it. */
 export function HideIcon({ className }: { className?: string }) {
   return (

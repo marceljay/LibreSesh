@@ -34,6 +34,8 @@ export interface DetailSheetProps {
   starred: boolean;
   /** The event's word for the middle role, used in the upgrade prompt. */
   userLabel: string;
+  /** See `SessionDetailProps.isAdmin`. */
+  isAdmin: boolean;
   /** Where the expand control goes — the same session's full-page route. */
   expandTo: string;
   onClose: () => void;
