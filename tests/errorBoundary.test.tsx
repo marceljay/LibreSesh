@@ -132,3 +132,43 @@ describe('a stale chunk', () => {
     expect(screen.getByText(/a new version was published/i)).toBeTruthy();
   });
 });
+
+describe('navigating away from a page that threw', () => {
+  it('clears the error when the reset key changes', () => {
+    const { rerender } = render(
+      <AppErrorBoundary resetKey="/e/testconf/admin">
+        <Boom message="Cannot read properties of undefined (reading 'slug')" />
+      </AppErrorBoundary>,
+    );
+    expect(screen.getByText(/didn’t load/i)).toBeTruthy();
+
+    rerender(
+      <AppErrorBoundary resetKey="/e/testconf">
+        <p>the schedule</p>
+      </AppErrorBoundary>,
+    );
+
+    // Without this the fallback outlives the page that caused it: Back from a
+    // route that threw shows the same apology, and the app reads as dead.
+    expect(screen.getByText('the schedule')).toBeTruthy();
+    expect(screen.queryByText(/didn’t load/i)).toBeNull();
+  });
+
+  it('stays put while the key does not change', () => {
+    const { rerender } = render(
+      <AppErrorBoundary resetKey="/e/testconf/admin">
+        <Boom message="Cannot read properties of undefined (reading 'slug')" />
+      </AppErrorBoundary>,
+    );
+
+    rerender(
+      <AppErrorBoundary resetKey="/e/testconf/admin">
+        <p>the schedule</p>
+      </AppErrorBoundary>,
+    );
+
+    // A re-render for any other reason must not quietly retry the render that
+    // threw — that is the loop the fallback exists to stop.
+    expect(screen.getByText(/didn’t load/i)).toBeTruthy();
+  });
+});

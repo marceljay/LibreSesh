@@ -59,9 +59,9 @@ describe('the boundary is actually mounted', () => {
   it('wraps the routes, not just sits in the file', () => {
     // Above <Suspense>: a lazy chunk's rejection propagates out of the
     // suspense boundary, so a boundary inside it would never see one.
-    expect(app.indexOf('<AppErrorBoundary>')).toBeGreaterThan(-1);
-    expect(app.indexOf('<AppErrorBoundary>')).toBeLessThan(app.indexOf('<Suspense'));
-    expect(app.indexOf('</Suspense>')).toBeLessThan(app.indexOf('</AppErrorBoundary>'));
+    expect(app.indexOf('<RoutesWithBoundary>')).toBeGreaterThan(-1);
+    expect(app.indexOf('<RoutesWithBoundary>')).toBeLessThan(app.indexOf('<Suspense'));
+    expect(app.indexOf('</Suspense>')).toBeLessThan(app.indexOf('</RoutesWithBoundary>'));
   });
 
   it('wraps the app at the root too, where the providers are', () => {

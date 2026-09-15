@@ -65,11 +65,32 @@ interface State {
   error: Error | null;
 }
 
-export class AppErrorBoundary extends Component<{ children: ReactNode }, State> {
+interface Props {
+  children: ReactNode;
+  /**
+   * Something that changes when the page the boundary is showing changes — the
+   * router's pathname, where one is above it. A caught error otherwise sticks
+   * for the life of the tab: the boundary keeps rendering its fallback however
+   * far the visitor navigates away, so Back from a page that threw lands on
+   * the same apology and the app reads as dead rather than as one bad page.
+   * Only a boundary that is already showing an error resets; the key is
+   * ignored the rest of the time, so an ordinary navigation never remounts the
+   * tree below.
+   */
+  resetKey?: string;
+}
+
+export class AppErrorBoundary extends Component<Props, State> {
   override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
+  }
+
+  override componentDidUpdate(prev: Props): void {
+    if (this.state.error && this.props.resetKey !== prev.resetKey) {
+      this.setState({ error: null });
+    }
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {

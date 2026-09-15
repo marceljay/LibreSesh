@@ -6,6 +6,13 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **Navigating away from a page that failed leaves the failure behind.** A
+  caught error stuck for the life of the tab: the boundary kept drawing its
+  apology however far the visitor moved, so Back from a route that threw
+  landed on the same screen and the app read as dead rather than as one bad
+  page. The boundary is handed the current path and clears the error when it
+  changes. Only a boundary already showing an error resets, so an ordinary
+  navigation never remounts the tree below it.
 - **A provider that throws no longer blanks the whole app.** The error boundary
   sat inside the router and the three context providers, so it caught a route
   that threw but nothing thrown by `MeProvider`, the theme effect or the
