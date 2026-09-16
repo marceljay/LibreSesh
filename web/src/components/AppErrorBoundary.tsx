@@ -3,12 +3,16 @@ import { isStaleChunkError } from '../lib/staleChunk';
 import { PrimaryButton } from './ui';
 
 /**
- * Every route is a `React.lazy` chunk, and a chunk that fails to load throws
- * during render. With no boundary above it React unmounts the whole tree — the
- * page goes blank, nothing is logged where a visitor would see it, and only a
- * manual refresh brings the app back. That is the worst possible failure for
- * this app's audience: someone in a hallway who now believes the schedule is
- * down.
+ * Any component that throws during render takes the whole tree with it: React
+ * unmounts everything above it, the page goes blank, nothing is said where a
+ * visitor would see it, and only a manual refresh brings the app back. That is
+ * the worst possible failure for this app's audience — someone in a hallway who
+ * now believes the schedule is down. This boundary is mounted twice, once
+ * around the routes and once at the root above the providers, so no part of the
+ * tree is left to fail that way.
+ *
+ * The failure it is tuned for is the lazy one. Every route is a `React.lazy`
+ * chunk, and a chunk that fails to load throws during render.
  *
  * The common cause is not a bug at all. Built chunk filenames carry a content
  * hash, so a deploy replaces them; a tab someone left open all morning still
@@ -61,11 +65,32 @@ interface State {
   error: Error | null;
 }
 
-export class AppErrorBoundary extends Component<{ children: ReactNode }, State> {
+interface Props {
+  children: ReactNode;
+  /**
+   * Something that changes when the page the boundary is showing changes — the
+   * router's pathname, where one is above it. A caught error otherwise sticks
+   * for the life of the tab: the boundary keeps rendering its fallback however
+   * far the visitor navigates away, so Back from a page that threw lands on
+   * the same apology and the app reads as dead rather than as one bad page.
+   * Only a boundary that is already showing an error resets; the key is
+   * ignored the rest of the time, so an ordinary navigation never remounts the
+   * tree below.
+   */
+  resetKey?: string;
+}
+
+export class AppErrorBoundary extends Component<Props, State> {
   override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
+  }
+
+  override componentDidUpdate(prev: Props): void {
+    if (this.state.error && this.props.resetKey !== prev.resetKey) {
+      this.setState({ error: null });
+    }
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
@@ -74,7 +99,7 @@ export class AppErrorBoundary extends Component<{ children: ReactNode }, State> 
       window.location.reload();
       return;
     }
-    console.error('Unhandled error below the router:', error, info.componentStack);
+    console.error('Unhandled error in the React tree:', error, info.componentStack);
   }
 
   override render(): ReactNode {

@@ -23,7 +23,7 @@ links and questions attached to each session. Everything updates live.
 | Calendar | iCalendar feed per person, per event |
 | Payments, accounts, personal data | None. There are no accounts and no profiles beyond a display name |
 | MCP endpoint | None. This is a plain JSON HTTP API |
-| OpenAPI document | None yet |
+| OpenAPI document | Yes — `/openapi.json`, 3.1, generated from the schemas |
 
 ## Discovery
 
@@ -33,6 +33,7 @@ links and questions attached to each session. Everything updates live.
 | `/agents.md` | This file |
 | `/SKILL.md` | The same capabilities as a packaged skill |
 | `/api.md` | The full HTTP reference |
+| `/openapi.json` | The same endpoints as an OpenAPI 3.1 document, for tooling |
 | `/api/events` | The only unauthenticated JSON endpoint: names and dates of the events on this instance, no schedule content |
 
 ## Getting in
@@ -61,13 +62,18 @@ credential it is.
 
 ## The flow
 
-1. `POST /api/e/<slug>/auth` — once, with the password you were given.
+1. `GET /api/me`, then `POST /api/e/<slug>/auth` if you need it. `/api/me`
+   needs no role and its `roles` map is keyed by event slug: if it already
+   names the slug you are going to, you are in and there is no password call
+   to make. Otherwise send the password you were given, once.
 2. `GET /api/e/<slug>/bundle` — **once**. This is the entire event in one
    response: rooms, tracks, tags, breaks, every session, people, pitches, and a
    `permissions` map telling you what your role may do. There is nothing to
    crawl and no pagination.
 3. `GET /api/e/<slug>/stream` — subscribe. Server-Sent Events, every change,
-   not rate limited. Patch your copy rather than re-reading.
+   not rate limited. Patch your copy rather than re-reading. When it drops,
+   reconnect with the last frame's `id` as `Last-Event-ID` and you are sent the
+   gap; refetch the bundle only if the server answers `event: resync`.
 4. Write only what the person asked for, using the endpoints in
    [`/api.md`](/api.md).
 
@@ -80,7 +86,10 @@ network address, and that cost lands on the people sharing it, not on you.
 
 - **Times are UTC ISO-8601, but every rule about them is evaluated in the
   event's own timezone.** Session times must land on a 5-minute step in local
-  time. Do not do this arithmetic in UTC.
+  time. Do not do this arithmetic in UTC. Check your own tool's conversion
+  against `event.timezone` on a known session before you trust it — date
+  libraries and shell utilities differ on offsets and on daylight saving, and
+  a converter that is an hour out will read the programme an hour out.
 - **Send `expectedUpdatedAt` when you edit** — the `updatedAt` you read. You
   get `409 stale` instead of silently overwriting a person's work.
 - **Deletes are soft and reversible.** Nothing you remove is gone.

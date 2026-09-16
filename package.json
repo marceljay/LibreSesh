@@ -32,6 +32,7 @@
     "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "openapi": "tsx scripts/openapi.ts",
     "schema": "tsx scripts/schema.ts",
     "schema:pdf": "tsx scripts/schemaPdf.ts"
   },

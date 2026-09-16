@@ -43,6 +43,30 @@ describe.skipIf(!existsSync(WEB_DIST))('serving the built app', () => {
     expect(res.headers['content-type']).toMatch(/application\/json/);
   });
 
+  /**
+   * Every unmatched path gets `index.html`, which is right for a deep link and
+   * wrong for a well-known file: before `web/public/robots.txt` existed, a
+   * crawler asking for it was handed a page of markup with a `200`, and had no
+   * status to tell it apart from a real answer.
+   */
+  it('answers robots.txt with the file, not the SPA shell', async () => {
+    const res = await request(h.app.express).get('/robots.txt').expect(200);
+    expect(res.headers['content-type']).toMatch(/text\/plain/);
+    expect(res.text).not.toContain('<div id="root">');
+    expect(res.text).toMatch(/^User-agent: /m);
+  });
+
+  /**
+   * The docs hand out `/openapi.json` as the thing to point a client generator
+   * at, which only works if the build actually serves it as JSON.
+   */
+  it('serves the OpenAPI document as JSON', async () => {
+    const res = await request(h.app.express).get('/openapi.json').expect(200);
+    expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body.openapi).toBe('3.1.0');
+    expect(Object.keys(res.body.paths).length).toBeGreaterThan(50);
+  });
+
   it('lets a hashed asset be cached hard and index.html not at all', async () => {
     const html = await request(h.app.express).get('/').expect(200);
     expect(html.headers['cache-control']).toBe('no-cache');

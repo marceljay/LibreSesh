@@ -47,11 +47,22 @@ breaks, every session with its times and speakers, people, pitches, star counts,
 and a `permissions` map saying what your role may do. Do not crawl anything;
 there is nothing to crawl and no pagination.
 
+Two fields in it are about the person you are acting for rather than the event:
+`starredSessionIds` is the sessions **they** have starred, which is their
+agenda and how you avoid offering to star something twice, and
+`contributionCounts` is sessionId → how many notes, links and questions a
+session has. `starCounts` is the other thing — how many people starred a
+session, everyone's interest rather than theirs.
+
 To stay current, subscribe rather than poll:
 
 ```bash
 curl -N -b jar "$HOST/api/e/$SLUG/stream"     # Server-Sent Events, unlimited
 ```
+
+If the stream drops, reconnect with the last frame's `id` as `Last-Event-ID`:
+the server replays what you missed. Refetch the bundle only when it answers
+`event: resync`, which means the gap was too big to replay.
 
 ## Answering questions from the bundle
 
@@ -66,8 +77,12 @@ Everything below is local work on that one response.
   `description`; `starCounts` says what other people are interested in. Suggest;
   let the person choose.
 - **"What are people pitching?"** — `proposals`, ordered by `interestCount`.
-- **Comments on a session** — the bundle carries only counts. Fetch
-  `GET /api/e/$SLUG/sessions/<id>` for the notes, links and questions.
+- **Comments on a session** — the bundle carries `contributionCounts` and no
+  bodies. Fetch `GET /api/e/$SLUG/sessions/<id>` for the notes, links and
+  questions; it answers `{session, contributions}`, so the comments are under
+  `contributions` and the session itself under `session`.
+- **"What's on my agenda?"** — `starredSessionIds`, matched against
+  `sessions`. It is already in the bundle; there is no endpoint to call.
 
 ## Acting for the person
 

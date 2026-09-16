@@ -162,6 +162,7 @@ STATUS.md          current work and the backlog
 | [docs/managing.md](docs/managing.md) | Manage Event tabs, renaming, audit, JSON import |
 | [docs/schedule-import.md](docs/schedule-import.md) | Import field reference (already in the repo) |
 | [docs/schema.md](docs/schema.md) | Every table and what links to what, generated from the migrations; `npm run schema:pdf` prints it |
+| [web/public/openapi.json](web/public/openapi.json) | The HTTP API as an OpenAPI 3.1 document, served at `/openapi.json` and generated from the zod schemas by `npm run openapi` |
 | [docs/deploy.md](docs/deploy.md) | Config, Docker, Railway, systemd, backups, upgrades |
 | [docs/hosting.md](docs/hosting.md) | Picking and sizing a VPS, hardening, day-2 operations, troubleshooting |
 | [web/public/agents.md](web/public/agents.md) | **Served by the instance** at `/agents.md`: the operating manual for an AI agent acting on it. Alongside it [`llms.txt`](web/public/llms.txt) (what this site is), [`SKILL.md`](web/public/SKILL.md) (the packaged-skill format) and [`api.md`](web/public/api.md) (the full HTTP reference) |

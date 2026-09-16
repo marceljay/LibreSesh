@@ -1,5 +1,10 @@
 # LibreSesh
 
+If you are a program acting for someone here, start with
+[/agents.md](/agents.md) — how to get in, what you may do, and what not to do
+on a person's behalf. It is the canonical description of this instance for
+agents; this file is the short version of it.
+
 > A scheduling tool for conferences and unconferences: one server, one SQLite
 > file, a schedule a room full of people can edit together. This instance hosts
 > one or more events, each at `/e/<slug>`, each behind its own password. There
@@ -9,11 +14,6 @@ An event has rooms, a programme of sessions across days, a board of pitched
 sessions people register interest in, and notes, links and questions attached
 to each session. Everything updates live over Server-Sent Events.
 
-If you are a program acting for someone here, start with
-[/agents.md](/agents.md) — how to get in, what you may do, and what not to do
-on a person's behalf. It is the canonical description of this instance for
-agents; this file is the short version of it.
-
 ## Docs
 
 - [/agents.md](/agents.md): the operating manual — access, the four-step flow,
@@ -22,6 +22,8 @@ agents; this file is the short version of it.
   harness consumes that format.
 - [/api.md](/api.md): the full HTTP reference — every endpoint, every error
   code, the rate limits.
+- [/openapi.json](/openapi.json): the endpoints as an OpenAPI 3.1 document,
+  generated from the schemas — for a client generator rather than a reader.
 - [/api/events](/api/events): the only unauthenticated endpoint. Names and
   dates of the events on this instance; no schedule content.
 

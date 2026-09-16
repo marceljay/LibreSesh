@@ -16,8 +16,29 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1890**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1921**, lint clean, build clean. Most
 recent cut: **0.7.4**.
+
+- **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
+  commits on `dev`). It already caught a route that threw, but it sat inside
+  the router and the three providers, so a `MeProvider` fetch or the theme
+  effect throwing still blanked every page at once; a second mount around
+  `<App />` closes that. A caught error also used to outlive the page that
+  caused it — Back drew the same apology forever — and now clears when the
+  path changes. `tests/errorBoundary.test.tsx` is the first test that renders
+  the boundary rather than reading its source, which is the point: the crash
+  this exists for (2026-08-30) passed the whole suite green. Both halves of
+  the old item are done, so it has left High Priority. Nothing here needs your
+  eyes.
+
+- **A reconnect no longer refetches the bundle** [LIB-197] (landed
+  2026-09-15, `dev`). The small version of the two the item offered:
+  `Last-Event-ID` replay from a per-event ring of the last 200 frames, five
+  minutes deep, with the old refetch kept as a `resync` fallback for a gap too
+  old to fill or an id from before a restart. A first connection is handed a
+  position immediately, so the quiet-event case — nothing happening all
+  morning, the wifi dropping anyway — costs nothing either. The `?since=`
+  bundle is not needed. Nothing here needs your eyes.
 
 - **Telegram announcements** [LIB-207, LIB-208, LIB-209, LIB-210] (2026-09-15).
   On `worktree-tg-bot`, not yet merged. An event connects its own Telegram
@@ -507,6 +528,14 @@ reused number would repoint a filename and every link to it. Rule recorded in
   event and Settings, which lead with the generated phrase and carry the advice
   that replaced the withdrawn policy.
 
+- **D6 · Which relays does an instance default to?** [LIB-221] Filed
+  2026-09-16 with the Nostr publishing design. `NOSTR_DEFAULT_RELAYS` seeds
+  every event's relay list when an organiser enables Nostr; you said you would
+  name them. My fallback if you do not: `wss://relay.damus.io`, `wss://nos.lol`,
+  `wss://relay.nostr.band`. The list also rides in every njump link as relay
+  hints, so a relay that drops NIP-52 kinds makes the session badge land on
+  nothing.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -916,16 +945,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   next deploy is their first real run. `deploy/docker-compose.yml`, the Caddy
   front end and `deploy/backup.sh` have never been run at all; treat the first
   VPS deploy as their test. Railway notes: `docs/hosting.md` §10.
-- **No component test coverage, and no error boundary.** [LIB-128] 703 tests as of
-  2026-09-01, and the web-side ones cover pure functions or assert on source
-  text (`format.test.ts`, `numberField.test.ts`, `gridChrome.test.ts`) — there is no jsdom/testing-library stack, so nothing renders a
-  component. The drag maths, the SSE reducer and the clash detection are the
-  parts most likely to regress silently, and the Calendar column refactor on
-  2026-08-30 went in on a read-through alone. The build-stamp crash the same
-  day — a component that threw on every render, blanking the page, while the
-  whole suite stayed green — is what the gap costs. A React error boundary
-  would have contained it; there is still none.
-
 - **`X-Forwarded-For` is unguarded, and the login limits now depend on it.**
   [LIB-129] With `TRUST_PROXY=1` the app reads the address from the header, so
   an instance also reachable off-proxy lets a caller write their own address.
@@ -951,6 +970,37 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   "derive state from props" that wants to be computed during render instead.
   Each rule turned back on is its own commit.
 
+- **Nostr publishing — the schedule announces itself under the event's own
+  key.** Designed 2026-09-16 in an interview; spec at
+  `_planning/specs/nostr-publishing.md`, Linear project *Nostr publishing*.
+  Write-only first iteration: NIP-52 calendar event sync (kind 31923 per
+  session, 31924 per event, kept equal to the database by a publish queue and a
+  coalescing loop) plus kind-1 notes for `placed`, `added`, `changed`, `up_next`, `digest` and
+  `pitched`, each a checkbox in a new **Publish** tab. Off by default, admin
+  switch with an explicit warning; attendee-written pitches and open sessions
+  go out **opt-out per item, default on**, and the forms say so. What the notes
+  say and when is transport-neutral and lives in
+  `_planning/specs/announcements.md`, shared with Telegram; only the announcer,
+  `PUBLIC_URL` and the Publish tab touch that branch, so the keys and the
+  calendar sync can go first if it is still open. Seven steps, one issue each:
+  - Land the shared announcer per `announcements.md`: extracted from
+    `telegram.ts` if merged, created fresh if not; six triggers, transports,
+    `pitched`/`placed` hooked in the proposal routes [LIB-214] (LIB-212 folds in).
+  - Keys and schema: `secretsAtRest.ts` (AES-GCM under an HKDF of the
+    at-rest secret, `COOKIE_SECRET` by default, `SECRETS_AT_REST_KEY` to
+    override, rotatable via `_PREVIOUS`; also the answer to LIB-213), the
+    migration, enable / disable / import-key / export-key routes,
+    SECURITY.md [LIB-215].
+  - Calendar sync: 31923/31924 builders, `markDirty` beside every `audit()`
+    that matters, the 10s loop, kind-5 deletions, resync, the sweep [LIB-216].
+  - Kind-1 notes: the Nostr transport and its plain-text renderer [LIB-217].
+  - Publish tab in Manage Event, Telegram's section moved in [LIB-218].
+  - Forms: the notice and the opt-out checkbox; the *on Nostr* badge [LIB-219].
+  - Verify on a public relay with Flockstr/Coracle and an ordinary client —
+    yours [LIB-220].
+  Not in this iteration: reading RSVPs back, signing in with a key,
+  remote signing (NIP-46), `p` tags for speakers. Open: D6 above.
+
 ## Medium Priority
 
 - **What a "week" means in a long event.** [LIB-189] Two edge cases left
@@ -962,16 +1012,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   *not* wanted — chunking from the start date already gives the fewest chips
   possible, and calendar alignment is what would turn a Wednesday fortnight
   into three of them.
-
-- **Generate `/openapi.json` from the zod schemas.** [LIB-198] `web/public/api.md`
-  (in the tree since 2026-09-10) says outright that there is no OpenAPI
-  document; this is it. Every request body already has a zod schema and zod 4 has
-  `z.toJSONSchema`, so the generated half is nearly free — follow `npm run
-  schema`, which regenerates `docs/schema.md` and fails a test when the copy is
-  behind. What needs deciding is the rest: paths live in the routers, responses
-  have no schemas (the DTOs are TypeScript interfaces), and per-endpoint roles
-  are middleware rather than data. Worth doing after a real agent has read the
-  prose once, so the parts that matter get modelled first.
 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a
@@ -985,15 +1025,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   names the audit log and soft deletes as the answer to that person.
   Scope is the write-shaped limits only — `write`, `session`, `contribution`,
   `auth` and `mint`. There is no read bucket to key.
-
-- **An SSE reconnect should not refetch the whole bundle.** [LIB-197]
-  `useEventData.ts:380` refetches the entire event on every stream reconnect —
-  right when it was written, and the reason the shared limit was ever felt.
-  With `retry: 3000`, a room on bad wifi turns that into a bundle build per
-  device per reconnect: 4.44 ms of server CPU and 6.1 KB gzipped each, times
-  everyone in the room. `Last-Event-ID` replay from a short per-event ring is
-  the small version; a `?since=` bundle is the thorough one. Not urgent now
-  that nobody is being throttled — this is about the traffic itself.
 
 - **Inline create inside `SpeakerCombobox`.** [LIB-131] The other half of the affordance
   from 2026-09-04 (`InlineCreate` in `ui.tsx`, used by the tag, track,
@@ -1136,10 +1167,21 @@ w-48`, the other `w-full` — so they are exempted by name in
   bulk of the 18 kB, so the cheap middle option is to keep `useDismiss`/
   `useRole` and do focus return by hand.
 
-  Measure before deciding: most of the win may be elsewhere. Nothing is
-  code-split — one chunk carries the admin pages, the calendar and the login page
-  alike, and a route-level `React.lazy` on the admin section would likely dwarf
-  18 kB. Check that first; the popover dep may not be the thing worth cutting.
+  **Measured 2026-09-15, and the premise has moved.** "Measure before
+  deciding: most of the win may be elsewhere" was right. Every route is a
+  `React.lazy` chunk now, so the single 489 kB / 152.5 kB-gzipped bundle is
+  gone: first paint pulls `index` (251.8 kB raw, 80.0 kB gzipped), `icons`
+  (13.8 / 4.8) and the one route asked for — about **87 kB gzipped for the
+  landing page** against 152.5 for everything. And Floating UI is not in the
+  entry chunk at all: its `floating-ui-focusable` / `-inert` markers appear
+  only in `EventBar`, `Modal`, `TimeField`, `Calendar`, `FilterMenu`,
+  `SearchBox`, `QrCode`, `AdminPage` and `SchedulePage`, all of them lazy. So
+  the 18.2 kB is paid on the first route with a popover in it, never on the
+  first paint this item was about. **Recommendation: keep `@floating-ui/react`
+  whole and close this.** Trading `useDismiss`, `useRole` and
+  `FloatingFocusManager` for the four hand-rolled Escape effects and no focus
+  return would now buy nothing a phone on venue wifi can feel. Worth reopening
+  only if the entry chunk itself grows — that is the number to watch.
 
 - **A track window cannot close a day.** [LIB-141] Noted 2026-09-01 when track hours
   landed. An override row is a window and a window must end after it starts, so

@@ -1,5 +1,5 @@
-import { type ComponentType, lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { type ComponentType, lazy, type ReactNode, Suspense } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { ConfirmProvider, Spinner, ToastProvider } from './components/ui';
 import { MeProvider } from './lib/useMe';
@@ -36,6 +36,13 @@ const AdminPage = named(() => import('./pages/AdminPage'), 'AdminPage');
  *  bundle drops both the branch and the chunk behind it. */
 const DevBar = import.meta.env.DEV ? named(() => import('./components/DevBar'), 'DevBar') : null;
 
+/** The boundary, handed the pathname it is guarding. Its own component because
+ *  `useLocation` only works below the router, and `App` renders the router. */
+function RoutesWithBoundary({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <AppErrorBoundary resetKey={pathname}>{children}</AppErrorBoundary>;
+}
+
 export function App() {
   // Always mounted, so a sunset (or another tab's toggle) reaches every page.
   useFollowSystemTheme();
@@ -44,7 +51,7 @@ export function App() {
       <MeProvider>
         <ToastProvider>
           <ConfirmProvider>
-            <AppErrorBoundary>
+            <RoutesWithBoundary>
               <Suspense fallback={<Spinner />}>
                 <Routes>
                   {/* `/` says what this is; the list of every event on the instance
@@ -80,7 +87,7 @@ export function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
-            </AppErrorBoundary>
+            </RoutesWithBoundary>
             {DevBar && (
               <Suspense fallback={null}>
                 <DevBar />

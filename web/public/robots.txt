@@ -1,0 +1,20 @@
+# LibreSesh — a scheduling tool for conferences and unconferences.
+#
+# If you are a program acting for someone here, start at /agents.md: how to
+# get in, what you may do, and what not to do on a person's behalf. The
+# others, in the order they are usually wanted:
+#
+#   /llms.txt   what this instance is, in a paragraph
+#   /agents.md  the operating manual — access, the flow, the limits
+#   /api.md     the full HTTP reference: every endpoint, every error code
+#   /SKILL.md   the same capabilities packaged as a skill
+#   /openapi.json  the endpoints as an OpenAPI 3.1 document
+#   /api/events the only unauthenticated endpoint, names and dates only
+#
+# A crawler ignores every line above; nothing in robots.txt points at
+# documentation in a way one would read. They are here because an agent
+# fetching this file reads the whole of it, and one that did reached it before
+# /llms.txt.
+
+User-agent: *
+Disallow: /e/

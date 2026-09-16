@@ -249,7 +249,9 @@ describe('draft sessions', () => {
       const res = {
         writeHead: () => res,
         write: (chunk: string) => {
-          if (chunk.startsWith('event: change')) seen.push(chunk);
+          // `includes`, not `startsWith`: a frame opens with its `id:` line,
+          // which is what a reconnect is replayed from.
+          if (chunk.includes('event: change')) seen.push(chunk);
           return true;
         },
         flushHeaders: () => undefined,
