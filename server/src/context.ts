@@ -1,5 +1,6 @@
 import type { Config } from './config.js';
 import type { Db } from './db.js';
+import type { Pool } from './nostr/pool.js';
 import type { Backoff, RateLimiter, Tally } from './ratelimit.js';
 import type { Broker } from './sse.js';
 import type { Announcer } from './telegram.js';
@@ -19,4 +20,6 @@ export interface Ctx {
    *  `added` and `changed`; the scheduler ticks it for the rest. Never fails a
    *  request — see the call sites in `routes/sessions.ts`. */
   announcer: Announcer;
+  /** Relay connections for Nostr publishing; a fake in tests. */
+  nostrPool: Pool;
 }
