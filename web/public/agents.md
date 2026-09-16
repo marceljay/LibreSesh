@@ -23,7 +23,7 @@ links and questions attached to each session. Everything updates live.
 | Calendar | iCalendar feed per person, per event |
 | Payments, accounts, personal data | None. There are no accounts and no profiles beyond a display name |
 | MCP endpoint | None. This is a plain JSON HTTP API |
-| OpenAPI document | None yet |
+| OpenAPI document | Yes — `/openapi.json`, 3.1, generated from the schemas |
 
 ## Discovery
 
@@ -33,6 +33,7 @@ links and questions attached to each session. Everything updates live.
 | `/agents.md` | This file |
 | `/SKILL.md` | The same capabilities as a packaged skill |
 | `/api.md` | The full HTTP reference |
+| `/openapi.json` | The same endpoints as an OpenAPI 3.1 document, for tooling |
 | `/api/events` | The only unauthenticated JSON endpoint: names and dates of the events on this instance, no schedule content |
 
 ## Getting in

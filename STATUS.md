@@ -950,21 +950,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   possible, and calendar alignment is what would turn a Wednesday fortnight
   into three of them.
 
-- **Generate `/openapi.json` from the zod schemas.** [LIB-198] `web/public/api.md`
-  (in the tree since 2026-09-10) says outright that there is no OpenAPI
-  document; this is it. Every request body already has a zod schema and zod 4 has
-  `z.toJSONSchema`, so the generated half is nearly free — follow `npm run
-  schema`, which regenerates `docs/schema.md` and fails a test when the copy is
-  behind. What needs deciding is the rest: paths live in the routers, responses
-  have no schemas (the DTOs are TypeScript interfaces), and per-endpoint roles
-  are middleware rather than data. The precondition is met: the walk-through
-  [LIB-204] ran on 2026-09-15 and its comment names the order to model in —
-  the error envelope, `POST /auth`, the whole `/bundle` DTO set,
-  `GET /sessions/:id`, contributions, star, `/api/me`, `/api/events`, then
-  `PATCH /sessions/:id` with `expectedUpdatedAt`. It found no missing
-  endpoint, only missing prose, which is the case for describing responses
-  loosely at first rather than generating them from the TypeScript.
-
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a
   rule: key on the address while there is no identity yet (`auth`,

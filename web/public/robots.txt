@@ -8,6 +8,7 @@
 #   /agents.md  the operating manual — access, the flow, the limits
 #   /api.md     the full HTTP reference: every endpoint, every error code
 #   /SKILL.md   the same capabilities packaged as a skill
+#   /openapi.json  the endpoints as an OpenAPI 3.1 document
 #   /api/events the only unauthenticated endpoint, names and dates only
 #
 # A crawler ignores every line above; nothing in robots.txt points at
