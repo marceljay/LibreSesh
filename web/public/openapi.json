@@ -1274,6 +1274,94 @@
         }
       }
     },
+    "/api/e/{slug}/nostr/resync": {
+      "post": {
+        "operationId": "postEventNostrResync",
+        "summary": "Republish every calendar event. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/retract": {
+      "post": {
+        "operationId": "postEventNostrRetract",
+        "summary": "Ask the relays to delete everything published, and stop. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/test": {
+      "post": {
+        "operationId": "postEventNostrTest",
+        "summary": "Republish the profile now and return each relay’s answer. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Republish the profile now and return each relay’s answer. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/e/{slug}/notifications": {
       "get": {
         "operationId": "getEventNotifications",

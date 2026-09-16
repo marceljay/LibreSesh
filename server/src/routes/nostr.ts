@@ -12,6 +12,13 @@ import {
   toNpub,
   toNsec,
 } from '../nostr/keys.js';
+import {
+  appendPending,
+  markDirty,
+  markResync,
+  markRetract,
+  publishProfileNow,
+} from '../nostr/queue.js';
 import { limit } from '../ratelimit.js';
 import {
   nostrEnableSchema,
@@ -109,6 +116,7 @@ export function nostrRoutes(ctx: Ctx): Router {
       set(e.id, 'nostr_relays = ?', JSON.stringify(ctx.config.nostrDefaultRelays));
     }
     set(e.id, 'nostr_enabled = 1');
+    markDirty(ctx.db, e.id);
     record(req.identity.id, e.id, 'nostr_enable');
     res.json({ npub: toNpub(reload(e.id).nostr_pubkey!) });
   });
@@ -126,7 +134,16 @@ export function nostrRoutes(ctx: Ctx): Router {
     if (isProd && body.relays?.some((u) => u.startsWith('ws://'))) {
       throw badRequest('Relay URLs start with wss:// — plain ws:// is for local testing only');
     }
-    if (body.relays) set(e.id, 'nostr_relays = ?', JSON.stringify([...new Set(body.relays)]));
+    if (body.relays) {
+      const before = relaysOf(e);
+      const relays = [...new Set(body.relays)];
+      set(e.id, 'nostr_relays = ?', JSON.stringify(relays));
+      appendPending(
+        ctx.db,
+        e.id,
+        relays.filter((r) => !before.includes(r)),
+      );
+    }
     if (body.triggers) set(e.id, 'nostr_triggers = ?', JSON.stringify([...new Set(body.triggers)]));
     record(req.identity.id, e.id, 'nostr_settings');
     const after = reload(e.id);
@@ -157,6 +174,7 @@ export function nostrRoutes(ctx: Ctx): Router {
         keys.pubkey,
         encryptEventKey(keys.seckey, ctx.config),
       );
+      markDirty(ctx.db, req.event.id);
       record(req.identity.id, req.event.id, 'nostr_key_imported');
       res.json({ npub: toNpub(keys.pubkey) });
     },
@@ -180,6 +198,34 @@ export function nostrRoutes(ctx: Ctx): Router {
       }
       record(req.identity.id, req.event.id, 'nostr_key_exported');
       res.json({ nsec: toNsec(seckey) });
+    },
+  );
+
+  /** Kind 5 for everything, then off. The loop drains the deletions. */
+  router.post('/nostr/retract', requireRole(ctx.db, 'admin'), (req, res) => {
+    markRetract(ctx.db, req.event.id);
+    record(req.identity.id, req.event.id, 'nostr_retract');
+    res.status(204).end();
+  });
+
+  router.post('/nostr/resync', requireRole(ctx.db, 'admin'), (req, res) => {
+    markResync(ctx.db, req.event.id);
+    res.status(204).end();
+  });
+
+  /**
+   * Send a test: the profile again, now, with each relay's answer verbatim.
+   * The effect of every setting on this tab is only visible in the external
+   * service, and republishing the profile is the one send followers do not
+   * see as a new post.
+   */
+  router.post(
+    '/nostr/test',
+    requireRole(ctx.db, 'admin'),
+    limit(ctx.limiter, 'auth'),
+    async (req, res) => {
+      const relays = await publishProfileNow(ctx.db, ctx.config, ctx.nostrPool, req.event.id);
+      res.json({ relays });
     },
   );
 
