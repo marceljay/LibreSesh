@@ -6,7 +6,8 @@ Attendees read a live schedule, add notes, links and questions to sessions,
 and propose their own sessions in the rooms that allow it. Organisers build
 the programme — rooms, tracks, official sessions, pitches placed on the
 grid — from Manage Event and from the schedule itself. Changes reach every
-open browser in under a second.
+open browser in under a second, and an event can announce what is coming up
+into its own Telegram group.
 
 Three design pillars:
 

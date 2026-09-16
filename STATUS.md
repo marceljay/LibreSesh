@@ -16,8 +16,27 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1808**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1890**, lint clean, build clean. Most
 recent cut: **0.7.4**.
+
+- **Telegram announcements** [LIB-207, LIB-208, LIB-209, LIB-210] (2026-09-15).
+  On `worktree-tg-bot`, not yet merged. An event connects its own Telegram
+  group from Manage → Publish → Telegram and is told what is coming up, once
+  per start time. Spec: `_planning/specs/telegram-announcements.md`. Built:
+  migration 023, `server/src/telegram.ts` (renderer, `Announcer`, `getUpdates`
+  poller answering `/bind`, `/unbind`, `/next`), `routes/telegram.ts`, the
+  Manage Event section (its own **Publish** tab, where the next such connection will live too), 62 tests. **The bot belongs to the event**: an
+  organiser pastes a token from BotFather (migration 023) and needs nothing
+  from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a
+  single-tenant fallback. That makes `events.telegram_bot_token` the first
+  plaintext credential in the database — accepted, enumerated in SECURITY.md,
+  and encrypting it at rest is [LIB-213]. **Never run against a real bot** —
+  nothing in
+  this container can reach `api.telegram.org`, so every test fakes the sender
+  and the whole path from `/bind` to a posted message is unproven. That is the
+  first thing to do with a live token. Still open: the morning digest
+  [LIB-211], announcing a pitch as it is placed [LIB-212], and the deploy-doc
+  issue whose creation timed out.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

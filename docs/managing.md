@@ -88,6 +88,60 @@ import, so an old link can never be quietly re-pointed at
 somebody else's event. Renames appear in the audit log under their own
 word, *renamed*.
 
+## Telegram
+
+**Manage Event → Publish → Telegram.** The event announces itself into a
+Telegram group: what is starting next, and the day's programme each morning.
+
+Nothing runs on Telegram's side. A bot is not a program — it is an account with
+a token, and the code that uses it runs inside LibreSesh. So there is nothing
+to install and nothing to schedule.
+
+**Make the bot.** In Telegram, message `@BotFather` and send `/newbot`. Pick a
+name and a username; it hands you a token. Paste that into the **Bot** field.
+It stays on the server and is never shown back to you — only its last four
+characters, so you can tell which one is saved. Anyone holding the token can
+post as that bot, so treat it like a password; `/revoke` in BotFather kills a
+leaked one.
+
+If whoever runs this instance has provided a bot, you can skip that and leave
+the field empty. Your own bot is worth it for one reason: the group sees your
+conference's name on the messages rather than the host's.
+
+**Connect the group.** Add the bot to your Telegram group. Press **Generate a
+code**: LibreSesh gives you a line like `/bind 4f2a9c1e07`. Send that line as
+an ordinary message in the group, the way you would send anything else. The bot
+recognises which group the message arrived from and connects it — which is why
+you never have to look up a group id. The code works once and expires in
+fifteen minutes.
+
+**Send a test message** then proves the whole path. If the bot was never added,
+or was removed, Telegram's own words come back verbatim.
+
+To stop it: **Disconnect** here, or send `/unbind` in the group.
+
+**Choose how loud it is.** A group is a conversation, and every announcement
+pushes it up the screen.
+
+| | Posts |
+| --- | --- |
+| Off | Nothing. Still connected |
+| Light | One message each morning, the whole day |
+| Medium | That, plus what is starting next |
+| Heavy | That, plus sessions as they are placed and when they move |
+
+**Example** shows exactly what a setting would post, drawn from your own
+schedule. Use it — this is the one screen in LibreSesh whose effect you cannot
+see from the screen, because it lands in somebody else's Telegram tomorrow.
+
+Everything starting at the same time goes out in **one** message, however many
+rooms that is: a busy slot is one notification, not five.
+
+**What never leaves.** Drafts, under any setting. Deleted sessions. Anything
+from an archived event. Notes, questions and stars. The links in the messages
+still ask for the event password — the messages themselves do not, so treat
+connecting a group as publishing the programme to everyone in it.
+
 ## Importing a schedule from JSON
 
 `POST /api/events/import` builds a whole event — rooms, tracks, tags and a
