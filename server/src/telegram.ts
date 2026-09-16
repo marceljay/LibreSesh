@@ -37,14 +37,25 @@ export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'chan
 /**
  * Modes are **presets over the trigger set**, not a stored value of their own.
  * Storing both would let the label disagree with the behaviour; deriving it
- * means an organiser who picks Medium and unticks the digest sees "Custom",
- * which is the truth.
+ * means a set matching no preset reports "custom", which is the truth.
+ *
+ * Only presets whose every trigger is *built* appear here.
+ * `_planning/specs/announcements.md` names the full ladder — Off, Light,
+ * Medium, Heavy — and every rung above Off carries `digest`, which is LIB-211
+ * and does not exist. Offering "Light — one message each morning" would have
+ * been offering a setting whose entire effect is silence, which is the same
+ * mistake as a form that cannot submit: the panel already refuses to show the
+ * group controls when no bot can work. The ladder grows as its triggers land,
+ * and `modeOf` keeps answering 'custom' for anything hand-set in between.
+ *
+ * This is also what stops the stored default being unnameable: migration 023
+ * defaults an event to `["up_next"]`, which matched no preset and so opened
+ * every panel on "Custom — a mix of your own", a state nobody chose and none
+ * of the controls could return to.
  */
 export const MODES: Record<string, Trigger[]> = {
   off: [],
-  light: ['digest'],
-  medium: ['digest', 'up_next'],
-  heavy: ['digest', 'up_next', 'added', 'changed'],
+  up_next: ['up_next'],
 };
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>

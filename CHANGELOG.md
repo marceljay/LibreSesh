@@ -12,8 +12,14 @@ All notable changes to this project are documented here.
   goes outside this app is its own job and the next such connection belongs
   beside this one rather than further down Settings.
 
+  It says one thing today — what is starting next — so the panel offers one
+  setting besides Off. A morning digest and a message as a session is placed
+  are designed and unbuilt, and a preset named for them would be a setting
+  whose whole effect is silence.
+
   Every option carries an **Example** button showing the messages that setting
-  would actually send, drawn from this event's own schedule. These are the only
+  would actually send, drawn from this event's own schedule and from the
+  choices on screen rather than the ones last saved. These are the only
   settings whose effect is invisible from the screen that changes them — it
   lands in somebody else's Telegram, tomorrow. The group is then told what is coming up, once
   per start time, fifteen minutes ahead by default — every room starting at

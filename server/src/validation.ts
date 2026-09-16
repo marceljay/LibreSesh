@@ -446,7 +446,9 @@ const telegramTokenSchema = z
 /** `null` clears the event's own bot and falls back to the instance's. */
 export const telegramSettingsSchema = z
   .object({
-    mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
+    /** The presets that exist today. `MODES` in `telegram.ts` is the source —
+     *  a name here that it does not know would 500 on `MODES[body.mode]`. */
+    mode: z.enum(['off', 'up_next']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
   })

@@ -4,6 +4,7 @@ import type { TelegramStatus } from '../server/src/shared/types.js';
 import {
   activeTokens,
   Announcer,
+  MODES,
   dueSessions,
   escapeHtml,
   groupByStart,
@@ -54,14 +55,22 @@ describe('escaping', () => {
 });
 
 describe('modes', () => {
-  it('derives the preset a trigger set matches, whatever the order', () => {
-    expect(modeOf(['up_next', 'digest'])).toBe('medium');
-    expect(modeOf(['digest'])).toBe('light');
+  it('derives the preset a trigger set matches', () => {
+    expect(modeOf(['up_next'])).toBe('up_next');
     expect(modeOf([])).toBe('off');
   });
 
+  it('offers no preset whose triggers are not built', () => {
+    // The ladder in announcements.md reaches Heavy, and every rung above Off
+    // carries `digest`, which does not exist. A preset named "one message each
+    // morning" that sends nothing is the fault this guards.
+    expect(Object.keys(MODES)).toEqual(['off', 'up_next']);
+    for (const triggers of Object.values(MODES))
+      for (const trigger of triggers) expect(trigger).toBe('up_next');
+  });
+
   it('calls an unmatched set custom rather than mislabelling it', () => {
-    expect(modeOf(['up_next'])).toBe('custom');
+    expect(modeOf(['digest'])).toBe('custom');
     expect(modeOf(['digest', 'added'])).toBe('custom');
   });
 
@@ -327,7 +336,8 @@ describe('the Telegram settings routes', () => {
     };
     expect(body.available).toBe(true);
     expect(body.connected).toBe(false);
-    expect(body.mode).toBe('custom');
+    // The migration's default is a preset with a name, not an unnameable set.
+    expect(body.mode).toBe('up_next');
   });
 
   it('mints a bind code that expires', async () => {
@@ -340,12 +350,15 @@ describe('the Telegram settings routes', () => {
   });
 
   it('sets the mode by name and refuses one it does not know', async () => {
-    const body = (
-      await admin.patch('/api/e/testconf/telegram').send({ mode: 'medium' }).expect(200)
-    ).body as { mode: string; triggers: string[] };
-    expect(body.mode).toBe('medium');
-    expect(body.triggers.sort()).toEqual(['digest', 'up_next']);
+    const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'off' }).expect(200))
+      .body as { mode: string; triggers: string[] };
+    expect(body.mode).toBe('off');
+    expect(body.triggers).toEqual([]);
     await admin.patch('/api/e/testconf/telegram').send({ mode: 'deafening' }).expect(400);
+    // Named in announcements.md, not built, and so not accepted: the route
+    // would otherwise store a set that announces nothing under a name that
+    // promises a message every morning.
+    await admin.patch('/api/e/testconf/telegram').send({ mode: 'light' }).expect(400);
   });
 
   it('refuses a lead time outside the sane range', async () => {

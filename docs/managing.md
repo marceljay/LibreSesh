@@ -91,7 +91,7 @@ word, *renamed*.
 ## Telegram
 
 **Manage Event → Publish → Telegram.** The event announces itself into a
-Telegram group: what is starting next, and the day's programme each morning.
+Telegram group: what is starting next, before each start time.
 
 Nothing runs on Telegram's side. A bot is not a program — it is an account with
 a token, and the code that uses it runs inside LibreSesh. So there is nothing
@@ -125,17 +125,20 @@ pushes it up the screen.
 
 | | Posts |
 | --- | --- |
-| Off | Nothing. Still connected |
-| Light | One message each morning, the whole day |
-| Medium | That, plus what is starting next |
-| Heavy | That, plus sessions as they are placed and when they move |
+| Off | Nothing. The group stays connected |
+| What is up next | One message before each start time |
+
+A morning digest of the whole day, and a message the moment a session is placed
+or moved, are designed and not yet built. They will appear here as further
+choices; nothing you set now will change meaning when they do.
 
 **Example** shows exactly what a setting would post, drawn from your own
 schedule. Use it — this is the one screen in LibreSesh whose effect you cannot
 see from the screen, because it lands in somebody else's Telegram tomorrow.
 
 Everything starting at the same time goes out in **one** message, however many
-rooms that is: a busy slot is one notification, not five.
+rooms that is: a busy slot is one notification, not five. **How early it says
+it** sets how long before the start time that message goes out.
 
 **What never leaves.** Drafts, under any setting. Deleted sessions. Anything
 from an archived event. Notes, questions and stars. The links in the messages

@@ -54,23 +54,18 @@ afterEach(() => {
 });
 
 describe('the Telegram example', () => {
-  it('shows the up-next message on medium, and says when it goes out', () => {
-    show('medium');
+  it('shows the up-next message, and says when it goes out', () => {
+    show('up_next');
     expect(screen.getByText(/up next/)).toBeTruthy();
     expect(screen.getByText(/15 minutes before each start time/)).toBeTruthy();
   });
 
-  it('shows only the morning digest on light', () => {
-    show('light');
-    expect(screen.getByText(/Each morning/)).toBeTruthy();
-    expect(screen.queryByText(/up next/)).toBeNull();
-  });
-
-  it('adds the just-placed message on heavy, and not below it', () => {
-    show('heavy');
-    expect(screen.getByText(/Just added/)).toBeTruthy();
-    cleanup();
-    show('medium');
+  it('draws no message that the app cannot actually send', () => {
+    // The modal exists to stop somebody discovering the real behaviour in a
+    // roomful of people. Drawing an unbuilt trigger would be the same fault in
+    // reverse: a promise of a message that never arrives.
+    show('up_next');
+    expect(screen.queryByText(/Each morning/)).toBeNull();
     expect(screen.queryByText(/Just added/)).toBeNull();
   });
 
@@ -81,7 +76,7 @@ describe('the Telegram example', () => {
   });
 
   it('draws the event’s own sessions, in the event’s timezone', () => {
-    show('medium');
+    show('up_next');
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
@@ -89,7 +84,7 @@ describe('the Telegram example', () => {
   });
 
   it('puts every room of one start time in the same message', () => {
-    show('medium', [
+    show('up_next', [
       session({}),
       session({ id: 2, roomId: 2, title: 'Hallway track', speakers: [] }),
     ]);
@@ -98,12 +93,12 @@ describe('the Telegram example', () => {
   });
 
   it('never previews a draft, because one is never posted', () => {
-    show('medium', [session({ id: 3, title: 'Secret plans', draft: true })]);
+    show('up_next', [session({ id: 3, title: 'Secret plans', draft: true })]);
     expect(screen.queryByText('Secret plans')).toBeNull();
   });
 
   it('falls back to stand-in names on an event with nothing scheduled, and says so', () => {
-    show('medium', []);
+    show('up_next', []);
     expect(screen.getByText(/stand-in names/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
   });

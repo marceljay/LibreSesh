@@ -28,12 +28,18 @@ import {
 
 const DOCS = 'https://github.com/marceljay/LibreSesh/blob/main/docs/managing.md#telegram';
 
-/** The presets, quietest first, worded as what the group experiences. */
+/**
+ * The presets, quietest first, worded as what the group experiences.
+ *
+ * Two rungs, because two are built. The ladder in `announcements.md` goes on —
+ * a morning digest, then sessions as they are placed and moved — and every one
+ * of those rungs is a trigger that does not exist yet (LIB-211, LIB-212).
+ * Listing them would be offering an organiser a quiet-sounding setting whose
+ * whole effect is silence, which is worse than a shorter list.
+ */
 const MODES = [
   { id: 'off', label: 'Off — connected, but silent' },
-  { id: 'light', label: 'Light — one message each morning' },
-  { id: 'medium', label: 'Medium — mornings, and what is up next' },
-  { id: 'heavy', label: 'Heavy — everything, including changes' },
+  { id: 'up_next', label: 'What is up next — a message before each start time' },
 ];
 
 const modeLabel = (id: string): string =>

@@ -169,7 +169,7 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     id: 'telegram-mode',
     label: 'How much it says',
     tab: 'publish',
-    keywords: 'telegram loud quiet noise digest up next mode light medium heavy',
+    keywords: 'telegram loud quiet noise up next mode silent off',
     anchor: 'telegram',
   },
   {

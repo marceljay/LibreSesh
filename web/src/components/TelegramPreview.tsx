@@ -17,12 +17,10 @@ import { SecondaryButton } from './ui';
 interface Slot {
   time: string;
   rows: { room: string; title: string; speakers: string }[];
-  day: string;
 }
 
 const FALLBACK: Slot = {
   time: '10:00',
-  day: 'Tuesday 16 September',
   rows: [
     { room: 'Main Hall', title: 'Scaling an unconference', speakers: 'Ada Lovelace' },
     { room: 'Room 2', title: 'Hallway track, formalised', speakers: 'Grace Hopper' },
@@ -44,7 +42,6 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
 
   return {
     time: fmt({ hour: '2-digit', minute: '2-digit', hour12: false }),
-    day: fmt({ weekday: 'long', day: 'numeric', month: 'long' }),
     rows: live
       .filter((s) => s.startsAt === anchor.startsAt)
       .slice(0, 4)
@@ -92,12 +89,11 @@ export function TelegramPreview({
   const slot = pickSlot(event, sessions, rooms);
   const usingRealData = sessions.some((s) => !s.draft);
 
-  const sends = {
-    digest: mode === 'light' || mode === 'medium' || mode === 'heavy',
-    upNext: mode === 'medium' || mode === 'heavy',
-    added: mode === 'heavy',
-  };
-  const nothing = !sends.digest && !sends.upNext && !sends.added;
+  // One trigger is built, so one message can be drawn. The morning digest and
+  // the just-placed message are designed in the spec and unwritten (LIB-211,
+  // LIB-212); drawing either here would be promising a message that never
+  // arrives, which is exactly what this modal exists to prevent.
+  const upNext = mode === 'up_next';
 
   return (
     <Modal
@@ -111,27 +107,14 @@ export function TelegramPreview({
       footer={<SecondaryButton onClick={onClose}>Close</SecondaryButton>}
     >
       <div className="space-y-5">
-        {nothing && (
+        {!upNext && (
           <p className="text-sm text-stone-600 dark:text-stone-300">
             Nothing. The group stays connected and the bot says no more until you pick another
             setting.
           </p>
         )}
 
-        {sends.digest && (
-          <Bubble when="Each morning at 08:00">
-            <p className="font-semibold">📋 {slot.day}</p>
-            <div className="mt-2 space-y-0.5 font-mono text-xs">
-              {slot.rows.map((row, i) => (
-                <p key={i}>
-                  {slot.time} {row.room} — {row.title}
-                </p>
-              ))}
-            </div>
-          </Bubble>
-        )}
-
-        {sends.upNext && (
+        {upNext && (
           <Bubble when={`${leadMin} minutes before each start time`}>
             <p className="font-semibold">🕐 {slot.time} — up next</p>
             {slot.rows.map((row, i) => (
@@ -148,18 +131,7 @@ export function TelegramPreview({
           </Bubble>
         )}
 
-        {sends.added && (
-          <Bubble when="The moment a session is placed">
-            <p>
-              ✨ Just added — {slot.time}, {slot.rows[0]?.room}
-            </p>
-            <p>
-              <Title>{slot.rows[0]?.title}</Title>
-            </p>
-          </Bubble>
-        )}
-
-        {sends.upNext && (
+        {upNext && (
           <p className="text-xs leading-relaxed text-stone-500 dark:text-stone-400">
             Everything starting at the same time goes out in one message, however many rooms that is
             — so a busy slot is one notification, not five.

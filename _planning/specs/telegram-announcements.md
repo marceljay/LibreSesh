@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.0 · **Status:** implemented, in review (PR #116) · **Team:** LibreSesh
+**Version:** 1.1 · **Status:** implemented, in review (PR #116) · **Team:** LibreSesh
 
 ## Contents
 
@@ -75,6 +75,7 @@ not restate them. Nostr is specified in `nostr-publishing.md`.
 | **Transport** | A delivery mechanism for announcements. Telegram is one |
 | **Slot** | All non-draft sessions of one event sharing a start time |
 | **Lead** | Minutes before a slot's start at which it is announced |
+| **Preset** | A named trigger set offered in the panel. A trigger set matching none is *custom* |
 
 ---
 
@@ -84,7 +85,9 @@ not restate them. Nostr is specified in `nostr-publishing.md`.
 
 An event's schedule is readable only behind an event password. This transport
 gives an organiser the option of announcing part of it into a Telegram group
-they control: what is starting next, and the day's programme each morning.
+they control. Built today: what is starting next. Designed and not built: the
+day's programme each morning, and a session as it is placed or moved — see the
+triggers in `announcements.md` and §11 here.
 
 All logic executes inside the LibreSesh server process. There is no separate
 service, no code deployed to Telegram, and no scheduling facility on Telegram's
@@ -208,6 +211,7 @@ sequenceDiagram
 | Group discovered via bind code | Organiser pastes a chat id | A private group's id cannot be obtained without a third-party bot |
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
+| Only presets whose triggers are built are offered | The full Off/Light/Medium/Heavy ladder | Every rung above Off carries `digest`, which is unbuilt, so "Light — one message each morning" would name a setting whose whole effect is silence. §8's own rule: never a control that cannot work. It is also what gives migration 023's default a name instead of "custom" |
 | HTML parse mode | MarkdownV2 | Every interpolated value is user-authored; MarkdownV2 needs 18 characters escaped in each, and one miss is a 400 or mangled output |
 
 ---
@@ -380,7 +384,7 @@ transports join it rather than lengthening Settings.
 | --- | --- |
 | Bot | Token field with a **Save bot** action; once saved, shows the last four characters and **Remove**. An ⓘ explains what a bot is and links to `docs/managing.md` |
 | Group | **Generate a code**, then the line to send in the group; when bound, **Send a test message** and **Disconnect** |
-| How much it says | Select over the mode presets |
+| How much it says | Select over the presets that are built: **Off** and **What is up next** |
 | How early it says it | Number field, 1–180 minutes |
 | Save | One action for the two options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
@@ -394,10 +398,17 @@ transports join it rather than lengthening Settings.
   are a form with one Save, matching Breaks, Rooms and Settings.
 - With no bot available anywhere, the panel offers the token field and nothing
   else — never a control that cannot work.
-- **Example** renders the messages the current mode would send, built from the
-  event's own sessions, excluding drafts. These are the only settings in the
-  application whose effect cannot be observed from the screen that changes
-  them.
+- **Example** renders the messages the settings *currently on screen* would
+  send — not the stored ones — built from the event's own sessions, excluding
+  drafts. It is how an organiser decides whether to press Save, so answering
+  with what is already saved answers a question nobody asked. These are the
+  only settings in the application whose effect cannot be observed from the
+  screen that changes them.
+- **The panel offers no preset it cannot honour.** The ladder in
+  `announcements.md` reaches Heavy; two rungs are built, so two are listed. A
+  preset named for a morning digest that does not exist is the same fault as a
+  form that cannot submit, and the Example would have to draw a message that
+  never arrives.
 
 ---
 
@@ -449,3 +460,4 @@ Requirements without a design element: U3 and U4 (§11).
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from `announcements.md` rather than restated |
+| 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; the Example reads the screen rather than the store; a failed test message reports Telegram's own words |
