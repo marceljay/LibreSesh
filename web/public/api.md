@@ -13,6 +13,16 @@ the operating manual for an agent acting here — access, the flow, the policy o
 writing for a human — and [`/SKILL.md`](/SKILL.md) is the same in the packaged
 skill format. Read `/agents.md` first; come here for the detail.
 
+[`/openapi.json`](/openapi.json) is this reference as a machine-readable
+document: an OpenAPI 3.1 spec generated from the same zod schemas that validate
+the requests, so its bodies cannot drift from what the server accepts. Point a
+client generator at it rather than parsing this page. Two things it does not
+carry, both on purpose. Response bodies are typed as objects — the DTOs are
+TypeScript interfaces rather than schemas, and the shapes are written out here
+instead. What a role may do is not in it either: capabilities are middleware an
+organiser can change while the event runs, so the answer is the bundle's
+`permissions` map at runtime, not a line in a spec.
+
 ## Read this first, if you are an agent
 
 Three sentences will keep you out of every wall in this document:
@@ -110,7 +120,49 @@ your cookie jar already held.
 
 The bundle carries `role` and a `permissions` map (capability → the roles
 allowed to use it), so you can tell what you are allowed to do without
-provoking a `403` to find out.
+provoking a `403` to find out. Three of its fields are easy to miss, and two
+of them are about stars:
+
+| Field | |
+| --- | --- |
+| `starredSessionIds` | The sessions **this identity** has starred — your own agenda. Read it before starring, so you do not offer to star something twice |
+| `starCounts` | sessionId → how many people starred it. Everyone's interest, not yours |
+| `contributionCounts` | sessionId → how many visible contributions it has. The bodies are not in the bundle; fetch the session |
+
+`GET /api/e/:slug/sessions/:id` answers a wrapper, not a bare session — the
+DTO is under `session`:
+
+```json
+{
+  "session": { "id": 356, "title": "Schedules as commons", "roomId": 3, "updatedAt": "…" },
+  "contributions": [
+    {
+      "id": 98, "sessionId": 356, "kind": "note", "body": "…", "url": null,
+      "createdBy": 564, "createdByName": "scheduling-bot",
+      "createdAt": "…", "hidden": false
+    }
+  ]
+}
+```
+
+Hidden contributions are in the array for organisers and absent for everyone
+else.
+
+`GET /api/me` needs no role and answers:
+
+```json
+{
+  "id": 564, "uid": "a3f9c", "displayName": "scheduling-bot",
+  "roles": { "democonf-2026": "user" },
+  "demoMode": false, "demoEventSlugs": [], "commit": "f8dfba0"
+}
+```
+
+`roles` is keyed by event slug, which is how a client that kept its jar can
+tell it is already in: call `/api/me` first and send a password to `/auth`
+only when `roles` has no entry for the slug. `uid` is the 5-hex-character
+identifier the person sees in their own menu, and `displayName` here is the
+instance-wide one — inside an event the name that counts is the bundle's.
 
 For scale: a fourteen-day, 186-session event is one response of about 100 KB,
 6 KB compressed, built in under 5 ms.
@@ -128,8 +180,16 @@ event.updated     permissions.updated
 ```
 
 Each frame's `data` is the same DTO the bundle uses for that thing. Heartbeats
-arrive every 25 seconds. On reconnect, refetch the bundle — there is no replay
-yet.
+arrive every 25 seconds.
+
+**Reconnecting.** Every frame carries an `id`, and the server keeps a short ring
+of recent frames per event — the last 200, up to five minutes back. Send the
+last id you saw as `Last-Event-ID` and you are handed what you missed; a browser
+`EventSource` does this for you. Where the gap cannot be filled — an id older
+than the ring, or one from before a server restart — you get a single
+`event: resync` frame instead, and that one means refetch the bundle. Do not
+refetch on every reconnect: a room of devices doing that to one wobbling access
+point is the most expensive thing an event can do to its own server.
 
 Stars and pitch interest are private: they are never broadcast and never
 attributed in any payload. Only aggregate counts leave the server. Do not build
@@ -174,6 +234,32 @@ Three rules that will bite a program in particular:
 - **Deletes are soft.** A deleted session is recoverable from
   `POST /api/e/:slug/sessions/:id/restore`, and it still owns its
   contributions and stars.
+
+### Notes, links and questions
+
+`POST /api/e/:slug/sessions/:id/contributions` takes:
+
+```json
+{ "kind": "note", "body": "Slides are on the wiki", "url": null }
+```
+
+`kind` is one of `note`, `link`, `question`. `body` is required, trimmed, up
+to 2000 characters. `url` is required when `kind` is `"link"` and ignored
+otherwise; it must be a plain `http` or `https` link. The response is `201`
+with the contribution DTO — the same shape the session detail and the
+`contribution.created` stream frame carry.
+
+A draft session takes none, and refuses them with `409 draft`. You may delete
+your own with `DELETE /contributions/:id`; organisers hide anyone's with
+`PATCH /contributions/:id/hidden`.
+
+### Stars
+
+`PUT /api/e/:slug/sessions/:id/star` and its `DELETE` take **no body** and
+answer **`204` with no content** — there is nothing to parse. `PUT` is
+idempotent, so starring twice is not an error. Stars are private to the
+identity that made them and stay reachable after an event is archived. What
+you have starred is `starredSessionIds` in the bundle.
 
 ## Errors
 
@@ -263,15 +349,15 @@ resolving, so a client written against the old name keeps working. Read
 | --- | --- |
 | `GET /login`, `POST /auth`, `POST /logout` | Entering and leaving |
 | `GET /bundle`, `GET /stream` | The whole event, and its changes |
-| `GET /sessions/:id` | One session with contributions |
+| `GET /sessions/:id` | One session with contributions — `{session, contributions}` |
 | `POST /sessions`, `PATCH /sessions/:id`, `DELETE /sessions/:id` | The programme |
 | `POST /sessions/repeat` | Repeat one across days |
 | `GET /sessions/:id/link-candidates`, `POST /sessions/link`, `POST /sessions/unlink` | Linked sessions |
-| `PUT`/`DELETE /sessions/:id/star` | Your own agenda (private) |
+| `PUT`/`DELETE /sessions/:id/star` | Your own agenda (private). No body, `204` |
 | `POST /proposals`, `PATCH`/`DELETE /proposals/:id` | The pitch board |
 | `PUT`/`DELETE /proposals/:id/interest` | Register interest (private) |
 | `POST /proposals/:id/place` | Give a pitch a room and a time |
-| `POST /sessions/:id/contributions` | Notes, links, questions |
+| `POST /sessions/:id/contributions` | Notes, links, questions. `{kind, body, url}` → `201` |
 | `DELETE /contributions/:id`, `PATCH /contributions/:id/hidden` | Delete your own; organisers moderate |
 | `POST /rooms`, `PATCH`/`DELETE /rooms/:id` | Rooms. Organisers |
 | `POST /tags`, `PATCH`/`DELETE /tags/:id` | Tags. Organisers |
@@ -314,7 +400,7 @@ Never treat a name as proof of who someone is.
 
 ## What this API deliberately does not have
 
-No OpenAPI document yet. No CORS headers and cookies are `SameSite=Lax`, so
+No CORS headers, and cookies are `SameSite=Lax`, so
 browser-side callers on another origin will not work — this is for server-side
 clients. No pagination anywhere: the bundle is the whole event by design. No
 bulk edit of an existing event; `POST /api/events/import` builds a new one and

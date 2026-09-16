@@ -1,0 +1,4496 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LibreSesh",
+    "version": "0.7.4",
+    "summary": "The HTTP API of one LibreSesh instance.",
+    "description": "Generated from the zod schemas and the routers — see `/api.md` for the\nprose reference, and `/agents.md` if you are a program acting for someone.\n\n**Identity is a signed cookie, not a bearer token.** `POST /api/e/{slug}/auth`\nwith an event password sets it; keep your cookie jar or every later request\nis a `401`. `GET /api/me` tells you which events you already hold a role in.\n\n**What a role may do is not in this document.** Capabilities are middleware,\nand an organiser can change them while the event runs, so the answer lives at\nruntime in the bundle’s `permissions` map (capability → the roles allowed to\nuse it). Read it rather than provoking a `403` to find out.\n\n**Response bodies are described loosely.** Request bodies are generated from\nthe schemas that validate them and are exact; responses are TypeScript\ninterfaces rather than schemas, so they are typed as objects here and written\nout in `/api.md`.",
+    "license": {
+      "name": "AGPL-3.0-or-later",
+      "identifier": "AGPL-3.0-or-later"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "This instance"
+    }
+  ],
+  "security": [
+    {
+      "identityCookie": []
+    }
+  ],
+  "paths": {
+    "/api/backup": {
+      "post": {
+        "operationId": "postBackup",
+        "summary": "Download the whole database, encrypted",
+        "tags": [
+          "Backup"
+        ],
+        "responses": {
+          "200": {
+            "description": "Download the whole database, encrypted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "instanceKey": []
+          }
+        ]
+      }
+    },
+    "/api/e/{slug}/audit": {
+      "get": {
+        "operationId": "getEventAudit",
+        "summary": "The event log. Organisers",
+        "tags": [
+          "Audit"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Page backwards from this entry id. Keyset, not offset.",
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event log. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/auth": {
+      "post": {
+        "operationId": "postEventAuth",
+        "summary": "Send an event password, receive the identity cookie",
+        "tags": [
+          "EventAuth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Auth"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Send an event password, receive the identity cookie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/breaks": {
+      "post": {
+        "operationId": "postEventBreaks",
+        "summary": "Add a break",
+        "tags": [
+          "Breaks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Break"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add a break",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/breaks/{id}": {
+      "delete": {
+        "operationId": "deleteEventBreaksById",
+        "summary": "Remove a break",
+        "tags": [
+          "Breaks"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventBreaksById",
+        "summary": "Edit a break",
+        "tags": [
+          "Breaks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreakPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a break",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/bundle": {
+      "get": {
+        "operationId": "getEventBundle",
+        "summary": "The entire event in one response",
+        "tags": [
+          "Bundle"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The entire event in one response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/calendar-token": {
+      "post": {
+        "operationId": "postEventCalendarToken",
+        "summary": "Mint this identity’s calendar subscription token",
+        "tags": [
+          "Agenda"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mint this identity’s calendar subscription token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/calendar.ics": {
+      "get": {
+        "operationId": "getEventCalendarIcs",
+        "summary": "The calendar feed, authenticated by token",
+        "tags": [
+          "Agenda"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The calendar feed, authenticated by token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "calendarToken": []
+          }
+        ]
+      }
+    },
+    "/api/e/{slug}/claims/{id}": {
+      "delete": {
+        "operationId": "deleteEventClaimsById",
+        "summary": "Withdraw a profile claim",
+        "tags": [
+          "Claims"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Withdraw a profile claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/claims/{id}/approve": {
+      "post": {
+        "operationId": "postEventClaimsByIdApprove",
+        "summary": "Approve a profile claim. Organisers",
+        "tags": [
+          "Claims"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approve a profile claim. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/claims/{id}/decline": {
+      "post": {
+        "operationId": "postEventClaimsByIdDecline",
+        "summary": "Decline a profile claim. Organisers",
+        "tags": [
+          "Claims"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decline a profile claim. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/confirm-admin": {
+      "post": {
+        "operationId": "postEventConfirmAdmin",
+        "summary": "Re-type the organiser password",
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Auth"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/contributions/{id}": {
+      "delete": {
+        "operationId": "deleteEventContributionsById",
+        "summary": "Delete a note, link or question",
+        "tags": [
+          "Contributions"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/contributions/{id}/hidden": {
+      "patch": {
+        "operationId": "patchEventContributionsByIdHidden",
+        "summary": "Hide or unhide one. Organisers",
+        "tags": [
+          "Contributions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Hidden"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hide or unhide one. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/contributions/{id}/restore": {
+      "post": {
+        "operationId": "postEventContributionsByIdRestore",
+        "summary": "Restore a deleted contribution",
+        "tags": [
+          "Trash"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restore a deleted contribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/export.json": {
+      "get": {
+        "operationId": "getEventExportJson",
+        "summary": "Whole-event JSON. Organisers",
+        "tags": [
+          "Backup"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated parts to export. Absent means all of them.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whole-event JSON. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/formats": {
+      "post": {
+        "operationId": "postEventFormats",
+        "summary": "Add a session format. Organisers",
+        "tags": [
+          "Formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Format"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add a session format. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/formats/{id}": {
+      "delete": {
+        "operationId": "deleteEventFormatsById",
+        "summary": "Remove a session format. Organisers",
+        "tags": [
+          "Formats"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventFormatsById",
+        "summary": "Edit a session format. Organisers",
+        "tags": [
+          "Formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormatPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a session format. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/login": {
+      "get": {
+        "operationId": "getEventLogin",
+        "summary": "What this event’s login page needs to draw itself",
+        "tags": [
+          "EventAuth"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What this event’s login page needs to draw itself",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/login-attempts/reset": {
+      "post": {
+        "operationId": "postEventLoginAttemptsReset",
+        "summary": "Lift the sign-in stop. Organisers",
+        "tags": [
+          "Audit"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/login-health": {
+      "get": {
+        "operationId": "getEventLoginHealth",
+        "summary": "Failed sign-in counts. Organisers",
+        "tags": [
+          "Audit"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Failed sign-in counts. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/logout": {
+      "post": {
+        "operationId": "postEventLogout",
+        "summary": "Drop this event’s role from the cookie",
+        "tags": [
+          "EventAuth"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/me": {
+      "patch": {
+        "operationId": "patchEventMe",
+        "summary": "Rename yourself in this event",
+        "tags": [
+          "Me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rename"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rename yourself in this event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/me/profile": {
+      "patch": {
+        "operationId": "patchEventMeProfile",
+        "summary": "Edit your own profile here",
+        "tags": [
+          "People"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MyProfile"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit your own profile here",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/notifications": {
+      "get": {
+        "operationId": "getEventNotifications",
+        "summary": "Your inbox for this event",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your inbox for this event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/notifications/mutes": {
+      "patch": {
+        "operationId": "patchEventNotificationsMutes",
+        "summary": "Choose what you are notified about",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Mute"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Choose what you are notified about",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/notifications/read": {
+      "post": {
+        "operationId": "postEventNotificationsRead",
+        "summary": "Mark notifications read",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mark notifications read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/password-role": {
+      "post": {
+        "operationId": "postEventPasswordRole",
+        "summary": "Ask what a password grants, without entering",
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Auth"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ask what a password grants, without entering",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people": {
+      "post": {
+        "operationId": "postEventPeople",
+        "summary": "Add someone to the roster",
+        "tags": [
+          "People"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Person"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add someone to the roster",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}": {
+      "delete": {
+        "operationId": "deleteEventPeopleById",
+        "summary": "Remove someone from the roster",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEventPeopleById",
+        "summary": "One person’s profile",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One person’s profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventPeopleById",
+        "summary": "Edit a profile",
+        "tags": [
+          "People"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}/archive": {
+      "delete": {
+        "operationId": "deleteEventPeopleByIdArchive",
+        "summary": "Put an archived person back",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Put an archived person back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postEventPeopleByIdArchive",
+        "summary": "File a person out of the lists",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File a person out of the lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}/claim": {
+      "post": {
+        "operationId": "postEventPeopleByIdClaim",
+        "summary": "Ask to hold this profile",
+        "tags": [
+          "Claims"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Ask to hold this profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}/merge": {
+      "post": {
+        "operationId": "postEventPeopleByIdMerge",
+        "summary": "Fold one profile into another. Organisers",
+        "tags": [
+          "People"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergePerson"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fold one profile into another. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}/role": {
+      "put": {
+        "operationId": "putEventPeopleByIdRole",
+        "summary": "Change what someone may do. Organisers",
+        "tags": [
+          "People"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonRole"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Change what someone may do. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/people/{id}/speaker-code": {
+      "delete": {
+        "operationId": "deleteEventPeopleByIdSpeakerCode",
+        "summary": "Revoke a speaker code. Organisers",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postEventPeopleByIdSpeakerCode",
+        "summary": "Mint a standing speaker code. Organisers",
+        "tags": [
+          "People"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mint a standing speaker code. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/permissions": {
+      "patch": {
+        "operationId": "patchEventPermissions",
+        "summary": "Edit the capability matrix. Organisers",
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Permissions"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit the capability matrix. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/proposals": {
+      "post": {
+        "operationId": "postEventProposals",
+        "summary": "Pitch a session",
+        "tags": [
+          "Proposals"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Proposal"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Pitch a session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/proposals/{id}": {
+      "delete": {
+        "operationId": "deleteEventProposalsById",
+        "summary": "Withdraw a pitch",
+        "tags": [
+          "Proposals"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventProposalsById",
+        "summary": "Edit a pitch",
+        "tags": [
+          "Proposals"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a pitch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/proposals/{id}/interest": {
+      "delete": {
+        "operationId": "deleteEventProposalsByIdInterest",
+        "summary": "Withdraw that interest",
+        "tags": [
+          "Proposals"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putEventProposalsByIdInterest",
+        "summary": "Register interest in a pitch (private)",
+        "tags": [
+          "Proposals"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/proposals/{id}/place": {
+      "post": {
+        "operationId": "postEventProposalsByIdPlace",
+        "summary": "Give a pitch a room and a time",
+        "tags": [
+          "Proposals"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Place"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Give a pitch a room and a time",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/rooms": {
+      "post": {
+        "operationId": "postEventRooms",
+        "summary": "Add a room. Organisers",
+        "tags": [
+          "Rooms"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Room"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add a room. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/rooms/{id}": {
+      "delete": {
+        "operationId": "deleteEventRoomsById",
+        "summary": "Remove a room. Organisers",
+        "tags": [
+          "Rooms"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventRoomsById",
+        "summary": "Edit a room. Organisers",
+        "tags": [
+          "Rooms"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a room. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions": {
+      "post": {
+        "operationId": "postEventSessions",
+        "summary": "Put a session on the programme",
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Session"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Put a session on the programme",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/{id}": {
+      "delete": {
+        "operationId": "deleteEventSessionsById",
+        "summary": "Delete a session (soft, restorable)",
+        "tags": [
+          "Sessions"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEventSessionsById",
+        "summary": "One session and its contributions",
+        "tags": [
+          "Bundle"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One session and its contributions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventSessionsById",
+        "summary": "Edit a session. Send expectedUpdatedAt",
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a session. Send expectedUpdatedAt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/{id}/contributions": {
+      "post": {
+        "operationId": "postEventSessionsByIdContributions",
+        "summary": "Post a note, link or question",
+        "tags": [
+          "Contributions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Contribution"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Post a note, link or question",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/{id}/link-candidates": {
+      "get": {
+        "operationId": "getEventSessionsByIdLinkCandidates",
+        "summary": "Sessions this one could be linked to",
+        "tags": [
+          "Sessions"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessions this one could be linked to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/{id}/restore": {
+      "post": {
+        "operationId": "postEventSessionsByIdRestore",
+        "summary": "Restore a deleted session",
+        "tags": [
+          "Trash"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restore a deleted session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/{id}/star": {
+      "delete": {
+        "operationId": "deleteEventSessionsByIdStar",
+        "summary": "Unstar it",
+        "tags": [
+          "Agenda"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putEventSessionsByIdStar",
+        "summary": "Star a session for your own agenda (private)",
+        "tags": [
+          "Agenda"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/link": {
+      "post": {
+        "operationId": "postEventSessionsLink",
+        "summary": "Link two sessions together",
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionLink"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Link two sessions together",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/repeat": {
+      "post": {
+        "operationId": "postEventSessionsRepeat",
+        "summary": "Repeat one session across days",
+        "tags": [
+          "Sessions"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Repeat one session across days",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/sessions/unlink": {
+      "post": {
+        "operationId": "postEventSessionsUnlink",
+        "summary": "Unlink a session",
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionUnlink"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unlink a session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/settings": {
+      "patch": {
+        "operationId": "patchEventSettings",
+        "summary": "Edit the event itself. Organisers",
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit the event itself. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/stream": {
+      "get": {
+        "operationId": "getEventStream",
+        "summary": "Server-Sent Events: every change to this event",
+        "tags": [
+          "Stream"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events: every change to this event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/tags": {
+      "post": {
+        "operationId": "postEventTags",
+        "summary": "Add a tag. Organisers",
+        "tags": [
+          "Tags"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Tag"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add a tag. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/tags/{id}": {
+      "delete": {
+        "operationId": "deleteEventTagsById",
+        "summary": "Remove a tag. Organisers",
+        "tags": [
+          "Tags"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventTagsById",
+        "summary": "Edit a tag. Organisers",
+        "tags": [
+          "Tags"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a tag. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/tracks": {
+      "patch": {
+        "operationId": "patchEventTracks",
+        "summary": "Reorder the tracks. Organisers",
+        "tags": [
+          "Tracks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackOrder"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reorder the tracks. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postEventTracks",
+        "summary": "Add a track. Organisers",
+        "tags": [
+          "Tracks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Track"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Add a track. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/tracks/{id}": {
+      "delete": {
+        "operationId": "deleteEventTracksById",
+        "summary": "Remove a track. Organisers",
+        "tags": [
+          "Tracks"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventTracksById",
+        "summary": "Edit a track. Organisers",
+        "tags": [
+          "Tracks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit a track. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/trash": {
+      "get": {
+        "operationId": "getEventTrash",
+        "summary": "What has been deleted and can be restored",
+        "tags": [
+          "Trash"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What has been deleted and can be restored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "operationId": "getEvents",
+        "summary": "Every event on this instance: names and dates, no schedule",
+        "tags": [
+          "Events"
+        ],
+        "responses": {
+          "200": {
+            "description": "Every event on this instance: names and dates, no schedule",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "postEvents",
+        "summary": "Create an event",
+        "tags": [
+          "Events"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Create an event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "instanceKey": []
+          }
+        ]
+      }
+    },
+    "/api/events/import": {
+      "post": {
+        "operationId": "postEventsImport",
+        "summary": "Build a whole event from one document",
+        "tags": [
+          "Import"
+        ],
+        "responses": {
+          "200": {
+            "description": "Build a whole event from one document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "security": [
+          {
+            "instanceKey": []
+          }
+        ]
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Who this cookie is, its role per event, and the build",
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Who this cookie is, its role per event, and the build",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchMe",
+        "summary": "Rename yourself instance-wide",
+        "tags": [
+          "Me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Rename"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rename yourself instance-wide",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/me/link": {
+      "post": {
+        "operationId": "postMeLink",
+        "summary": "Redeem a device phrase and become that identity",
+        "tags": [
+          "Me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkPhrase"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Redeem a device phrase and become that identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/me/link-code": {
+      "post": {
+        "operationId": "postMeLinkCode",
+        "summary": "Mint a device phrase for another device to redeem",
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "Mint a device phrase for another device to redeem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "identityCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cid",
+        "description": "Signed identity cookie, set by `POST /api/e/{slug}/auth`."
+      },
+      "instanceKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Instance-Key",
+        "description": "The instance password. Creating, importing, backing up."
+      },
+      "calendarToken": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "token",
+        "description": "Per-person calendar token from `POST /calendar-token`."
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Every failure has this shape. Branch on `code`.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "validation",
+                  "name_required",
+                  "unauthorized",
+                  "forbidden",
+                  "not_found",
+                  "name_taken",
+                  "profile_exists",
+                  "already_claimed",
+                  "claim_pending",
+                  "stale",
+                  "overlap",
+                  "blocked",
+                  "draft",
+                  "rate_limited"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Written for people; do not branch on it."
+              }
+            }
+          }
+        }
+      },
+      "Auth": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "claimProfile": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "BreakPatch": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "startMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "endMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "startMin",
+          "endMin"
+        ],
+        "additionalProperties": false
+      },
+      "Break": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "startMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "endMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "startMin",
+          "endMin"
+        ],
+        "additionalProperties": false
+      },
+      "Contribution": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "note",
+              "link",
+              "question"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "CreateEvent": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{3,40}$"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "dayStartMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "dayEndMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "viewerPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "userPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "adminPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "userRoleLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "defaultView": {
+            "type": "string",
+            "enum": [
+              "cal",
+              "list"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "timezone",
+          "startDate",
+          "endDate"
+        ],
+        "additionalProperties": false
+      },
+      "FormatPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Format": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "Hidden": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hidden"
+        ],
+        "additionalProperties": false
+      },
+      "LinkPhrase": {
+        "type": "object",
+        "properties": {
+          "phrase": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "phrase"
+        ],
+        "additionalProperties": false
+      },
+      "MergePerson": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "from"
+        ],
+        "additionalProperties": false
+      },
+      "Mute": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "mention",
+              "session_changed",
+              "starred_changed",
+              "pitch_scheduled",
+              "pitch_posted"
+            ]
+          },
+          "muted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "muted"
+        ],
+        "additionalProperties": false
+      },
+      "MyProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "links": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Permissions": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "additionalProperties": {
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "user",
+              "speaker",
+              "admin"
+            ]
+          }
+        }
+      },
+      "PersonPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "links": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonRole": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "viewer",
+              "user",
+              "speaker",
+              "admin"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ],
+        "additionalProperties": false
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "links": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "Place": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "official",
+              "open"
+            ]
+          }
+        },
+        "required": [
+          "roomId",
+          "startsAt",
+          "endsAt"
+        ],
+        "additionalProperties": false
+      },
+      "ProposalPatch": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "speakerId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "speakerName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Proposal": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "speakerId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "speakerName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false
+      },
+      "Rename": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "displayName"
+        ],
+        "additionalProperties": false
+      },
+      "RoomPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "openBooking": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          }
+        },
+        "additionalProperties": false
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "openBooking": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "SessionLink": {
+        "type": "object",
+        "properties": {
+          "sessionIds": {
+            "minItems": 2,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": [
+          "sessionIds"
+        ],
+        "additionalProperties": false
+      },
+      "SessionPatch": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "official",
+              "open"
+            ]
+          },
+          "blocksOpenBooking": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "speakers": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              ]
+            }
+          },
+          "livestreams": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "trackId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formatId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          },
+          "expectedUpdatedAt": {
+            "type": "string"
+          },
+          "applyTo": {
+            "type": "string",
+            "enum": [
+              "one",
+              "later",
+              "all"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "official",
+              "open"
+            ]
+          },
+          "blocksOpenBooking": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "speakers": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              ]
+            }
+          },
+          "livestreams": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "tagIds": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "trackId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formatId": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "draft": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "roomId",
+          "title",
+          "startsAt",
+          "endsAt"
+        ],
+        "additionalProperties": false
+      },
+      "SessionUnlink": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "sessionId"
+        ],
+        "additionalProperties": false
+      },
+      "Settings": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{3,40}$"
+          },
+          "startDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "endDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "dayStartMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "dayEndMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "weekRailFrom": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "defaultView": {
+            "type": "string",
+            "enum": [
+              "cal",
+              "list"
+            ]
+          },
+          "viewerPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "userPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "adminPassword": {
+            "type": "string",
+            "minLength": 6
+          },
+          "userRoleLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "auditKeep": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "showOfficialBadge": {
+            "type": "boolean"
+          },
+          "pitchesEnabled": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TagPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "TrackOrder": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "minItems": 1,
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "TrackPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "startMin": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "endMin": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "windows": {
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "startMin": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                },
+                "endMin": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                }
+              },
+              "required": [
+                "date",
+                "startMin",
+                "endMin"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "Track": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$"
+          },
+          "startMin": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "endMin": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "windows": {
+            "maxItems": 60,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "startMin": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                },
+                "endMin": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                }
+              },
+              "required": [
+                "date",
+                "startMin",
+                "endMin"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

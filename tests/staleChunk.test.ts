@@ -59,15 +59,19 @@ describe('the boundary is actually mounted', () => {
   it('wraps the routes, not just sits in the file', () => {
     // Above <Suspense>: a lazy chunk's rejection propagates out of the
     // suspense boundary, so a boundary inside it would never see one.
-    expect(app.indexOf('<AppErrorBoundary>')).toBeGreaterThan(-1);
-    expect(app.indexOf('<AppErrorBoundary>')).toBeLessThan(app.indexOf('<Suspense'));
-    expect(app.indexOf('</Suspense>')).toBeLessThan(app.indexOf('</AppErrorBoundary>'));
+    expect(app.indexOf('<RoutesWithBoundary>')).toBeGreaterThan(-1);
+    expect(app.indexOf('<RoutesWithBoundary>')).toBeLessThan(app.indexOf('<Suspense'));
+    expect(app.indexOf('</Suspense>')).toBeLessThan(app.indexOf('</RoutesWithBoundary>'));
   });
 
-  it('reloads at most once before showing the error', () => {
-    const boundary = read('components', 'AppErrorBoundary.tsx');
-    // A boundary that reloads on every failure is a boot loop with no way out.
-    expect(boundary).toContain('reloadedJustNow');
-    expect(boundary).toMatch(/!reloadedJustNow\(\)[\s\S]{0,80}window\.location\.reload/);
+  it('wraps the app at the root too, where the providers are', () => {
+    // The in-app boundary sits inside the router and the three providers and
+    // cannot catch what they throw themselves — and a provider that throws
+    // blanks every page at once, not one route.
+    const main = read('main.tsx');
+    expect(main).toMatch(/<AppErrorBoundary>[\s\S]*<App \/>[\s\S]*<\/AppErrorBoundary>/);
   });
 });
+
+/** What the boundary does once it has caught something is rendered, not read:
+ *  `errorBoundary.test.tsx` mounts it around a component that throws. */

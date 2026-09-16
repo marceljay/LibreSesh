@@ -58,6 +58,24 @@ describe('the served API reference', () => {
     }
   });
 
+  /**
+   * `robots.txt` is the second thing an agent asked for in the 2026-09-15
+   * walk-through, ahead of `/llms.txt` — so it is a discovery surface whether
+   * or not it was meant to be one. A crawler parses only the directives; the
+   * comments are for the program reading the file whole, and the cost of them
+   * being wrong is an agent sent to a path that no longer exists.
+   */
+  it('points robots.txt at the four documents', () => {
+    const robots = readFileSync(join(PUBLIC_DIR, 'robots.txt'), 'utf8');
+    // The directive half has to be a directive half, or this is just a
+    // comment file that happens to sit at a well-known name.
+    expect(robots).toMatch(/^User-agent: /m);
+    const missing = ['/llms.txt', '/agents.md', '/api.md', '/SKILL.md'].filter(
+      (path) => !robots.includes(path),
+    );
+    expect(missing).toEqual([]);
+  });
+
   it('gives SKILL.md the frontmatter that makes it a skill', () => {
     const skill = readFileSync(join(PUBLIC_DIR, 'SKILL.md'), 'utf8');
     // name + description in YAML frontmatter is what the format is; without
