@@ -34,6 +34,44 @@ export interface EventRow {
    *  board rather than deleting it — see migration 018. */
   pitches_enabled: number;
   created_at: string;
+  /** 1 = the programme is published to Nostr under the event's own key — see
+   *  migration 023. */
+  nostr_enabled: number;
+  /** The event's Nostr identity, lowercase hex; null until first enabled. */
+  nostr_pubkey: string | null;
+  /** The private key, encrypted at rest (`secretsAtRest.ts`). Never leaves
+   *  the server. */
+  nostr_seckey: string | null;
+  /** JSON array of relay URLs; null until first enabled. */
+  nostr_relays: string | null;
+  /** JSON array of announcer triggers that post a kind-1 note. */
+  nostr_triggers: string;
+}
+
+/** One row of the Nostr publish queue — see migration 023. */
+export interface NostrPublishedRow {
+  event_id: number;
+  entity: 'session' | 'calendar' | 'profile';
+  /** The session id, or the event id for the calendar and the profile. */
+  entity_id: number;
+  d_tag: string;
+  /** Hex id of the latest version built and signed. */
+  last_event_id: string | null;
+  /** When a relay first accepted that version; null until one has. */
+  published_at: string | null;
+  /** The first unpublished mark; null when clean. */
+  dirty_since: string | null;
+  /** The latest mark; null when clean. */
+  touched_at: string | null;
+  /** JSON array of relays that have not accepted the latest version. */
+  pending: string;
+  /** 1 = the latest version sent was a kind-5 deletion. */
+  deleted: number;
+  tries: number;
+  /** Backoff; null when due now. */
+  next_try: string | null;
+  /** `<relay>: <reason>` of the latest failure. */
+  last_error: string | null;
 }
 
 export interface IdentityRow {
@@ -137,6 +175,8 @@ export interface SessionRow {
   /** 1 = kept off the schedule: seen only by who has a hand in it, and
    *  claiming no room or time until published — see migration 022. */
   draft: number;
+  /** 1 = the author or an organiser kept this one off Nostr — see migration 023. */
+  nostr_optout: number;
 }
 
 /** Who is giving a session. Ordered, because the order is the credit order. */
@@ -173,6 +213,8 @@ export interface ProposalRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** 1 = kept off Nostr; handed on to the session it becomes when placed. */
+  nostr_optout: number;
 }
 
 export interface TrackRow {

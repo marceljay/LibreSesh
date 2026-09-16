@@ -4,6 +4,8 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
+import { rotateAtRest } from './secretsAtRest.js';
+import { PURPOSE as NOSTR_SECKEY } from './nostr/keys.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -42,6 +44,21 @@ if (config.seedDemoEvent) {
         `admin=${DEMO_PASSWORDS.admin}. Set SEED_DEMO_EVENT=0 to stop creating these.`,
     );
   }
+}
+
+// Secrets encrypted at rest follow the at-rest secret: after a rotation with
+// the old value in SECRETS_AT_REST_KEY_PREVIOUS, one boot moves every blob
+// to the new one and says so, and the variable can then be dropped.
+if (config.atRestSecretPrevious) {
+  const moved = rotateAtRest(
+    db,
+    { current: config.atRestSecret, previous: config.atRestSecretPrevious },
+    [{ table: 'events', column: 'nostr_seckey', purpose: NOSTR_SECKEY }],
+  );
+  console.log(
+    `secrets at rest: re-encrypted ${moved} under the current secret; ` +
+      'SECRETS_AT_REST_KEY_PREVIOUS can be removed.',
+  );
 }
 
 const { express: app, ctx } = createApp(db, config);

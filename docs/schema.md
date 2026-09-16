@@ -82,6 +82,11 @@ erDiagram
     TEXT default_view "default 'list'"
     INTEGER show_official_badge "default 0"
     INTEGER pitches_enabled "default 1"
+    INTEGER nostr_enabled "default 0"
+    TEXT nostr_pubkey "nullable"
+    TEXT nostr_seckey "nullable"
+    TEXT nostr_relays "nullable"
+    TEXT nostr_triggers "default '['placed','up_next','digest']'"
   }
   identities {
     INTEGER id PK
@@ -104,6 +109,21 @@ erDiagram
   migrations {
     TEXT name PK
     TEXT applied_at
+  }
+  nostr_published {
+    INTEGER event_id PK, FK
+    TEXT entity PK
+    INTEGER entity_id PK
+    TEXT d_tag
+    TEXT last_event_id "nullable"
+    TEXT published_at "nullable"
+    TEXT dirty_since "nullable"
+    TEXT touched_at "nullable"
+    TEXT pending "default '[]'"
+    INTEGER deleted "default 0"
+    INTEGER tries "default 0"
+    TEXT next_try "nullable"
+    TEXT last_error "nullable"
   }
   notification_mutes {
     INTEGER event_id PK, FK
@@ -164,6 +184,7 @@ erDiagram
     TEXT created_at
     TEXT updated_at
     TEXT deleted_at "nullable"
+    INTEGER nostr_optout "default 0"
   }
   roles {
     INTEGER identity_id PK, FK
@@ -219,6 +240,7 @@ erDiagram
     INTEGER format_id FK "nullable"
     TEXT series_id "nullable"
     INTEGER draft "default 0"
+    INTEGER nostr_optout "default 0"
   }
   stars {
     INTEGER identity_id PK, FK
@@ -262,6 +284,7 @@ erDiagram
   events ||--o{ event_slugs : event_id
   identities ||--o{ link_codes : identity_id
   people |o--o{ link_codes : person_id
+  events ||--o{ nostr_published : event_id
   events ||--o{ notification_mutes : event_id
   identities ||--o{ notification_mutes : identity_id
   identities |o--o{ notifications : actor_id
@@ -341,7 +364,7 @@ erDiagram
 ### `events`
 
 - **References:** nothing
-- **Referenced by:** [`audit`](#audit).`event_id`, [`breaks`](#breaks).`event_id`, [`event_identities`](#event_identities).`event_id`, [`event_permissions`](#event_permissions).`event_id`, [`event_slugs`](#event_slugs).`event_id`, [`notification_mutes`](#notification_mutes).`event_id`, [`notifications`](#notifications).`event_id`, [`people`](#people).`event_id`, [`profile_claims`](#profile_claims).`event_id`, [`proposals`](#proposals).`event_id`, [`roles`](#roles).`event_id`, [`rooms`](#rooms).`event_id`, [`session_formats`](#session_formats).`event_id`, [`sessions`](#sessions).`event_id`, [`tags`](#tags).`event_id`, [`tracks`](#tracks).`event_id`
+- **Referenced by:** [`audit`](#audit).`event_id`, [`breaks`](#breaks).`event_id`, [`event_identities`](#event_identities).`event_id`, [`event_permissions`](#event_permissions).`event_id`, [`event_slugs`](#event_slugs).`event_id`, [`nostr_published`](#nostr_published).`event_id`, [`notification_mutes`](#notification_mutes).`event_id`, [`notifications`](#notifications).`event_id`, [`people`](#people).`event_id`, [`profile_claims`](#profile_claims).`event_id`, [`proposals`](#proposals).`event_id`, [`roles`](#roles).`event_id`, [`rooms`](#rooms).`event_id`, [`session_formats`](#session_formats).`event_id`, [`sessions`](#sessions).`event_id`, [`tags`](#tags).`event_id`, [`tracks`](#tracks).`event_id`
 - **Primary key:** `id`
 - **Unique:** `slug`
 
@@ -364,6 +387,12 @@ erDiagram
 - **References:** nothing
 - **Referenced by:** nothing
 - **Primary key:** `name`
+
+### `nostr_published`
+
+- **References:** `event_id` → [`events`](#events).`id`
+- **Referenced by:** nothing
+- **Primary key:** `event_id`, `entity`, `entity_id`
 
 ### `notification_mutes`
 
