@@ -34,6 +34,8 @@ import { tagRoutes } from './routes/tags.js';
 import { formatRoutes } from './routes/formats.js';
 import { trackRoutes } from './routes/tracks.js';
 import { Broker } from './sse.js';
+import { SimplePool } from 'nostr-tools/pool';
+import type { Pool } from './nostr/pool.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** web/dist, from either server/src (dev) or server/dist (built). */
@@ -44,9 +46,10 @@ export interface App {
   ctx: Ctx;
 }
 
-export function createApp(db: Db, config: Config): App {
+export function createApp(db: Db, config: Config, nostrPool: Pool = new SimplePool()): App {
   const ctx: Ctx = {
     db,
+    nostrPool,
     broker: new Broker(),
     limiter: new RateLimiter(),
     backoff: new Backoff(),

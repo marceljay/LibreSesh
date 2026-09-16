@@ -1,5 +1,6 @@
 import type { Config } from './config.js';
 import type { Db } from './db.js';
+import type { Pool } from './nostr/pool.js';
 import type { Backoff, RateLimiter, Tally } from './ratelimit.js';
 import type { Broker } from './sse.js';
 
@@ -14,4 +15,6 @@ export interface Ctx {
   /** Per-event failure count, and the closure it triggers (D3 §1b). */
   tally: Tally;
   config: Config;
+  /** Relay connections for Nostr publishing; a fake in tests. */
+  nostrPool: Pool;
 }

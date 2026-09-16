@@ -6,6 +6,7 @@ import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
 import { rotateAtRest } from './secretsAtRest.js';
 import { PURPOSE as NOSTR_SECKEY } from './nostr/keys.js';
+import { startNostrSync } from './nostr/queue.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -71,6 +72,11 @@ const sweep = (): void => {
 };
 sweep();
 setInterval(sweep, 24 * 60 * 60_000).unref();
+
+// Calendar events on the relays follow the database: a loop every ten
+// seconds publishes what the write paths marked, and a five-minute sweep
+// catches anything a write path missed.
+startNostrSync(db, config, ctx.nostrPool);
 
 // 0.0.0.0 so the port is reachable from outside a container.
 const server = app.listen(config.port, '0.0.0.0', () => {
