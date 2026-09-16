@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { atLeast, getRole, requireRole, requireWritable, setRole } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirtyForPerson } from '../nostr/queue.js';
 import { notifyMentionsIn } from '../notifications.js';
 import type { Ctx } from '../context.js';
 import { mintSpeakerCode, revokeSpeakerCode } from '../deviceLink.js';
@@ -223,6 +224,7 @@ export function peopleRoutes(ctx: Ctx): Router {
         entity: 'person',
         entityId: person.id,
       });
+      markDirtyForPerson(ctx.db, req.event.id, person.id);
       ctx.broker.publish(req.event.slug, 'person.updated', pub);
       res.json(own);
     },

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { atLeast, requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { Role } from '../shared/types.js';
 import type { ProposalRow } from '../db.js';
@@ -342,6 +343,7 @@ export function proposalRoutes(ctx: Ctx): Router {
         entity: 'proposal',
         entityId: row.id,
       });
+      markDirty(ctx.db, req.event.id, sessionId);
       ctx.broker.publish(req.event.slug, 'session.created', session);
       ctx.broker.publish(
         req.event.slug,
