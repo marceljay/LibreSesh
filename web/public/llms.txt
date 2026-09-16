@@ -22,6 +22,8 @@ to each session. Everything updates live over Server-Sent Events.
   harness consumes that format.
 - [/api.md](/api.md): the full HTTP reference — every endpoint, every error
   code, the rate limits.
+- [/openapi.json](/openapi.json): the endpoints as an OpenAPI 3.1 document,
+  generated from the schemas — for a client generator rather than a reader.
 - [/api/events](/api/events): the only unauthenticated endpoint. Names and
   dates of the events on this instance; no schedule content.
 

@@ -13,6 +13,16 @@ the operating manual for an agent acting here — access, the flow, the policy o
 writing for a human — and [`/SKILL.md`](/SKILL.md) is the same in the packaged
 skill format. Read `/agents.md` first; come here for the detail.
 
+[`/openapi.json`](/openapi.json) is this reference as a machine-readable
+document: an OpenAPI 3.1 spec generated from the same zod schemas that validate
+the requests, so its bodies cannot drift from what the server accepts. Point a
+client generator at it rather than parsing this page. Two things it does not
+carry, both on purpose. Response bodies are typed as objects — the DTOs are
+TypeScript interfaces rather than schemas, and the shapes are written out here
+instead. What a role may do is not in it either: capabilities are middleware an
+organiser can change while the event runs, so the answer is the bundle's
+`permissions` map at runtime, not a line in a spec.
+
 ## Read this first, if you are an agent
 
 Three sentences will keep you out of every wall in this document:
@@ -390,7 +400,7 @@ Never treat a name as proof of who someone is.
 
 ## What this API deliberately does not have
 
-No OpenAPI document yet. No CORS headers and cookies are `SameSite=Lax`, so
+No CORS headers, and cookies are `SameSite=Lax`, so
 browser-side callers on another origin will not work — this is for server-side
 clients. No pagination anywhere: the bundle is the whole event by design. No
 bulk edit of an existing event; `POST /api/events/import` builds a new one and
