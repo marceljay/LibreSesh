@@ -4,6 +4,7 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
+import { Announcer, PollerPool } from './telegram.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -55,6 +56,29 @@ const sweep = (): void => {
 sweep();
 setInterval(sweep, 24 * 60 * 60_000).unref();
 
+// Telegram. Nothing here runs on Telegram's side — a bot is a token, not a
+// program — so the clock and the commands are both ours.
+//
+// Started unconditionally, because events bring their own bots: an instance
+// with no TELEGRAM_BOT_TOKEN still has to listen for whichever tokens the
+// organisers have saved. The pool is empty, and everything below inert, until
+// one exists. Reconciling on the same tick is what picks up a token pasted
+// while the process is running.
+const announcer = new Announcer(db, config.telegramBotToken, config.publicUrl);
+const pollers = new PollerPool(db, config.telegramBotToken, announcer);
+pollers.reconcile();
+setInterval(() => {
+  pollers.reconcile();
+  void announcer.tick();
+}, 60_000).unref();
+
+if (pollers.size > 0) {
+  console.log(`telegram: listening as ${pollers.size} bot(s)`);
+  if (!config.publicUrl) {
+    console.warn('telegram: no PUBLIC_URL, so announcements will carry no links');
+  }
+}
+
 // 0.0.0.0 so the port is reachable from outside a container.
 const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`libresesh listening on http://0.0.0.0:${config.port}`);
@@ -93,6 +117,7 @@ server.requestTimeout = 0;
 
 function shutdown(signal: string): void {
   console.log(`${signal} received, shutting down`);
+  pollers.stop();
   ctx.broker.close();
   server.close(() => {
     db.close();

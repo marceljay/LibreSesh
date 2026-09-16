@@ -34,6 +34,24 @@ export interface EventRow {
    *  board rather than deleting it — see migration 018. */
   pitches_enabled: number;
   created_at: string;
+  /** The Telegram group this event announces into, or null. TEXT because a
+   *  supergroup id is a large negative number — see migration 023. */
+  telegram_chat_id: string | null;
+  /** The supergroup topic to post in, captured at bind time; null for a group
+   *  without topics. */
+  telegram_topic_id: number | null;
+  /** JSON array of trigger names. The mode (light/medium/heavy) is derived
+   *  from this, never stored beside it. */
+  telegram_triggers: string;
+  /** How long before a session starts its slot is announced. */
+  telegram_lead_min: number;
+  /** Single-use code an organiser says in the group as `/bind <code>`. */
+  telegram_bind_code: string | null;
+  telegram_bind_expires: string | null;
+  /** This event's own bot, supplied by its organiser; null falls back to the
+   *  instance's. A plaintext credential — see migration 023 and SECURITY.md.
+   *  Never leaves the server: not in a DTO, not in an export. */
+  telegram_bot_token: string | null;
 }
 
 export interface IdentityRow {

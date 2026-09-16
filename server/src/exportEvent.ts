@@ -56,6 +56,8 @@ export function exportEvent(
       endDate: event.end_date,
       archived: event.archived === 1,
       createdAt: event.created_at,
+      // An allow-list, which is what keeps the Telegram binding out: an
+      // imported copy must never post into the original event's group.
       ...(parts.has('settings')
         ? {
             dayStartMin: event.day_start_min,
