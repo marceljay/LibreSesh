@@ -100,6 +100,20 @@ describe('nostr routes', () => {
     h.close();
   });
 
+  it('send a test answers 400 without a usable key; resync is audited', async () => {
+    const { h, admin } = await enabledEvent();
+    expect((await admin.post('/api/e/conf/nostr/resync')).status).toBe(204);
+    h.app.ctx.config.atRestSecret = 'rotated-without-previous';
+    const res = await admin.post('/api/e/conf/nostr/test');
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/secret has changed/);
+    const actions = (
+      h.db.prepare(`SELECT action FROM audit ORDER BY id`).all() as { action: string }[]
+    ).map((a) => a.action);
+    expect(actions).toContain('nostr_resync');
+    h.close();
+  });
+
   it('never serialises the key columns, and settings stay out of the export', async () => {
     const { h, admin } = await enabledEvent();
     const status = JSON.stringify((await admin.get('/api/e/conf/nostr').expect(200)).body);
@@ -132,6 +146,39 @@ describe('nostr routes', () => {
     const attendee = await actorWithRole(h, 'conf', 'user-pw');
     expect((await attendee.post('/api/e/conf/nostr/export-key')).status).toBe(403);
     expect((await attendee.get('/api/e/conf/nostr')).status).toBe(403);
+    h.close();
+  });
+
+  it('changing the relay list moves the queue with it', async () => {
+    const { h, eventId, admin } = await enabledEvent();
+    // Enable marked the calendar; make it a row one refusing relay still owes.
+    h.db
+      .prepare(
+        `UPDATE nostr_published
+            SET published_at = '2026-06-01T00:00:00.000Z', dirty_since = NULL, touched_at = NULL,
+                pending = '["wss://relay.test"]', tries = 3,
+                next_try = '2026-06-01T01:00:00.000Z', last_error = 'wss://relay.test: blocked'
+          WHERE event_id = ? AND entity = 'calendar'`,
+      )
+      .run(eventId);
+    await admin
+      .patch('/api/e/conf/nostr')
+      .send({ relays: ['wss://mine.test'] })
+      .expect(200);
+    const row = h.db
+      .prepare(
+        `SELECT pending, tries, next_try, last_error FROM nostr_published WHERE event_id = ?`,
+      )
+      .get(eventId) as {
+      pending: string;
+      tries: number;
+      next_try: string | null;
+      last_error: string | null;
+    };
+    expect(JSON.parse(row.pending)).toEqual(['wss://mine.test']);
+    expect(row.last_error).toBeNull();
+    const status = (await admin.get('/api/e/conf/nostr')).body;
+    expect(status.relayStatus).toEqual([{ url: 'wss://mine.test', pending: 1, lastError: null }]);
     h.close();
   });
 });
