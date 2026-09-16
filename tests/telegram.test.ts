@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db, EventRow } from '../server/src/db.js';
 import type { TelegramStatus } from '../server/src/shared/types.js';
 import {
@@ -366,6 +366,27 @@ describe('the Telegram settings routes', () => {
 
   it('refuses a test message when no group is connected', async () => {
     await admin.post('/api/e/testconf/telegram/test').expect(400);
+  });
+
+  it('hands Telegram’s own refusal back in the shape the client parses', async () => {
+    // The whole point of the button. Answered as `{ error: '<prose>' }` it
+    // reached the client as an unknown code and read "Something went wrong",
+    // which is the one thing that is no help at 09:45 on day one.
+    harness.db.prepare("UPDATE events SET telegram_chat_id = '-100123' WHERE id = ?").run(eventId);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({ ok: false, description: 'bot was kicked from the group chat' }),
+        {
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
+    );
+    const body = (await admin.post('/api/e/testconf/telegram/test').expect(502)).body as {
+      error: { code: string; details?: { reason?: string } };
+    };
+    expect(body.error.code).toBe('telegram_refused');
+    expect(body.error.details?.reason).toBe('bot was kicked from the group chat');
+    vi.restoreAllMocks();
   });
 });
 

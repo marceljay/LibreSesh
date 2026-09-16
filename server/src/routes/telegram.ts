@@ -4,7 +4,7 @@ import { requireRole } from '../auth.js';
 import { audit } from '../audit.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
-import { badRequest } from '../errors.js';
+import { badRequest, HttpError } from '../errors.js';
 import { limit } from '../ratelimit.js';
 import type { TelegramStatus } from '../shared/types.js';
 import {
@@ -73,7 +73,9 @@ export function telegramRoutes(ctx: Ctx): Router {
     if (!resolveToken(req.event, ctx.config.telegramBotToken)) {
       throw badRequest('Add a bot token first');
     }
-    // Base32-ish and short: it is read off a screen and typed into a phone.
+    // Hex and short, because it is read off one screen and typed into a phone
+    // on the way to the group. Ten characters is forty bits, far past guessing
+    // inside a fifteen-minute life.
     const code = randomBytes(5).toString('hex');
     const expires = new Date(Date.now() + BIND_CODE_MINUTES * 60_000).toISOString();
     ctx.db
@@ -167,7 +169,13 @@ export function telegramRoutes(ctx: Ctx): Router {
       });
       res.json({ ok: true });
     } catch (err) {
-      res.status(502).json({ error: (err as Error).message });
+      // Through the standard error shape, not a bespoke one. `{ error: '<prose>' }`
+      // reached the client's parser as an unknown code, so the organiser was
+      // shown "Something went wrong" — the exact opposite of this button's
+      // point. Telegram's own words ride in `details`, which is data the client
+      // chooses to render, not a sentence the server wrote for it.
+      const reason = (err as Error).message;
+      throw new HttpError(502, 'telegram_refused', reason, { reason });
     }
   });
 
