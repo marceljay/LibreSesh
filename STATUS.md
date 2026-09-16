@@ -504,6 +504,14 @@ reused number would repoint a filename and every link to it. Rule recorded in
   event and Settings, which lead with the generated phrase and carry the advice
   that replaced the withdrawn policy.
 
+- **D6 · Which relays does an instance default to?** [LIB-221] Filed
+  2026-09-16 with the Nostr publishing design. `NOSTR_DEFAULT_RELAYS` seeds
+  every event's relay list when an organiser enables Nostr; you said you would
+  name them. My fallback if you do not: `wss://relay.damus.io`, `wss://nos.lol`,
+  `wss://relay.nostr.band`. The list also rides in every njump link as relay
+  hints, so a relay that drops NIP-52 kinds makes the session badge land on
+  nothing.
+
 ## Blockers
 
 _None — what's outstanding is your review and decisions above. Nothing is
@@ -937,6 +945,37 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   are mostly popover/listbox measurement, the `set-state-in-effect` ones mostly
   "derive state from props" that wants to be computed during render instead.
   Each rule turned back on is its own commit.
+
+- **Nostr publishing — the schedule announces itself under the event's own
+  key.** Designed 2026-09-16 in an interview; spec at
+  `_planning/specs/nostr-publishing.md`, Linear project *Nostr publishing*.
+  Write-only first iteration: NIP-52 calendar event sync (kind 31923 per
+  session, 31924 per event, kept equal to the database by a publish queue and a
+  coalescing loop) plus kind-1 notes for `placed`, `added`, `changed`, `up_next`, `digest` and
+  `pitched`, each a checkbox in a new **Publish** tab. Off by default, admin
+  switch with an explicit warning; attendee-written pitches and open sessions
+  go out **opt-out per item, default on**, and the forms say so. What the notes
+  say and when is transport-neutral and lives in
+  `_planning/specs/announcements.md`, shared with Telegram; only the announcer,
+  `PUBLIC_URL` and the Publish tab touch that branch, so the keys and the
+  calendar sync can go first if it is still open. Seven steps, one issue each:
+  - Land the shared announcer per `announcements.md`: extracted from
+    `telegram.ts` if merged, created fresh if not; six triggers, transports,
+    `pitched`/`placed` hooked in the proposal routes [LIB-214] (LIB-212 folds in).
+  - Keys and schema: `secretsAtRest.ts` (AES-GCM under an HKDF of the
+    at-rest secret, `COOKIE_SECRET` by default, `SECRETS_AT_REST_KEY` to
+    override, rotatable via `_PREVIOUS`; also the answer to LIB-213), the
+    migration, enable / disable / import-key / export-key routes,
+    SECURITY.md [LIB-215].
+  - Calendar sync: 31923/31924 builders, `markDirty` beside every `audit()`
+    that matters, the 10s loop, kind-5 deletions, resync, the sweep [LIB-216].
+  - Kind-1 notes: the Nostr transport and its plain-text renderer [LIB-217].
+  - Publish tab in Manage Event, Telegram's section moved in [LIB-218].
+  - Forms: the notice and the opt-out checkbox; the *on Nostr* badge [LIB-219].
+  - Verify on a public relay with Flockstr/Coracle and an ordinary client —
+    yours [LIB-220].
+  Not in this iteration: reading RSVPs back, signing in with a key,
+  remote signing (NIP-46), `p` tags for speakers. Open: D6 above.
 
 ## Medium Priority
 
