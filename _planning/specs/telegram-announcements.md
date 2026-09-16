@@ -49,18 +49,18 @@ rendering, delivery, and the Manage Event interface.
 
 **Out of scope:** what an announcement *is*, which triggers exist, when one is
 due, and what must never be announced. Those rules are transport-neutral and
-are specified in `announcements.md`; this transport implements them and does
-not restate them. Nostr is specified in `nostr-publishing.md`.
+are specified in [`announcements.md`](announcements.md); this transport implements them and does
+not restate them. Nostr is specified in [`nostr-publishing.md`](nostr-publishing.md).
 
 ### 1.3 Referenced documents
 
 | Document | Relevance |
 | --- | --- |
-| `_planning/specs/announcements.md` | The transport-neutral rules this implements |
-| `ARCHITECTURE.md` §Telegram | Where this sits in the system |
-| `ARCHITECTURE.md` §Notifications | The per-person inbox this is deliberately not |
-| `SECURITY.md` §What a connected Telegram group sees | Disclosure and credentials |
-| `docs/managing.md` §Telegram | Organiser-facing instructions |
+| [`_planning/specs/announcements.md`](announcements.md) | The transport-neutral rules this implements |
+| [`ARCHITECTURE.md`](../../ARCHITECTURE.md) §Telegram | Where this sits in the system |
+| [`ARCHITECTURE.md`](../../ARCHITECTURE.md) §Notifications | The per-person inbox this is deliberately not |
+| [`SECURITY.md`](../../SECURITY.md) §What a connected Telegram group sees | Disclosure and credentials |
+| [`docs/managing.md`](../../docs/managing.md) §Telegram | Organiser-facing instructions |
 | [Telegram Bot API](https://core.telegram.org/bots/api) | The external interface |
 
 ### 1.4 Definitions
@@ -87,7 +87,7 @@ An event's schedule is readable only behind an event password. This transport
 gives an organiser the option of announcing part of it into a Telegram group
 they control. Built today: what is starting next. Designed and not built: the
 day's programme each morning, and a session as it is placed or moved — see the
-triggers in `announcements.md` and §11 here.
+triggers in [`announcements.md`](announcements.md) and §11 here.
 
 All logic executes inside the LibreSesh server process. There is no separate
 service, no code deployed to Telegram, and no scheduling facility on Telegram's
@@ -251,11 +251,11 @@ whose trigger set contains `up_next`:
 4. Otherwise the group is **marked, then sent**.
 
 Rationale for the range, the mark ordering, and the in-memory record is in
-`announcements.md` §The loop. A failure for one event is logged and does not
+[`announcements.md`](announcements.md) §The loop. A failure for one event is logged and does not
 stop the others.
 
 **Data structures.** `Set<string>` keyed `telegram:<eventId>:<startsAt>`. The
-transport prefix is required by `announcements.md` so one transport cannot
+transport prefix is required by [`announcements.md`](announcements.md) so one transport cannot
 silence another.
 
 **Interfaces.** Constructed with the database, the instance fallback token, the
@@ -373,7 +373,7 @@ Every call carries `AbortSignal.timeout(10_000)`.
 | One consumer per token | One bot per instance, documented in both env examples | A shared token means two pollers losing each other's commands |
 | A misconfigured bot must not flood the log | Backoff to 60s; log 1–3 then every 20th | A per-minute error for three days trains operators to ignore logs |
 | Token confidentiality | Never in a DTO, never in an export; only the last four characters are returned | It authorises posting as that bot anywhere it is a member |
-| Disclosure | Publication warning in the panel itself; `SECURITY.md` records what a group sees | Connecting a group publishes part of a gated schedule |
+| Disclosure | Publication warning in the panel itself; [`SECURITY.md`](../../SECURITY.md) records what a group sees | Connecting a group publishes part of a gated schedule |
 
 ---
 
@@ -387,7 +387,7 @@ transports join it rather than lengthening Settings.
 
 | Control | Behaviour |
 | --- | --- |
-| Bot | Token field with a **Save bot** action; once saved, shows the last four characters and **Remove**. An ⓘ explains what a bot is and links to `docs/managing.md` |
+| Bot | Token field with a **Save bot** action; once saved, shows the last four characters and **Remove**. An ⓘ explains what a bot is and links to [`docs/managing.md`](../../docs/managing.md) |
 | Group | **Generate a code**, then the line to send in the group; when bound, **Send a test message** and **Disconnect** |
 | How much it says | Select over the presets that are built: **Off** and **What is up next** |
 | How early it says it | Number field, 1–180 minutes |
@@ -411,7 +411,7 @@ transports join it rather than lengthening Settings.
   only settings in the application whose effect cannot be observed from the
   screen that changes them.
 - **The panel offers no preset it cannot honour.** The ladder in
-  `announcements.md` reaches Heavy; two rungs are built, so two are listed. A
+  [`announcements.md`](announcements.md) reaches Heavy; two rungs are built, so two are listed. A
   preset named for a morning digest that does not exist is the same fault as a
   form that cannot submit, and the Example would have to draw a message that
   never arrives.
@@ -445,8 +445,8 @@ Requirements without a design element: U3 and U4 (§11).
 | Editing or deleting posted messages | The useful correction window is minutes; it costs a stored `message_id` per post |
 | A pinned, continuously edited board | An edit sends no notification, so it serves U4 and not U2. A separate feature |
 | Commands beyond `/bind`, `/unbind`, `/next` | No demand established |
-| Personal direct messages | Requires binding a Telegram account to an identity, and overturns `ARCHITECTURE.md` §Notifications |
-| Verbosity levels beyond the default | `announcements.md` permits a transport to support one level |
+| Personal direct messages | Requires binding a Telegram account to an identity, and overturns [`ARCHITECTURE.md`](../../ARCHITECTURE.md) §Notifications |
+| Verbosity levels beyond the default | [`announcements.md`](announcements.md) permits a transport to support one level |
 
 ---
 
@@ -458,7 +458,7 @@ Requirements without a design element: U3 and U4 (§11).
 | 2 | Supergroup topics as a configurable target? | One nullable column is already present |
 | 3 | Should a slot that holds the floor say so? | `blocks_open_booking` is currently invisible here |
 | 4 | Localisation | The application has no i18n layer; this inherits that gap |
-| 5 | Should a livestream link be verbosity (`full`) rather than its own flag? | `announcements.md` puts it on the "how much" axis; it is kept separate here because it is a disclosure choice, and folding it into a verbosity level would hand it out with one |
+| 5 | Should a livestream link be verbosity (`full`) rather than its own flag? | [`announcements.md`](announcements.md) puts it on the "how much" axis; it is kept separate here because it is a disclosure choice, and folding it into a verbosity level would hand it out with one |
 
 ---
 
@@ -466,5 +466,5 @@ Requirements without a design element: U3 and U4 (§11).
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from `announcements.md` rather than restated |
+| 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from [`announcements.md`](announcements.md) rather than restated |
 | 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |
