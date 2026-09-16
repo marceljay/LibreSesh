@@ -16,7 +16,7 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1823**, lint clean, build clean. Most
+nothing local is unsaved. Suite at **1921**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
@@ -39,6 +39,30 @@ recent cut: **0.7.4**.
   position immediately, so the quiet-event case — nothing happening all
   morning, the wifi dropping anyway — costs nothing either. The `?since=`
   bundle is not needed. Nothing here needs your eyes.
+
+- **Telegram announcements** [LIB-207, LIB-208, LIB-209, LIB-210] (2026-09-15).
+  On `worktree-tg-bot`, not yet merged. An event connects its own Telegram
+  group from Manage → Publish → Telegram and is told what is coming up, once
+  per start time. Spec: `_planning/specs/telegram-announcements.md`. Built:
+  migration 023, `server/src/telegram.ts` (renderer, `Announcer`, `getUpdates`
+  poller answering `/bind`, `/unbind`, `/next`), `routes/telegram.ts`, the
+  Manage Event section (its own **Publish** tab, where the next such connection
+  will live too), 67 tests. A review pass on 2026-09-16 added migration 024 —
+  livestream links in an announcement, off by default because a stream address
+  does not meet the password gate — and cut the noise presets to the two whose
+  triggers exist: Light and Heavy were named for the unbuilt `digest`, `added`
+  and `changed`, so Light sent nothing at all. **The bot belongs to the event**: an
+  organiser pastes a token from BotFather (migration 023) and needs nothing
+  from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a
+  single-tenant fallback. That makes `events.telegram_bot_token` the first
+  plaintext credential in the database — accepted, enumerated in SECURITY.md,
+  and encrypting it at rest is [LIB-213]. **Never run against a real bot** —
+  nothing in
+  this container can reach `api.telegram.org`, so every test fakes the sender
+  and the whole path from `/bind` to a posted message is unproven. That is the
+  first thing to do with a live token. Still open: the morning digest
+  [LIB-211], announcing a pitch as it is placed [LIB-212], and the deploy-doc
+  issue whose creation timed out.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

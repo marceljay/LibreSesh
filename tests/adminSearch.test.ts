@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ADMIN_SETTINGS, ADMIN_TABS, findSettings, tabLabel } from '../web/src/lib/adminSearch.js';
 
 /**
- * Manage Event is seven tabs of unrelated jobs, so knowing what you want to
+ * Manage Event is eight tabs of unrelated jobs, so knowing what you want to
  * change says nothing about where it is. The search box is the way past that,
  * and it is only as good as the index behind it — which is why the index is a
  * plain list in one file rather than JSX scattered over 2,000 lines.

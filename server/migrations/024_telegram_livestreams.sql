@@ -1,0 +1,14 @@
+-- Announcing the livestream links a session already carries.
+--
+-- Its own column, not a member of the trigger set. A trigger decides *whether*
+-- a slot is announced; this decides what the message about it contains. The
+-- two are independent axes in `_planning/specs/announcements.md` — "when" and
+-- "how much" — and folding this into a preset would mean choosing a noise
+-- level silently published every stream URL the event holds.
+--
+-- Off by default, including for an event that already announces. A session
+-- link in a message lands on the password gate; a stream URL is frequently the
+-- one unguessable address that puts a stranger in the room, and it is public
+-- from the moment it is posted. That is a disclosure decision of its own, so
+-- an organiser makes it on purpose. SECURITY.md records what it costs.
+ALTER TABLE events ADD COLUMN telegram_livestreams INTEGER NOT NULL DEFAULT 0;

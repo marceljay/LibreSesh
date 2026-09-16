@@ -65,6 +65,14 @@ function byCode(err: ApiError): string | null {
       return 'Someone else changed this while you were editing';
     case 'tag_exists':
       return 'A tag with that name already exists';
+    case 'telegram_refused': {
+      // The single exception to the rule above, and it holds *because* it is
+      // the exception: this prose is Telegram's, not ours. "bot was kicked
+      // from the group chat" is the entire diagnosis, and no sentence we could
+      // build from a code would tell the organiser what to go and fix.
+      const reason = quoted(d.reason);
+      return reason ? `Telegram refused it: ${reason}` : 'Telegram would not send it';
+    }
     case 'track_exists':
       return 'A track with that name already exists';
     case 'unauthorized':

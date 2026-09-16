@@ -6,6 +6,45 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **An event can announce itself into a Telegram group.** Organisers connect
+  one from Manage → **Publish** → Telegram: add the bot, generate a code, type
+  `/bind <code>` in the group. Publish is a new tab, because where the schedule
+  goes outside this app is its own job and the next such connection belongs
+  beside this one rather than further down Settings.
+
+  It says one thing today — what is starting next — so the panel offers one
+  setting besides Off. A morning digest and a message as a session is placed
+  are designed and unbuilt, and a preset named for them would be a setting
+  whose whole effect is silence.
+
+  Every option carries an **Example** button showing the messages that setting
+  would actually send, drawn from this event's own schedule and from the
+  choices on screen rather than the ones last saved. These are the only
+  settings whose effect is invisible from the screen that changes them — it
+  lands in somebody else's Telegram, tomorrow. The group is then told what is coming up, once
+  per start time, fifteen minutes ahead by default — every room starting at
+  10:00 in one message rather than five. `/next` answers in the group, and
+  `/unbind` stops it from there.
+
+  **The bot belongs to the event.** The organiser pastes a token from BotFather
+  into that same section, so Telegram works on an instance whose operator has
+  set nothing up, and the group sees a bot named after the conference.
+  `TELEGRAM_BOT_TOKEN` stays as a fallback for a single-tenant instance. Set
+  `PUBLIC_URL` for the messages to carry links.
+
+  A saved token is never readable again — the settings screen shows its last
+  four characters — and never travels in an export. It is the first plaintext
+  credential in the database, and what that costs is in SECURITY.md.
+
+  **Livestream links, if you want them.** Off for every event until switched
+  on: a session link in a message still meets the password gate, and a stream
+  address does not, so handing one to a group is a disclosure choice of its own
+  rather than something acquired by picking a volume.
+
+  Drafts, deleted sessions and archived events are never announced, and the
+  connection never travels in an export. What a connected group can see is in
+  SECURITY.md.
+
 - **`/openapi.json`: the API as a machine-readable document.** `/api.md` has
   been the reference programs write against since 2026-09-10, and it said
   outright that there was no OpenAPI document. There is now, at
