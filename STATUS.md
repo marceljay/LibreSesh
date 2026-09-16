@@ -19,6 +19,19 @@ at the same commit — its reflog shows an `update by push` after each one — s
 nothing local is unsaved. Suite at **1823**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
+- **Nostr publishing, steps 2 and 3 in review** [LIB-215] [LIB-216]. Two
+  stacked PRs off `dev`: #121 `feat/nostr-keys` (encryption at rest with a
+  rotatable secret, migration 023, the per-event signing key, the enable /
+  disable / import-key / export-key routes) and #122 `feat/nostr-sync` on top
+  of it (NIP-52 builders, the publish queue with per-relay delivery, every
+  write path marking it, retract / resync / test). Both suites green (1905),
+  lint clean. Nothing user-facing yet: an event is enabled through the API
+  until the Publish tab (LIB-218) lands. **Next is the shared announcer
+  [LIB-214]**, which waits on a decision: the Telegram PR #116 is still open,
+  and the spec prefers extracting the announcer from it once merged rather
+  than writing it fresh and rebasing Telegram onto it. Then notes [LIB-217],
+  the tab [LIB-218], the forms and badge [LIB-219].
+
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
   commits on `dev`). It already caught a route that threw, but it sat inside
   the router and the three providers, so a `MeProvider` fetch or the theme
