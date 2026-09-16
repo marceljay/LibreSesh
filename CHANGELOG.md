@@ -44,6 +44,19 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **`/robots.txt` is a file, not the app.** Every path the server does not
+  recognise is handed `index.html` so a deep link survives a refresh, and
+  `robots.txt` was one of those paths: a crawler asking for it got a page of
+  markup with a `200` and nothing in the status to tell it apart from a real
+  answer. There is now a `web/public/robots.txt`, which Vite copies into the
+  build the same way it places `/agents.md` and `/api.md`. It disallows `/e/`,
+  where every event lives behind a password, and leaves the landing page — the
+  only page written for a stranger — indexable. The comments above the
+  directives point at `/llms.txt`, `/agents.md`, `/api.md` and `/SKILL.md`: a
+  crawler ignores them, but the agent in the 2026-09-15 walk-through read
+  `/robots.txt` second, ahead of `/llms.txt`, so it is a discovery surface
+  whether or not it was meant as one.
+
 - **Navigating away from a page that failed leaves the failure behind.** A
   caught error stuck for the life of the tab: the boundary kept drawing its
   apology however far the visitor moved, so Back from a route that threw
