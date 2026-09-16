@@ -103,6 +103,16 @@ describe('the Telegram panel', () => {
     expect(save.disabled).toBe(true);
   });
 
+  it('previews the lead time being typed, not the one already saved', async () => {
+    // The Example is how somebody decides whether to press Save, so it has to
+    // answer for what is on the screen. It read the stored value instead.
+    show();
+    const lead = (await screen.findByLabelText(/How early it says it/)) as HTMLInputElement;
+    fireEvent.change(lead, { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Example' }));
+    expect(screen.getByText(/30 minutes before each start time/)).toBeTruthy();
+  });
+
   it('says the instance has no bot rather than offering a dead form', async () => {
     telegram.mockResolvedValue(status({ available: false, instanceBot: false }));
     show();

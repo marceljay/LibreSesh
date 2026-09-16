@@ -352,10 +352,13 @@ export function AdminTelegram({
         )}
       </FormStack>
 
+      {/* The mode and lead being *considered*, not the ones stored. The Example
+        is how somebody decides whether to press Save, so answering it with
+        what is already saved answers a question nobody asked. */}
       {previewing && (
         <TelegramPreview
-          mode={status.mode}
-          leadMin={status.leadMin}
+          mode={mode}
+          leadMin={parsedLead.value ?? status.leadMin}
           event={event}
           sessions={sessions}
           rooms={rooms}
