@@ -43,6 +43,19 @@ describe.skipIf(!existsSync(WEB_DIST))('serving the built app', () => {
     expect(res.headers['content-type']).toMatch(/application\/json/);
   });
 
+  /**
+   * Every unmatched path gets `index.html`, which is right for a deep link and
+   * wrong for a well-known file: before `web/public/robots.txt` existed, a
+   * crawler asking for it was handed a page of markup with a `200`, and had no
+   * status to tell it apart from a real answer.
+   */
+  it('answers robots.txt with the file, not the SPA shell', async () => {
+    const res = await request(h.app.express).get('/robots.txt').expect(200);
+    expect(res.headers['content-type']).toMatch(/text\/plain/);
+    expect(res.text).not.toContain('<div id="root">');
+    expect(res.text).toMatch(/^User-agent: /m);
+  });
+
   it('lets a hashed asset be cached hard and index.html not at all', async () => {
     const html = await request(h.app.express).get('/').expect(200);
     expect(html.headers['cache-control']).toBe('no-cache');

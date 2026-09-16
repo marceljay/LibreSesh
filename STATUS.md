@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -964,12 +964,6 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   `PATCH /sessions/:id` with `expectedUpdatedAt`. It found no missing
   endpoint, only missing prose, which is the case for describing responses
   loosely at first rather than generating them from the TypeScript.
-
-- **`robots.txt` answers the SPA shell with status 200.** [LIB-206] There is
-  no `robots.txt` in `web/public/`, so `app.ts`'s catch-all hands the path
-  `index.html` with a `200` — a crawler or an agent reading it gets a page of
-  markup where it expected directives, and cannot tell the difference from the
-  status. Found by the [LIB-204] walk-through, which read it second.
 
 - **Key the role-gated rate limits on the person, not the address.** [LIB-195]
   The ×100 address multiplier from 2026-09-10 is a stopgap standing in for a
