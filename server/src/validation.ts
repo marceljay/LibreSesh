@@ -411,6 +411,33 @@ export const proposalSchema = z.object({
 });
 export const proposalPatchSchema = proposalSchema.partial();
 
+/** Nostr publishing (`routes/nostr.ts`). */
+export const NOSTR_TRIGGERS = [
+  'up_next',
+  'digest',
+  'added',
+  'changed',
+  'pitched',
+  'placed',
+] as const;
+export type NostrTrigger = (typeof NOSTR_TRIGGERS)[number];
+/** Off the record only with an explicit acknowledgement of what leaves. */
+export const nostrEnableSchema = z.object({ acknowledged: z.literal(true) });
+/** A bech32 `nsec1…`: 5 chars of prefix, 58 of payload and checksum. */
+export const nostrImportSchema = z.object({
+  nsec: z.string().regex(/^nsec1[02-9ac-hj-np-z]{58}$/, 'Not an nsec'),
+});
+/** `wss://` on a public instance; the route refuses `ws://` in production. */
+const relayUrl = z
+  .string()
+  .trim()
+  .max(200)
+  .refine((u) => /^wss?:\/\/[^\s/]+/.test(u), { message: 'Relay URLs start with wss://' });
+export const nostrPatchSchema = z.object({
+  relays: z.array(relayUrl).max(10).optional(),
+  triggers: z.array(z.enum(NOSTR_TRIGGERS)).max(NOSTR_TRIGGERS.length).optional(),
+});
+
 /** Placing a pitch onto the grid. */
 export const placeSchema = z.object({
   roomId: z.number().int().positive(),

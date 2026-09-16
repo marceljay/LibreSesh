@@ -13,6 +13,7 @@ import { Backoff, RateLimiter, Tally } from './ratelimit.js';
 import { agendaRoutes, calendarRoutes } from './routes/agenda.js';
 import { auditRoutes } from './routes/audit.js';
 import { backupRoutes, exportRoutes } from './routes/backup.js';
+import { nostrRoutes } from './routes/nostr.js';
 import { breakRoutes } from './routes/breaks.js';
 import { bundleRoutes } from './routes/bundle.js';
 import { claimRoutes } from './routes/claims.js';
@@ -92,6 +93,7 @@ export function createApp(db: Db, config: Config): App {
   event.use(settingsRoutes(ctx));
   event.use(trashRoutes(ctx));
   event.use(exportRoutes(ctx));
+  event.use(nostrRoutes(ctx));
   event.use(auditRoutes(ctx));
   api.use('/e/:slug', event);
 

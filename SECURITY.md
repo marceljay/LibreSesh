@@ -35,6 +35,7 @@ explicitly *not* built to withstand a targeted attacker with time.
 | Guessing the instance password | The `auth` rate limit on every route that takes it — 5 attempts per identity **and** per address per 15 minutes, a refund on success so ordinary use is never throttled, and an `instance_key_failed` audit row (no event id) for every miss. It must be 16 characters to boot in production, 24 recommended |
 | Flooding the identity table | Minting is rate-limited per address (300 per 15 minutes, sized for a shared NAT address). Over it a request carries no identity rather than being refused, so public reads still work and anything needing a role answers `429 too_many_identities`. Rows that never became anybody — no role, no username, no profile, no calendar feed, no link code — are deleted after 30 days |
 | A leaked whole-database backup | Never leaves the server unencrypted: AES-256-GCM under a scrypt key (N=2^15) from a passphrase typed at download time, gated by the instance password and the 5-per-15-min auth budget. If one leaks open anyway: identity tokens need `COOKIE_SECRET` as well before they sign anyone in, but `ics_token`s work against the live server as they are, and speaker-code hashes (~37 bits) crack offline — revoke roles and codes |
+| A leaked event Nostr signing key | The event's identity on Nostr is that key and nothing else: whoever holds it *is* the event there, for good, and can publish or retract in its name. Stored AES-256-GCM encrypted under a key derived (HKDF) from the at-rest secret — `COOKIE_SECRET` unless `SECRETS_AT_REST_KEY` is set — which lives off the database's volume, so a copied database holds a blob it cannot open. Decrypted only while signing and in the organiser-only export route (`auth` budget, one audit row per export). Rotating the at-rest secret without `SECRETS_AT_REST_KEY_PREVIOUS` for one boot loses every event's key, and with it every way to update or retract what was published; the Publish tab says to keep an exported copy |
 
 **Out of scope, accepted:**
 
@@ -156,6 +157,14 @@ Four rules apply across the rows:
   *and* cannot reclaim their own display name, which the identity they lost
   still holds. If neither reading nor writing that file works, the boot log
   says the next restart will sign everyone out.
+- **Rotating the at-rest secret needs its predecessor for one boot.** The
+  Nostr signing keys are encrypted under a key derived from `COOKIE_SECRET`,
+  or from `SECRETS_AT_REST_KEY` when set. Change whichever is in use with the
+  old value in `SECRETS_AT_REST_KEY_PREVIOUS`, boot once, read the count in
+  the log, then drop it. Without that step the keys are gone: nothing already
+  on the relays can be updated or retracted, and the events start over under
+  new identities. `POST /e/:slug/nostr/export-key` hands the organiser the
+  `nsec` for exactly this case; `POST …/import-key` takes it back.
 - **`TRUST_PROXY=1` behind a reverse proxy**, or every request appears to come
   from the proxy and the per-IP rate limit becomes a single shared bucket.
 - **The instance password is required for event creation** and the whole-database
