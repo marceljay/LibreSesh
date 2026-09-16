@@ -950,7 +950,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   key.** Designed 2026-09-16 in an interview; spec at
   `_planning/specs/nostr-publishing.md`, Linear project *Nostr publishing*.
   Write-only first iteration: NIP-52 calendar event sync (kind 31923 per
-  session, 31924 per event, kept equal to the database by an outbox and a
+  session, 31924 per event, kept equal to the database by a publish queue and a
   coalescing loop) plus kind-1 notes for `placed`, `added`, `changed`, `up_next`, `digest` and
   `pitched`, each a checkbox in a new **Publish** tab. Off by default, admin
   switch with an explicit warning; attendee-written pitches and open sessions
@@ -962,9 +962,11 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   - Land the shared announcer per `announcements.md`: extracted from
     `telegram.ts` if merged, created fresh if not; six triggers, transports,
     `pitched`/`placed` hooked in the proposal routes [LIB-214] (LIB-212 folds in).
-  - Keys and schema: `secretsAtRest.ts` (AES-GCM under an HKDF of
-    `COOKIE_SECRET`, also the answer to LIB-213), migration 025, enable /
-    disable / export-key routes, SECURITY.md [LIB-215].
+  - Keys and schema: `secretsAtRest.ts` (AES-GCM under an HKDF of the
+    at-rest secret, `COOKIE_SECRET` by default, `SECRETS_AT_REST_KEY` to
+    override, rotatable via `_PREVIOUS`; also the answer to LIB-213), the
+    migration, enable / disable / import-key / export-key routes,
+    SECURITY.md [LIB-215].
   - Calendar sync: 31923/31924 builders, `markDirty` beside every `audit()`
     that matters, the 10s loop, kind-5 deletions, resync, the sweep [LIB-216].
   - Kind-1 notes: the Nostr transport and its plain-text renderer [LIB-217].
@@ -973,7 +975,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   - Verify on a public relay with Flockstr/Coracle and an ordinary client —
     yours [LIB-220].
   Not in this iteration: reading RSVPs back, signing in with a key,
-  bring-your-own nsec, `p` tags for speakers. Open: D6 above.
+  remote signing (NIP-46), `p` tags for speakers. Open: D6 above.
 
 ## Medium Priority
 
