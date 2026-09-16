@@ -54,6 +54,23 @@ export interface Config {
    * the page. Short form, seven characters, as `git rev-parse --short` gives.
    */
   buildCommit: string | null;
+  /**
+   * Encrypts secrets the server must read back in clear (a Nostr signing
+   * key, a bot token). Defaults to the cookie secret so there is one secret
+   * to manage; `SECRETS_AT_REST_KEY` keeps the two lives apart so the cookie
+   * secret can rotate without touching any stored key.
+   */
+  atRestSecret: string;
+  /** The old at-rest secret, for one boot after a rotation: blobs made under it are re-encrypted. */
+  atRestSecretPrevious?: string;
+  /**
+   * Origin every published link is built from (`https://sesh.example`).
+   * Unset means no links leave the instance — better than a `localhost`
+   * address on a public relay.
+   */
+  publicUrl?: string;
+  /** Relay list a newly enabled event starts with (D6). */
+  nostrDefaultRelays: string[];
 }
 
 /**
@@ -155,5 +172,16 @@ export function loadConfig(): Config {
     seedDemoEvent: process.env.SEED_DEMO_EVENT !== '0',
     allowEphemeralDb: !isProd || process.env.ALLOW_EPHEMERAL_DB === '1',
     buildCommit: buildCommit(),
+    atRestSecret: process.env.SECRETS_AT_REST_KEY || cookie.secret,
+    atRestSecretPrevious: process.env.SECRETS_AT_REST_KEY_PREVIOUS || undefined,
+    publicUrl: process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || undefined,
+    nostrDefaultRelays: list(process.env.NOSTR_DEFAULT_RELAYS),
   };
 }
+
+/** A comma-separated env var as a trimmed list; unset or blank is empty. */
+const list = (raw: string | undefined): string[] =>
+  (raw ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);

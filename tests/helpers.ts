@@ -38,6 +38,8 @@ export function makeHarness(overrides: Partial<Config> = {}): Harness {
     seedDemoEvent: false,
     allowEphemeralDb: true,
     buildCommit: null,
+    atRestSecret: 'test-secret',
+    nostrDefaultRelays: [],
     ...overrides,
   };
   const app = createApp(db, config);
