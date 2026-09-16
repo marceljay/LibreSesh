@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { TagRow } from '../db.js';
 import { conflict, notFound } from '../errors.js';
@@ -87,6 +88,7 @@ export function tagRoutes(ctx: Ctx): Router {
       entity: 'tag',
       entityId: existing.id,
     });
+    markDirty(ctx.db, req.event.id);
     ctx.broker.publish(req.event.slug, 'tag.updated', dto);
     res.json(dto);
   });
@@ -106,6 +108,7 @@ export function tagRoutes(ctx: Ctx): Router {
       entity: 'tag',
       entityId: tag.id,
     });
+    markDirty(ctx.db, req.event.id);
     ctx.broker.publish(req.event.slug, 'tag.deleted', { id: tag.id });
     res.status(204).end();
   });

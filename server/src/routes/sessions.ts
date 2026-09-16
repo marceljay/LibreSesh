@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireWritable } from '../auth.js';
 import { audit, newBatch } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import { getVisibleSession, publishSession } from '../drafts.js';
 import type { Role } from '../shared/types.js';
@@ -174,6 +175,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: id,
     });
+    markDirty(ctx.db, req.event.id, id);
     publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
     // A draft mentions nobody yet: the names in it are heard when it is
     // published, rather than pointing someone at a session they cannot open.
@@ -340,6 +342,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
       return dto;
     });
@@ -611,6 +614,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch: editBatch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.updated', now, d);
 
       const was = before.get(id);
@@ -701,6 +705,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: existing.id,
     });
+    markDirty(ctx.db, req.event.id, existing.id);
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
     // Its audience was told when it came off the schedule; deleting a draft
     // cancels nothing anyone could still see.
@@ -738,6 +743,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.updated', row, dto);
       return dto;
     });

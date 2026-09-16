@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { hashPassword, requireRole, roleForPassword } from '../auth.js';
 import { clearEventLimits } from '../ratelimit.js';
 import { audit, pruneAudit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
 import type { Role } from '../shared/types.js';
@@ -197,6 +198,8 @@ export function settingsRoutes(ctx: Ctx): Router {
         entity: 'event',
         entityId: current.id,
       });
+      // Name, dates and timezone all appear in every published calendar event.
+      markDirty(ctx.db, current.id);
       const dto = toEventDto(updated);
       // Everyone with the event open is subscribed to the channel for the slug
       // they arrived on, so the announcement of a rename has to go out on the
