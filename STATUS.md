@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -25,7 +25,12 @@ recent cut: **0.7.4**.
   per start time. Spec: `_planning/specs/telegram-announcements.md`. Built:
   migration 023, `server/src/telegram.ts` (renderer, `Announcer`, `getUpdates`
   poller answering `/bind`, `/unbind`, `/next`), `routes/telegram.ts`, the
-  Manage Event section (its own **Publish** tab, where the next such connection will live too), 62 tests. **The bot belongs to the event**: an
+  Manage Event section (its own **Publish** tab, where the next such connection
+  will live too), 67 tests. A review pass on 2026-09-16 added migration 024 —
+  livestream links in an announcement, off by default because a stream address
+  does not meet the password gate — and cut the noise presets to the two whose
+  triggers exist: Light and Heavy were named for the unbuilt `digest`, `added`
+  and `changed`, so Light sent nothing at all. **The bot belongs to the event**: an
   organiser pastes a token from BotFather (migration 023) and needs nothing
   from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a
   single-tenant fallback. That makes `events.telegram_bot_token` the first
