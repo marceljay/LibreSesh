@@ -97,8 +97,20 @@ describe('a command as it arrives in a group', () => {
 
 describe('rendering a slot', () => {
   const items = [
-    { id: 1, title: 'Scaling <an> unconference', room: 'Main Hall', speakers: ['Ada Lovelace'] },
-    { id: 2, title: 'Hallway track', room: 'Room 2', speakers: ['Grace Hopper', 'Alan Turing'] },
+    {
+      id: 1,
+      title: 'Scaling <an> unconference',
+      room: 'Main Hall',
+      speakers: ['Ada Lovelace'],
+      livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
+    },
+    {
+      id: 2,
+      title: 'Hallway track',
+      room: 'Room 2',
+      speakers: ['Grace Hopper', 'Alan Turing'],
+      livestreams: [],
+    },
   ];
   const startsAt = new Date(at(DAY_ONE, 600));
 
@@ -134,12 +146,25 @@ describe('rendering a slot', () => {
     expect(kathmandu).toContain('13:45');
   });
 
+  it('carries a livestream link only when the event asks for it', () => {
+    // The one thing an announcement can publish that the gate would otherwise
+    // hold, so it is off unless somebody turned it on.
+    const [silent] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
+    expect(silent).not.toContain('stream.example');
+
+    const [loud] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, true);
+    expect(loud).toContain('<a href="https://stream.example/main">Main camera</a>');
+    // A session with no stream gains nothing.
+    expect(loud.match(/▶/g)).toHaveLength(1);
+  });
+
   it('splits on a session boundary rather than letting Telegram refuse it', () => {
     const many = Array.from({ length: 120 }, (_, i) => ({
       id: i,
       title: `A session with a fairly long title, number ${i}`.repeat(2),
       room: `Room ${i}`,
       speakers: ['Someone With A Name'],
+      livestreams: [],
     }));
     const texts = renderUpNext(startsAt, 'Europe/Berlin', many, () => null);
     expect(texts.length).toBeGreaterThan(1);
@@ -333,6 +358,7 @@ describe('the Telegram settings routes', () => {
       available: boolean;
       connected: boolean;
       mode: string;
+      livestreams: boolean;
     };
     expect(body.available).toBe(true);
     expect(body.connected).toBe(false);
@@ -359,6 +385,17 @@ describe('the Telegram settings routes', () => {
     // would otherwise store a set that announces nothing under a name that
     // promises a message every morning.
     await admin.patch('/api/e/testconf/telegram').send({ mode: 'light' }).expect(400);
+  });
+
+  it('carries livestream links only when switched on, and never by default', async () => {
+    const before = (await admin.get('/api/e/testconf/telegram').expect(200)).body as {
+      livestreams: boolean;
+    };
+    expect(before.livestreams).toBe(false);
+    const after = (
+      await admin.patch('/api/e/testconf/telegram').send({ livestreams: true }).expect(200)
+    ).body as { livestreams: boolean };
+    expect(after.livestreams).toBe(true);
   });
 
   it('refuses a lead time outside the sane range', async () => {

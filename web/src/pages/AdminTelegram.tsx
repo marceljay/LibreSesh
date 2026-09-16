@@ -16,6 +16,7 @@ import {
   SecondaryButton,
   Section,
   TextInput,
+  Toggle,
   useToast,
 } from '../components/ui';
 import {
@@ -84,6 +85,7 @@ export function AdminTelegram({
   const [problem, setProblem] = useState<string | null>(null);
   const [lead, setLead] = useState('15');
   const [mode, setMode] = useState('off');
+  const [streams, setStreams] = useState(false);
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -94,6 +96,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
+      setStreams(next.livestreams);
     } catch (err) {
       setProblem(errorText(err));
     }
@@ -113,6 +116,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
+      setStreams(next.livestreams);
       if (done) toast.show(done);
       return true;
     } catch (err) {
@@ -151,7 +155,9 @@ export function AdminTelegram({
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
   const dirty =
-    mode !== status.mode || (parsedLead.value !== null && parsedLead.value !== status.leadMin);
+    mode !== status.mode ||
+    streams !== status.livestreams ||
+    (parsedLead.value !== null && parsedLead.value !== status.leadMin);
 
   /**
    * One Save for both, like every other form on this page. Nothing here saves
@@ -165,6 +171,7 @@ export function AdminTelegram({
       () =>
         api.telegramSettings(slug, {
           mode,
+          livestreams: streams,
           ...(parsedLead.value !== null ? { leadMin: parsedLead.value } : {}),
         }),
       'Saved.',
@@ -349,6 +356,29 @@ export function AdminTelegram({
               suffix="minutes before"
             />
 
+            <Field
+              label="Livestreams"
+              hint="Off by default. A session link in the message still asks for the event password; a stream address does not, so anyone the message reaches — or is forwarded to — can watch."
+              action={
+                <FieldInfo label="About livestream links" href={DOCS}>
+                  <p>
+                    Sessions that carry a stream get its link in the announcement, under the
+                    speakers. Sessions without one are unchanged.
+                  </p>
+                  <p className="mt-2">
+                    This is the one thing an announcement can publish that the password gate would
+                    otherwise hold, which is why it is a choice of its own.
+                  </p>
+                </FieldInfo>
+              }
+            >
+              <Toggle
+                checked={streams}
+                onChange={setStreams}
+                label="Include each session’s livestream link"
+              />
+            </Field>
+
             <div>
               <PrimaryButton type="submit" disabled={busy || !dirty}>
                 Save
@@ -365,6 +395,7 @@ export function AdminTelegram({
         <TelegramPreview
           mode={mode}
           leadMin={parsedLead.value ?? status.leadMin}
+          livestreams={streams}
           event={event}
           sessions={sessions}
           rooms={rooms}

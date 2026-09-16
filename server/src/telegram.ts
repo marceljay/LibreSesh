@@ -16,7 +16,8 @@
  * `@name` and its numeric id is not something an organiser can look up.
  */
 import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
-import { speakersBySession } from './mappers.js';
+import { parseLinks, speakersBySession } from './mappers.js';
+import type { LabelledLink } from './shared/types.js';
 import { zonedParts } from './shared/time.js';
 
 const API = 'https://api.telegram.org';
@@ -47,11 +48,6 @@ export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'chan
  * mistake as a form that cannot submit: the panel already refuses to show the
  * group controls when no bot can work. The ladder grows as its triggers land,
  * and `modeOf` keeps answering 'custom' for anything hand-set in between.
- *
- * This is also what stops the stored default being unnameable: migration 023
- * defaults an event to `["up_next"]`, which matched no preset and so opened
- * every panel on "Custom — a mix of your own", a state nobody chose and none
- * of the controls could return to.
  */
 export const MODES: Record<string, Trigger[]> = {
   off: [],
@@ -102,15 +98,22 @@ export interface AnnounceItem {
   title: string;
   room: string;
   speakers: string[];
+  /** Whatever the session carries. Posted only when the event asks for it. */
+  livestreams: LabelledLink[];
 }
 
 /** One block per session, so a split can happen on a session boundary. */
-function itemBlock(item: AnnounceItem, sessionUrl: string | null): string {
+function itemBlock(item: AnnounceItem, sessionUrl: string | null, streams: boolean): string {
   const title = sessionUrl
     ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
     : `<b>${escapeHtml(item.title)}</b>`;
   const lines = [escapeHtml(item.room), title];
   if (item.speakers.length > 0) lines.push(escapeHtml(item.speakers.join(', ')));
+  // The session link lands on the password gate; a stream link does not. That
+  // is the whole reason this is a setting and not simply what a message says.
+  if (streams)
+    for (const stream of item.livestreams)
+      lines.push(`▶ <a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`);
   return lines.join('\n');
 }
 
@@ -127,13 +130,14 @@ export function renderUpNext(
   timeZone: string,
   items: AnnounceItem[],
   sessionUrl: (id: number) => string | null,
+  streams = false,
 ): string[] {
   const header = `🕐 ${hhmm(startsAt, timeZone)} — up next`;
   const out: string[] = [];
   let current = header;
 
   for (const item of items) {
-    const block = `\n\n${itemBlock(item, sessionUrl(item.id))}`;
+    const block = `\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
     if (current.length + block.length > MAX_MESSAGE) {
       out.push(current);
       current = `${header} (continued)${block}`;
@@ -263,6 +267,7 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
     title: s.title,
     room: rooms.get(s.room_id) ?? '',
     speakers: (speakers.get(s.id) ?? []).map((p) => p.name),
+    livestreams: parseLinks(s.livestreams),
   }));
 }
 
@@ -358,6 +363,7 @@ export class Announcer {
         event.timezone,
         toItems(this.db, event, sessions),
         this.sessionUrl(event),
+        event.telegram_livestreams === 1,
       );
       for (const text of texts) {
         await this.send(token, {
@@ -387,6 +393,7 @@ export class Announcer {
       event.timezone,
       toItems(this.db, event, slot),
       this.sessionUrl(event),
+      event.telegram_livestreams === 1,
     );
   }
 }

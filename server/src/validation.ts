@@ -451,6 +451,7 @@ export const telegramSettingsSchema = z
     mode: z.enum(['off', 'up_next']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
+    livestreams: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
 

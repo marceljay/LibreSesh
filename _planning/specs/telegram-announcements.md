@@ -211,7 +211,8 @@ sequenceDiagram
 | Group discovered via bind code | Organiser pastes a chat id | A private group's id cannot be obtained without a third-party bot |
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
-| Only presets whose triggers are built are offered | The full Off/Light/Medium/Heavy ladder | Every rung above Off carries `digest`, which is unbuilt, so "Light — one message each morning" would name a setting whose whole effect is silence. §8's own rule: never a control that cannot work. It is also what gives migration 023's default a name instead of "custom" |
+| Only presets whose triggers are built are offered | The full Off/Light/Medium/Heavy ladder | Every rung above Off carries `digest`, which is unbuilt, so "Light — one message each morning" would name a setting whose whole effect is silence. §8's own rule: never a control that cannot work |
+| Livestream links a setting of their own | Part of a preset, or always on | A preset is a *noise* choice; this is a *disclosure* choice. A session link meets the password gate and a stream address does not, so it is not something to acquire by picking a volume |
 | HTML parse mode | MarkdownV2 | Every interpolated value is user-authored; MarkdownV2 needs 18 characters escaped in each, and one miss is a 400 or mangled output |
 
 ---
@@ -222,16 +223,19 @@ sequenceDiagram
 
 **Purpose.** Convert a slot into Telegram messages. Pure; no I/O.
 
-**Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl)` emits a
-header followed by one block per session: room, linked title, speakers. Times
+**Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl, streams)`
+emits a header followed by one block per session: room, linked title, speakers,
+and — only when `streams` is set — one `▶ <label>` link per livestream the
+session carries. Times
 are formatted in the **event's** timezone via `zonedParts`. Every interpolated
 value passes through `escapeHtml`, which escapes `&`, `<`, `>` and nothing
 else. Accumulated length is checked per block against the 4096-character limit;
 overflow starts a continuation message, always at a session boundary.
 
-**Interfaces.** In: `AnnounceItem[]` (`id`, `title`, `room`, `speakers`) plus a
-URL function returning `null` when the instance has no configured public
-address. Out: `string[]`, one per message.
+**Interfaces.** In: `AnnounceItem[]` (`id`, `title`, `room`, `speakers`,
+`livestreams`) plus a URL function returning `null` when the instance has no
+configured public address, and the event's livestream choice. Out: `string[]`,
+one per message.
 
 ### 4.2 Announcer
 
@@ -302,7 +306,7 @@ write, so a rejected field cannot leave a partial change behind.
 | Route | Effect |
 | --- | --- |
 | `GET /telegram` | Status; never the token |
-| `PATCH /telegram` | `mode`, `leadMin`, `botToken`. Setting or clearing a token also clears the binding |
+| `PATCH /telegram` | `mode`, `leadMin`, `botToken`, `livestreams`. Setting or clearing a token also clears the binding |
 | `POST /telegram/code` | Mints a bind code, valid 15 minutes |
 | `DELETE /telegram` | Clears the binding; keeps the token |
 | `POST /telegram/test` | Sends a test message; returns Telegram's error text verbatim on failure |
@@ -322,6 +326,7 @@ Migration `023_telegram.sql` adds to `events`:
 | `telegram_lead_min` | INTEGER | Default 15 |
 | `telegram_bind_code` | TEXT null | Unique where not null |
 | `telegram_bind_expires` | TEXT null | ISO-8601 |
+| `telegram_livestreams` | INTEGER | Migration 024. Default 0 — a disclosure choice is never on by default |
 
 **Constraints.** None of these columns appear in an export — the export writes
 an explicit allow-list — so a cloned event cannot post into the original's
@@ -386,7 +391,8 @@ transports join it rather than lengthening Settings.
 | Group | **Generate a code**, then the line to send in the group; when bound, **Send a test message** and **Disconnect** |
 | How much it says | Select over the presets that are built: **Off** and **What is up next** |
 | How early it says it | Number field, 1–180 minutes |
-| Save | One action for the two options above, disabled until a value differs from what is stored |
+| Livestreams | Checkbox, off by default, stating in its hint that a stream address does not meet the password gate |
+| Save | One action for the three options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
 
 **Rules.**
@@ -421,7 +427,7 @@ transports join it rather than lengthening Settings.
 | U3 | Room scope — **not implemented**, see §11 | — |
 | U4 | `digest` trigger — **not implemented**, LIB-211 | — |
 | U5 | §4.2 range selection | `telegram.test.ts` "takes a session created inside its own window" |
-| U6 | §4.1 links | `telegram.test.ts` "links the title when the instance knows its own address" |
+| U6 | §4.1 links, and the livestream setting | `telegram.test.ts` "links the title when the instance knows its own address"; "carries a livestream link only when the event asks for it" |
 | U7 | §5 per-event token | `telegram.test.ts` "lets an organiser turn Telegram on with no help from the operator" |
 | Drafts never announced | §4.2 selection predicate | `telegram.test.ts` "never takes a draft" |
 | Token confidentiality | §4.5 status projection | `telegram.test.ts` "never sends the token back" |
@@ -452,6 +458,7 @@ Requirements without a design element: U3 and U4 (§11).
 | 2 | Supergroup topics as a configurable target? | One nullable column is already present |
 | 3 | Should a slot that holds the floor say so? | `blocks_open_booking` is currently invisible here |
 | 4 | Localisation | The application has no i18n layer; this inherits that gap |
+| 5 | Should a livestream link be verbosity (`full`) rather than its own flag? | `announcements.md` puts it on the "how much" axis; it is kept separate here because it is a disclosure choice, and folding it into a verbosity level would hand it out with one |
 
 ---
 
@@ -460,4 +467,4 @@ Requirements without a design element: U3 and U4 (§11).
 | Version | Date | Change |
 | --- | --- | --- |
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from `announcements.md` rather than restated |
-| 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; the Example reads the screen rather than the store; a failed test message reports Telegram's own words |
+| 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |

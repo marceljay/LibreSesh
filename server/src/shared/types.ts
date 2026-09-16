@@ -726,6 +726,8 @@ export interface TelegramStatus {
   mode: string;
   triggers: string[];
   leadMin: number;
+  /** Whether a message carries each session's livestream links. */
+  livestreams: boolean;
   /** A live bind code, if one has been minted and not yet used or expired. */
   bindCode: string | null;
   bindExpires: string | null;

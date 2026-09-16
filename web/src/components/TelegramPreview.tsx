@@ -16,14 +16,19 @@ import { SecondaryButton } from './ui';
 /** A sample drawn from the event, or an honest stand-in when it is empty. */
 interface Slot {
   time: string;
-  rows: { room: string; title: string; speakers: string }[];
+  rows: { room: string; title: string; speakers: string; streams: string[] }[];
 }
 
 const FALLBACK: Slot = {
   time: '10:00',
   rows: [
-    { room: 'Main Hall', title: 'Scaling an unconference', speakers: 'Ada Lovelace' },
-    { room: 'Room 2', title: 'Hallway track, formalised', speakers: 'Grace Hopper' },
+    {
+      room: 'Main Hall',
+      title: 'Scaling an unconference',
+      speakers: 'Ada Lovelace',
+      streams: ['Main camera'],
+    },
+    { room: 'Room 2', title: 'Hallway track, formalised', speakers: 'Grace Hopper', streams: [] },
   ],
 };
 
@@ -49,6 +54,7 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
         room: roomName.get(s.roomId) ?? '',
         title: s.title,
         speakers: s.speakers.map((p) => p.name).join(', '),
+        streams: s.livestreams.map((l) => l.label),
       })),
   };
 }
@@ -74,6 +80,7 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 export function TelegramPreview({
   mode,
   leadMin,
+  livestreams,
   event,
   sessions,
   rooms,
@@ -81,6 +88,9 @@ export function TelegramPreview({
 }: {
   mode: string;
   leadMin: number;
+  /** Whether a stream link rides along. Previewed because it is the one thing
+   *  here that leaves the password gate. */
+  livestreams: boolean;
   event: EventDto;
   sessions: SessionDto[];
   rooms: RoomDto[];
@@ -126,6 +136,12 @@ export function TelegramPreview({
                 {row.speakers && (
                   <p className="text-stone-600 dark:text-stone-300">{row.speakers}</p>
                 )}
+                {livestreams &&
+                  row.streams.map((label) => (
+                    <p key={label}>
+                      ▶ <Title>{label}</Title>
+                    </p>
+                  ))}
               </div>
             ))}
           </Bubble>

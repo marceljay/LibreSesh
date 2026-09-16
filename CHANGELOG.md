@@ -36,6 +36,11 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
+  **Livestream links, if you want them.** Off for every event until switched
+  on: a session link in a message still meets the password gate, and a stream
+  address does not, so handing one to a group is a disclosure choice of its own
+  rather than something acquired by picking a volume.
+
   Drafts, deleted sessions and archived events are never announced, and the
   connection never travels in an export. What a connected group can see is in
   SECURITY.md.

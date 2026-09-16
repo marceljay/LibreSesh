@@ -89,6 +89,7 @@ erDiagram
     INTEGER telegram_lead_min "default 15"
     TEXT telegram_bind_code "nullable"
     TEXT telegram_bind_expires "nullable"
+    INTEGER telegram_livestreams "default 0"
   }
   identities {
     INTEGER id PK

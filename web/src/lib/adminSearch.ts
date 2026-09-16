@@ -180,6 +180,13 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     anchor: 'telegram',
   },
   {
+    id: 'telegram-livestreams',
+    label: 'Livestreams',
+    tab: 'publish',
+    keywords: 'telegram livestream stream link video watch remote online',
+    anchor: 'telegram',
+  },
+  {
     id: 'archive',
     label: 'Archive',
     tab: 'settings',

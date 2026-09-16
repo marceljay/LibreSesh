@@ -31,15 +31,17 @@ const session = (over: Partial<SessionDto>): SessionDto =>
     startsAt: '2099-06-01T08:00:00.000Z',
     endsAt: '2099-06-01T08:30:00.000Z',
     speakers: [{ id: 1, name: 'Ada Lovelace' }],
+    livestreams: [],
     draft: false,
     ...over,
   }) as SessionDto;
 
-const show = (mode: string, sessions: SessionDto[] = [session({})]) =>
+const show = (mode: string, sessions: SessionDto[] = [session({})], livestreams = false) =>
   render(
     <TelegramPreview
       mode={mode}
       leadMin={15}
+      livestreams={livestreams}
       event={event}
       sessions={sessions}
       rooms={rooms}
@@ -67,6 +69,17 @@ describe('the Telegram example', () => {
     show('up_next');
     expect(screen.queryByText(/Each morning/)).toBeNull();
     expect(screen.queryByText(/Just added/)).toBeNull();
+  });
+
+  it('shows a livestream link only when that is switched on', () => {
+    const streamed = [
+      session({ livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }] }),
+    ];
+    show('up_next', streamed);
+    expect(screen.queryByText(/Main camera/)).toBeNull();
+    cleanup();
+    show('up_next', streamed, true);
+    expect(screen.getByText(/Main camera/)).toBeTruthy();
   });
 
   it('says plainly that off sends nothing', () => {

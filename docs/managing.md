@@ -132,13 +132,19 @@ A morning digest of the whole day, and a message the moment a session is placed
 or moved, are designed and not yet built. They will appear here as further
 choices; nothing you set now will change meaning when they do.
 
-**Example** shows exactly what a setting would post, drawn from your own
-schedule. Use it — this is the one screen in LibreSesh whose effect you cannot
-see from the screen, because it lands in somebody else's Telegram tomorrow.
-
 Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
+
+**Livestreams.** Off unless you turn it on. With it on, a session that carries
+a stream gets that link in the announcement, under the speakers. Worth knowing
+before you do: the session link in a message still asks for the event password,
+and a stream address does not — anyone who can see the group, or anyone they
+forward the message to, can watch.
+
+**Example** shows exactly what these settings would post, drawn from your own
+schedule. Use it — this is the one screen in LibreSesh whose effect you cannot
+see from the screen, because it lands in somebody else's Telegram tomorrow.
 
 **What never leaves.** Drafts, under any setting. Deleted sessions. Anything
 from an archived event. Notes, questions and stars. The links in the messages
