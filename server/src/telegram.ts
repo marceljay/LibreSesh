@@ -67,6 +67,38 @@ export const MODES: Record<string, Trigger[]> = {
   heavy: ['digest', 'up_next', 'placed', 'added', 'changed'],
 };
 
+/**
+ * What a session's line may carry, besides its title.
+ *
+ * The order is ours and the choice is the organiser's. Letting them order the
+ * parts too would mean owning a template language — placeholders, empty values,
+ * escaping, a line that only breaks at 09:45 on day one — to buy a rearrangement
+ * nobody has asked for. What people actually want is the format shown, or the
+ * room left out.
+ */
+export type Field = 'room' | 'track' | 'speakers' | 'format' | 'tags' | 'livestreams';
+
+export const FIELDS: readonly Field[] = [
+  'room',
+  'track',
+  'speakers',
+  'format',
+  'tags',
+  'livestreams',
+];
+
+/** Stored as JSON; anything unrecognised is dropped rather than trusted. */
+export function parseFields(raw: string | null): Field[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return FIELDS.filter((f) => parsed.includes(f));
+  } catch {
+    return [];
+  }
+}
+
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && [...a].sort().join() === [...b].sort().join();
 
@@ -110,7 +142,12 @@ export interface AnnounceItem {
   id: number;
   title: string;
   room: string;
+  /** '' when the event has no tracks, or this session is not on one. */
+  track: string;
   speakers: string[];
+  /** '' when the event defines no formats, or nobody picked one. */
+  format: string;
+  tags: string[];
   /** Whatever the session carries. Posted only when the event asks for it. */
   livestreams: LabelledLink[];
 }
@@ -118,23 +155,49 @@ export interface AnnounceItem {
 /**
  * One session: a line, or two when it is streamed.
  *
- * `Title, by Ada Lovelace` on the first, `Stream: Main camera` on the second.
+ * `Main Hall · Title, by Ada Lovelace [Workshop] #accessibility`, then
+ * `Stream: Main camera` beneath it. Everything but the title is a field the
+ * event switched on; with none of them it is the title alone.
+ *
  * Four lines a session made a five-room slot a message nobody reads to the
  * bottom, and the slot is the unit that matters — one notification, scannable
- * in the second it is on screen.
+ * in the second it is on screen. So the fields compose onto one line and only
+ * the streams, which are links and would wrap anyway, get their own.
  *
  * A block, not a line, because the 4096-character split has to happen on a
  * session boundary and never between a title and its stream.
  */
-function itemBlock(item: AnnounceItem, sessionUrl: string | null, streams: boolean): string {
+function itemBlock(
+  item: AnnounceItem,
+  sessionUrl: string | null,
+  fields: readonly Field[],
+): string {
+  const on = (field: Field): boolean => fields.includes(field);
   const title = sessionUrl
     ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
     : `<b>${escapeHtml(item.title)}</b>`;
-  const by = item.speakers.length > 0 ? `, by ${escapeHtml(item.speakers.join(', '))}` : '';
-  const lines = [`${title}${by}`];
+
+  // Where it is, before what it is: somebody reading this is deciding which
+  // door to walk through.
+  const where = [on('room') ? item.room : '', on('track') ? item.track : '']
+    .filter((part) => part !== '')
+    .map((part) => `${escapeHtml(part)} · `)
+    .join('');
+  const by =
+    on('speakers') && item.speakers.length > 0
+      ? `, by ${escapeHtml(item.speakers.join(', '))}`
+      : '';
+  const format = on('format') && item.format !== '' ? ` [${escapeHtml(item.format)}]` : '';
+  const tags =
+    on('tags') && item.tags.length > 0
+      ? ` ${item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ')}`
+      : '';
+
+  const lines = [`${where}${title}${by}${format}${tags}`];
   // The session link lands on the password gate; a stream link does not. That
-  // is the whole reason this is a setting and not simply what a message says.
-  if (streams && item.livestreams.length > 0) {
+  // is the whole reason this is a field an organiser ticks and not simply what
+  // a message says.
+  if (on('livestreams') && item.livestreams.length > 0) {
     const links = item.livestreams.map(
       (stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`,
     );
@@ -156,14 +219,14 @@ export function renderUpNext(
   timeZone: string,
   items: AnnounceItem[],
   sessionUrl: (id: number) => string | null,
-  streams = false,
+  fields: readonly Field[] = [],
 ): string[] {
   const header = `🕐 ${hhmm(startsAt, timeZone)} — up next`;
   const out: string[] = [];
   let current = header;
 
   for (const item of items) {
-    const block = `\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
+    const block = `\n\n${itemBlock(item, sessionUrl(item.id), fields)}`;
     if (current.length + block.length > MAX_MESSAGE) {
       out.push(current);
       current = `${header} (continued)${block}`;
@@ -237,11 +300,11 @@ export function renderAdded(
   timeZone: string,
   item: AnnounceItem,
   sessionUrl: (id: number) => string | null,
-  streams = false,
+  fields: readonly Field[] = [],
   placed = false,
 ): string {
   const head = placed ? '🙌 Just pitched' : '✨ Just added';
-  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
+  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), fields)}`;
 }
 
 /**
@@ -400,7 +463,7 @@ export function announceableSession(db: Db, event: EventRow, id: number): Sessio
   );
 }
 
-/** Turn rows into what the renderer needs, resolving rooms and speakers once. */
+/** Turn rows into what the renderer needs, resolving the lookups once. */
 export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): AnnounceItem[] {
   if (sessions.length === 0) return [];
   const rooms = new Map(
@@ -409,6 +472,32 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
       .all(event.id)
       .map((r) => [r.id, r.name]),
   );
+  // Resolved whether or not the event shows them: one query each for the whole
+  // slot is cheaper than branching, and the renderer decides what it uses.
+  const named = (table: 'tracks' | 'session_formats'): Map<number, string> =>
+    new Map(
+      db
+        .prepare<[number], { id: number; name: string }>(
+          `SELECT id, name FROM ${table} WHERE event_id = ?`,
+        )
+        .all(event.id)
+        .map((r) => [r.id, r.name]),
+    );
+  const tracks = named('tracks');
+  const formats = named('session_formats');
+  const tags = new Map<number, string[]>();
+  for (const row of db
+    .prepare<[number], { session_id: number; name: string }>(
+      `SELECT st.session_id, t.name FROM session_tags st
+         JOIN tags t ON t.id = st.tag_id
+        WHERE t.event_id = ?
+        ORDER BY t.name`,
+    )
+    .all(event.id)) {
+    const list = tags.get(row.session_id);
+    if (list) list.push(row.name);
+    else tags.set(row.session_id, [row.name]);
+  }
   const speakers = speakersBySession(
     db,
     sessions.map((s) => s.id),
@@ -417,7 +506,10 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
     id: s.id,
     title: s.title,
     room: rooms.get(s.room_id) ?? '',
+    track: s.track_id === null ? '' : (tracks.get(s.track_id) ?? ''),
     speakers: (speakers.get(s.id) ?? []).map((p) => p.name),
+    format: s.format_id === null ? '' : (formats.get(s.format_id) ?? ''),
+    tags: tags.get(s.id) ?? [],
     livestreams: parseLinks(s.livestreams),
   }));
 }
@@ -555,7 +647,7 @@ export class Announcer {
           event.timezone,
           items,
           this.sessionUrl(event),
-          event.telegram_livestreams === 1,
+          parseFields(event.telegram_fields),
         ),
       );
     }
@@ -645,7 +737,7 @@ export class Announcer {
           event.timezone,
           items,
           this.sessionUrl(event),
-          event.telegram_livestreams === 1,
+          parseFields(event.telegram_fields),
         ),
       );
       return;
@@ -659,7 +751,7 @@ export class Announcer {
         event.timezone,
         item,
         this.sessionUrl(event),
-        event.telegram_livestreams === 1,
+        parseFields(event.telegram_fields),
         placed,
       ),
     ]);
@@ -725,7 +817,7 @@ export class Announcer {
       event.timezone,
       toItems(this.db, event, slot),
       this.sessionUrl(event),
-      event.telegram_livestreams === 1,
+      parseFields(event.telegram_fields),
     );
   }
 }

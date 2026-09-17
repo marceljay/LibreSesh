@@ -50,10 +50,14 @@ recent cut: **0.7.4**.
   will live too), 82 tests. Merged into `dev` on 2026-09-16 (PR #116). A review
   pass added migration 024 — livestream links in an announcement, off by default
   because a stream address does not meet the password gate. The next day
-  [LIB-211] and [LIB-212] landed too: `digest`, `added` and `changed` are built,
-  migration 025 carries the digest hour, and the four-rung ladder is back with
-  every rung naming a trigger that fires. The announcer moved onto the request
-  context, because two of the three are write-path triggers.
+  [LIB-211] and [LIB-212] landed too: `digest`, `added`, `changed` and `placed`
+  are built, migration 025 carries the digest hour, and the four-rung ladder is
+  back with every rung naming a trigger that fires. The announcer moved onto the
+  request context, because three of the four are write-path triggers. What a
+  session's line says is now six ticked fields (migration 027, which folded
+  024's livestream boolean into them); `placed` is separate from `added`
+  (migration 026) because placing a pitch — the case the feature exists for —
+  announced nothing at all until it was.
   **The bot belongs to the event**: an
   organiser pastes a token from BotFather (migration 023) and needs nothing
   from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a

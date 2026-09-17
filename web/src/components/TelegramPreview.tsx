@@ -14,9 +14,19 @@ import { SecondaryButton } from './ui';
  */
 
 /** A sample drawn from the event, or an honest stand-in when it is empty. */
+interface Row {
+  room: string;
+  track: string;
+  title: string;
+  speakers: string;
+  format: string;
+  tags: string[];
+  streams: string[];
+}
+
 interface Slot {
   time: string;
-  rows: { room: string; title: string; speakers: string; streams: string[] }[];
+  rows: Row[];
   /** Every non-draft session of the anchor's day, for the digest. */
   day: { time: string; room: string; title: string }[];
   dayLabel: string;
@@ -33,15 +43,33 @@ const FALLBACK: Slot = {
   rows: [
     {
       room: 'Main Hall',
+      track: 'Practice',
       title: 'Scaling an unconference',
       speakers: 'Ada Lovelace',
+      format: 'Workshop',
+      tags: ['facilitation'],
       streams: ['Main camera'],
     },
-    { room: 'Room 2', title: 'Hallway track, formalised', speakers: 'Grace Hopper', streams: [] },
+    {
+      room: 'Room 2',
+      track: '',
+      title: 'Hallway track, formalised',
+      speakers: 'Grace Hopper',
+      format: '',
+      tags: [],
+      streams: [],
+    },
   ],
 };
 
-function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Slot {
+function pickSlot(
+  event: EventDto,
+  sessions: SessionDto[],
+  rooms: RoomDto[],
+  tracks: NamedRef[],
+  formats: NamedRef[],
+  tags: NamedRef[],
+): Slot {
   const live = sessions
     .filter((s) => !s.draft)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -50,6 +78,9 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
   if (!anchor) return FALLBACK;
 
   const roomName = new Map(rooms.map((r) => [r.id, r.name]));
+  const trackName = new Map(tracks.map((t) => [t.id, t.name]));
+  const formatName = new Map(formats.map((f) => [f.id, f.name]));
+  const tagName = new Map(tags.map((t) => [t.id, t.name]));
   const at = new Date(anchor.startsAt);
   const fmt = (opts: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat('en-GB', { timeZone: event.timezone, ...opts }).format(at);
@@ -79,11 +110,56 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
       .slice(0, 4)
       .map((s) => ({
         room: roomName.get(s.roomId) ?? '',
+        track: trackName.get(s.trackId ?? -1) ?? '',
         title: s.title,
         speakers: s.speakers.map((p) => p.name).join(', '),
+        format: formatName.get(s.formatId ?? -1) ?? '',
+        tags: s.tagIds.map((id) => tagName.get(id) ?? '').filter((t) => t !== ''),
         streams: s.livestreams.map((l) => l.label),
       })),
   };
+}
+
+/** Everything the preview needs of a track, a format or a tag: its name. */
+interface NamedRef {
+  id: number;
+  name: string;
+}
+
+/**
+ * One session's line, built from the same parts `itemBlock` joins on the
+ * server and in the same order. Two implementations of one layout is the drift
+ * this modal exists to catch, so keep them in step until the renderer is
+ * shared (LIB-214).
+ */
+function Line({ row, fields }: { row: Row; fields: string[] }) {
+  const on = (field: string) => fields.includes(field);
+  const where = [on('room') ? row.room : '', on('track') ? row.track : '']
+    .filter((part) => part !== '')
+    .map((part) => `${part} · `)
+    .join('');
+  return (
+    <>
+      <p>
+        {where}
+        <Title>{row.title}</Title>
+        {on('speakers') && row.speakers && `, by ${row.speakers}`}
+        {on('format') && row.format && ` [${row.format}]`}
+        {on('tags') && row.tags.length > 0 && ` ${row.tags.map((t) => `#${t}`).join(' ')}`}
+      </p>
+      {on('livestreams') && row.streams.length > 0 && (
+        <p>
+          Stream:{' '}
+          {row.streams.map((label, n) => (
+            <span key={label}>
+              {n > 0 && ', '}
+              <Title>{label}</Title>
+            </span>
+          ))}
+        </p>
+      )}
+    </>
+  );
 }
 
 /** One message, drawn the way Telegram draws it: a bubble, not a form field. */
@@ -107,26 +183,32 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 export function TelegramPreview({
   mode,
   leadMin,
-  livestreams,
+  fields,
   digest,
   event,
   sessions,
   rooms,
+  tracks = [],
+  formats = [],
+  tags = [],
   onClose,
 }: {
   mode: string;
   leadMin: number;
-  /** Whether a stream link rides along. Previewed because it is the one thing
-   *  here that leaves the password gate. */
-  livestreams: boolean;
+  /** What each line carries besides its title. `livestreams` among them is the
+   *  one that leaves the password gate, so it is previewed like the rest. */
+  fields: string[];
   /** 'HH:MM' the morning message goes out, as the field currently reads. */
   digest: string;
   event: EventDto;
   sessions: SessionDto[];
   rooms: RoomDto[];
+  tracks?: NamedRef[];
+  formats?: NamedRef[];
+  tags?: NamedRef[];
   onClose: () => void;
 }) {
-  const slot = pickSlot(event, sessions, rooms);
+  const slot = pickSlot(event, sessions, rooms, tracks, formats, tags);
   const usingRealData = sessions.some((s) => !s.draft);
 
   // Mirrors MODES in telegram.ts. Every branch below is a trigger the announcer
@@ -181,43 +263,27 @@ export function TelegramPreview({
               the failure this modal exists to prevent. */}
             {slot.rows.map((row, i) => (
               <div key={i} className="mt-2">
-                <p>
-                  <Title>{row.title}</Title>
-                  {row.speakers && `, by ${row.speakers}`}
-                </p>
-                {livestreams && row.streams.length > 0 && (
-                  <p>
-                    Stream:{' '}
-                    {row.streams.map((label, n) => (
-                      <span key={label}>
-                        {n > 0 && ', '}
-                        <Title>{label}</Title>
-                      </span>
-                    ))}
-                  </p>
-                )}
+                <Line row={row} fields={fields} />
               </div>
             ))}
           </Bubble>
         )}
 
-        {sends.placed && (
+        {sends.placed && slot.rows[0] && (
           <Bubble when="The moment a pitch reaches the grid">
             <p>🙌 Just pitched — {slot.time}</p>
-            <p className="mt-2">
-              <Title>{slot.rows[0]?.title}</Title>
-              {slot.rows[0]?.speakers && `, by ${slot.rows[0]?.speakers}`}
-            </p>
+            <div className="mt-2">
+              <Line row={slot.rows[0]} fields={fields} />
+            </div>
           </Bubble>
         )}
 
-        {sends.added && (
+        {sends.added && slot.rows[0] && (
           <Bubble when="The moment an organiser puts a session up">
             <p>✨ Just added — {slot.time}</p>
-            <p className="mt-2">
-              <Title>{slot.rows[0]?.title}</Title>
-              {slot.rows[0]?.speakers && `, by ${slot.rows[0]?.speakers}`}
-            </p>
+            <div className="mt-2">
+              <Line row={slot.rows[0]} fields={fields} />
+            </div>
           </Bubble>
         )}
 

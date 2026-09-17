@@ -46,6 +46,28 @@ const MODES = [
   { id: 'heavy', label: 'Heavy — that, plus every session added or moved' },
 ];
 
+/**
+ * What a session's line may carry besides its title.
+ *
+ * Checkboxes rather than a template box: the order and the punctuation are a
+ * rendering problem, and owning a template language to let somebody move the
+ * room behind the title would buy a rearrangement nobody has asked for at the
+ * price of empty placeholders and a line that breaks on the day. What people
+ * want is the format shown, or the room left out.
+ */
+const FIELDS: { id: string; label: string; hint?: string }[] = [
+  { id: 'room', label: 'Room' },
+  { id: 'track', label: 'Track' },
+  { id: 'speakers', label: 'Speakers' },
+  { id: 'format', label: 'Format' },
+  { id: 'tags', label: 'Tags' },
+  {
+    id: 'livestreams',
+    label: 'Livestream links',
+    hint: 'Anyone who sees the group can watch — a stream address does not ask for the event password.',
+  },
+];
+
 const modeLabel = (id: string): string =>
   MODES.find((m) => m.id === id)?.label ?? 'Custom — a mix of your own';
 
@@ -77,18 +99,25 @@ export function AdminTelegram({
   event,
   sessions,
   rooms,
+  tracks = [],
+  formats = [],
+  tags = [],
 }: {
   slug: string;
   event: EventDto;
   sessions: SessionDto[];
   rooms: RoomDto[];
+  /** Only their names are wanted, to draw the fields the Example shows. */
+  tracks?: { id: number; name: string }[];
+  formats?: { id: number; name: string }[];
+  tags?: { id: number; name: string }[];
 }) {
   const toast = useToast();
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [lead, setLead] = useState('15');
   const [mode, setMode] = useState('off');
-  const [streams, setStreams] = useState(false);
+  const [fields, setFields] = useState<string[]>([]);
   const [digest, setDigest] = useState('08:00');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,7 +129,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setStreams(next.livestreams);
+      setFields(next.fields);
       setDigest(fmtMin(next.digestMin));
     } catch (err) {
       setProblem(errorText(err));
@@ -121,7 +150,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setStreams(next.livestreams);
+      setFields(next.fields);
       setDigest(fmtMin(next.digestMin));
       if (done) toast.show(done);
       return true;
@@ -161,9 +190,11 @@ export function AdminTelegram({
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
   const digestMin = minutesOf(digest);
+  const sameFields =
+    fields.length === status.fields.length && fields.every((f) => status.fields.includes(f));
   const dirty =
     mode !== status.mode ||
-    streams !== status.livestreams ||
+    !sameFields ||
     digestMin !== status.digestMin ||
     (parsedLead.value !== null && parsedLead.value !== status.leadMin);
 
@@ -179,7 +210,7 @@ export function AdminTelegram({
       () =>
         api.telegramSettings(slug, {
           mode,
-          livestreams: streams,
+          fields,
           digestMin,
           ...(parsedLead.value !== null ? { leadMin: parsedLead.value } : {}),
         }),
@@ -375,26 +406,36 @@ export function AdminTelegram({
             />
 
             <Field
-              label="Livestreams"
-              hint="Off by default. A session link in the message still asks for the event password; a stream address does not, so anyone the message reaches — or is forwarded to — can watch."
+              label="What each line says"
+              hint="Besides the title, which is always there. A session shows only what it has — no format picked, no format shown."
               action={
-                <FieldInfo label="About livestream links" href={DOCS}>
+                <FieldInfo label="About what a line says" href={DOCS}>
                   <p>
-                    Sessions that carry a stream get its link in the announcement, under the
-                    speakers. Sessions without one are unchanged.
+                    Each session in a message is one line: where it is, its title, who is giving it,
+                    and whatever else you tick here. <strong>Example</strong> shows the result.
                   </p>
                   <p className="mt-2">
-                    This is the one thing an announcement can publish that the password gate would
-                    otherwise hold, which is why it is a choice of its own.
+                    Livestream links add a second line, and are the one thing here that leaves the
+                    password gate — anyone who can see the group can watch.
                   </p>
                 </FieldInfo>
               }
             >
-              <Toggle
-                checked={streams}
-                onChange={setStreams}
-                label="Include each session’s livestream link"
-              />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+                {FIELDS.map((f) => (
+                  <Toggle
+                    key={f.id}
+                    checked={fields.includes(f.id)}
+                    title={f.hint}
+                    onChange={(next) =>
+                      setFields((prev) =>
+                        next ? [...prev, f.id] : prev.filter((id) => id !== f.id),
+                      )
+                    }
+                    label={f.label}
+                  />
+                ))}
+              </div>
             </Field>
 
             <div>
@@ -413,8 +454,11 @@ export function AdminTelegram({
         <TelegramPreview
           mode={mode}
           leadMin={parsedLead.value ?? status.leadMin}
-          livestreams={streams}
+          fields={fields}
           digest={digest}
+          tracks={tracks}
+          formats={formats}
+          tags={tags}
           event={event}
           sessions={sessions}
           rooms={rooms}

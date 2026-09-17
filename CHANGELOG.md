@@ -15,9 +15,8 @@ All notable changes to this project are documented here.
   **How loud it is, in four settings, each naming something it really does.**
   *Light* is a message before each start time. *Medium* adds the whole day each
   morning, at an hour the event picks on the venue's clock — one line a session,
-  read over breakfast to decide where to be — and a pitch as it lands on the
-  grid, which at an unconference is the message people actually act on. *Heavy*
-  adds every session an organiser puts up, and a note when one moves. A session added inside the *how
+  read over breakfast to decide where to be. *Heavy* adds a session the moment
+  it is placed, and a note when one moves. A session added inside the *how
   early* window is announced as that slot rather than twice over, and moves are
   held for up to a minute so dragging a morning about is one message and not a
   dozen. Only sessions the group has already been told about are mentioned when
@@ -43,10 +42,13 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
-  **Livestream links, if you want them.** Off for every event until switched
-  on: a session link in a message still meets the password gate, and a stream
-  address does not, so handing one to a group is a disclosure choice of its own
-  rather than something acquired by picking a volume.
+  **What each line says is yours.** Besides the title, tick what a session
+  carries: room, track, speakers, format, tags, livestream links. They land in
+  that order and a session shows only what it has — no format picked, no format
+  shown. Livestream links are the only one off in the default set and the only
+  one that publishes something the password gate would otherwise hold: a
+  session link in a message still asks for the event password, a stream address
+  does not.
 
   Drafts, deleted sessions and archived events are never announced, and the
   connection never travels in an export. What a connected group can see is in

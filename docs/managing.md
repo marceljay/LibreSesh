@@ -135,8 +135,20 @@ Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-Each session in it is a line — the title, and who is giving it — with a second
-line listing its streams when you have those switched on.
+**What each line says** is yours. Each session in a message is one line, and
+besides the title — always there — you tick what it carries: **Room**,
+**Track**, **Speakers**, **Format**, **Tags**, **Livestream links**. They land
+in that order, and a session shows only what it has: no format picked, no
+format shown.
+
+```
+Main Hall · Practice · Scaling an unconference, by Ada Lovelace [Workshop] #openspace
+Stream: Main camera
+```
+
+Livestream links are the one tick that publishes something the password gate
+would otherwise hold — they add a second line, and anyone who can see the group
+can watch. Everything else is already in the message in some form.
 
 **The morning message** goes out at the time you set, on the venue's clock. It
 is one line a session for the whole day — no speakers, no links to streams,
@@ -157,12 +169,6 @@ so dragging a morning about is one message rather than a dozen, and only
 sessions the group has already been told about are mentioned: announcing the
 move of a session nobody knew existed would disclose it. Repeating a session
 across days announces nothing.
-
-**Livestreams.** Off unless you turn it on. With it on, a session that carries
-a stream gets that link in the announcement, under the speakers. Worth knowing
-before you do: the session link in a message still asks for the event password,
-and a stream address does not — anyone who can see the group, or anyone they
-forward the message to, can watch.
 
 **Example** shows exactly what these settings would post, drawn from your own
 schedule. Use it — this is the one screen in LibreSesh whose effect you cannot

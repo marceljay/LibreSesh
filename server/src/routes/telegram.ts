@@ -9,7 +9,9 @@ import { limit } from '../ratelimit.js';
 import type { TelegramStatus } from '../shared/types.js';
 import {
   escapeHtml,
+  FIELDS,
   MODES,
+  parseFields,
   modeOf,
   parseTriggers,
   resolveToken,
@@ -40,7 +42,7 @@ function status(ctx: Ctx, event: EventRow): TelegramStatus {
     mode: modeOf(triggers),
     triggers,
     leadMin: event.telegram_lead_min,
-    livestreams: event.telegram_livestreams === 1,
+    fields: parseFields(event.telegram_fields),
     digestMin: event.telegram_digest_min,
     bindCode: event.telegram_bind_code,
     bindExpires: event.telegram_bind_expires,
@@ -141,10 +143,12 @@ export function telegramRoutes(ctx: Ctx): Router {
         .prepare('UPDATE events SET telegram_lead_min = ? WHERE id = ?')
         .run(body.leadMin, event.id);
     }
-    if (body.livestreams !== undefined) {
+    if (body.fields !== undefined) {
+      // Stored in our order, not the order they arrived in, so the column reads
+      // the same whatever a client sends and `sameSet` is never needed here.
       ctx.db
-        .prepare('UPDATE events SET telegram_livestreams = ? WHERE id = ?')
-        .run(body.livestreams ? 1 : 0, event.id);
+        .prepare('UPDATE events SET telegram_fields = ? WHERE id = ?')
+        .run(JSON.stringify(FIELDS.filter((f) => body.fields!.includes(f))), event.id);
     }
     if (body.digestMin !== undefined) {
       ctx.db

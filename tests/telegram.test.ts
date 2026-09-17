@@ -4,6 +4,7 @@ import type { TelegramStatus } from '../server/src/shared/types.js';
 import {
   activeTokens,
   announceableSession,
+  parseFields,
   Announcer,
   daySessions,
   MODES,
@@ -116,14 +117,20 @@ describe('rendering a slot', () => {
       id: 1,
       title: 'Scaling <an> unconference',
       room: 'Main Hall',
+      track: 'Practice',
       speakers: ['Ada Lovelace'],
+      format: 'Workshop',
+      tags: ['facilitation', 'open space'],
       livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
     },
     {
       id: 2,
       title: 'Hallway track',
       room: 'Room 2',
+      track: '',
       speakers: ['Grace Hopper', 'Alan Turing'],
+      format: '',
+      tags: [],
       livestreams: [],
     },
   ];
@@ -137,11 +144,45 @@ describe('rendering a slot', () => {
     expect(text).toContain('Hallway track');
   });
 
-  it('is a line a session: the title, and who is giving it', () => {
+  it('is the title alone when the event has ticked no fields', () => {
     const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
-    expect(text).toContain('<b>Hallway track</b>, by Grace Hopper, Alan Turing');
+    expect(text).toContain('<b>Hallway track</b>');
+    expect(text).not.toContain('by Grace Hopper');
+    expect(text).not.toContain('Main Hall');
     // Four lines a session made a five-room slot a message nobody finishes.
     expect(text.split('\n').filter((l) => l.trim() !== '')).toHaveLength(3);
+  });
+
+  it('composes the ticked fields onto the one line, in our order', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
+      'room',
+      'track',
+      'speakers',
+      'format',
+      'tags',
+    ]);
+    expect(text).toContain(
+      'Main Hall · Practice · <b>Scaling &lt;an&gt; unconference</b>, ' +
+        'by Ada Lovelace [Workshop] #facilitation #openspace',
+    );
+    // A session shows only what it has: no track, no format, no tags on this one.
+    expect(text).toContain('Room 2 · <b>Hallway track</b>, by Grace Hopper, Alan Turing');
+  });
+
+  it('drops a field the event has not ticked, whatever the session carries', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, ['format']);
+    expect(text).toContain('[Workshop]');
+    expect(text).not.toContain('Main Hall');
+    expect(text).not.toContain('by Ada Lovelace');
+    expect(text).not.toContain('#facilitation');
+  });
+
+  it('keeps an unknown field name out of the stored set', () => {
+    expect(parseFields('["room","nonsense","speakers"]')).toEqual(['room', 'speakers']);
+    expect(parseFields('not json')).toEqual([]);
+    expect(parseFields(null)).toEqual([]);
+    // Stored in render order, however it arrived.
+    expect(parseFields('["speakers","room"]')).toEqual(['room', 'speakers']);
   });
 
   it('escapes a title rather than letting it become markup', () => {
@@ -174,7 +215,7 @@ describe('rendering a slot', () => {
     expect(silent).not.toContain('stream.example');
     expect(silent).not.toContain('Stream:');
 
-    const [loud] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, true);
+    const [loud] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, ['livestreams']);
     expect(loud).toContain('Stream: <a href="https://stream.example/main">Main camera</a>');
     // A session with no stream gains no second line.
     expect(loud.match(/Stream:/g)).toHaveLength(1);
@@ -190,7 +231,7 @@ describe('rendering a slot', () => {
         ],
       },
     ];
-    const [text] = renderUpNext(startsAt, 'Europe/Berlin', twice, () => null, true);
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', twice, () => null, ['livestreams']);
     expect(text).toContain(
       'Stream: <a href="https://stream.example/main">Main camera</a>, ' +
         '<a href="https://stream.example/bsl">Interpreted</a>',
@@ -202,7 +243,10 @@ describe('rendering a slot', () => {
       id: i,
       title: `A session with a fairly long title, number ${i}`.repeat(2),
       room: `Room ${i}`,
+      track: '',
       speakers: ['Someone With A Name'],
+      format: '',
+      tags: [],
       livestreams: [],
     }));
     const texts = renderUpNext(startsAt, 'Europe/Berlin', many, () => null);
@@ -455,7 +499,10 @@ describe('the morning digest', () => {
           id: 1,
           title: 'Scaling an unconference',
           room: 'Main Hall',
+          track: '',
           speakers: ['Ada Lovelace'],
+          format: '',
+          tags: [],
           livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
           startsAt: at(DAY_ONE, 600),
         },
@@ -605,8 +652,8 @@ describe('a session added and a session moved', () => {
       .prepare(`UPDATE events SET telegram_triggers = '["placed"]' WHERE id = ?`)
       .run(eventId);
     const posted: string[] = [];
-    vi.spyOn(globalThis, 'fetch').mockImplementation((_url: unknown, init?: RequestInit) => {
-      posted.push(String(init?.body ?? ''));
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url: string | URL | Request, init?) => {
+      posted.push(String((init?.body as string) ?? ''));
       return Promise.resolve(
         new Response(JSON.stringify({ ok: true, result: {} }), {
           headers: { 'content-type': 'application/json' },
@@ -647,7 +694,10 @@ describe('a session added and a session moved', () => {
           id: 1,
           title: 'First',
           room: 'Main Hall',
+          track: '',
           speakers: [],
+          format: '',
+          tags: [],
           livestreams: [],
           startsAt: at(DAY_ONE, 600),
         },
@@ -716,15 +766,26 @@ describe('the Telegram settings routes', () => {
     await admin.patch('/api/e/testconf/telegram').send({ digestMin: -1 }).expect(400);
   });
 
-  it('carries livestream links only when switched on, and never by default', async () => {
+  it('starts at the title and its speakers, and never at livestreams', async () => {
     const before = (await admin.get('/api/e/testconf/telegram').expect(200)).body as {
-      livestreams: boolean;
+      fields: string[];
     };
-    expect(before.livestreams).toBe(false);
-    const after = (
-      await admin.patch('/api/e/testconf/telegram').send({ livestreams: true }).expect(200)
-    ).body as { livestreams: boolean };
-    expect(after.livestreams).toBe(true);
+    // A stream address leaves the password gate, so it is never a default.
+    expect(before.fields).toEqual(['speakers']);
+  });
+
+  it('stores the ticked fields in render order, and refuses a name it does not know', async () => {
+    const body = (
+      await admin
+        .patch('/api/e/testconf/telegram')
+        .send({ fields: ['tags', 'room', 'livestreams'] })
+        .expect(200)
+    ).body as { fields: string[] };
+    expect(body.fields).toEqual(['room', 'tags', 'livestreams']);
+    await admin
+      .patch('/api/e/testconf/telegram')
+      .send({ fields: ['nonsense'] })
+      .expect(400);
   });
 
   it('refuses a lead time outside the sane range', async () => {

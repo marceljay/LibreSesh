@@ -164,10 +164,14 @@ message bodies do not.
 session link in a message is a URL to the gate: following it asks for the event
 password. A stream address is not — it is frequently the one unguessable thing
 standing between a stranger and the room, and posting it into a group publishes
-it to everyone there and to anyone the message is forwarded to. So carrying
-them is its own setting (migration 024), off for every event including one
-already announcing, and the panel says what it costs in front of the control.
-Turning it off stops the next message and does nothing about the last one.
+it to everyone there and to anyone the message is forwarded to.
+
+So it is one of the message fields an organiser ticks (migration 027, which
+folded migration 024's column into that set), it is the only one of them off in
+the default set, and its warning sits on the checkbox rather than in a tooltip
+somewhere else. Everything else those fields add — room, track, speakers,
+format, tags — is already disclosed by the message that carries it. Turning the
+tick off stops the next message and does nothing about the last one.
 
 A posted message is **not recallable by this app** — Disconnect stops the next
 one and changes nothing about the last one. `/revoke` in BotFather is the only

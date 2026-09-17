@@ -32,20 +32,26 @@ const session = (over: Partial<SessionDto>): SessionDto =>
     endsAt: '2099-06-01T08:30:00.000Z',
     speakers: [{ id: 1, name: 'Ada Lovelace' }],
     livestreams: [],
+    trackId: null,
+    formatId: null,
+    tagIds: [],
     draft: false,
     ...over,
   }) as SessionDto;
 
-const show = (mode: string, sessions: SessionDto[] = [session({})], livestreams = false) =>
+const show = (mode: string, sessions: SessionDto[] = [session({})], fields: string[] = []) =>
   render(
     <TelegramPreview
       mode={mode}
       leadMin={15}
-      livestreams={livestreams}
+      fields={fields}
       digest="08:00"
       event={event}
       sessions={sessions}
       rooms={rooms}
+      tracks={[{ id: 1, name: 'Practice' }]}
+      formats={[{ id: 1, name: 'Workshop' }]}
+      tags={[{ id: 1, name: 'facilitation' }]}
       onClose={() => {}}
     />,
   );
@@ -81,16 +87,6 @@ describe('the Telegram example', () => {
     expect(screen.getByText(/Moved on the schedule/)).toBeTruthy();
   });
 
-  it('previews a pitch on medium and an organiser’s session only on heavy', () => {
-    show('medium');
-    expect(screen.getByText(/Just pitched/)).toBeTruthy();
-    expect(screen.queryByText(/Just added/)).toBeNull();
-    cleanup();
-    show('heavy');
-    expect(screen.getByText(/Just pitched/)).toBeTruthy();
-    expect(screen.getByText(/Just added/)).toBeTruthy();
-  });
-
   it('draws the digest from the whole day, not one slot repeated', () => {
     show('medium', [
       session({}),
@@ -107,7 +103,7 @@ describe('the Telegram example', () => {
     show('light', streamed);
     expect(screen.queryByText(/Main camera/)).toBeNull();
     cleanup();
-    show('light', streamed, true);
+    show('light', streamed, ['livestreams']);
     expect(screen.getByText(/Main camera/)).toBeTruthy();
     expect(screen.getByText(/Stream:/)).toBeTruthy();
   });
@@ -119,12 +115,10 @@ describe('the Telegram example', () => {
   });
 
   it('draws the event’s own sessions, in the event’s timezone', () => {
-    show('light');
+    show('light', [session({})], ['speakers']);
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
-    // On the title's own line now, not a line of its own.
-    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
   });
 
   it('puts every room of one start time in the same message', () => {
@@ -136,9 +130,32 @@ describe('the Telegram example', () => {
     expect(screen.getByText('Hallway track')).toBeTruthy();
   });
 
-  it('draws a session as one line, with its speakers on it', () => {
-    show('light');
+  it('draws only the fields the event has ticked', () => {
+    // The whole point of the modal: what is on screen is what the group gets.
+    show('light', [session({ trackId: 1, formatId: 1, tagIds: [1] })], []);
+    expect(screen.queryByText(/, by Ada Lovelace/)).toBeNull();
+    expect(screen.queryByText(/Main Hall/)).toBeNull();
+    cleanup();
+
+    show(
+      'light',
+      [session({ trackId: 1, formatId: 1, tagIds: [1] })],
+      ['room', 'track', 'speakers', 'format', 'tags'],
+    );
+    expect(screen.getByText(/Main Hall · Practice ·/)).toBeTruthy();
     expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
+    expect(screen.getByText(/\[Workshop\]/)).toBeTruthy();
+    expect(screen.getByText(/#facilitation/)).toBeTruthy();
+  });
+
+  it('previews a pitch on medium and an organiser’s session only on heavy', () => {
+    show('medium');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.queryByText(/Just added/)).toBeNull();
+    cleanup();
+    show('heavy');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.getByText(/Just added/)).toBeTruthy();
   });
 
   it('never previews a draft, because one is never posted', () => {
