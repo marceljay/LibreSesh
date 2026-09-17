@@ -1006,6 +1006,56 @@ Retention is 30 days once read, 90 unread, swept on write like `pruneAudit`
 rather than by a scheduler. Nothing leaves by mail, deliberately — see
 `_planning/specs/mentions-and-notifications.md`.
 
+## Telegram
+
+The one thing that leaves the building. §Notifications says nothing goes out by
+mail, and that still holds for anything addressed to a *person*; this is
+addressed to a *room*, and it is a publication an organiser opts into rather
+than a message anyone receives by default (`server/src/telegram.ts`, migration
+023, and `_planning/specs/telegram-announcements.md`).
+
+Telegram is the first **transport**, not the feature. What an announcement is,
+when one exists and what must never become one are transport-neutral and live
+in `_planning/specs/announcements.md`; Nostr adapts the same rules. The loop
+below still sits inside `telegram.ts` because it is the only implementation —
+LIB-214 lifts it into `announcer.ts`, leaving rendering and the bot here.
+
+**The bot belongs to the event, not the instance.** An organiser pastes a token
+from BotFather and Telegram works, with no involvement from whoever deployed
+the instance and with the conference's own name on the bot.
+`TELEGRAM_BOT_TOKEN` survives only as a fallback for the single-tenant case.
+That makes `events.telegram_bot_token` the one plaintext credential in this
+database — every other secret is hashed or minted here, and a bot token cannot
+be hashed because it is replayed on every call. What that costs is enumerated
+in SECURITY.md. It means one `getUpdates` connection per distinct token, which
+is what `PollerPool` reconciles on each tick.
+
+**A bot is a token, not a program.** Telegram hosts no code and runs no
+scheduler on anyone's behalf, so the clock is ours: a `setInterval` beside the
+identity sweep in `index.ts`, reading SQLite directly. The destination is a
+**group**, not a broadcast channel — so the bot needs no admin rights to post,
+members can type commands at it, and the group's numeric id has to be
+*discovered* rather than configured, because a private group has no `@name`.
+That discovery is the `/bind <code>` flow, and it is the reason there is an
+inbound path at all. Inbound is `getUpdates` polling, not a webhook: no public
+URL, no secret route, one code path in dev and production. Only one process may
+hold a token, so two instances must not share a bot.
+
+**Two rules that look like details and are not.** Announcements select a
+*range* — `starts_at - lead <= now < starts_at` — rather than firing as the
+window opens, because a pitch placed at 13:40 to run at 13:45 has already
+missed an edge trigger before it existed, and that case is the whole feature. A
+slot is marked as sent *before* the send, not after: an accepted message whose
+call then times out would otherwise repost, and a duplicate in a group is
+permanent where a miss is not. The record of what has been said is an in-memory
+`Set`, so a restart inside a lead window reposts that slot — an accepted
+failure, written down rather than designed around.
+
+**Announcing on a change hooks the write path, never the broker.**
+`Broker.publish` returns early when nobody is subscribed, so a bot hooked there
+would post only while somebody had a tab open. Same lesson as §Notifications:
+the transport is not the record.
+
 ## Frontend
 
 Vite + React + Tailwind, no state library. `useEventData` holds the bundle in a

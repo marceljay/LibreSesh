@@ -19,6 +19,10 @@ export const ADMIN_TABS = [
   { id: 'people', label: 'People' },
   { id: 'permissions', label: 'Permissions' },
   { id: 'settings', label: 'Settings' },
+  // Everywhere the schedule goes that is not this app. Telegram today; the
+  // shape is the same for whatever is next, which is why it is a tab rather
+  // than a section of Settings.
+  { id: 'publish', label: 'Publish' },
   { id: 'backup', label: 'Backup' },
   { id: 'trash', label: 'Trash' },
   { id: 'audit', label: 'Audit' },
@@ -146,6 +150,41 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     tab: 'settings',
     keywords: 'invite qr code share join link poster',
     anchor: 'invite',
+  },
+  {
+    id: 'telegram',
+    label: 'Telegram',
+    tab: 'publish',
+    keywords: 'telegram group bot announce chat message notify bind publish broadcast',
+    anchor: 'telegram',
+  },
+  {
+    id: 'telegram-bot',
+    label: 'Bot token',
+    tab: 'publish',
+    keywords: 'telegram botfather token connect bot',
+    anchor: 'telegram',
+  },
+  {
+    id: 'telegram-mode',
+    label: 'How much it says',
+    tab: 'publish',
+    keywords: 'telegram loud quiet noise up next mode silent off',
+    anchor: 'telegram',
+  },
+  {
+    id: 'telegram-lead',
+    label: 'How early it says it',
+    tab: 'publish',
+    keywords: 'telegram lead minutes before warning reminder',
+    anchor: 'telegram',
+  },
+  {
+    id: 'telegram-livestreams',
+    label: 'Livestreams',
+    tab: 'publish',
+    keywords: 'telegram livestream stream link video watch remote online',
+    anchor: 'telegram',
   },
   {
     id: 'archive',

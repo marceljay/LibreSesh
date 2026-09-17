@@ -189,6 +189,14 @@ export const SUMMARIES: Record<string, string> = {
   'PATCH /api/e/{slug}/settings': 'Edit the event itself. Organisers',
   'GET /api/e/{slug}/stream': 'Server-Sent Events: every change to this event',
   'POST /api/e/{slug}/tags': 'Add a tag. Organisers',
+  'GET /api/e/{slug}/telegram':
+    'Which bot and group this event announces through, and how loudly. Never the token. Organisers',
+  'PATCH /api/e/{slug}/telegram':
+    'Set the bot token, what it announces, how early, and whether livestream links go too. Organisers',
+  'DELETE /api/e/{slug}/telegram': 'Disconnect the Telegram group. Keeps the bot. Organisers',
+  'POST /api/e/{slug}/telegram/code':
+    'Mint the single-use code to send as `/bind <code>` in the group. Organisers',
+  'POST /api/e/{slug}/telegram/test': 'Send a test message to the connected group. Organisers',
   'PATCH /api/e/{slug}/tags/{id}': 'Edit a tag. Organisers',
   'DELETE /api/e/{slug}/tags/{id}': 'Remove a tag. Organisers',
   'POST /api/e/{slug}/tracks': 'Add a track. Organisers',

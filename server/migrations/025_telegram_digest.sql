@@ -1,0 +1,11 @@
+-- The morning digest: the whole day in one message, at a time the event picks.
+--
+-- Local minutes of day, the same shape as `breaks`, because 08:00 means eight
+-- o'clock at the venue and not eight o'clock UTC. An event in Kathmandu and one
+-- in Berlin both want breakfast.
+--
+-- Default 480 — 08:00. Storing the hour rather than hard-coding it costs one
+-- column and settles the argument about whether a digest belongs before or
+-- after the first session, which is a property of the conference and not of
+-- this app.
+ALTER TABLE events ADD COLUMN telegram_digest_min INTEGER NOT NULL DEFAULT 480;

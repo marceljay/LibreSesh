@@ -394,6 +394,7 @@ const fieldProblem = (field: string, error: NumberFieldError): string =>
   `${field}: ${numberFieldMessage(error)}`;
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
+import { AdminTelegram } from './AdminTelegram';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminSearch } from './AdminSearch';
 import { ADMIN_TABS, type AdminSetting, type AdminTabId } from '../lib/adminSearch';
@@ -1236,13 +1237,13 @@ export function AdminPage() {
       <div className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <h1 className="text-lg font-semibold tracking-tight">Manage {event.name}</h1>
-          {/* Above the tabs, because it is the way past them: seven tabs is seven
+          {/* Above the tabs, because it is the way past them: eight tabs is eight
             places a setting could be, and knowing what you want to change says
             nothing about which. */}
           <AdminSearch onPick={openSetting} />
         </div>
 
-        {/* Manage is seven unrelated jobs on one page. Tabs keep each of them a
+        {/* Manage is eight unrelated jobs on one page. Tabs keep each of them a
           screenful, and the choice lives in the URL so a reload — or a link
           sent to a co-organiser — lands on the same one. */}
         <div
@@ -2097,6 +2098,21 @@ export function AdminPage() {
                   </SecondaryButton>
                 )}
               </Section>
+            </SettingAnchor>
+          </div>
+        )}
+
+        {/* Everywhere the schedule goes that is not this app. One connection
+          today; the next one lands beside it rather than growing Settings. */}
+        {tab === 'publish' && (
+          <div role="tabpanel" id="admin-panel-publish" aria-labelledby="admin-tab-publish">
+            <SettingAnchor id="telegram" flashed={flashed}>
+              <AdminTelegram
+                slug={slug}
+                event={event}
+                sessions={bundle.sessions}
+                rooms={bundle.rooms}
+              />
             </SettingAnchor>
           </div>
         )}

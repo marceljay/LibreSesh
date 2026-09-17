@@ -55,6 +55,23 @@ export interface Config {
    */
   buildCommit: string | null;
   /**
+   * The bot this instance announces through, or null for an instance that does
+   * not. Deliberately an env var and not a column: it is a credential, and
+   * anyone holding it can post as the bot into every group the bot is in. A
+   * column would be data, and data is exported, cloned and backed up.
+   *
+   * One bot per instance. Only one process may hold a token on `getUpdates` —
+   * a second gets 409 — so a staging instance sharing production's token means
+   * two pollers stealing each other's commands.
+   */
+  telegramBotToken: string | null;
+  /**
+   * Where this instance answers from, for links in announcements. The tick has
+   * no request to read a host off, unlike the iCal route. Without it the
+   * announcements simply carry no links.
+   */
+  publicUrl: string | null;
+  /**
    * Encrypts secrets the server must read back in clear (a Nostr signing
    * key, a bot token). Defaults to the cookie secret so there is one secret
    * to manage; `SECRETS_AT_REST_KEY` keeps the two lives apart so the cookie
@@ -63,12 +80,6 @@ export interface Config {
   atRestSecret: string;
   /** The old at-rest secret, for one boot after a rotation: blobs made under it are re-encrypted. */
   atRestSecretPrevious?: string;
-  /**
-   * Origin every published link is built from (`https://sesh.example`).
-   * Unset means no links leave the instance — better than a `localhost`
-   * address on a public relay.
-   */
-  publicUrl?: string;
   /** Relay list a newly enabled event starts with (D6). */
   nostrDefaultRelays: string[];
 }
@@ -172,9 +183,10 @@ export function loadConfig(): Config {
     seedDemoEvent: process.env.SEED_DEMO_EVENT !== '0',
     allowEphemeralDb: !isProd || process.env.ALLOW_EPHEMERAL_DB === '1',
     buildCommit: buildCommit(),
+    telegramBotToken: (process.env.TELEGRAM_BOT_TOKEN ?? '').trim() || null,
+    publicUrl: ((process.env.PUBLIC_URL ?? '').trim() || null)?.replace(/\/+$/, '') ?? null,
     atRestSecret: process.env.SECRETS_AT_REST_KEY || cookie.secret,
     atRestSecretPrevious: process.env.SECRETS_AT_REST_KEY_PREVIOUS || undefined,
-    publicUrl: process.env.PUBLIC_URL?.trim().replace(/\/+$/, '') || undefined,
     nostrDefaultRelays: list(process.env.NOSTR_DEFAULT_RELAYS),
   };
 }

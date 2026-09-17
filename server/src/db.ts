@@ -34,8 +34,33 @@ export interface EventRow {
    *  board rather than deleting it — see migration 018. */
   pitches_enabled: number;
   created_at: string;
+  /** The Telegram group this event announces into, or null. TEXT because a
+   *  supergroup id is a large negative number — see migration 023. */
+  telegram_chat_id: string | null;
+  /** The supergroup topic to post in, captured at bind time; null for a group
+   *  without topics. */
+  telegram_topic_id: number | null;
+  /** JSON array of trigger names. The mode (light/medium/heavy) is derived
+   *  from this, never stored beside it. */
+  telegram_triggers: string;
+  /** How long before a session starts its slot is announced. */
+  telegram_lead_min: number;
+  /** Single-use code an organiser says in the group as `/bind <code>`. */
+  telegram_bind_code: string | null;
+  telegram_bind_expires: string | null;
+  /** This event's own bot, supplied by its organiser; null falls back to the
+   *  instance's. A plaintext credential — see migration 023 and SECURITY.md.
+   *  Never leaves the server: not in a DTO, not in an export. */
+  telegram_bot_token: string | null;
+  /** Whether an announcement carries each session's livestream links. Off by
+   *  default: a stream URL is public the moment it is posted, where a session
+   *  link still meets the gate — see migration 024. */
+  telegram_livestreams: number;
+  /** Local minute of day the morning digest goes out. Default 480 — 08:00 at
+   *  the venue, never UTC. See migration 025. */
+  telegram_digest_min: number;
   /** 1 = the programme is published to Nostr under the event's own key — see
-   *  migration 023. */
+   *  migration 026. */
   nostr_enabled: number;
   /** The event's Nostr identity, lowercase hex; null until first enabled. */
   nostr_pubkey: string | null;
@@ -48,7 +73,7 @@ export interface EventRow {
   nostr_triggers: string;
 }
 
-/** One row of the Nostr publish queue — see migration 023. */
+/** One row of the Nostr publish queue — see migration 026. */
 export interface NostrPublishedRow {
   event_id: number;
   entity: 'session' | 'calendar' | 'profile';
@@ -175,7 +200,7 @@ export interface SessionRow {
   /** 1 = kept off the schedule: seen only by who has a hand in it, and
    *  claiming no room or time until published — see migration 022. */
   draft: number;
-  /** 1 = the author or an organiser kept this one off Nostr — see migration 023. */
+  /** 1 = the author or an organiser kept this one off Nostr — see migration 026. */
   nostr_optout: number;
 }
 

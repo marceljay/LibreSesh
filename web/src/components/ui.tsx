@@ -150,9 +150,14 @@ export function Field({
   hint,
   error,
   htmlFor,
+  action,
   children,
 }: {
   label: string;
+  /** Something small beside the label — an ⓘ, a "why?" — for a field whose
+   *  name cannot carry the whole explanation and whose hint should not try.
+   *  Absent, the label renders exactly as it always did. */
+  action?: ReactNode;
   hint?: string;
   /** A sentence, present only when the field is wrong. Sets the invalid state
    *  and is announced; absent is a field that is simply not-yet-filled. */
@@ -169,12 +174,21 @@ export function Field({
   return (
     <FieldContext.Provider value={{ id, describedBy, invalid: Boolean(error) }}>
       <div className="min-w-0">
-        <label
-          htmlFor={id}
-          className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-300"
-        >
-          {label}
-        </label>
+        {action ? (
+          <div className="mb-1 flex items-center gap-1">
+            <label htmlFor={id} className="text-xs font-medium text-stone-600 dark:text-stone-300">
+              {label}
+            </label>
+            {action}
+          </div>
+        ) : (
+          <label
+            htmlFor={id}
+            className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-300"
+          >
+            {label}
+          </label>
+        )}
         {children}
         {hint && (
           <p id={hintId} className={`mt-1 ${hintClass}`}>
