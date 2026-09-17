@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireWritable } from '../auth.js';
 import { audit, newBatch } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import { getVisibleSession, publishSession } from '../drafts.js';
 import type { Role } from '../shared/types.js';
@@ -10,7 +11,7 @@ import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
 import { isAMove, notifyMentionsIn, notifySessionAudience } from '../notifications.js';
-import { announceQuietly } from '../telegram.js';
+import { announceQuietly } from '../announcer.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -140,8 +141,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at, draft)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, draft, nostr_optout)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           req.event.id,
@@ -159,6 +160,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           now,
           now,
           draft ? 1 : 0,
+          body.nostrOptOut ? 1 : 0,
         );
       const newId = Number(info.lastInsertRowid);
       setTags(ctx, newId, tagIds);
@@ -175,6 +177,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: id,
     });
+    markDirty(ctx.db, req.event.id, id);
     publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
     // Beside the audit row, not on the broker: `Broker.publish` returns early
     // with no subscribers, so a bot hooked there would post only while somebody
@@ -346,6 +349,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
       return dto;
     });
@@ -395,6 +399,12 @@ export function sessionRoutes(ctx: Ctx): Router {
     const nextDraft = body.draft ?? existing.draft === 1;
     const draftChanged = nextDraft !== (existing.draft === 1);
     if (draftChanged) assertMayMutate(matrix, req.role, req.identity.id, existing);
+    // Keeping a session off Nostr is the author's and the organiser's call,
+    // held to the same rule as a draft: a claim on the session, not on its words.
+    const nextOptOut = body.nostrOptOut ?? existing.nostr_optout === 1;
+    if (nextOptOut !== (existing.nostr_optout === 1)) {
+      assertMayMutate(matrix, req.role, req.identity.id, existing);
+    }
     const publishing = draftChanged && !nextDraft;
 
     /**
@@ -562,7 +572,8 @@ export function sessionRoutes(ctx: Ctx): Router {
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
                   blocks_open_booking = ?, title = ?, description = ?,
-                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?, draft = ?
+                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?, draft = ?,
+                  nostr_optout = ?
             WHERE id = ?`,
         )
         .run(
@@ -578,6 +589,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           window.endsAt.toISOString(),
           now,
           nextDraft ? 1 : 0,
+          nextOptOut ? 1 : 0,
           existing.id,
         );
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
@@ -620,6 +632,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch: editBatch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.updated', now, d);
 
       const was = before.get(id);
@@ -718,6 +731,7 @@ export function sessionRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: existing.id,
     });
+    markDirty(ctx.db, req.event.id, existing.id);
     ctx.broker.publish(req.event.slug, 'session.deleted', { id: existing.id });
     // Its audience was told when it came off the schedule; deleting a draft
     // cancels nothing anyone could still see.
@@ -755,6 +769,7 @@ export function sessionRoutes(ctx: Ctx): Router {
         entityId: id,
         batch,
       });
+      markDirty(ctx.db, req.event.id, id);
       publishSession(ctx.db, ctx.broker, req.event, 'session.updated', row, dto);
       return dto;
     });

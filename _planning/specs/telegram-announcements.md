@@ -247,6 +247,17 @@ one per message.
 
 ### 4.2 Announcer
 
+**Since 2026-09-17 the loop is shared.** Everything below about *when* —
+the range, the mark-then-send ordering, the in-memory record, the digest
+window, `added` from the write path, `changed` coalesced over a tick — now
+lives in `server/src/announcer.ts` per [`announcements.md`](announcements.md),
+with Telegram as one transport (`telegramTransport` in `telegram.ts`: which
+events and triggers it serves, its lead and digest hour, and the rendering).
+The `Announcer` exported from `telegram.ts` is the shared announcer with
+Telegram as its only transport, kept for the poller's `/next` and for the
+tests. The description that follows is still accurate as a description of the
+behaviour.
+
 **Purpose.** Decide which slots are due and deliver them.
 
 **Processing.** Per tick, for each event with a binding and `archived = 0`,

@@ -1,4 +1,5 @@
 import { audit } from './audit.js';
+import { markDirtyForPerson } from './nostr/queue.js';
 import type { Db, PersonRow, SessionRow } from './db.js';
 import { settleSpeakerCodeAfterMerge } from './deviceLink.js';
 import { publishSession } from './drafts.js';
@@ -92,6 +93,8 @@ export function mergePeople(
       rekeyed = rekeyIdentityWork(db, eventId, loser.identity_id, survivor.identity_id);
     }
   })();
+  // The survivor's name now stands on every session the loser was credited on.
+  markDirtyForPerson(db, eventId, survivor.id);
 
   return { movedSessions, rekeyed };
 }

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { RoomRow } from '../db.js';
 import { conflict, notFound } from '../errors.js';
@@ -86,6 +87,7 @@ export function roomRoutes(ctx: Ctx): Router {
       entity: 'room',
       entityId: room.id,
     });
+    markDirty(ctx.db, req.event.id);
     const dto = toRoomDto(room);
     ctx.broker.publish(req.event.slug, 'room.updated', dto);
     res.json(dto);
@@ -111,6 +113,7 @@ export function roomRoutes(ctx: Ctx): Router {
       entity: 'room',
       entityId: room.id,
     });
+    markDirty(ctx.db, req.event.id);
     ctx.broker.publish(req.event.slug, 'room.deleted', { id: room.id });
     res.status(204).end();
   });

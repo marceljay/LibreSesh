@@ -121,6 +121,8 @@ export interface EventDto extends EventSummary {
    * turning it back on brings it back untouched.
    */
   pitchesEnabled: boolean;
+  /** The programme is published to Nostr: the forms say so and offer the opt-out. */
+  nostrEnabled: boolean;
 }
 
 /** A person as they appear on somebody else's record: id and name, nothing
@@ -313,6 +315,10 @@ export interface SessionDto {
    *  credited on it are ever sent one, and it claims no room or time: the
    *  clash and hold rules skip it until it is published. */
   draft: boolean;
+  /** Kept off Nostr by its author or an organiser. */
+  nostrOptOut: boolean;
+  /** Where it is on Nostr once a relay has accepted it; null otherwise. */
+  nostr: { naddr: string } | null;
 }
 
 export interface ContributionDto {
@@ -342,6 +348,8 @@ export interface ProposalDto {
   interestCount: number;
   /** Whether the requesting identity is one of them. */
   interested: boolean;
+  /** Kept off Nostr; the session it becomes inherits this. */
+  nostrOptOut: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -539,6 +547,8 @@ export interface EventExport {
     starCount: number;
     /** Only when set: a published session reads exactly as it always has. */
     draft?: true;
+    /** Only when set: the author's choice to keep it off Nostr travels. */
+    nostrOptOut?: true;
   }[];
   proposals?: {
     id: number;
@@ -552,6 +562,7 @@ export interface EventExport {
     createdAt: string;
     updatedAt: string;
     interestCount: number;
+    nostrOptOut?: true;
   }[];
   contributions?: {
     id: number;
@@ -741,6 +752,36 @@ export interface TelegramStatus {
   /** A live bind code, if one has been minted and not yet used or expired. */
   bindCode: string | null;
   bindExpires: string | null;
+}
+
+/** The six things an announcer transport can post about (`announcer.ts`). */
+export type NostrTrigger = 'up_next' | 'digest' | 'added' | 'changed' | 'pitched' | 'placed';
+
+/** One relay's standing, derived from the publish queue. */
+export interface NostrRelayStatus {
+  url: string;
+  /** Rows this relay has not accepted the latest version of. */
+  pending: number;
+  /** Its latest refusal, as the relay worded it; null when it has none. */
+  lastError: string | null;
+}
+
+/** What `GET /e/:slug/nostr` answers. The private key is never in it. */
+export interface NostrStatus {
+  enabled: boolean;
+  /** The event's identity on Nostr, `npub1…`; null until first enabled. */
+  npub: string | null;
+  relays: string[];
+  triggers: NostrTrigger[];
+  counts: { published: number; dirty: number; pending: number; deleted: number };
+  relayStatus: NostrRelayStatus[];
+}
+
+/** What a relay said to *Send a test*. */
+export interface NostrRelayAnswer {
+  url: string;
+  ok: boolean;
+  message: string;
 }
 
 /** What `GET /e/:slug/login-health` answers (D3 §1c). */

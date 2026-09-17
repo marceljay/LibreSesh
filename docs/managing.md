@@ -168,6 +168,54 @@ from an archived event. Notes, questions and stars. The links in the messages
 still ask for the event password — the messages themselves do not, so treat
 connecting a group as publishing the programme to everyone in it.
 
+## Nostr
+
+**Manage Event → Publish → Nostr.** The event publishes its programme to
+Nostr under a key of its own, so anyone with a Nostr client can follow it:
+each session is a calendar entry that stays current as the schedule changes,
+and short notes go out when a pitch is placed, a slot is about to start, or a
+day begins.
+
+**Read the list, then switch it on.** The switch sits behind a list of what
+leaves this instance — titles, descriptions, times, rooms, speaker names,
+livestream links, and for pitches the pitcher's name — and a tick. Everything
+already written goes out too. Relays keep copies, and asking them to delete
+something is a request they may ignore, which is why the list comes first.
+
+**The identity.** Switching on makes the event a keypair. The public half is
+the `npub` people follow; **Copy** it, or **Open on njump** to see it in a
+browser. It belongs to the event, not to anyone in it, and it survives
+switching publishing off and on. The private half stays on the server,
+encrypted. **Export key** shows it once so you can keep a copy — if the
+instance's secret ever changes, the key is gone with it, and nothing already
+published can be updated or retracted. **Import key** replaces it with one you
+made elsewhere; that makes the event a different identity, and followers of
+the old one stop seeing it.
+
+**Relays.** One address per line, `wss://…`, up to ten. A new event starts
+with whatever list the instance provides. A relay added later receives the
+whole programme; one taken off the list is asked for nothing more, and what
+it had not accepted is forgotten. The **Delivery** table shows, per relay, what it has not
+accepted yet and its latest refusal in its own words; **Send a test** asks
+each relay now and shows what it said, without posting anything followers
+would see.
+
+**What it posts.** Six short notes, each a checkbox: a pitch placed on the
+grid, a slot about to start, the day's programme each morning, a session
+added, a session moved, a pitch made on the board. **Example** beside each
+shows the note as it would read today, from your own schedule. The calendar
+entries are kept current whatever is ticked.
+
+**Opting a session out.** While publishing is on, the session and pitch forms
+say so and carry a **Publish to Nostr** box, ticked by default. Its author or
+an organiser can untick it; a published session then gets a deletion request
+on the next pass, and no note names it or the pitch from then on.
+
+**Switching off** stops updates and notes and removes nothing. **Retract
+everything** asks every relay to delete every entry and the profile, then
+switches off; switching on again publishes the programme afresh under the
+same identity.
+
 ## Importing a schedule from JSON
 
 `POST /api/events/import` builds a whole event — rooms, tracks, tags and a

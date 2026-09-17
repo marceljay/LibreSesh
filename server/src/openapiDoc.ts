@@ -140,6 +140,13 @@ export const SUMMARIES: Record<string, string> = {
   'POST /api/e/{slug}/nostr/import-key':
     'Replace the event’s signing key with an nsec made elsewhere. Organisers',
   'POST /api/e/{slug}/nostr/export-key': 'The event’s signing key as an nsec. Organisers, audited',
+  'POST /api/e/{slug}/nostr/retract':
+    'Ask the relays to delete everything published, and stop. Organisers',
+  'POST /api/e/{slug}/nostr/resync': 'Republish every calendar event. Organisers',
+  'POST /api/e/{slug}/nostr/test':
+    'Republish the profile now and return each relay’s answer. Organisers',
+  'GET /api/e/{slug}/nostr/example':
+    'What one trigger would post as a note, rendered from this event’s schedule. Organisers',
   'POST /api/e/{slug}/formats': 'Add a session format. Organisers',
   'PATCH /api/e/{slug}/formats/{id}': 'Edit a session format. Organisers',
   'DELETE /api/e/{slug}/formats/{id}': 'Remove a session format. Organisers',

@@ -14,6 +14,7 @@ import {
   SecondaryButton,
   TextArea,
   TextInput,
+  Toggle,
 } from './ui';
 
 export interface ProposalModalProps {
@@ -24,6 +25,8 @@ export interface ProposalModalProps {
   canCreditOthers: boolean;
   tags: TagDto[];
   saving: boolean;
+  /** The event publishes to Nostr: say so above the form and offer the opt-out. */
+  nostrEnabled?: boolean;
   onCancel: () => void;
   onSave: (body: ProposalWrite) => void;
   onDelete?: () => void;
@@ -38,6 +41,7 @@ export function ProposalModal({
   canCreditOthers,
   tags,
   saving,
+  nostrEnabled = false,
   onCancel,
   onSave,
   onDelete,
@@ -55,6 +59,7 @@ export function ProposalModal({
     return !isAdmin && mine ? [mine.id] : [];
   });
   const [tagIds, setTagIds] = useState<number[]>(proposal?.tagIds ?? []);
+  const [publishToNostr, setPublishToNostr] = useState(!(proposal?.nostrOptOut ?? false));
   const [error, setError] = useState<string | null>(null);
 
   const save = () => {
@@ -71,6 +76,7 @@ export function ProposalModal({
           ? { speakerId: speaker[0] }
           : { speakerName: speaker[0] }),
       tagIds,
+      ...(nostrEnabled ? { nostrOptOut: !publishToNostr } : {}),
     });
   };
 
@@ -96,6 +102,17 @@ export function ProposalModal({
       }
     >
       <FormStack>
+        {nostrEnabled && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2 text-xs text-stone-600 dark:border-stone-700 dark:text-stone-300">
+            <span>This event publishes its programme and pitch board to Nostr.</span>
+            <Toggle
+              checked={publishToNostr}
+              onChange={setPublishToNostr}
+              label="Publish to Nostr"
+              title="A pitch placed on the grid keeps this choice"
+            />
+          </div>
+        )}
         <Field label="Title">
           <ControlShell>
             <TextInput

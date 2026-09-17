@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { atLeast, requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { announceQuietly } from '../announcer.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { Role } from '../shared/types.js';
 import type { ProposalRow } from '../db.js';
@@ -112,8 +114,9 @@ export function proposalRoutes(ctx: Ctx): Router {
           ctx.db
             .prepare(
               `INSERT INTO proposals
-                (event_id, title, description, speaker_id, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                (event_id, title, description, speaker_id, created_by, created_at, updated_at,
+                 nostr_optout)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             )
             .run(
               req.event.id,
@@ -123,6 +126,7 @@ export function proposalRoutes(ctx: Ctx): Router {
               req.identity.id,
               now,
               now,
+              body.nostrOptOut ? 1 : 0,
             ).lastInsertRowid,
         );
         setTags(newId, tagIds);
@@ -138,6 +142,9 @@ export function proposalRoutes(ctx: Ctx): Router {
         entityId: id,
       });
       ctx.broker.publish(req.event.slug, 'proposal.created', dto);
+      // Beside the audit row, never on the broker: a pitch is one act, said
+      // once, to whichever transports the event has `pitched` on.
+      announceQuietly(ctx.announcer.announcePitched(req.event, id));
 
       // The one kind addressed to a role rather than a person: organisers are
       // who acts on a pitch, and a board nobody looks at is the reason pitches
@@ -187,7 +194,8 @@ export function proposalRoutes(ctx: Ctx): Router {
         );
         ctx.db
           .prepare(
-            `UPDATE proposals SET title = ?, description = ?, speaker_id = ?, updated_at = ?
+            `UPDATE proposals SET title = ?, description = ?, speaker_id = ?, updated_at = ?,
+                    nostr_optout = ?
               WHERE id = ?`,
           )
           .run(
@@ -195,6 +203,7 @@ export function proposalRoutes(ctx: Ctx): Router {
             body.description ?? row.description,
             speakerId,
             new Date().toISOString(),
+            (body.nostrOptOut ?? row.nostr_optout === 1) ? 1 : 0,
             row.id,
           );
         if (body.tagIds) setTags(row.id, body.tagIds);
@@ -284,8 +293,8 @@ export function proposalRoutes(ctx: Ctx): Router {
             .prepare(
               `INSERT INTO sessions
                 (event_id, room_id, type, title, description, speaker,
-                 starts_at, ends_at, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)`,
+                 starts_at, ends_at, created_by, created_at, updated_at, nostr_optout)
+               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
             )
             .run(
               req.event.id,
@@ -299,6 +308,8 @@ export function proposalRoutes(ctx: Ctx): Router {
               row.created_by,
               now,
               now,
+              // Their choice about the pitch is their choice about the session.
+              row.nostr_optout,
             ).lastInsertRowid,
         );
         // And its speaker. A pitch names one person; the session it becomes
@@ -342,6 +353,8 @@ export function proposalRoutes(ctx: Ctx): Router {
         entity: 'proposal',
         entityId: row.id,
       });
+      markDirty(ctx.db, req.event.id, sessionId);
+      announceQuietly(ctx.announcer.announcePlaced(req.event, row.id, sessionId));
       ctx.broker.publish(req.event.slug, 'session.created', session);
       ctx.broker.publish(
         req.event.slug,

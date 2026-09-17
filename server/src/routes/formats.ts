@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { FormatRow } from '../db.js';
 import { conflict, notFound } from '../errors.js';
@@ -105,6 +106,7 @@ export function formatRoutes(ctx: Ctx): Router {
       entity: 'format',
       entityId: existing.id,
     });
+    markDirty(ctx.db, req.event.id);
     ctx.broker.publish(req.event.slug, 'format.updated', dto);
     res.json(dto);
   });
@@ -127,6 +129,7 @@ export function formatRoutes(ctx: Ctx): Router {
       entity: 'format',
       entityId: format.id,
     });
+    markDirty(ctx.db, req.event.id);
     ctx.broker.publish(req.event.slug, 'format.deleted', { id: format.id });
     res.status(204).end();
   });

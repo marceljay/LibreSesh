@@ -100,6 +100,20 @@ describe('nostr routes', () => {
     h.close();
   });
 
+  it('send a test answers 400 without a usable key; resync is audited', async () => {
+    const { h, admin } = await enabledEvent();
+    expect((await admin.post('/api/e/conf/nostr/resync')).status).toBe(204);
+    h.app.ctx.config.atRestSecret = 'rotated-without-previous';
+    const res = await admin.post('/api/e/conf/nostr/test');
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/secret has changed/);
+    const actions = (
+      h.db.prepare(`SELECT action FROM audit ORDER BY id`).all() as { action: string }[]
+    ).map((a) => a.action);
+    expect(actions).toContain('nostr_resync');
+    h.close();
+  });
+
   it('never serialises the key columns, and settings stay out of the export', async () => {
     const { h, admin } = await enabledEvent();
     const status = JSON.stringify((await admin.get('/api/e/conf/nostr').expect(200)).body);
@@ -124,6 +138,70 @@ describe('nostr routes', () => {
     ).toBe(400);
     const t = await admin.patch('/api/e/conf/nostr').send({ triggers: ['digest'] });
     expect(t.body.triggers).toEqual(['digest']);
+    h.close();
+  });
+
+  it('changing the relay list moves the queue with it', async () => {
+    const { h, eventId, admin } = await enabledEvent();
+    // Enable marked the calendar; make it a row one refusing relay still owes.
+    h.db
+      .prepare(
+        `UPDATE nostr_published
+            SET published_at = '2026-06-01T00:00:00.000Z', dirty_since = NULL, touched_at = NULL,
+                pending = '["wss://relay.test"]', tries = 3,
+                next_try = '2026-06-01T01:00:00.000Z', last_error = 'wss://relay.test: blocked'
+          WHERE event_id = ? AND entity = 'calendar'`,
+      )
+      .run(eventId);
+    await admin
+      .patch('/api/e/conf/nostr')
+      .send({ relays: ['wss://mine.test'] })
+      .expect(200);
+    const row = h.db
+      .prepare(
+        `SELECT pending, tries, next_try, last_error FROM nostr_published WHERE event_id = ?`,
+      )
+      .get(eventId) as {
+      pending: string;
+      tries: number;
+      next_try: string | null;
+      last_error: string | null;
+    };
+    expect(JSON.parse(row.pending)).toEqual(['wss://mine.test']);
+    expect(row.last_error).toBeNull();
+    const status = (await admin.get('/api/e/conf/nostr')).body;
+    expect(status.relayStatus).toEqual([{ url: 'wss://mine.test', pending: 1, lastError: null }]);
+    h.close();
+  });
+
+  it('renders an example note per trigger, even before the first enable', async () => {
+    const h = makeHarness({ publicUrl: 'https://sesh.example' });
+    seedEvent(h.db, { slug: 'conf', name: 'Conf' });
+    const admin = await actorWithRole(h, 'conf', 'admin-pw');
+    const empty = await admin.get('/api/e/conf/nostr/example?trigger=up_next').expect(200);
+    expect(empty.body.content).toBeNull();
+    expect((await admin.get('/api/e/conf/nostr/example?trigger=nope')).status).toBe(400);
+    const roomId = Number(
+      h.db
+        .prepare(
+          `INSERT INTO rooms (event_id, name, description, capacity, open_booking, sort_order) VALUES (?, 'Room A', '', NULL, 0, 0)`,
+        )
+        .run((h.db.prepare(`SELECT id FROM events WHERE slug = 'conf'`).get() as { id: number }).id)
+        .lastInsertRowid,
+    );
+    await admin
+      .post('/api/e/conf/sessions')
+      .send({
+        roomId,
+        title: 'Scaling an unconference',
+        startsAt: '2099-06-01T12:00:00.000Z',
+        endsAt: '2099-06-01T12:30:00.000Z',
+      })
+      .expect(201);
+    for (const trigger of ['up_next', 'digest', 'added', 'changed', 'placed', 'pitched']) {
+      const res = await admin.get(`/api/e/conf/nostr/example?trigger=${trigger}`).expect(200);
+      expect(res.body.content, trigger).toContain('Scaling an unconference');
+    }
     h.close();
   });
 

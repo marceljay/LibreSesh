@@ -97,6 +97,9 @@ export interface SessionModalProps {
    *  a speaker on an official session. The fields are disabled rather than
    *  left to be refused on save. */
   canMove?: boolean;
+  /** The event publishes to Nostr: say so above the form, and offer the
+   *  opt-out to whoever may take the session off the schedule. */
+  nostrEnabled?: boolean;
   onCancel: () => void;
   /** `repeat` asks for the same session on every day of a run; `link` keeps
    *  that run as a series. `applyTo` reaches the rest of an existing series on
@@ -133,6 +136,7 @@ export function SessionModal({
   dayEndMin,
   saving,
   canMove = true,
+  nostrEnabled = false,
   onCancel,
   onSave,
   onDelete,
@@ -194,6 +198,9 @@ export function SessionModal({
   // co-speaker gets neither: being credited is a claim on the words.
   const canDraft = !session || onDelete !== undefined;
   const isDraft = session?.draft === true;
+  // Ticked means published. Stored the other way round because the column is
+  // an opt-out: default on, per the Nostr spec, and the author's to untick.
+  const [publishToNostr, setPublishToNostr] = useState(!(session?.nostrOptOut ?? false));
 
   // The server refuses a hold on an open session rather than quietly dropping
   // it, so the form never offers the combination: switching the type to open
@@ -299,6 +306,7 @@ export function SessionModal({
         type: isAdmin ? type : undefined,
         ...(isAdmin ? { blocksOpenBooking: holdsFloor } : {}),
         ...(canDraft ? { draft: asDraft } : {}),
+        ...(nostrEnabled && canDraft ? { nostrOptOut: !publishToNostr } : {}),
         title: title.trim(),
         speakers,
         description: description.trim(),
@@ -541,6 +549,22 @@ export function SessionModal({
               can see it, and it keeps this room and time without holding either until it is
               published.
             </p>
+          )}
+
+          {/* Before the first field, so nobody types into a form without
+              knowing where the words go. Absent entirely while Nostr is off. */}
+          {nostrEnabled && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2 text-xs text-stone-600 dark:border-stone-700 dark:text-stone-300">
+              <span>This event publishes its programme and pitch board to Nostr.</span>
+              {canDraft && (
+                <Toggle
+                  checked={publishToNostr}
+                  onChange={setPublishToNostr}
+                  label="Publish to Nostr"
+                  title="Unticking after publishing asks the relays to delete it"
+                />
+              )}
+            </div>
           )}
 
           <Field label="Title">

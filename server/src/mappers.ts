@@ -31,6 +31,7 @@ import type {
 } from './db.js';
 
 import { NameResolver } from './eventIdentity.js';
+import { naddrBySession } from './nostr/badge.js';
 
 export const toEventSummary = (e: EventRow): EventSummary => ({
   slug: e.slug,
@@ -52,6 +53,7 @@ export const toEventDto = (e: EventRow): EventDto => ({
   showOfficialBadge: e.show_official_badge === 1,
   defaultView: e.default_view === 'cal' ? 'cal' : 'list',
   pitchesEnabled: e.pitches_enabled === 1,
+  nostrEnabled: e.nostr_enabled === 1,
 });
 
 export const toRoomDto = (r: RoomRow): RoomDto => ({
@@ -260,6 +262,8 @@ export function toSessionDto(
   tagIds: number[],
   authorName: string,
   speakers: PersonRef[],
+  /** The session's address on Nostr, once a relay has it; see `naddrBySession`. */
+  nostr: { naddr: string } | null = null,
 ): SessionDto {
   return {
     id: row.id,
@@ -281,6 +285,8 @@ export function toSessionDto(
     updatedAt: row.updated_at,
     seriesId: row.series_id,
     draft: row.draft === 1,
+    nostrOptOut: row.nostr_optout === 1,
+    nostr,
   };
 }
 
@@ -324,7 +330,11 @@ export function loadSessionDto(db: Db, row: SessionRow): SessionDto {
   const tagIds = tagIdsBySession(db, [row.id]).get(row.id) ?? [];
   const names = new NameResolver(db, row.event_id);
   const speakers = speakersBySession(db, [row.id]).get(row.id) ?? [];
-  return toSessionDto(row, tagIds, names.get(row.created_by), speakers);
+  const event = db
+    .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
+    .get(row.event_id)!;
+  const nostr = naddrBySession(db, event, [row.id]).get(row.id) ?? null;
+  return toSessionDto(row, tagIds, names.get(row.created_by), speakers, nostr);
 }
 
 /** Proposal DTOs need per-viewer interest, so they are built with the viewer. */
@@ -405,6 +415,7 @@ export function toProposalDto(
     placedSessionId: row.placed_session_id,
     interestCount: extra.interestCount,
     interested: extra.interested,
+    nostrOptOut: row.nostr_optout === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

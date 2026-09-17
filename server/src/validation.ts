@@ -349,6 +349,9 @@ export const sessionSchema = z.object({
   /** Keep it off the schedule. Absent leaves it as it is on a PATCH; on a
    *  create it means published, which is what every session was before. */
   draft: z.boolean().optional(),
+  /** Keep this one off Nostr while the event publishes there. The author's
+   *  and the organiser's choice; absent leaves it as it is on a PATCH. */
+  nostrOptOut: z.boolean().optional(),
 });
 export const sessionPatchSchema = sessionSchema.partial().extend({
   expectedUpdatedAt: isoInstantSchema.optional(),
@@ -408,6 +411,8 @@ export const proposalSchema = z.object({
   speakerId: z.number().int().positive().nullable().optional(),
   speakerName: optionalTrimmed(120).optional(),
   tagIds: z.array(z.number().int().positive()).max(20).optional(),
+  /** Keep this pitch off Nostr; handed on to the session it becomes. */
+  nostrOptOut: z.boolean().optional(),
 });
 export const proposalPatchSchema = proposalSchema.partial();
 
@@ -433,6 +438,7 @@ const relayUrl = z
   .trim()
   .max(200)
   .refine((u) => /^wss?:\/\/[^\s/]+/.test(u), { message: 'Relay URLs start with wss://' });
+export const nostrExampleSchema = z.object({ trigger: z.enum(NOSTR_TRIGGERS) });
 export const nostrPatchSchema = z.object({
   relays: z.array(relayUrl).max(10).optional(),
   triggers: z.array(z.enum(NOSTR_TRIGGERS)).max(NOSTR_TRIGGERS.length).optional(),

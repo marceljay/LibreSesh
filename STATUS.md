@@ -19,6 +19,29 @@ at the same commit — its reflog shows an `update by push` after each one — s
 nothing local is unsaved. Suite at **1936**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
+- **Nostr publishing, steps 1 to 6 in review** [LIB-214] [LIB-215] [LIB-216]
+  [LIB-217] [LIB-218] [LIB-219]. One PR off `dev`, `feat/nostr`, nineteen
+  commits in the order the spec's steps run: encryption at rest with a
+  rotatable secret, migration 026 and the per-event signing key with its
+  enable / disable / import-key / export-key routes; the NIP-52 builders and
+  the publish queue with per-relay delivery, every write path marking it,
+  retract / resync / test; the announcer lifted out of `telegram.ts` per
+  `announcements.md` with Telegram as a transport and `pitched` and `placed`
+  wired; kind-1 notes as the second transport; the Nostr section of the
+  Publish tab, with the relay pool moved to `ws` after Node's own WebSocket
+  crashed the process on a refused relay; the notice and opt-out on both
+  forms and the *on Nostr* badge. A review of the PR added seven commits:
+  notes leave out opted-out sessions and pitches (they were named in every
+  note regardless of the box), a removed relay leaves the queue, no
+  deletion requests for sessions that were never published, a fresh mark
+  resets the backoff, the sweep skips an event without relays, the test
+  route answers 400 without a key and resync is audited, and SECURITY.md
+  gains the nsec row, a what-a-relay-sees section and the relay list as an
+  accepted outbound risk. Suite at 2067, lint clean, each UI step driven
+  through headless Chromium. What is left is yours: the relay check
+  [LIB-220] and D6, the default relay list [LIB-221] — until it is decided a
+  newly enabled event starts with no relays.
+
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
   commits on `dev`). It already caught a route that threw, but it sat inside
   the router and the three providers, so a `MeProvider` fetch or the theme

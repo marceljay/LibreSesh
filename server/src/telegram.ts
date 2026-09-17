@@ -18,7 +18,22 @@
 import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
 import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
-import { localDate, localMinuteOfDay, zonedParts, zonedTimeToUtc } from './shared/time.js';
+import { zonedParts } from './shared/time.js';
+import {
+  Announcer as CoreAnnouncer,
+  TRIGGERS,
+  announceQuietly,
+  announceableSession,
+  daySessions,
+  dueSessions as dueWithin,
+  groupByStart,
+  type Announcement,
+  type Transport,
+  type Trigger,
+} from './announcer.js';
+
+export type { Trigger } from './announcer.js';
+export { TRIGGERS, announceQuietly, announceableSession, daySessions, groupByStart };
 
 const API = 'https://api.telegram.org';
 
@@ -28,21 +43,8 @@ const MAX_MESSAGE = 4096;
 /** A hung Telegram must never reach the process serving the schedule. */
 const CALL_TIMEOUT_MS = 10_000;
 
-/**
- * How long after its hour the digest may still go out.
- *
- * A process restarted at 14:00 must not open by announcing a day that is more
- * than half over; outside this window the digest is simply skipped for that
- * day.
- */
-const DIGEST_WINDOW_MIN = 60;
-
 /** How long `getUpdates` is allowed to hold the connection open. */
 const POLL_SECONDS = 25;
-
-export type Trigger = 'up_next' | 'digest' | 'added' | 'changed';
-
-export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'changed'];
 
 /**
  * Modes are **presets over the trigger set**, not a stored value of their own.
@@ -299,17 +301,6 @@ export const sendMessage: Sender = async (token, message) => {
 };
 
 /**
- * Telegram from the write path: never awaited, never able to fail the request.
- *
- * A session is created whether or not a group hears about it. Awaiting a
- * `sendMessage` inside a route would put a third party's latency in front of
- * the response, and letting it throw would turn a working write into a 500.
- */
-export function announceQuietly(work: Promise<unknown>): void {
-  void work.catch((err: unknown) => console.warn(`telegram: ${(err as Error).message}`));
-}
-
-/**
  * Which bot speaks for an event: its own if the organiser supplied one, else
  * the instance's, else nothing.
  *
@@ -346,51 +337,9 @@ export function activeTokens(db: Db, fallback: string | null): string[] {
   return [...tokens];
 }
 
-/**
- * Sessions whose lead window is open: `starts_at - lead <= now < starts_at`.
- *
- * A **range**, not the moment the window opens. A session created at 13:40 to
- * run at 13:45 has already missed an edge trigger before it existed, and that
- * — a pitch placed at short notice — is the case the whole feature is for. A
- * range picks it up on the next tick.
- */
-export function dueSessions(db: Db, event: EventRow, now: Date): SessionRow[] {
-  const leadMs = event.telegram_lead_min * 60_000;
-  return db
-    .prepare<[number, string, string], SessionRow>(
-      `SELECT * FROM sessions
-        WHERE event_id = ? AND deleted_at IS NULL AND draft = 0
-          AND starts_at > ? AND starts_at <= ?
-        ORDER BY starts_at, room_id`,
-    )
-    .all(event.id, now.toISOString(), new Date(now.getTime() + leadMs).toISOString());
-}
-
-/** Every non-draft session on one local day, for the digest. */
-export function daySessions(db: Db, event: EventRow, day: string): SessionRow[] {
-  const from = zonedTimeToUtc(day, 0, event.timezone);
-  const to = zonedTimeToUtc(day, 24 * 60, event.timezone);
-  return db
-    .prepare<[number, string, string], SessionRow>(
-      `SELECT * FROM sessions
-        WHERE event_id = ? AND deleted_at IS NULL AND draft = 0
-          AND starts_at >= ? AND starts_at < ?
-        ORDER BY starts_at, room_id`,
-    )
-    .all(event.id, from.toISOString(), to.toISOString());
-}
-
-/** One session by id, or null once it is a draft, deleted or gone. */
-export function announceableSession(db: Db, event: EventRow, id: number): SessionRow | null {
-  return (
-    db
-      .prepare<[number, number], SessionRow>(
-        `SELECT * FROM sessions
-          WHERE id = ? AND event_id = ? AND deleted_at IS NULL AND draft = 0`,
-      )
-      .get(id, event.id) ?? null
-  );
-}
+/** The Telegram lead window, as the announcer's range query. */
+export const dueSessions = (db: Db, event: EventRow, now: Date): SessionRow[] =>
+  dueWithin(db, event, now, event.telegram_lead_min);
 
 /** Turn rows into what the renderer needs, resolving rooms and speakers once. */
 export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): AnnounceItem[] {
@@ -414,302 +363,169 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
   }));
 }
 
-/** `Map<startsAt, sessions>`, preserving the query's ordering. */
-export function groupByStart(sessions: SessionRow[]): Map<string, SessionRow[]> {
-  const out = new Map<string, SessionRow[]>();
-  for (const s of sessions) {
-    const list = out.get(s.starts_at);
-    if (list) list.push(s);
-    else out.set(s.starts_at, [s]);
-  }
-  return out;
+/** A pitch made on the board, for the group that watches it fill. */
+export function renderPitched(
+  title: string,
+  pitcher: string | null,
+  boardUrl: string | null,
+): string {
+  const head = boardUrl
+    ? `<a href="${escapeHtml(boardUrl)}">${escapeHtml(title)}</a>`
+    : `<b>${escapeHtml(title)}</b>`;
+  const by = pitcher ? `\nby ${escapeHtml(pitcher)}` : '';
+  return `💡 Pitched — ${head}${by}`;
+}
+
+/** A pitch that has become a session: `added`, but saying where it came from. */
+export function renderPlaced(
+  startsAt: Date,
+  timeZone: string,
+  item: AnnounceItem,
+  sessionUrl: (id: number) => string | null,
+  streams = false,
+): string {
+  return `📌 Placed from the pitch board — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
 }
 
 /**
- * The 60-second loop, plus the record of what it has already said.
- *
- * That record is an in-memory `Set` and not a table, deliberately. The only
- * thing a table would buy is surviving a restart *inside* a lead window, and
- * the cost is a migration and a rollback constraint for a failure that repeats
- * one message. The accepted consequence is written down in the spec: a restart
- * mid-window reposts that slot. If a real conference day shows it matters, the
- * shape to add is `announced`, keyed `UNIQUE(transport, event_id, trigger,
- * key)` — transport-neutral, per `_planning/specs/announcements.md`.
- *
- * The rules this obeys — a window rather than an edge, mark-then-send, drafts
- * never, only a move counts as a change — are shared with every other
- * transport and live in that file. LIB-214 lifts this loop into `announcer.ts`
- * once this branch lands; what stays here is rendering and the bot.
+ * Telegram as a transport of the shared announcer (`announcer.ts`): which
+ * events and triggers it serves, how long before a slot it speaks, and how
+ * each announcement is rendered and posted. The loop, the sent record and
+ * every rule about *when* live in the announcer, shared with Nostr.
  */
-export class Announcer {
-  private readonly sent = new Set<string>();
+export function telegramTransport(
+  db: Db,
+  /** The instance bot, used only by events that have not brought their own. */
+  fallbackToken: string | null,
+  publicUrl: string | null,
+  send: Sender = sendMessage,
+): Transport {
+  const sessionUrl =
+    (event: EventRow) =>
+    (id: number): string | null =>
+      publicUrl ? `${publicUrl}/e/${event.slug}/s/${id}` : null;
+  const boardUrl = (event: EventRow): string | null =>
+    publicUrl ? `${publicUrl}/e/${event.slug}/proposals` : null;
 
-  /**
-   * Sessions this transport has actually told the group about.
-   *
-   * `changed` fires only for these. A session nobody was told about has not
-   * moved as far as the group is concerned, and announcing its move would
-   * disclose a session that was never announced in the first place —
-   * `announcements.md` §Announcement data is explicit about that.
-   */
-  private readonly announced = new Set<number>();
+  /** Where a message goes, or null when this event cannot send one. */
+  const destination = (event: EventRow): { chatId: string; token: string } | null => {
+    const chatId = event.telegram_chat_id;
+    const token = resolveToken(event, fallbackToken);
+    return chatId && token ? { chatId, token } : null;
+  };
 
-  /** Moves waiting for the next tick, per event. Drained by `announceMoved`. */
-  private readonly moved = new Map<number, Set<number>>();
+  const post = async (event: EventRow, texts: string[]): Promise<void> => {
+    const to = destination(event);
+    if (!to) return;
+    for (const text of texts) {
+      await send(to.token, { chatId: to.chatId, text, topicId: event.telegram_topic_id });
+    }
+  };
 
-  /**
-   * Keyed into the sent set even though there is only one transport today.
-   *
-   * `_planning/specs/announcements.md` settles that the mark is per transport,
-   * so one transport failing or being switched off can never silence another.
-   * Writing the key that way now means LIB-214 — lifting this loop out into
-   * `announcer.ts` with Telegram as its first transport — moves code rather
-   * than changing behaviour.
-   */
-  private static readonly TRANSPORT = 'telegram';
+  /** `toItems`, plus the start time each line has to carry. */
+  const timed = (event: EventRow, sessions: SessionRow[]): TimedItem[] =>
+    toItems(db, event, sessions).map((item, i) => ({ ...item, startsAt: sessions[i]!.starts_at }));
 
+  return {
+    name: 'telegram',
+    enabled: (event, trigger) =>
+      destination(event) !== null && parseTriggers(event.telegram_triggers).includes(trigger),
+    timing: (event) => ({ leadMin: event.telegram_lead_min, digestMin: event.telegram_digest_min }),
+    async send(event: EventRow, a: Announcement): Promise<void> {
+      const tz = event.timezone;
+      const url = sessionUrl(event);
+      const streams = event.telegram_livestreams === 1;
+      switch (a.trigger) {
+        case 'up_next':
+          await post(
+            event,
+            renderUpNext(new Date(a.at), tz, toItems(db, event, a.sessions), url, streams),
+          );
+          return;
+        case 'digest':
+          await post(event, renderDigest(new Date(a.at), tz, timed(event, a.sessions), url));
+          return;
+        case 'changed':
+          await post(event, [renderMoved(tz, timed(event, a.sessions), url)]);
+          return;
+        case 'added':
+        case 'placed': {
+          const [item] = toItems(db, event, a.sessions);
+          if (!item) return;
+          const render = a.trigger === 'added' ? renderAdded : renderPlaced;
+          await post(event, [render(new Date(a.at), tz, item, url, streams)]);
+          return;
+        }
+        case 'pitched': {
+          if (!a.proposal) return;
+          const pitcher =
+            a.proposal.speaker_id === null
+              ? null
+              : (db
+                  .prepare<[number], { name: string }>('SELECT name FROM people WHERE id = ?')
+                  .get(a.proposal.speaker_id)?.name ?? null);
+          await post(event, [renderPitched(a.proposal.title, pitcher, boardUrl(event))]);
+          return;
+        }
+      }
+    },
+  };
+}
+
+/** What `/next` answers with: the next slot that has not started yet. */
+export function nextSlotText(
+  db: Db,
+  event: EventRow,
+  now: Date,
+  publicUrl: string | null,
+): string[] {
+  const upcoming = db
+    .prepare<[number, string], SessionRow>(
+      `SELECT * FROM sessions
+        WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND starts_at > ?
+        ORDER BY starts_at, room_id`,
+    )
+    .all(event.id, now.toISOString());
+  if (upcoming.length === 0) return ['Nothing left on the schedule.'];
+
+  const first = upcoming[0]!.starts_at;
+  const slot = upcoming.filter((s) => s.starts_at === first);
+  return renderUpNext(
+    new Date(first),
+    event.timezone,
+    toItems(db, event, slot),
+    (id) => (publicUrl ? `${publicUrl}/e/${event.slug}/s/${id}` : null),
+    event.telegram_livestreams === 1,
+  );
+}
+
+/** What the poller needs to answer `/next`. */
+export interface NextSlot {
+  nextSlotText(event: EventRow, now: Date): string[];
+}
+
+/**
+ * The announcer with Telegram as its only transport: what the tests build,
+ * and what the poller's `/next` reads. The instance itself constructs the
+ * shared announcer in `app.ts` with every transport.
+ */
+export class Announcer extends CoreAnnouncer implements NextSlot {
   constructor(
-    private readonly db: Db,
-    /** The instance bot, used only by events that have not brought their own. */
-    private readonly fallbackToken: string | null,
+    db: Db,
+    fallbackToken: string | null,
     private readonly publicUrl: string | null,
-    private readonly send: Sender = sendMessage,
-  ) {}
-
-  private sessionUrl(event: EventRow): (id: number) => string | null {
-    return (id) => (this.publicUrl ? `${this.publicUrl}/e/${event.slug}/s/${id}` : null);
-  }
-
-  private key(eventId: number, startsAt: string): string {
-    return `${Announcer.TRANSPORT}:${eventId}:${startsAt}`;
+    send: Sender = sendMessage,
+  ) {
+    super(db, [telegramTransport(db, fallbackToken, publicUrl, send)]);
   }
 
   /** Exposed so a test can assert a slot is announced exactly once. */
   hasSent(eventId: number, startsAt: string): boolean {
-    return this.sent.has(this.key(eventId, startsAt));
+    return this.wasSent('telegram', eventId, startsAt);
   }
 
-  async tick(now: Date = new Date()): Promise<void> {
-    for (const event of configuredEvents(this.db)) {
-      const triggers = parseTriggers(event.telegram_triggers);
-      try {
-        // Moves first: a session that has just been dragged into the next
-        // fifteen minutes should read as moved, not arrive as a fresh slot.
-        if (triggers.includes('changed')) await this.announceMoved(event);
-        if (triggers.includes('digest')) await this.announceDigest(event, now);
-        if (triggers.includes('up_next')) await this.announceEvent(event, now);
-      } catch (err) {
-        // One misconfigured group must not stop the others.
-        console.warn(`telegram: ${event.slug}: ${(err as Error).message}`);
-      }
-    }
-    // Anything buffered for an event that has since stopped listening is
-    // dropped rather than kept for a group that may never be reconnected.
-    this.moved.clear();
-  }
-
-  /** Where a message goes, or null when this event cannot send one. */
-  private destination(event: EventRow): { chatId: string; token: string } | null {
-    const chatId = event.telegram_chat_id;
-    const token = resolveToken(event, this.fallbackToken);
-    return chatId && token ? { chatId, token } : null;
-  }
-
-  private async post(event: EventRow, texts: string[]): Promise<void> {
-    const to = this.destination(event);
-    if (!to) return;
-    for (const text of texts) {
-      await this.send(to.token, {
-        chatId: to.chatId,
-        text,
-        topicId: event.telegram_topic_id,
-      });
-    }
-  }
-
-  private async announceEvent(event: EventRow, now: Date): Promise<void> {
-    if (!this.destination(event)) return;
-
-    for (const [startsAt, sessions] of groupByStart(dueSessions(this.db, event, now))) {
-      const key = this.key(event.id, startsAt);
-      if (this.sent.has(key)) continue;
-      // Marked BEFORE the send: a call that times out after Telegram accepted
-      // it would otherwise repost, and a duplicate in a group is permanent and
-      // visible where a miss is neither.
-      this.sent.add(key);
-
-      const items = toItems(this.db, event, sessions);
-      for (const item of items) this.announced.add(item.id);
-      await this.post(
-        event,
-        renderUpNext(
-          new Date(startsAt),
-          event.timezone,
-          items,
-          this.sessionUrl(event),
-          event.telegram_livestreams === 1,
-        ),
-      );
-    }
-  }
-
-  /**
-   * The day's programme, once, at the hour the event chose.
-   *
-   * Fired inside a one-hour window after that time rather than at any moment
-   * past it, so a process restarted at 14:00 does not open with "today's
-   * programme" for a day half over. A restart inside the window still repeats
-   * it — the same accepted cost as `up_next`, for the same reason: the record
-   * is in memory.
-   */
-  private async announceDigest(event: EventRow, now: Date): Promise<void> {
-    if (!this.destination(event)) return;
-    const day = localDate(now, event.timezone);
-    const key = `${Announcer.TRANSPORT}:digest:${event.id}:${day}`;
-    if (this.sent.has(key)) return;
-
-    const minute = localMinuteOfDay(now, event.timezone);
-    const due = event.telegram_digest_min;
-    if (minute < due || minute >= due + DIGEST_WINDOW_MIN) return;
-
-    this.sent.add(key);
-    const sessions = daySessions(this.db, event, day);
-    // An empty day says nothing. A group told "nothing today" every morning of
-    // the week before the conference is a group that mutes the bot.
-    if (sessions.length === 0) return;
-
-    const items = this.timedItems(event, sessions);
-    for (const item of items) this.announced.add(item.id);
-    await this.post(
-      event,
-      renderDigest(new Date(sessions[0]!.starts_at), event.timezone, items, this.sessionUrl(event)),
-    );
-  }
-
-  /**
-   * A session that has just appeared, announced from the write path.
-   *
-   * Called by the route beside its `audit()`, never from the broker:
-   * `Broker.publish` returns early when nobody is subscribed, so a bot hooked
-   * there would post only while somebody had a tab open.
-   *
-   * When the new session starts inside the lead window, this *is* that slot's
-   * `up_next` — the whole slot goes out and the key is marked, so the scheduler
-   * does not say the same thing again a few seconds later. Sending the slot
-   * rather than the one session is what keeps the other rooms in it visible.
-   */
-  async announceAdded(event: EventRow, sessionId: number, now: Date = new Date()): Promise<void> {
-    if (!parseTriggers(event.telegram_triggers).includes('added')) return;
-    if (!this.destination(event)) return;
-    const session = announceableSession(this.db, event, sessionId);
-    if (!session) return;
-
-    const startsAt = new Date(session.starts_at);
-    const leadMs = event.telegram_lead_min * 60_000;
-    const imminent = startsAt > now && startsAt.getTime() - now.getTime() <= leadMs;
-    const key = this.key(event.id, session.starts_at);
-    if (imminent && this.sent.has(key)) return;
-
-    this.announced.add(sessionId);
-    if (imminent) {
-      this.sent.add(key);
-      const slot = this.db
-        .prepare<[number, string], SessionRow>(
-          `SELECT * FROM sessions
-            WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND starts_at = ?
-            ORDER BY room_id`,
-        )
-        .all(event.id, session.starts_at);
-      const items = toItems(this.db, event, slot);
-      for (const item of items) this.announced.add(item.id);
-      await this.post(
-        event,
-        renderUpNext(
-          startsAt,
-          event.timezone,
-          items,
-          this.sessionUrl(event),
-          event.telegram_livestreams === 1,
-        ),
-      );
-      return;
-    }
-
-    const [item] = toItems(this.db, event, [session]);
-    if (!item) return;
-    await this.post(event, [
-      renderAdded(
-        startsAt,
-        event.timezone,
-        item,
-        this.sessionUrl(event),
-        event.telegram_livestreams === 1,
-      ),
-    ]);
-  }
-
-  /**
-   * Remember that a session moved. Nothing is sent here.
-   *
-   * Held until the next tick because a reshuffle is a dozen writes and should
-   * be one message — `announcements.md` calls for coalescing over 60s, and the
-   * tick already runs at exactly that. Only a session this transport has
-   * actually announced is worth a correction: telling a group that something
-   * they were never told about has moved discloses it and helps nobody.
-   */
-  noteMoved(event: EventRow, sessionId: number): void {
-    if (!parseTriggers(event.telegram_triggers).includes('changed')) return;
-    if (!this.announced.has(sessionId)) return;
-    const pending = this.moved.get(event.id);
-    if (pending) pending.add(sessionId);
-    else this.moved.set(event.id, new Set([sessionId]));
-  }
-
-  private async announceMoved(event: EventRow): Promise<void> {
-    const pending = this.moved.get(event.id);
-    this.moved.delete(event.id);
-    if (!pending || pending.size === 0) return;
-    if (!this.destination(event)) return;
-
-    const sessions = [...pending]
-      .map((id) => announceableSession(this.db, event, id))
-      .filter((s): s is SessionRow => s !== null)
-      .sort((a, b) => a.starts_at.localeCompare(b.starts_at) || a.room_id - b.room_id);
-    // Everything in the batch was deleted or drafted between the drag and the
-    // tick; the move is no longer news.
-    if (sessions.length === 0) return;
-
-    await this.post(event, [
-      renderMoved(event.timezone, this.timedItems(event, sessions), this.sessionUrl(event)),
-    ]);
-  }
-
-  /** `toItems`, plus the start time each line has to carry. */
-  private timedItems(event: EventRow, sessions: SessionRow[]): TimedItem[] {
-    const items = toItems(this.db, event, sessions);
-    return items.map((item, i) => ({ ...item, startsAt: sessions[i]!.starts_at }));
-  }
-
-  /** What `/next` answers with: the next slot that has not started yet. */
   nextSlotText(event: EventRow, now: Date): string[] {
-    const upcoming = this.db
-      .prepare<[number, string], SessionRow>(
-        `SELECT * FROM sessions
-          WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND starts_at > ?
-          ORDER BY starts_at, room_id`,
-      )
-      .all(event.id, now.toISOString());
-    if (upcoming.length === 0) return ['Nothing left on the schedule.'];
-
-    const first = upcoming[0]!.starts_at;
-    const slot = upcoming.filter((s) => s.starts_at === first);
-    return renderUpNext(
-      new Date(first),
-      event.timezone,
-      toItems(this.db, event, slot),
-      this.sessionUrl(event),
-      event.telegram_livestreams === 1,
-    );
+    return nextSlotText(this.db, event, now, this.publicUrl);
   }
 }
 
@@ -751,7 +567,7 @@ export class Poller {
     /** The bot this poller *is*. One connection per token, never shared. */
     private readonly token: string,
     private readonly fallbackToken: string | null,
-    private readonly announcer: Announcer,
+    private readonly announcer: NextSlot,
     /** Injected for the same reason `Announcer` injects one: a reply is a
      *  message to a real group, and deciding *whether* to send it is the part
      *  worth testing. Reaching for the module-level sender here made the whole
@@ -898,7 +714,7 @@ export class PollerPool {
   constructor(
     private readonly db: Db,
     private readonly fallbackToken: string | null,
-    private readonly announcer: Announcer,
+    private readonly announcer: NextSlot,
     private readonly send: Sender = sendMessage,
   ) {}
 
