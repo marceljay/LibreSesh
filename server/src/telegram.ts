@@ -68,48 +68,59 @@ export const MODES: Record<string, Trigger[]> = {
 };
 
 /**
- * What a session's line carries, in the order it carries it.
- *
- * Both the set and the sequence are the organiser's. That stops well short of a
- * template language — there are no placeholders to mistype, no empty values to
- * leave a dangling comma, and nothing to escape that we do not escape already —
- * because the punctuation stays ours. Reordering a fixed set of parts is a list;
- * letting somebody write the line is a parser.
- *
- * `title` is a member so it can be moved, and is never absent: a stored set
- * without it renders it first, which is what migration 027's `["speakers"]`
- * default means.
+ * The placeholders a template may use. Anything else is a typo, and is refused
+ * when the template is saved rather than printed as `{tilte}` at 09:45.
  */
-export type Field = 'title' | 'room' | 'track' | 'speakers' | 'format' | 'tags' | 'livestreams';
-
-export const FIELDS: readonly Field[] = [
+export const PLACEHOLDERS = [
   'title',
   'room',
   'track',
   'speakers',
   'format',
   'tags',
-  'livestreams',
-];
+  'streams',
+  'time',
+] as const;
+
+export type Placeholder = (typeof PLACEHOLDERS)[number];
+
+/** What an organiser gets if they never touch it: today's line, exactly. */
+export const DEFAULT_TEMPLATE = '{title}[, by {speakers}]';
+
+/** The longest template we will store. A Telegram message caps at 4096 and a
+ *  template is repeated once per session in a slot. */
+export const MAX_TEMPLATE = 500;
+
+export interface TemplateProblem {
+  /** What to tell the organiser, as a code the client turns into a sentence. */
+  code: 'unknown_placeholder' | 'unbalanced' | 'too_long';
+  /** The offending name, for `unknown_placeholder`. */
+  name?: string;
+}
 
 /**
- * Stored as JSON, **in the organiser's order**; anything unrecognised is dropped
- * rather than trusted, and a repeat is taken once.
+ * Whether a template can be stored.
+ *
+ * Checked on save, never at send time: a template that only fails when a
+ * session happens to have no speakers is the failure mode this whole design is
+ * trying to avoid, so everything that can be known early is known early.
  */
-export function parseFields(raw: string | null): Field[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    const seen = new Set<Field>();
-    for (const value of parsed) {
-      const field = FIELDS.find((f) => f === value);
-      if (field) seen.add(field);
-    }
-    return [...seen];
-  } catch {
-    return [];
+export function checkTemplate(template: string): TemplateProblem | null {
+  if (template.length > MAX_TEMPLATE) return { code: 'too_long' };
+
+  let depth = 0;
+  for (const char of template) {
+    if (char === '[') depth += 1;
+    else if (char === ']') depth -= 1;
+    if (depth < 0) return { code: 'unbalanced' };
   }
+  if (depth !== 0) return { code: 'unbalanced' };
+
+  for (const match of template.matchAll(/\{([^{}]*)\}/g)) {
+    const name = match[1] ?? '';
+    if (!PLACEHOLDERS.includes(name as Placeholder)) return { code: 'unknown_placeholder', name };
+  }
+  return null;
 }
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
@@ -153,6 +164,8 @@ export function hhmm(instant: Date, timeZone: string): string {
 
 export interface AnnounceItem {
   id: number;
+  /** UTC ISO, so a template may say `{time}` wherever it likes. */
+  startsAt: string;
   title: string;
   room: string;
   /** '' when the event has no tracks, or this session is not on one. */
@@ -180,64 +193,101 @@ export interface AnnounceItem {
  * A block, not a line, because the 4096-character split has to happen on a
  * session boundary and never between a title and its stream.
  */
-function itemBlock(
+/**
+ * The values a template can put in a line, each already escaped.
+ *
+ * `streams` is the one that is a link rather than a word, and the one that is
+ * empty for most sessions — which is what `[...]` is for.
+ */
+function values(
   item: AnnounceItem,
   sessionUrl: string | null,
-  fields: readonly Field[],
-): string {
-  const title = sessionUrl
-    ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
-    : `<b>${escapeHtml(item.title)}</b>`;
+  timeZone: string,
+): Record<Placeholder, string> {
+  return {
+    title: sessionUrl
+      ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
+      : `<b>${escapeHtml(item.title)}</b>`,
+    room: escapeHtml(item.room),
+    track: escapeHtml(item.track),
+    speakers: escapeHtml(item.speakers.join(', ')),
+    format: escapeHtml(item.format),
+    tags: item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' '),
+    streams: item.livestreams
+      .map((stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`)
+      .join(', '),
+    time: item.startsAt === '' ? '' : hhmm(new Date(item.startsAt), timeZone),
+  };
+}
 
-  /** Each part reads correctly wherever it lands, which is what lets them move. */
-  const part = (field: Field): string => {
-    switch (field) {
-      case 'title':
-        return title;
-      case 'room':
-        return escapeHtml(item.room);
-      case 'track':
-        return escapeHtml(item.track);
-      case 'speakers':
-        return item.speakers.length > 0 ? `by ${escapeHtml(item.speakers.join(', '))}` : '';
-      case 'format':
-        return item.format === '' ? '' : `[${escapeHtml(item.format)}]`;
-      case 'tags':
-        return item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ');
-      case 'livestreams':
-        return '';
+/**
+ * Render one session through the organiser's template.
+ *
+ * Two rules and no more. `{name}` is a value. `[...]` is a part that disappears
+ * when every placeholder inside it came back empty — which is the whole reason
+ * a plain placeholder string is not enough: `{title}, by {speakers}` leaves
+ * "Repair café, by " on a session nobody is credited for, and no amount of
+ * careful writing by the organiser avoids it.
+ *
+ * Everything outside those is literal and escaped, so "Annnoooounciiiiiing:"
+ * arrives as written and a stray `<` stays a `<`.
+ */
+export function renderTemplate(
+  template: string,
+  item: AnnounceItem,
+  sessionUrl: string | null,
+  timeZone: string,
+): string {
+  const fill = values(item, sessionUrl, timeZone);
+
+  /** One pass over a stretch of template, returning the text and whether any
+   *  placeholder in it had something to say. */
+  const walk = (text: string): { out: string; filled: boolean } => {
+    let out = '';
+    let filled = false;
+    let i = 0;
+    while (i < text.length) {
+      const char = text[i]!;
+      if (char === '[') {
+        const close = matching(text, i);
+        const inner = walk(text.slice(i + 1, close));
+        // The part is kept only if something in it was there to keep.
+        if (inner.filled) {
+          out += inner.out;
+          filled = true;
+        }
+        i = close + 1;
+        continue;
+      }
+      if (char === '{') {
+        const close = text.indexOf('}', i);
+        const name = text.slice(i + 1, close) as Placeholder;
+        const value = fill[name] ?? '';
+        out += value;
+        if (value !== '') filled = true;
+        i = close + 1;
+        continue;
+      }
+      out += escapeHtml(char);
+      i += 1;
     }
+    return { out, filled };
   };
 
-  // Absent means first: migration 027's default set is `["speakers"]`, written
-  // before the title was something anyone could move.
-  const order = fields.includes('title') ? fields : (['title', ...fields] as Field[]);
-  const parts = order
-    .filter((field) => field !== 'livestreams')
-    .map((field) => ({ field, text: part(field) }))
-    .filter((p) => p.text !== '');
+  return walk(template).out.trim();
+}
 
-  const line = parts.reduce((acc, p, i) => {
-    if (i === 0) return p.text;
-    // "Scaling an unconference, by Ada Lovelace" reads as a sentence, and is the
-    // default for that reason. Anywhere else the speakers are one part of a list
-    // and take the separator every other part takes.
-    const previous = parts[i - 1]!.field;
-    const sep = previous === 'title' && p.field === 'speakers' ? ', ' : ' · ';
-    return `${acc}${sep}${p.text}`;
-  }, '');
-
-  const lines = [line];
-  // The session link lands on the password gate; a stream link does not. That
-  // is the whole reason this is a field an organiser ticks and not simply what
-  // a message says.
-  if (fields.includes('livestreams') && item.livestreams.length > 0) {
-    const links = item.livestreams.map(
-      (stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`,
-    );
-    lines.push(`Stream: ${links.join(', ')}`);
+/** The `]` that closes the `[` at `open`, which `checkTemplate` guarantees. */
+function matching(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '[') depth += 1;
+    else if (text[i] === ']') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
   }
-  return lines.join('\n');
+  return text.length;
 }
 
 /**
@@ -253,14 +303,14 @@ export function renderUpNext(
   timeZone: string,
   items: AnnounceItem[],
   sessionUrl: (id: number) => string | null,
-  fields: readonly Field[] = [],
+  template: string = DEFAULT_TEMPLATE,
 ): string[] {
   const header = `🕐 ${hhmm(startsAt, timeZone)} — up next`;
   const out: string[] = [];
   let current = header;
 
   for (const item of items) {
-    const block = `\n\n${itemBlock(item, sessionUrl(item.id), fields)}`;
+    const block = `\n\n${renderTemplate(template, item, sessionUrl(item.id), timeZone)}`;
     if (current.length + block.length > MAX_MESSAGE) {
       out.push(current);
       current = `${header} (continued)${block}`;
@@ -282,8 +332,9 @@ export function dayLabel(instant: Date, timeZone: string): string {
   }).format(instant);
 }
 
-/** A session in a message that spans a day, so the time has to be on the line. */
-export type TimedItem = AnnounceItem & { startsAt: string };
+/** Kept as a name: a digest or a moved line spans a day, so it always shows a
+ *  time where an up-next block usually does not. */
+export type TimedItem = AnnounceItem;
 
 /**
  * The whole day in one message, deliberately terser than `up_next`.
@@ -334,11 +385,11 @@ export function renderAdded(
   timeZone: string,
   item: AnnounceItem,
   sessionUrl: (id: number) => string | null,
-  fields: readonly Field[] = [],
+  template: string = DEFAULT_TEMPLATE,
   placed = false,
 ): string {
   const head = placed ? '🙌 Just pitched' : '✨ Just added';
-  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), fields)}`;
+  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${renderTemplate(template, item, sessionUrl(item.id), timeZone)}`;
 }
 
 /**
@@ -538,6 +589,7 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
   );
   return sessions.map((s) => ({
     id: s.id,
+    startsAt: s.starts_at,
     title: s.title,
     room: rooms.get(s.room_id) ?? '',
     track: s.track_id === null ? '' : (tracks.get(s.track_id) ?? ''),
@@ -681,7 +733,7 @@ export class Announcer {
           event.timezone,
           items,
           this.sessionUrl(event),
-          parseFields(event.telegram_fields),
+          event.telegram_template,
         ),
       );
     }
@@ -771,7 +823,7 @@ export class Announcer {
           event.timezone,
           items,
           this.sessionUrl(event),
-          parseFields(event.telegram_fields),
+          event.telegram_template,
         ),
       );
       return;
@@ -785,7 +837,7 @@ export class Announcer {
         event.timezone,
         item,
         this.sessionUrl(event),
-        parseFields(event.telegram_fields),
+        event.telegram_template,
         placed,
       ),
     ]);
@@ -827,10 +879,9 @@ export class Announcer {
     ]);
   }
 
-  /** `toItems`, plus the start time each line has to carry. */
+  /** The same rows a slot uses; the name says these are read across a day. */
   private timedItems(event: EventRow, sessions: SessionRow[]): TimedItem[] {
-    const items = toItems(this.db, event, sessions);
-    return items.map((item, i) => ({ ...item, startsAt: sessions[i]!.starts_at }));
+    return toItems(this.db, event, sessions);
   }
 
   /** What `/next` answers with: the next slot that has not started yet. */
@@ -851,7 +902,7 @@ export class Announcer {
       event.timezone,
       toItems(this.db, event, slot),
       this.sessionUrl(event),
-      parseFields(event.telegram_fields),
+      event.telegram_template,
     );
   }
 }

@@ -42,15 +42,18 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
-  **What each line says, and in what order, is yours.** Tick and arrange the
-  parts a session carries: title, room, track, speakers, format, tags,
-  livestream links. A session shows only what it has — no format picked, no
-  format shown — and speakers read as “Title, by Ada Lovelace” where they
-  follow the title, because that is a sentence. Livestream links always take a
-  line of their own, are the only part off in the default set, and are the only
-  one that publishes something the password gate would otherwise hold: a
-  session link in a message still asks for the event password, a stream address
-  does not.
+  **You write the line.** Each session renders through a line of your own:
+  `{title}`, `{room}`, `{track}`, `{speakers}`, `{format}`, `{tags}`,
+  `{streams}` and `{time}` are filled in per session, anything in
+  `[square brackets]` disappears when what is inside it is empty, and the rest
+  is literal — *Annnoooounciiiiiing: {title}!* is a perfectly good line. The
+  brackets are what stop “Repair café, by ” on a session nobody is credited
+  for. A line that names something there is no value for, or leaves a bracket
+  open, is refused when you save it rather than at 09:45 on the day.
+  `{streams}` is the one that publishes something the password gate would
+  otherwise hold — a session link in a message still asks for the event
+  password, a stream address does not — so it is not in the line you start
+  with.
 
   Drafts, deleted sessions and archived events are never announced, and the
   connection never travels in an export. What a connected group can see is in

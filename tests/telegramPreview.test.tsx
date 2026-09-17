@@ -39,12 +39,16 @@ const session = (over: Partial<SessionDto>): SessionDto =>
     ...over,
   }) as SessionDto;
 
-const show = (mode: string, sessions: SessionDto[] = [session({})], fields: string[] = []) =>
+const show = (
+  mode: string,
+  sessions: SessionDto[] = [session({})],
+  template = '{title}[, by {speakers}]',
+) =>
   render(
     <TelegramPreview
       mode={mode}
       leadMin={15}
-      fields={fields}
+      template={template}
       digest="08:00"
       event={event}
       sessions={sessions}
@@ -103,9 +107,9 @@ describe('the Telegram example', () => {
     show('light', streamed);
     expect(screen.queryByText(/Main camera/)).toBeNull();
     cleanup();
-    show('light', streamed, ['livestreams']);
+    show('light', streamed, '{title}[\nStream: {streams}]');
     expect(screen.getByText(/Main camera/)).toBeTruthy();
-    expect(screen.getByText(/Stream:/)).toBeTruthy();
+    expect(document.body.textContent).toContain('Stream:');
   });
 
   it('says plainly that off sends nothing', () => {
@@ -115,7 +119,7 @@ describe('the Telegram example', () => {
   });
 
   it('draws the event’s own sessions, in the event’s timezone', () => {
-    show('light', [session({})], ['speakers']);
+    show('light');
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
@@ -130,31 +134,28 @@ describe('the Telegram example', () => {
     expect(screen.getByText('Hallway track')).toBeTruthy();
   });
 
-  it('draws only the fields the event has ticked', () => {
+  it('draws the organiser’s own line, words and all', () => {
     // The whole point of the modal: what is on screen is what the group gets.
-    show('light', [session({ trackId: 1, formatId: 1, tagIds: [1] })], []);
-    expect(screen.queryByText(/, by Ada Lovelace/)).toBeNull();
-    expect(screen.queryByText(/Main Hall/)).toBeNull();
-    cleanup();
+    show('light', [session({})], 'Annnoooounciiiiiing: {title}!');
+    expect(document.body.textContent).toContain('Annnoooounciiiiiing: Scaling an unconference!');
+  });
 
+  it('drops a bracketed part with nothing in it, the way the server does', () => {
+    // The preview and `renderTemplate` implement one grammar twice, so this is
+    // what catches them drifting until the renderer is shared (LIB-214).
+    show('light', [session({ speakers: [] })], '{title}[, by {speakers}]');
+    expect(document.body.textContent).toContain('Scaling an unconference');
+    expect(document.body.textContent).not.toContain(', by');
+  });
+
+  it('fills every placeholder the panel offers', () => {
     show(
       'light',
       [session({ trackId: 1, formatId: 1, tagIds: [1] })],
-      ['room', 'track', 'title', 'speakers', 'format', 'tags'],
+      '{time} {room} {track} {title} {speakers} {format} {tags}',
     );
-    // Read off the whole line: each part is its own span, and the modal is a
-    // portal, so it is document.body rather than the render container.
     expect(document.body.textContent).toContain(
-      'Main Hall · Practice · Scaling an unconference, by Ada Lovelace · [Workshop] · #facilitation',
-    );
-  });
-
-  it('draws the parts in the order the panel has them', () => {
-    // The preview and `itemBlock` build the same line twice, so this is what
-    // catches them drifting apart until the renderer is shared (LIB-214).
-    show('light', [session({})], ['format', 'title', 'room', 'speakers']);
-    expect(document.body.textContent).toContain(
-      'Scaling an unconference · Main Hall · by Ada Lovelace',
+      '10:00 Main Hall Practice Scaling an unconference Ada Lovelace Workshop #facilitation',
     );
   });
 

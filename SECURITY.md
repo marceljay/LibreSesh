@@ -166,12 +166,11 @@ password. A stream address is not — it is frequently the one unguessable thing
 standing between a stranger and the room, and posting it into a group publishes
 it to everyone there and to anyone the message is forwarded to.
 
-So it is one of the message fields an organiser ticks (migration 027, which
-folded migration 024's column into that set), it is the only one of them off in
-the default set, and its warning sits on the checkbox rather than in a tooltip
-somewhere else. Everything else those fields add — room, track, speakers,
-format, tags — is already disclosed by the message that carries it. Turning the
-tick off stops the next message and does nothing about the last one.
+So it is a placeholder an organiser has to put in the line themselves —
+`{streams}`, migration 028 — and it is not in the line they start with.
+Everything else the line can carry (room, track, speakers, format, tags, time)
+is already disclosed by the message that carries it. Taking `{streams}` out
+stops the next message and does nothing about the last one.
 
 A posted message is **not recallable by this app** — Disconnect stops the next
 one and changes nothing about the last one. `/revoke` in BotFather is the only

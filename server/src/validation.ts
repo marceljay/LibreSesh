@@ -478,14 +478,10 @@ export const telegramSettingsSchema = z
     mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
-    /** The fields a session's line carries besides its title. An unknown name
-     *  is refused rather than dropped: a client asking for something that does
-     *  not exist has a bug, and silently storing less than it asked for hides
-     *  it. */
-    fields: z
-      .array(z.enum(['title', 'room', 'track', 'speakers', 'format', 'tags', 'livestreams']))
-      .max(7)
-      .optional(),
+    /** The line a session renders as. Its own grammar is checked in the route
+     *  by `checkTemplate`, which knows the placeholder names; this only holds
+     *  the shape and the ceiling. */
+    template: z.string().max(500).optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),
   })

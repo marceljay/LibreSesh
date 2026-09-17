@@ -65,6 +65,16 @@ function byCode(err: ApiError): string | null {
       return 'Someone else changed this while you were editing';
     case 'tag_exists':
       return 'A tag with that name already exists';
+    case 'template_unknown_placeholder': {
+      const name = quoted(d.name);
+      return name
+        ? `There is no “{${name}}” to fill in — check the list under the box`
+        : 'That line uses something there is no value for';
+    }
+    case 'template_unbalanced':
+      return 'Every [ needs a matching ]';
+    case 'template_too_long':
+      return 'That line is too long';
     case 'telegram_refused': {
       // The single exception to the rule above, and it holds *because* it is
       // the exception: this prose is Telegram's, not ours. "bot was kicked

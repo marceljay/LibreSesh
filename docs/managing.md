@@ -135,42 +135,37 @@ Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-**What each line says, and in what order,** is yours. Each session in a message
-is one line built from parts you tick and arrange with ↑ ↓: **Title**, **Room**,
-**Track**, **Speakers**, **Format**, **Tags**, **Livestream links**. A session
-shows only what it has — no format picked, no format shown.
+**Write the line yourself.** Each session in a message renders through a line
+you write. Two things in it are special and everything else is literal:
+
+- `{title}` and friends are filled in per session: `{title}`, `{room}`,
+  `{track}`, `{speakers}`, `{format}`, `{tags}`, `{streams}`, `{time}`.
+- Anything in `[square brackets]` disappears when everything inside it is
+  empty.
+
+So `{title}[, by {speakers}]` gives *“Repair café, by Ada Lovelace”*, and on a
+session nobody is credited for it gives *“Repair café”* — not *“Repair café,
+by ”*. That is the whole reason the brackets exist, and it is worth reaching
+for whenever a part of your line might be missing.
+
+Everything else is yours:
 
 ```
-Main Hall · Practice · Scaling an unconference, by Ada Lovelace · [Workshop] · #openspace
-Stream: Main camera
+Annnoooounciiiiiing: {title}!
 ```
 
-The title cannot be taken out, only moved. Speakers read as *“Title, by Ada
-Lovelace”* when they sit straight after the title, because that is a sentence,
-and as one more part of the list anywhere else. Livestream links always take a
-line of their own, so their position among the rest makes no difference — and
-they are the one tick that publishes something the password gate would otherwise
-hold: anyone who can see the group can watch.
+```
+{time} · {room} · {title}[, by {speakers}][
+Stream: {streams}]
+```
 
-**The morning message** goes out at the time you set, on the venue's clock. It
-is one line a session for the whole day — no speakers, no links to streams,
-because it is read over breakfast to decide where to be. A day with nothing on
-it says nothing. If the server is restarted more than an hour after that time,
-that day's is skipped rather than arriving at lunchtime.
+A line is refused when you save it if it uses a name there is no value for, or
+if a `[` has no `]` — so a broken line cannot reach a group. Angle brackets and
+the like are shown as typed rather than treated as formatting.
 
-**A pitch landing on the grid** is announced from Medium up, and it is the
-reason most events want this at all: a session put up at short notice is the one
-thing no printed programme can carry. An organiser *adding* a session is
-separate, and Heavy-only, because building a programme is twenty sessions in an
-afternoon and nobody wants twenty messages about it.
-
-Either, inside the *how early* window, is announced as that whole slot rather
-than twice over — so a pitch placed five minutes before it runs produces one
-message and not two. **Moves** are held for up to a minute and go out together,
-so dragging a morning about is one message rather than a dozen, and only
-sessions the group has already been told about are mentioned: announcing the
-move of a session nobody knew existed would disclose it. Repeating a session
-across days announces nothing.
+`{streams}` is the one that publishes something the password gate would
+otherwise hold: anyone who can see the group can watch. Leave it out unless you
+mean it.
 
 **Example** shows exactly what these settings would post, drawn from your own
 schedule. Use it — this is the one screen in LibreSesh whose effect you cannot

@@ -8,9 +8,9 @@ import { badRequest, HttpError } from '../errors.js';
 import { limit } from '../ratelimit.js';
 import type { TelegramStatus } from '../shared/types.js';
 import {
+  checkTemplate,
   escapeHtml,
   MODES,
-  parseFields,
   modeOf,
   parseTriggers,
   resolveToken,
@@ -41,7 +41,7 @@ function status(ctx: Ctx, event: EventRow): TelegramStatus {
     mode: modeOf(triggers),
     triggers,
     leadMin: event.telegram_lead_min,
-    fields: parseFields(event.telegram_fields),
+    template: event.telegram_template,
     digestMin: event.telegram_digest_min,
     bindCode: event.telegram_bind_code,
     bindExpires: event.telegram_bind_expires,
@@ -142,13 +142,18 @@ export function telegramRoutes(ctx: Ctx): Router {
         .prepare('UPDATE events SET telegram_lead_min = ? WHERE id = ?')
         .run(body.leadMin, event.id);
     }
-    if (body.fields !== undefined) {
-      // Stored in the order it arrived in: the sequence *is* the setting now,
-      // so normalising it here would quietly undo half of what was saved.
-      // `parseFields` drops a repeat and anything it does not know.
+    if (body.template !== undefined) {
+      // Checked here rather than at send time. A template that only breaks on a
+      // session with no speakers would break for the first time in front of a
+      // room, which is the failure this whole design is avoiding.
+      const problem = checkTemplate(body.template);
+      if (problem)
+        throw new HttpError(400, `template_${problem.code}`, 'That line cannot be used', {
+          ...(problem.name === undefined ? {} : { name: problem.name }),
+        });
       ctx.db
-        .prepare('UPDATE events SET telegram_fields = ? WHERE id = ?')
-        .run(JSON.stringify(parseFields(JSON.stringify(body.fields))), event.id);
+        .prepare('UPDATE events SET telegram_template = ? WHERE id = ?')
+        .run(body.template, event.id);
     }
     if (body.digestMin !== undefined) {
       ctx.db

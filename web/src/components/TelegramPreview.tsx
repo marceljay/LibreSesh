@@ -15,6 +15,7 @@ import { SecondaryButton } from './ui';
 
 /** A sample drawn from the event, or an honest stand-in when it is empty. */
 interface Row {
+  time: string;
   room: string;
   track: string;
   title: string;
@@ -42,6 +43,7 @@ const FALLBACK: Slot = {
   ],
   rows: [
     {
+      time: '10:00',
       room: 'Main Hall',
       track: 'Practice',
       title: 'Scaling an unconference',
@@ -51,6 +53,7 @@ const FALLBACK: Slot = {
       streams: ['Main camera'],
     },
     {
+      time: '10:00',
       room: 'Room 2',
       track: '',
       title: 'Hallway track, formalised',
@@ -109,6 +112,7 @@ function pickSlot(
       .filter((s) => s.startsAt === anchor.startsAt)
       .slice(0, 4)
       .map((s) => ({
+        time: fmtOf(s.startsAt, { hour: '2-digit', minute: '2-digit', hour12: false }),
         room: roomName.get(s.roomId) ?? '',
         track: trackName.get(s.trackId ?? -1) ?? '',
         title: s.title,
@@ -127,66 +131,100 @@ interface NamedRef {
 }
 
 /**
- * One session's line, built from the same parts `itemBlock` joins on the
- * server and in the same order. Two implementations of one layout is the drift
- * this modal exists to catch, so keep them in step until the renderer is
- * shared (LIB-214).
+ * One session's line, rendered through the organiser's template.
+ *
+ * The same two rules `renderTemplate` applies on the server, written a second
+ * time because the server's version emits Telegram HTML and this emits React.
+ * Two implementations of one grammar is the drift this modal exists to catch,
+ * so it is the thing to delete first when the renderer is shared (LIB-214).
  */
-function Line({ row, fields }: { row: Row; fields: string[] }) {
-  const part = (field: string): { text?: string; title?: boolean } | null => {
-    switch (field) {
-      case 'title':
-        return { title: true };
-      case 'room':
-        return row.room ? { text: row.room } : null;
-      case 'track':
-        return row.track ? { text: row.track } : null;
-      case 'speakers':
-        return row.speakers ? { text: `by ${row.speakers}` } : null;
-      case 'format':
-        return row.format ? { text: `[${row.format}]` } : null;
-      case 'tags':
-        return row.tags.length > 0 ? { text: row.tags.map((t) => `#${t}`).join(' ') } : null;
-      default:
-        return null;
-    }
+function Line({ row, template }: { row: Row; template: string }) {
+  const fill: Record<string, string> = {
+    title: row.title,
+    room: row.room,
+    track: row.track,
+    speakers: row.speakers,
+    format: row.format,
+    tags: row.tags.map((t) => `#${t}`).join(' '),
+    streams: row.streams.join(', '),
+    time: row.time,
   };
 
-  const order = fields.includes('title') ? fields : ['title', ...fields];
-  const parts = order
-    .filter((f) => f !== 'livestreams')
-    .map((field) => ({ field, value: part(field) }))
-    .filter((p): p is { field: string; value: { text?: string; title?: boolean } } =>
-      Boolean(p.value),
-    );
+  const walk = (text: string): { nodes: React.ReactNode[]; filled: boolean } => {
+    const nodes: React.ReactNode[] = [];
+    let filled = false;
+    let literal = '';
+    let i = 0;
+    const flush = () => {
+      if (literal !== '') nodes.push(literal);
+      literal = '';
+    };
+    while (i < text.length) {
+      const char = text[i]!;
+      if (char === '[') {
+        const close = matching(text, i);
+        const inner = walk(text.slice(i + 1, close));
+        if (inner.filled) {
+          flush();
+          nodes.push(...inner.nodes);
+          filled = true;
+        }
+        i = close + 1;
+        continue;
+      }
+      if (char === '{') {
+        const close = text.indexOf('}', i);
+        if (close === -1) {
+          literal += char;
+          i += 1;
+          continue;
+        }
+        const name = text.slice(i + 1, close);
+        const value = fill[name] ?? '';
+        if (value !== '') {
+          flush();
+          // The title and the streams are links in a real message, so they are
+          // links here: seeing which parts are tappable is half the point.
+          nodes.push(
+            name === 'title' || name === 'streams' ? (
+              <Title key={`${name}-${i}`}>{value}</Title>
+            ) : (
+              value
+            ),
+          );
+          filled = true;
+        }
+        i = close + 1;
+        continue;
+      }
+      literal += char;
+      i += 1;
+    }
+    flush();
+    return { nodes, filled };
+  };
 
+  const { nodes } = walk(template);
   return (
     <>
-      <p>
-        {parts.map((p, i) => {
-          const previous = i === 0 ? null : parts[i - 1]!.field;
-          const sep = i === 0 ? '' : previous === 'title' && p.field === 'speakers' ? ', ' : ' · ';
-          return (
-            <span key={p.field}>
-              {sep}
-              {p.value.title ? <Title>{row.title}</Title> : p.value.text}
-            </span>
-          );
-        })}
-      </p>
-      {fields.includes('livestreams') && row.streams.length > 0 && (
-        <p>
-          Stream:{' '}
-          {row.streams.map((label, n) => (
-            <span key={label}>
-              {n > 0 && ', '}
-              <Title>{label}</Title>
-            </span>
-          ))}
-        </p>
-      )}
+      {nodes.map((node, i) => (
+        <span key={i}>{node}</span>
+      ))}
     </>
   );
+}
+
+/** The `]` closing the `[` at `open`. An unbalanced template cannot be saved. */
+function matching(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i += 1) {
+    if (text[i] === '[') depth += 1;
+    else if (text[i] === ']') {
+      depth -= 1;
+      if (depth === 0) return i;
+    }
+  }
+  return text.length;
 }
 
 /** One message, drawn the way Telegram draws it: a bubble, not a form field. */
@@ -210,7 +248,7 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 export function TelegramPreview({
   mode,
   leadMin,
-  fields,
+  template,
   digest,
   event,
   sessions,
@@ -222,9 +260,9 @@ export function TelegramPreview({
 }: {
   mode: string;
   leadMin: number;
-  /** What each line carries besides its title. `livestreams` among them is the
-   *  one that leaves the password gate, so it is previewed like the rest. */
-  fields: string[];
+  /** The line each session renders as. Previewed from what is on screen, which
+   *  is how somebody decides whether to press Save. */
+  template: string;
   /** 'HH:MM' the morning message goes out, as the field currently reads. */
   digest: string;
   event: EventDto;
@@ -290,7 +328,7 @@ export function TelegramPreview({
               the failure this modal exists to prevent. */}
             {slot.rows.map((row, i) => (
               <div key={i} className="mt-2">
-                <Line row={row} fields={fields} />
+                <Line row={row} template={template} />
               </div>
             ))}
           </Bubble>
@@ -300,7 +338,7 @@ export function TelegramPreview({
           <Bubble when="The moment a pitch reaches the grid">
             <p>🙌 Just pitched — {slot.time}</p>
             <div className="mt-2">
-              <Line row={slot.rows[0]} fields={fields} />
+              <Line row={slot.rows[0]} template={template} />
             </div>
           </Bubble>
         )}
@@ -309,7 +347,7 @@ export function TelegramPreview({
           <Bubble when="The moment an organiser puts a session up">
             <p>✨ Just added — {slot.time}</p>
             <div className="mt-2">
-              <Line row={slot.rows[0]} fields={fields} />
+              <Line row={slot.rows[0]} template={template} />
             </div>
           </Bubble>
         )}

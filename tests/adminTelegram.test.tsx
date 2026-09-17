@@ -38,7 +38,7 @@ const status = (over: Partial<TelegramStatus> = {}): TelegramStatus => ({
   mode: 'light',
   triggers: ['up_next'],
   leadMin: 15,
-  fields: ['speakers'],
+  template: '{title}[, by {speakers}]',
   digestMin: 480,
   bindCode: null,
   bindExpires: null,

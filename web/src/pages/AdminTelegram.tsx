@@ -15,11 +15,10 @@ import {
   InlineForm,
   NumberField,
   PrimaryButton,
-  IconButton,
   SecondaryButton,
   Section,
+  TextArea,
   TextInput,
-  Toggle,
   useToast,
 } from '../components/ui';
 import {
@@ -48,52 +47,24 @@ const MODES = [
 ];
 
 /**
- * What a session's line carries, and in what order.
+ * The line a session renders as, written by the organiser.
  *
- * A list with ↑ ↓ rather than a template box. Reordering a fixed set of parts
- * is a list; letting somebody write the line is a parser — placeholders to
- * mistype, empty values leaving a dangling comma, and a line that breaks for
- * the first time at 09:45 on day one. The punctuation stays ours, so every
- * arrangement reads.
+ * Ticking parts in a chosen order was still our sentence with their words in
+ * it — it could not say "Annnoooounciiiiiing: Repair café". This can. The
+ * grammar stays two things, because a third is where a template box turns into
+ * a language nobody can debug from a phone at a conference.
  */
-const LABELS: Record<string, string> = {
-  title: 'Title',
-  room: 'Room',
-  track: 'Track',
-  speakers: 'Speakers',
-  format: 'Format',
-  tags: 'Tags',
-  livestreams: 'Livestream links',
-};
+const PLACEHOLDERS = ['title', 'room', 'track', 'speakers', 'format', 'tags', 'streams', 'time'];
 
-/** Everything above the streams can move. The streams are their own line, so
- *  their position among the rest would mean nothing. */
-const MOVABLE = ['title', 'room', 'track', 'speakers', 'format', 'tags'];
-
-interface FieldRow {
-  id: string;
-  on: boolean;
-}
-
-/**
- * The stored set — enabled fields, in order — as a list of every field.
- *
- * What is switched off has no stored position, so it sits at the end until it
- * is switched on and moved. `title` is always on: a line with no title is not
- * a line.
- */
-function toRows(fields: string[]): FieldRow[] {
-  const chosen = fields.filter((f) => MOVABLE.includes(f));
-  if (!chosen.includes('title')) chosen.unshift('title');
-  const rest = MOVABLE.filter((f) => !chosen.includes(f));
-  return [
-    ...chosen.map((id) => ({ id, on: true })),
-    ...rest.map((id) => ({ id, on: false })),
-    { id: 'livestreams', on: fields.includes('livestreams') },
-  ];
-}
-
-const fromRows = (rows: FieldRow[]): string[] => rows.filter((r) => r.on).map((r) => r.id);
+/** A starting point for anybody who does not want to write one. */
+const PRESETS: { label: string; template: string }[] = [
+  { label: 'Title and speakers', template: '{title}[, by {speakers}]' },
+  { label: 'With the room', template: '{room} · {title}[, by {speakers}]' },
+  {
+    label: 'Everything',
+    template: '{room} · {title}[, by {speakers}][ · {format}][ {tags}][\nStream: {streams}]',
+  },
+];
 
 const modeLabel = (id: string): string =>
   MODES.find((m) => m.id === id)?.label ?? 'Custom — a mix of your own';
@@ -144,7 +115,7 @@ export function AdminTelegram({
   const [problem, setProblem] = useState<string | null>(null);
   const [lead, setLead] = useState('15');
   const [mode, setMode] = useState('off');
-  const [rows, setRows] = useState<FieldRow[]>(() => toRows([]));
+  const [template, setTemplate] = useState('');
   const [digest, setDigest] = useState('08:00');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -156,7 +127,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setRows(toRows(next.fields));
+      setTemplate(next.template);
       setDigest(fmtMin(next.digestMin));
     } catch (err) {
       setProblem(errorText(err));
@@ -177,7 +148,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setRows(toRows(next.fields));
+      setTemplate(next.template);
       setDigest(fmtMin(next.digestMin));
       if (done) toast.show(done);
       return true;
@@ -217,13 +188,9 @@ export function AdminTelegram({
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
   const digestMin = minutesOf(digest);
-  const fields = fromRows(rows);
-  // Order is the setting too, so this compares sequences and not sets.
-  const stored = toRows(status.fields);
-  const sameFields = fields.join() === fromRows(stored).join();
   const dirty =
     mode !== status.mode ||
-    !sameFields ||
+    template !== status.template ||
     digestMin !== status.digestMin ||
     (parsedLead.value !== null && parsedLead.value !== status.leadMin);
 
@@ -233,24 +200,13 @@ export function AdminTelegram({
    * settings*, and a screen that quietly committed a choice the moment it was
    * picked would be the only one that did.
    */
-  /** Swap a row with its neighbour. The streams stay last; nothing passes them. */
-  const move = (index: number, direction: -1 | 1) => {
-    setRows((prev) => {
-      const next = [...prev];
-      const to = index + direction;
-      if (to < 0 || to > next.length - 2) return prev;
-      [next[index], next[to]] = [next[to]!, next[index]!];
-      return next;
-    });
-  };
-
   const saveOptions = () => {
     if (!dirty || parsedLead.error) return;
     void run(
       () =>
         api.telegramSettings(slug, {
           mode,
-          fields,
+          template,
           digestMin,
           ...(parsedLead.value !== null ? { leadMin: parsedLead.value } : {}),
         }),
@@ -447,66 +403,56 @@ export function AdminTelegram({
 
             <Field
               label="What each line says"
-              hint="Tick what a session carries and put it in the order you want. A session shows only what it has — no format picked, no format shown."
+              hint="Your own words. {title} and the rest are filled in per session; anything in [square brackets] disappears when what is inside it is empty."
               action={
-                <FieldInfo label="About what a line says" href={DOCS}>
+                <FieldInfo label="About the line" href={DOCS}>
                   <p>
-                    Each session in a message is one line, built from these parts in this order.
-                    <strong> Example</strong> shows the result.
+                    Write the line however you like — <em>Annnoooounciiiiiing: {'{title}'}</em> is a
+                    perfectly good line. <strong>Example</strong> shows it against this event’s own
+                    sessions before you save.
                   </p>
                   <p className="mt-2">
-                    Livestream links are the one thing here that leaves the password gate — anyone
-                    who can see the group can watch — and always take a line of their own.
+                    Square brackets are what stop “Repair café, by ” on a session with nobody
+                    credited: <code>{'{title}[, by {speakers}]'}</code> drops the whole “, by …”
+                    when there are no speakers.
+                  </p>
+                  <p className="mt-2">
+                    <code>{'{streams}'}</code> is the one that leaves the password gate — anyone who
+                    can see the group can watch.
                   </p>
                 </FieldInfo>
               }
             >
-              <ul className="space-y-1">
-                {rows.map((row, index) => {
-                  const movable = row.id !== 'livestreams';
-                  const last = rows.length - 2;
-                  return (
-                    <li
-                      key={row.id}
-                      className="flex items-center gap-2 rounded-lg bg-stone-50 px-2 py-1 dark:bg-stone-800"
-                    >
-                      <div className="flex shrink-0">
-                        <IconButton
-                          onClick={() => move(index, -1)}
-                          disabled={!movable || index === 0}
-                          aria-label={`Move ${LABELS[row.id]} up`}
-                        >
-                          ↑
-                        </IconButton>
-                        <IconButton
-                          onClick={() => move(index, 1)}
-                          disabled={!movable || index >= last}
-                          aria-label={`Move ${LABELS[row.id]} down`}
-                        >
-                          ↓
-                        </IconButton>
-                      </div>
-                      <Toggle
-                        checked={row.on}
-                        disabled={row.id === 'title'}
-                        title={
-                          row.id === 'title'
-                            ? 'Always there. Move it, but a line without it is not a line.'
-                            : row.id === 'livestreams'
-                              ? 'Its own line, below the rest. Anyone who sees the group can watch.'
-                              : undefined
-                        }
-                        onChange={(next) =>
-                          setRows((prev) =>
-                            prev.map((r) => (r.id === row.id ? { ...r, on: next } : r)),
-                          )
-                        }
-                        label={LABELS[row.id] ?? row.id}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
+              <ControlShell>
+                <TextArea
+                  rows={2}
+                  value={template}
+                  spellCheck={false}
+                  className="w-full font-mono text-xs"
+                  aria-label="The line each session renders as"
+                  onChange={(e) => setTemplate(e.target.value)}
+                />
+              </ControlShell>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className="text-xs text-stone-500 dark:text-stone-400">
+                  {PLACEHOLDERS.map((name) => `{${name}}`).join('  ')}
+                </span>
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-stone-500 dark:text-stone-400">Start from:</span>
+                {PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setTemplate(preset.template)}
+                    className={`rounded-full border border-stone-300 px-2 py-0.5 text-xs text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:text-stone-100 ${
+                      template === preset.template ? 'border-stone-500 dark:border-stone-400' : ''
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </Field>
 
             <div>
@@ -525,7 +471,7 @@ export function AdminTelegram({
         <TelegramPreview
           mode={mode}
           leadMin={parsedLead.value ?? status.leadMin}
-          fields={fields}
+          template={template}
           digest={digest}
           tracks={tracks}
           formats={formats}

@@ -4809,21 +4809,9 @@
               }
             ]
           },
-          "fields": {
-            "maxItems": 7,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "title",
-                "room",
-                "track",
-                "speakers",
-                "format",
-                "tags",
-                "livestreams"
-              ]
-            }
+          "template": {
+            "type": "string",
+            "maxLength": 500
           },
           "digestMin": {
             "type": "integer",

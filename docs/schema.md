@@ -95,7 +95,7 @@ erDiagram
     TEXT nostr_seckey "nullable"
     TEXT nostr_relays "nullable"
     TEXT nostr_triggers "default '['placed','up_next','digest']'"
-    TEXT telegram_fields "default '['speakers']'"
+    TEXT telegram_template "default '{title}[, by {speakers}]'"
   }
   identities {
     INTEGER id PK
