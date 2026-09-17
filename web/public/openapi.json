@@ -4529,8 +4529,20 @@
               }
             ]
           },
-          "livestreams": {
-            "type": "boolean"
+          "fields": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "room",
+                "track",
+                "speakers",
+                "format",
+                "tags",
+                "livestreams"
+              ]
+            }
           },
           "digestMin": {
             "type": "integer",

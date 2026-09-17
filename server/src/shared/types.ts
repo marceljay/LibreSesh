@@ -734,8 +734,9 @@ export interface TelegramStatus {
   mode: string;
   triggers: string[];
   leadMin: number;
-  /** Whether a message carries each session's livestream links. */
-  livestreams: boolean;
+  /** The fields a session's line carries besides its title, in render order.
+   *  `livestreams` among them is the one that leaves the password gate. */
+  fields: string[];
   /** Local minute of day the morning digest goes out. */
   digestMin: number;
   /** A live bind code, if one has been minted and not yet used or expired. */

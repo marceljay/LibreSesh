@@ -213,6 +213,7 @@ sequenceDiagram
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
 | A line a session, two when streamed | Room, title, speakers and streams on lines of their own | A five-room slot ran to twenty lines. One notification is only one notification if it can be read at a glance |
+| The fields are ticked; the order is ours | A template box with placeholders | A template language is placeholders, empty values, escaping and a line that only breaks at 09:45 on day one — bought to allow a rearrangement nobody asked for. What organisers want is the format shown, or the room left out |
 | `placed` separate from `added` | One trigger for both | Building a programme is twenty sessions in an afternoon; a pitch landing mid-conference is the case the feature exists for (U5). One trigger cannot serve both |
 | Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
 | Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
@@ -231,8 +232,11 @@ sequenceDiagram
 
 **Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl, streams)`
 emits a header followed by one block per session. A block is **one line, or two
-when the session is streamed**: `Title, by Ada Lovelace`, then `Stream: Main
-camera, Interpreted` — every stream on the one line — when `streams` is set.
+when the session is streamed**. The title is always there; everything else is a
+field the event ticked, composed in the fixed order
+`room · track · title, by speakers [format] #tags`, with
+`Stream: Main camera, Interpreted` on a second line — every stream on the one
+line — when `livestreams` is among them.
 Four lines a session made a five-room slot a message nobody reads to the
 bottom; the slot is the unit that matters, and it has to be scannable in the
 second it is on screen. Times
@@ -346,7 +350,7 @@ Migration `023_telegram.sql` adds to `events`:
 | `telegram_lead_min` | INTEGER | Default 15 |
 | `telegram_bind_code` | TEXT null | Unique where not null |
 | `telegram_bind_expires` | TEXT null | ISO-8601 |
-| `telegram_livestreams` | INTEGER | Migration 024. Default 0 — a disclosure choice is never on by default |
+| `telegram_fields` | TEXT | Migration 027. JSON array of what a session's line carries besides its title. Default `["speakers"]`; `livestreams` is never in it by default. Replaced migration 024's boolean column |
 | `telegram_digest_min` | INTEGER | Migration 025. Local minute of day, default 480 (08:00 at the venue) |
 
 **Constraints.** None of these columns appear in an export — the export writes
@@ -413,7 +417,7 @@ transports join it rather than lengthening Settings.
 | How much it says | Select over the presets: **Off**, **Light**, **Medium**, **Heavy** |
 | When the morning message goes out | `TimeField`, shown only for the presets that send one |
 | How early it says it | Number field, 1–180 minutes |
-| Livestreams | Checkbox, off by default, stating in its hint that a stream address does not meet the password gate |
+| What each line says | Six checkboxes — room, track, speakers, format, tags, livestream links — with the disclosure warning on the last of them |
 | Save | One action for the three options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
 
@@ -491,4 +495,4 @@ Requirements without a design element: U3 and U4 (§11).
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from [`announcements.md`](announcements.md) rather than restated |
 | 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |
 | 1.2 | 2026-09-17 | `digest`, `added` and `changed` built, so the ladder is four rungs again. Migration 025 adds the digest hour; the announcer moves onto the request context, because two of the three are write-path triggers |
-| 1.3 | 2026-09-17 | `placed` becomes its own trigger (migration 026). Placing a pitch announced nothing at all, which was the case the feature exists for |
+| 1.3 | 2026-09-17 | What a line says becomes the organiser's (migration 027, six ticked fields replacing migration 024's livestream boolean). `placed` becomes its own trigger (migration 026) — placing a pitch announced nothing at all, which was the case the feature exists for |

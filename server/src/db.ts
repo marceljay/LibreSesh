@@ -52,10 +52,10 @@ export interface EventRow {
    *  instance's. A plaintext credential — see migration 023 and SECURITY.md.
    *  Never leaves the server: not in a DTO, not in an export. */
   telegram_bot_token: string | null;
-  /** Whether an announcement carries each session's livestream links. Off by
-   *  default: a stream URL is public the moment it is posted, where a session
-   *  link still meets the gate — see migration 024. */
-  telegram_livestreams: number;
+  /** JSON array of the fields a session's line carries besides its title —
+   *  room, track, speakers, format, tags, livestreams. Migration 027, which
+   *  folded migration 024's livestream column into it. */
+  telegram_fields: string;
   /** Local minute of day the morning digest goes out. Default 480 — 08:00 at
    *  the venue, never UTC. See migration 025. */
   telegram_digest_min: number;

@@ -451,7 +451,14 @@ export const telegramSettingsSchema = z
     mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
-    livestreams: z.boolean().optional(),
+    /** The fields a session's line carries besides its title. An unknown name
+     *  is refused rather than dropped: a client asking for something that does
+     *  not exist has a bug, and silently storing less than it asked for hides
+     *  it. */
+    fields: z
+      .array(z.enum(['room', 'track', 'speakers', 'format', 'tags', 'livestreams']))
+      .max(6)
+      .optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),
   })
