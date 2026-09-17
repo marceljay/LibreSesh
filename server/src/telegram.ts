@@ -40,9 +40,9 @@ const DIGEST_WINDOW_MIN = 60;
 /** How long `getUpdates` is allowed to hold the connection open. */
 const POLL_SECONDS = 25;
 
-export type Trigger = 'up_next' | 'digest' | 'added' | 'changed';
+export type Trigger = 'up_next' | 'digest' | 'added' | 'changed' | 'placed';
 
-export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'changed'];
+export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'changed', 'placed'];
 
 /**
  * Modes are **presets over the trigger set**, not a stored value of their own.
@@ -63,8 +63,8 @@ export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'chan
 export const MODES: Record<string, Trigger[]> = {
   off: [],
   light: ['up_next'],
-  medium: ['digest', 'up_next'],
-  heavy: ['digest', 'up_next', 'added', 'changed'],
+  medium: ['digest', 'up_next', 'placed'],
+  heavy: ['digest', 'up_next', 'placed', 'added', 'changed'],
 };
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
@@ -225,15 +225,23 @@ function linked(item: AnnounceItem, url: string | null): string {
     : escapeHtml(item.title);
 }
 
-/** One session that has just appeared on the grid, named rather than listed. */
+/**
+ * One session that has just appeared on the grid, named rather than listed.
+ *
+ * A pitch says so. "Just pitched" is the message a group at an unconference
+ * actually acts on — somebody put a session up twenty minutes ago and there is
+ * still time to go — where "just added" reads like programme admin.
+ */
 export function renderAdded(
   startsAt: Date,
   timeZone: string,
   item: AnnounceItem,
   sessionUrl: (id: number) => string | null,
   streams = false,
+  placed = false,
 ): string {
-  return `✨ Just added — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
+  const head = placed ? '🙌 Just pitched' : '✨ Just added';
+  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
 }
 
 /**
@@ -598,8 +606,16 @@ export class Announcer {
    * does not say the same thing again a few seconds later. Sending the slot
    * rather than the one session is what keeps the other rooms in it visible.
    */
-  async announceAdded(event: EventRow, sessionId: number, now: Date = new Date()): Promise<void> {
-    if (!parseTriggers(event.telegram_triggers).includes('added')) return;
+  async announceAdded(
+    event: EventRow,
+    sessionId: number,
+    now: Date = new Date(),
+    /** A pitch reaching the grid rather than a session being entered. Its own
+     *  trigger, so an organiser building a programme announces nothing while a
+     *  conference in progress announces every pitch. */
+    placed = false,
+  ): Promise<void> {
+    if (!parseTriggers(event.telegram_triggers).includes(placed ? 'placed' : 'added')) return;
     if (!this.destination(event)) return;
     const session = announceableSession(this.db, event, sessionId);
     if (!session) return;
@@ -644,6 +660,7 @@ export class Announcer {
         item,
         this.sessionUrl(event),
         event.telegram_livestreams === 1,
+        placed,
       ),
     ]);
   }

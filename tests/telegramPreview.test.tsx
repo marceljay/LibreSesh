@@ -68,7 +68,7 @@ describe('the Telegram example', () => {
     // roomful of people, so every bubble has to belong to the chosen setting.
     show('light');
     expect(screen.queryByText(/Each morning/)).toBeNull();
-    expect(screen.queryByText(/Just added/)).toBeNull();
+    expect(screen.queryByText(/Just pitched/)).toBeNull();
     cleanup();
 
     show('medium');
@@ -79,6 +79,16 @@ describe('the Telegram example', () => {
     show('heavy');
     expect(screen.getByText(/Just added/)).toBeTruthy();
     expect(screen.getByText(/Moved on the schedule/)).toBeTruthy();
+  });
+
+  it('previews a pitch on medium and an organiser’s session only on heavy', () => {
+    show('medium');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.queryByText(/Just added/)).toBeNull();
+    cleanup();
+    show('heavy');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.getByText(/Just added/)).toBeTruthy();
   });
 
   it('draws the digest from the whole day, not one slot repeated', () => {
