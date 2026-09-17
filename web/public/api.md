@@ -378,6 +378,7 @@ resolving, so a client written against the old name keeps working. Read
 | `GET /export.json` | Whole-event JSON. Organisers |
 | `GET /nostr`, `POST /nostr/enable`, `POST /nostr/disable`, `PATCH /nostr` | Publishing the programme to Nostr: status, the switch (`{acknowledged: true}`), relays and triggers. Organisers |
 | `POST /nostr/import-key`, `POST /nostr/export-key` | The event's signing key as an `nsec`, in and out. Organisers, `auth` budget, audited |
+| `GET /nostr/example?trigger=` | What one trigger would post as a note, from this event's own schedule. Organisers |
 | `POST /nostr/retract`, `POST /nostr/resync`, `POST /nostr/test` | Ask the relays to delete everything and stop; republish every calendar event; republish the profile now and hear what each relay said. Organisers |
 | `GET /audit`, `GET /login-health`, `POST /login-attempts/reset` | The log, and the sign-in stop |
 | `GET /trash`, `POST /sessions/:id/restore`, `POST /contributions/:id/restore` | Undo |

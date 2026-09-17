@@ -29,6 +29,9 @@ import type {
   InboxDto,
   NotificationKind,
   TelegramStatus,
+  NostrRelayAnswer,
+  NostrStatus,
+  NostrTrigger,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
 import type { ExportPart } from '@shared/exportParts';
@@ -340,6 +343,32 @@ export const api = {
     request<TelegramStatus>('DELETE', `/e/${encode(slug)}/telegram`),
   telegramTest: (slug: string) =>
     request<{ ok: boolean }>('POST', `/e/${encode(slug)}/telegram/test`),
+
+  // Nostr. Organisers only; the private key never travels except through
+  // export-key, which the organiser asks for on purpose.
+  nostr: (slug: string) => request<NostrStatus>('GET', `/e/${encode(slug)}/nostr`),
+  nostrEnable: (slug: string) =>
+    request<{ npub: string }>('POST', `/e/${encode(slug)}/nostr/enable`, { acknowledged: true }),
+  nostrDisable: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/disable`),
+  nostrSettings: (slug: string, body: { relays?: string[]; triggers?: NostrTrigger[] }) =>
+    request<{ relays: string[]; triggers: NostrTrigger[] }>(
+      'PATCH',
+      `/e/${encode(slug)}/nostr`,
+      body,
+    ),
+  nostrRetract: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/retract`),
+  nostrResync: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/resync`),
+  nostrTest: (slug: string) =>
+    request<{ relays: NostrRelayAnswer[] }>('POST', `/e/${encode(slug)}/nostr/test`),
+  nostrImportKey: (slug: string, nsec: string) =>
+    request<{ npub: string }>('POST', `/e/${encode(slug)}/nostr/import-key`, { nsec }),
+  nostrExportKey: (slug: string) =>
+    request<{ nsec: string }>('POST', `/e/${encode(slug)}/nostr/export-key`),
+  nostrExample: (slug: string, trigger: NostrTrigger) =>
+    request<{ content: string | null }>(
+      'GET',
+      `/e/${encode(slug)}/nostr/example?trigger=${encodeURIComponent(trigger)}`,
+    ),
 
   // Proposal pool — the unconference pitch board (SPEC §8).
   createProposal: (slug: string, body: ProposalWrite) =>

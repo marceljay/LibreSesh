@@ -395,6 +395,7 @@ const fieldProblem = (field: string, error: NumberFieldError): string =>
 import { AdminBreaks, dayName } from './AdminBreaks';
 import { AdminRooms, type RoomDraft } from './AdminRooms';
 import { AdminTelegram } from './AdminTelegram';
+import { AdminNostr } from './AdminNostr';
 import { AdminPermissions } from './AdminPermissions';
 import { AdminSearch } from './AdminSearch';
 import { ADMIN_TABS, type AdminSetting, type AdminTabId } from '../lib/adminSearch';
@@ -2113,6 +2114,9 @@ export function AdminPage() {
                 sessions={bundle.sessions}
                 rooms={bundle.rooms}
               />
+            </SettingAnchor>
+            <SettingAnchor id="nostr" flashed={flashed}>
+              <AdminNostr slug={slug} />
             </SettingAnchor>
           </div>
         )}

@@ -127,6 +127,37 @@ describe('nostr routes', () => {
     h.close();
   });
 
+  it('renders an example note per trigger, even before the first enable', async () => {
+    const h = makeHarness({ publicUrl: 'https://sesh.example' });
+    seedEvent(h.db, { slug: 'conf', name: 'Conf' });
+    const admin = await actorWithRole(h, 'conf', 'admin-pw');
+    const empty = await admin.get('/api/e/conf/nostr/example?trigger=up_next').expect(200);
+    expect(empty.body.content).toBeNull();
+    expect((await admin.get('/api/e/conf/nostr/example?trigger=nope')).status).toBe(400);
+    const roomId = Number(
+      h.db
+        .prepare(
+          `INSERT INTO rooms (event_id, name, description, capacity, open_booking, sort_order) VALUES (?, 'Room A', '', NULL, 0, 0)`,
+        )
+        .run((h.db.prepare(`SELECT id FROM events WHERE slug = 'conf'`).get() as { id: number }).id)
+        .lastInsertRowid,
+    );
+    await admin
+      .post('/api/e/conf/sessions')
+      .send({
+        roomId,
+        title: 'Scaling an unconference',
+        startsAt: '2099-06-01T12:00:00.000Z',
+        endsAt: '2099-06-01T12:30:00.000Z',
+      })
+      .expect(201);
+    for (const trigger of ['up_next', 'digest', 'added', 'changed', 'placed', 'pitched']) {
+      const res = await admin.get(`/api/e/conf/nostr/example?trigger=${trigger}`).expect(200);
+      expect(res.body.content, trigger).toContain('Scaling an unconference');
+    }
+    h.close();
+  });
+
   it('export-key is refused below organiser', async () => {
     const { h } = await enabledEvent();
     const attendee = await actorWithRole(h, 'conf', 'user-pw');

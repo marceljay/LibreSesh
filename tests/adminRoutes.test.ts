@@ -39,6 +39,7 @@ const ADMIN_ROUTES: [Method, string][] = [
   ['post', '/nostr/retract'],
   ['post', '/nostr/resync'],
   ['post', '/nostr/test'],
+  ['get', '/nostr/example'],
   ['post', '/breaks'],
   ['patch', '/breaks/999'],
   ['delete', '/breaks/999'],

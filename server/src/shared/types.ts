@@ -743,6 +743,36 @@ export interface TelegramStatus {
   bindExpires: string | null;
 }
 
+/** The six things an announcer transport can post about (`announcer.ts`). */
+export type NostrTrigger = 'up_next' | 'digest' | 'added' | 'changed' | 'pitched' | 'placed';
+
+/** One relay's standing, derived from the publish queue. */
+export interface NostrRelayStatus {
+  url: string;
+  /** Rows this relay has not accepted the latest version of. */
+  pending: number;
+  /** Its latest refusal, as the relay worded it; null when it has none. */
+  lastError: string | null;
+}
+
+/** What `GET /e/:slug/nostr` answers. The private key is never in it. */
+export interface NostrStatus {
+  enabled: boolean;
+  /** The event's identity on Nostr, `npub1…`; null until first enabled. */
+  npub: string | null;
+  relays: string[];
+  triggers: NostrTrigger[];
+  counts: { published: number; dirty: number; pending: number; deleted: number };
+  relayStatus: NostrRelayStatus[];
+}
+
+/** What a relay said to *Send a test*. */
+export interface NostrRelayAnswer {
+  url: string;
+  ok: boolean;
+  message: string;
+}
+
 /** What `GET /e/:slug/login-health` answers (D3 §1c). */
 export interface LoginHealthDto {
   /** Failed password attempts at this event in the last hour, from the log. */

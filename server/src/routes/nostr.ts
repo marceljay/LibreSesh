@@ -3,6 +3,8 @@ import { audit } from '../audit.js';
 import { requireRole } from '../auth.js';
 import type { Ctx } from '../context.js';
 import type { EventRow, NostrPublishedRow } from '../db.js';
+import type { NostrStatus } from '../shared/types.js';
+import { exampleNote } from '../nostr/notes.js';
 import { badRequest } from '../errors.js';
 import {
   encryptEventKey,
@@ -22,22 +24,12 @@ import {
 import { limit } from '../ratelimit.js';
 import {
   nostrEnableSchema,
+  nostrExampleSchema,
   nostrImportSchema,
   nostrPatchSchema,
   parse,
   type NostrTrigger,
 } from '../validation.js';
-
-export interface NostrStatus {
-  enabled: boolean;
-  /** The event's identity on Nostr; null until first enabled. */
-  npub: string | null;
-  relays: string[];
-  triggers: NostrTrigger[];
-  counts: { published: number; dirty: number; pending: number; deleted: number };
-  /** Per relay: how many rows it has not accepted yet, and its latest refusal. */
-  relayStatus: { url: string; pending: number; lastError: string | null }[];
-}
 
 export const relaysOf = (event: EventRow): string[] =>
   event.nostr_relays ? (JSON.parse(event.nostr_relays) as string[]) : [];
@@ -200,6 +192,17 @@ export function nostrRoutes(ctx: Ctx): Router {
       res.json({ nsec: toNsec(seckey) });
     },
   );
+
+  /**
+   * What a trigger would post, rendered from this event's own schedule. The
+   * effect of every setting on the tab is only visible on a relay, so the
+   * tab shows the note itself; before the first enable the reference uses a
+   * placeholder key, which is fine for reading.
+   */
+  router.get('/nostr/example', requireRole(ctx.db, 'admin'), (req, res) => {
+    const { trigger } = parse(nostrExampleSchema, req.query);
+    res.json({ content: exampleNote(ctx.db, ctx.config, req.event, trigger) });
+  });
 
   /** Kind 5 for everything, then off. The loop drains the deletions. */
   router.post('/nostr/retract', requireRole(ctx.db, 'admin'), (req, res) => {

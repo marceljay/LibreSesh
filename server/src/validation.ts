@@ -433,6 +433,7 @@ const relayUrl = z
   .trim()
   .max(200)
   .refine((u) => /^wss?:\/\/[^\s/]+/.test(u), { message: 'Relay URLs start with wss://' });
+export const nostrExampleSchema = z.object({ trigger: z.enum(NOSTR_TRIGGERS) });
 export const nostrPatchSchema = z.object({
   relays: z.array(relayUrl).max(10).optional(),
   triggers: z.array(z.enum(NOSTR_TRIGGERS)).max(NOSTR_TRIGGERS.length).optional(),
