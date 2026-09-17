@@ -918,9 +918,15 @@ the publish queue, `nostr_published`:
   `updated_at` is newer than its row's `published_at`, or that has no row at
   all, so a missed call site costs minutes rather than a stale programme.
 
-**Kind-1 notes are history, not state:** the announcer's Nostr transport, in
-a later step, posts when a pitch is placed or a slot is about to start; those
-are never edited and never retracted.
+**Kind-1 notes are history, not state:** the announcer's Nostr transport
+(`server/src/nostr/notes.ts`) posts a plain-text note when a slot is about to
+start, a day begins, a session is added or moved, a pitch is made or placed —
+whichever of the six triggers the event ticked in `nostr_triggers`. Each note
+carries one `a` tag per session it names and the same reference inline as
+`nostr:naddr…`, so a capable client opens the calendar event; the site link
+comes last, only with `PUBLIC_URL`. Notes are never edited and never
+retracted, and a failed publish is logged and dropped: the calendar events
+are the durable copy and a late note is a stale one.
 
 ### Migrations
 

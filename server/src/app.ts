@@ -39,6 +39,7 @@ import { trackRoutes } from './routes/tracks.js';
 import { Broker } from './sse.js';
 import { SimplePool } from 'nostr-tools/pool';
 import type { Pool } from './nostr/pool.js';
+import { nostrTransport } from './nostr/notes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** web/dist, from either server/src (dev) or server/dist (built). */
@@ -60,6 +61,7 @@ export function createApp(db: Db, config: Config, nostrPool: Pool = new SimplePo
     config,
     announcer: new Announcer(db, [
       telegramTransport(db, config.telegramBotToken, config.publicUrl),
+      nostrTransport(db, config, nostrPool),
     ]),
   };
   const app = express();
