@@ -15,7 +15,6 @@
  * out within a minute. Clearing them compares `touched_at` to the value
  * read, so a mark that lands during a build survives it.
  */
-import { SimplePool } from 'nostr-tools/pool';
 import { finalizeEvent } from 'nostr-tools/pure';
 import type { Config } from '../config.js';
 import type { Db, EventRow, NostrPublishedRow } from '../db.js';
@@ -34,7 +33,7 @@ import {
   type Template,
 } from './build.js';
 import { openEventKey } from './keys.js';
-import type { Pool } from './pool.js';
+import { makePool, type Pool } from './pool.js';
 
 export type { Pool } from './pool.js';
 
@@ -356,7 +355,7 @@ export async function publishProfileNow(
 }
 
 /** Start the loop and the sweep; both `unref`'d. Returns a stop function. */
-export function startNostrSync(db: Db, config: Config, pool: Pool = new SimplePool()): () => void {
+export function startNostrSync(db: Db, config: Config, pool: Pool = makePool()): () => void {
   let running = false;
   const tick = async (): Promise<void> => {
     if (running) return;
