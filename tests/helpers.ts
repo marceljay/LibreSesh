@@ -46,6 +46,8 @@ export function makeHarness(
     seedDemoEvent: false,
     allowEphemeralDb: true,
     buildCommit: null,
+    telegramBotToken: null,
+    publicUrl: null,
     atRestSecret: 'test-secret',
     nostrDefaultRelays: [],
     ...overrides,

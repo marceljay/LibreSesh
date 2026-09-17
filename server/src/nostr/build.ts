@@ -41,10 +41,10 @@ export const sessionDTag = (eventId: number, sessionId: number): string =>
   `e${eventId}-s${sessionId}`;
 export const CALENDAR_D = 'programme';
 
-export const eventUrl = (publicUrl: string | undefined, event: EventRow): string | null =>
+export const eventUrl = (publicUrl: string | null | undefined, event: EventRow): string | null =>
   publicUrl ? `${publicUrl}/e/${event.slug}` : null;
 export const sessionUrl = (
-  publicUrl: string | undefined,
+  publicUrl: string | null | undefined,
   event: EventRow,
   sessionId: number,
 ): string | null => (publicUrl ? `${publicUrl}/e/${event.slug}/s/${sessionId}` : null);
@@ -81,7 +81,7 @@ export function dateRangeText(startDate: string, endDate: string): string {
 export function buildSessionEvent(
   facts: SessionFacts,
   pubkey: string,
-  publicUrl: string | undefined,
+  publicUrl: string | null | undefined,
   nowSec: number,
 ): Template {
   const { session: s, event: e } = facts;
@@ -111,7 +111,7 @@ export function buildCalendarEvent(
   event: EventRow,
   sessionDTags: string[],
   pubkey: string,
-  publicUrl: string | undefined,
+  publicUrl: string | null | undefined,
   nowSec: number,
 ): Template {
   const tags: string[][] = [
@@ -128,7 +128,7 @@ export function buildCalendarEvent(
 
 export function buildProfileEvent(
   event: EventRow,
-  publicUrl: string | undefined,
+  publicUrl: string | null | undefined,
   nowSec: number,
 ): Template {
   const about = present([

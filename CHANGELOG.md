@@ -6,6 +6,51 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **An event can announce itself into a Telegram group.** Organisers connect
+  one from Manage → **Publish** → Telegram: add the bot, generate a code, type
+  `/bind <code>` in the group. Publish is a new tab, because where the schedule
+  goes outside this app is its own job and the next such connection belongs
+  beside this one rather than further down Settings.
+
+  **How loud it is, in four settings, each naming something it really does.**
+  *Light* is a message before each start time. *Medium* adds the whole day each
+  morning, at an hour the event picks on the venue's clock — one line a session,
+  read over breakfast to decide where to be. *Heavy* adds a session the moment
+  it is placed, and a note when one moves. A session added inside the *how
+  early* window is announced as that slot rather than twice over, and moves are
+  held for up to a minute so dragging a morning about is one message and not a
+  dozen. Only sessions the group has already been told about are mentioned when
+  they move — announcing the move of a session nobody knew existed would
+  disclose it.
+
+  Every option carries an **Example** button showing the messages that setting
+  would actually send, drawn from this event's own schedule and from the
+  choices on screen rather than the ones last saved. These are the only
+  settings whose effect is invisible from the screen that changes them — it
+  lands in somebody else's Telegram, tomorrow. The group is then told what is coming up, once
+  per start time, fifteen minutes ahead by default — every room starting at
+  10:00 in one message rather than five. `/next` answers in the group, and
+  `/unbind` stops it from there.
+
+  **The bot belongs to the event.** The organiser pastes a token from BotFather
+  into that same section, so Telegram works on an instance whose operator has
+  set nothing up, and the group sees a bot named after the conference.
+  `TELEGRAM_BOT_TOKEN` stays as a fallback for a single-tenant instance. Set
+  `PUBLIC_URL` for the messages to carry links.
+
+  A saved token is never readable again — the settings screen shows its last
+  four characters — and never travels in an export. It is the first plaintext
+  credential in the database, and what that costs is in SECURITY.md.
+
+  **Livestream links, if you want them.** Off for every event until switched
+  on: a session link in a message still meets the password gate, and a stream
+  address does not, so handing one to a group is a disclosure choice of its own
+  rather than something acquired by picking a volume.
+
+  Drafts, deleted sessions and archived events are never announced, and the
+  connection never travels in an export. What a connected group can see is in
+  SECURITY.md.
+
 - **`/openapi.json`: the API as a machine-readable document.** `/api.md` has
   been the reference programs write against since 2026-09-10, and it said
   outright that there was no OpenAPI document. There is now, at

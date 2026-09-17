@@ -3114,6 +3114,182 @@
         }
       }
     },
+    "/api/e/{slug}/telegram": {
+      "delete": {
+        "operationId": "deleteEventTelegram",
+        "summary": "Disconnect the Telegram group. Keeps the bot. Organisers",
+        "tags": [
+          "Telegram"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disconnect the Telegram group. Keeps the bot. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getEventTelegram",
+        "summary": "Which bot and group this event announces through, and how loudly. Never the token. Organisers",
+        "tags": [
+          "Telegram"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Which bot and group this event announces through, and how loudly. Never the token. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventTelegram",
+        "summary": "Set the bot token, what it announces, how early, and whether livestream links go too. Organisers",
+        "tags": [
+          "Telegram"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSettings"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Set the bot token, what it announces, how early, and whether livestream links go too. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/telegram/code": {
+      "post": {
+        "operationId": "postEventTelegramCode",
+        "summary": "Mint the single-use code to send as `/bind <code>` in the group. Organisers",
+        "tags": [
+          "Telegram"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mint the single-use code to send as `/bind <code>` in the group. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/telegram/test": {
+      "post": {
+        "operationId": "postEventTelegramTest",
+        "summary": "Send a test message to the connected group. Organisers",
+        "tags": [
+          "Telegram"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Send a test message to the connected group. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/e/{slug}/tracks": {
       "patch": {
         "operationId": "patchEventTracks",
@@ -4691,6 +4867,45 @@
         "required": [
           "name"
         ],
+        "additionalProperties": false
+      },
+      "TelegramSettings": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "light",
+              "medium",
+              "heavy"
+            ]
+          },
+          "leadMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "botToken": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{5,}:[\\w-]{20,}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "livestreams": {
+            "type": "boolean"
+          },
+          "digestMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          }
+        },
         "additionalProperties": false
       },
       "TrackOrder": {

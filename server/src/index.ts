@@ -4,6 +4,7 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
+import { PollerPool } from './telegram.js';
 import { rotateAtRest } from './secretsAtRest.js';
 import { PURPOSE as NOSTR_SECKEY } from './nostr/keys.js';
 import { startNostrSync } from './nostr/queue.js';
@@ -73,6 +74,31 @@ const sweep = (): void => {
 sweep();
 setInterval(sweep, 24 * 60 * 60_000).unref();
 
+// Telegram. Nothing here runs on Telegram's side — a bot is a token, not a
+// program — so the clock and the commands are both ours.
+//
+// Started unconditionally, because events bring their own bots: an instance
+// with no TELEGRAM_BOT_TOKEN still has to listen for whichever tokens the
+// organisers have saved. The pool is empty, and everything below inert, until
+// one exists. Reconciling on the same tick is what picks up a token pasted
+// while the process is running.
+// The announcer lives on the request context, because the routes need it too:
+// `added` and `changed` are write-path triggers, announced beside the audit row
+// rather than on a timer.
+const { announcer } = ctx;
+const pollers = new PollerPool(db, config.telegramBotToken, announcer);
+pollers.reconcile();
+setInterval(() => {
+  pollers.reconcile();
+  void announcer.tick();
+}, 60_000).unref();
+
+if (pollers.size > 0) {
+  console.log(`telegram: listening as ${pollers.size} bot(s)`);
+  if (!config.publicUrl) {
+    console.warn('telegram: no PUBLIC_URL, so announcements will carry no links');
+  }
+}
 // Calendar events on the relays follow the database: a loop every ten
 // seconds publishes what the write paths marked, and a five-minute sweep
 // catches anything a write path missed.
@@ -116,6 +142,7 @@ server.requestTimeout = 0;
 
 function shutdown(signal: string): void {
   console.log(`${signal} received, shutting down`);
+  pollers.stop();
   ctx.broker.close();
   server.close(() => {
     db.close();
