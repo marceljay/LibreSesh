@@ -147,3 +147,6 @@ export const auditKeepField: NumberFieldSpec = {
   alsoAllow: [0],
   unit: 'entries',
 };
+
+/** Mirrors the server's lead-time bounds in `routes/telegram.ts`. */
+export const telegramLeadField: NumberFieldSpec = { min: 1, max: 180, unit: 'minutes' };

@@ -380,6 +380,7 @@ resolving, so a client written against the old name keeps working. Read
 | `GET /trash`, `POST /sessions/:id/restore`, `POST /contributions/:id/restore` | Undo |
 | `PATCH /settings`, `PATCH /permissions` | The event itself, and its capability matrix |
 | `POST /confirm-admin`, `POST /password-role` | Re-typing the organiser password; asking what a password grants |
+| `GET`/`PATCH`/`DELETE /telegram`, `POST /telegram/code`, `POST /telegram/test` | The event's Telegram group: status, what it announces and how early, whether livestream links go with it, disconnecting, minting a bind code, and a test message. Organisers |
 
 ## Two things that will confuse a program
 

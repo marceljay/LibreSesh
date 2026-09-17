@@ -27,6 +27,8 @@ import { roomRoutes } from './routes/rooms.js';
 import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/sessions.js';
 import { settingsRoutes } from './routes/settings.js';
+import { telegramRoutes } from './routes/telegram.js';
+import { Announcer } from './telegram.js';
 import { trashRoutes } from './routes/trash.js';
 import { streamRoutes } from './routes/stream.js';
 import { tagRoutes } from './routes/tags.js';
@@ -51,6 +53,7 @@ export function createApp(db: Db, config: Config): App {
     backoff: new Backoff(),
     tally: new Tally(),
     config,
+    announcer: new Announcer(db, config.telegramBotToken, config.publicUrl),
   };
   const app = express();
 
@@ -90,6 +93,7 @@ export function createApp(db: Db, config: Config): App {
   event.use(claimRoutes(ctx));
   event.use(agendaRoutes(ctx));
   event.use(settingsRoutes(ctx));
+  event.use(telegramRoutes(ctx));
   event.use(trashRoutes(ctx));
   event.use(exportRoutes(ctx));
   event.use(auditRoutes(ctx));

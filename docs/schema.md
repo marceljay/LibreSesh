@@ -82,6 +82,15 @@ erDiagram
     TEXT default_view "default 'list'"
     INTEGER show_official_badge "default 0"
     INTEGER pitches_enabled "default 1"
+    TEXT telegram_bot_token "nullable"
+    TEXT telegram_chat_id "nullable"
+    INTEGER telegram_topic_id "nullable"
+    TEXT telegram_triggers "default '['up_next']'"
+    INTEGER telegram_lead_min "default 15"
+    TEXT telegram_bind_code "nullable"
+    TEXT telegram_bind_expires "nullable"
+    INTEGER telegram_livestreams "default 0"
+    INTEGER telegram_digest_min "default 480"
   }
   identities {
     INTEGER id PK
@@ -343,7 +352,7 @@ erDiagram
 - **References:** nothing
 - **Referenced by:** [`audit`](#audit).`event_id`, [`breaks`](#breaks).`event_id`, [`event_identities`](#event_identities).`event_id`, [`event_permissions`](#event_permissions).`event_id`, [`event_slugs`](#event_slugs).`event_id`, [`notification_mutes`](#notification_mutes).`event_id`, [`notifications`](#notifications).`event_id`, [`people`](#people).`event_id`, [`profile_claims`](#profile_claims).`event_id`, [`proposals`](#proposals).`event_id`, [`roles`](#roles).`event_id`, [`rooms`](#rooms).`event_id`, [`session_formats`](#session_formats).`event_id`, [`sessions`](#sessions).`event_id`, [`tags`](#tags).`event_id`, [`tracks`](#tracks).`event_id`
 - **Primary key:** `id`
-- **Unique:** `slug`
+- **Unique:** `slug`; `telegram_bind_code` (partial — see the migration for the condition)
 
 ### `identities`
 

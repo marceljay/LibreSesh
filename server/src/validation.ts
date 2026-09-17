@@ -433,6 +433,30 @@ export const myProfileSchema = z.object({
   links: z.array(linkSchema).max(10).optional(),
 });
 
+/**
+ * `123456789:AA...` — what BotFather hands out. Loose on purpose: this catches
+ * a half-copied paste while the organiser can still see what they pasted, and
+ * does not try to out-guess Telegram about its own format.
+ */
+const telegramTokenSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{5,}:[\w-]{20,}$/, 'That does not look like a bot token');
+
+/** `null` clears the event's own bot and falls back to the instance's. */
+export const telegramSettingsSchema = z
+  .object({
+    /** `MODES` in `telegram.ts` is the source — a name here that it does not
+     *  know would 500 on `MODES[body.mode]`. */
+    mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
+    leadMin: z.number().int().min(1).max(180).optional(),
+    botToken: telegramTokenSchema.nullable().optional(),
+    livestreams: z.boolean().optional(),
+    /** Local minute of day for the digest, so 0–1439. */
+    digestMin: z.number().int().min(0).max(1439).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
+
 export const settingsSchema = z
   .object({
     name: trimmed(120).optional(),

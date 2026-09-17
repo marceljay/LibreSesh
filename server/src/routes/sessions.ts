@@ -10,6 +10,7 @@ import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
 import { isAMove, notifyMentionsIn, notifySessionAudience } from '../notifications.js';
+import { announceQuietly } from '../telegram.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -175,6 +176,11 @@ export function sessionRoutes(ctx: Ctx): Router {
       entityId: id,
     });
     publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
+    // Beside the audit row, not on the broker: `Broker.publish` returns early
+    // with no subscribers, so a bot hooked there would post only while somebody
+    // had a tab open. A draft is never announced — publishing it is the event
+    // the group hears about.
+    if (!draft) announceQuietly(ctx.announcer.announceAdded(req.event, id));
     // A draft mentions nobody yet: the names in it are heard when it is
     // published, rather than pointing someone at a session they cannot open.
     if (!draft) {
@@ -343,6 +349,9 @@ export function sessionRoutes(ctx: Ctx): Router {
       publishSession(ctx.db, ctx.broker, req.event, 'session.created', row, dto);
       return dto;
     });
+    // Deliberately silent, per `announcements.md`: a repeat is one act that
+    // creates a fortnight of sessions, and announcing each would be a fortnight
+    // of messages for one click.
     // A name in the description is one mention, not one per day of the run:
     // the first occurrence carries it, and the panel opens on that one. A
     // draft run mentions nobody until it is published, as a single draft does.
@@ -618,6 +627,11 @@ export function sessionRoutes(ctx: Ctx): Router {
       // starrer it is a cancellation, and the stream has just removed it from
       // their screen. A draft that moves, or is published, moves nobody's
       // plans: none of them could see it.
+      // A draft becoming real is the moment the group hears about it, which is
+      // why `added` hangs off publishing and not off creation alone.
+      if (was && was.draft === 1 && now.draft === 0) {
+        announceQuietly(ctx.announcer.announceAdded(req.event, id));
+      }
       if (was && was.draft === 0 && now.draft === 1) {
         notifySessionAudience(
           ctx.db,
@@ -630,6 +644,9 @@ export function sessionRoutes(ctx: Ctx): Router {
           (identityId) => ctx.broker.publishTo(req.event.slug, identityId, 'notification.ping', {}),
         );
       } else if (was && was.draft === 0 && now.draft === 0 && isAMove(was, now)) {
+        // Buffered, not sent: dragging a morning about is a dozen writes and
+        // should reach the group as one message on the next tick.
+        ctx.announcer.noteMoved(req.event, id);
         notifySessionAudience(
           ctx.db,
           {
