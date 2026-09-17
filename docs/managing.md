@@ -128,8 +128,8 @@ pushes it up the screen.
 | --- | --- |
 | Off | Nothing. The group stays connected |
 | Light | One message before each start time |
-| Medium | That, plus the whole day each morning |
-| Heavy | That, plus a session as it is added, and when one moves |
+| Medium | That, the whole day each morning, and a pitch as it lands |
+| Heavy | That, plus every session an organiser adds, and when one moves |
 
 Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
@@ -144,14 +144,19 @@ because it is read over breakfast to decide where to be. A day with nothing on
 it says nothing. If the server is restarted more than an hour after that time,
 that day's is skipped rather than arriving at lunchtime.
 
-**Added and moved** are the Heavy-only pair. A session added inside the *how
-early* window is announced as that slot rather than twice over, so a pitch
-placed five minutes before it runs produces one message and not two. Moves are
-held for up to a minute and go out together, so dragging a morning about is one
-message rather than a dozen — and only sessions the group has already been told
-about are mentioned, since announcing the move of a session nobody knew existed
-would disclose it. Repeating a session across days announces nothing: one click
-should not produce a fortnight of messages.
+**A pitch landing on the grid** is announced from Medium up, and it is the
+reason most events want this at all: a session put up at short notice is the one
+thing no printed programme can carry. An organiser *adding* a session is
+separate, and Heavy-only, because building a programme is twenty sessions in an
+afternoon and nobody wants twenty messages about it.
+
+Either, inside the *how early* window, is announced as that whole slot rather
+than twice over — so a pitch placed five minutes before it runs produces one
+message and not two. **Moves** are held for up to a minute and go out together,
+so dragging a morning about is one message rather than a dozen, and only
+sessions the group has already been told about are mentioned: announcing the
+move of a session nobody knew existed would disclose it. Repeating a session
+across days announces nothing.
 
 **Livestreams.** Off unless you turn it on. With it on, a session that carries
 a stream gets that link in the announcement, under the speakers. Worth knowing

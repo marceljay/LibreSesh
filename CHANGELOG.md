@@ -15,8 +15,9 @@ All notable changes to this project are documented here.
   **How loud it is, in four settings, each naming something it really does.**
   *Light* is a message before each start time. *Medium* adds the whole day each
   morning, at an hour the event picks on the venue's clock — one line a session,
-  read over breakfast to decide where to be. *Heavy* adds a session the moment
-  it is placed, and a note when one moves. A session added inside the *how
+  read over breakfast to decide where to be — and a pitch as it lands on the
+  grid, which at an unconference is the message people actually act on. *Heavy*
+  adds every session an organiser puts up, and a note when one moves. A session added inside the *how
   early* window is announced as that slot rather than twice over, and moves are
   held for up to a minute so dragging a morning about is one message and not a
   dozen. Only sessions the group has already been told about are mentioned when

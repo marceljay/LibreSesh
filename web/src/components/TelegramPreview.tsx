@@ -135,6 +135,7 @@ export function TelegramPreview({
   const sends = {
     upNext: mode === 'light' || mode === 'medium' || mode === 'heavy',
     digest: mode === 'medium' || mode === 'heavy',
+    placed: mode === 'medium' || mode === 'heavy',
     added: mode === 'heavy',
     moved: mode === 'heavy',
   };
@@ -200,8 +201,18 @@ export function TelegramPreview({
           </Bubble>
         )}
 
+        {sends.placed && (
+          <Bubble when="The moment a pitch reaches the grid">
+            <p>🙌 Just pitched — {slot.time}</p>
+            <p className="mt-2">
+              <Title>{slot.rows[0]?.title}</Title>
+              {slot.rows[0]?.speakers && `, by ${slot.rows[0]?.speakers}`}
+            </p>
+          </Bubble>
+        )}
+
         {sends.added && (
-          <Bubble when="The moment a session is placed">
+          <Bubble when="The moment an organiser puts a session up">
             <p>✨ Just added — {slot.time}</p>
             <p className="mt-2">
               <Title>{slot.rows[0]?.title}</Title>

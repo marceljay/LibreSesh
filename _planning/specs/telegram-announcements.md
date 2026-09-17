@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.2 · **Status:** implemented · **Team:** LibreSesh
+**Version:** 1.3 · **Status:** implemented · **Team:** LibreSesh
 
 ## Contents
 
@@ -213,6 +213,7 @@ sequenceDiagram
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
 | A line a session, two when streamed | Room, title, speakers and streams on lines of their own | A five-room slot ran to twenty lines. One notification is only one notification if it can be read at a glance |
+| `placed` separate from `added` | One trigger for both | Building a programme is twenty sessions in an afternoon; a pitch landing mid-conference is the case the feature exists for (U5). One trigger cannot serve both |
 | Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
 | Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
 | `changed` is buffered to the next tick | Sent from the route like `added` | A reshuffle is a dozen writes and one piece of news. The 60s tick already *is* the coalescing window |
@@ -447,7 +448,7 @@ transports join it rather than lengthening Settings.
 | U2 | §4.1 one message per slot | `telegram.test.ts` "puts every room of one start time in a single message" |
 | U3 | Room scope — **not implemented**, see §11 | — |
 | U4 | §4.2 digest | `telegram.test.ts` "goes out once a day, at the hour the event chose" |
-| U5 | §4.2 range selection | `telegram.test.ts` "takes a session created inside its own window" |
+| U5 | §4.2 range selection, and the `placed` trigger | `telegram.test.ts` "takes a session created inside its own window"; "announces a pitch as it reaches the grid" |
 | U6 | §4.1 links, and the livestream setting | `telegram.test.ts` "links the title when the instance knows its own address"; "carries a livestream link only when the event asks for it" |
 | U7 | §5 per-event token | `telegram.test.ts` "lets an organiser turn Telegram on with no help from the operator" |
 | Drafts never announced | §4.2 selection predicate | `telegram.test.ts` "never takes a draft" |
@@ -490,3 +491,4 @@ Requirements without a design element: U3 and U4 (§11).
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from [`announcements.md`](announcements.md) rather than restated |
 | 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |
 | 1.2 | 2026-09-17 | `digest`, `added` and `changed` built, so the ladder is four rungs again. Migration 025 adds the digest hour; the announcer moves onto the request context, because two of the three are write-path triggers |
+| 1.3 | 2026-09-17 | `placed` becomes its own trigger (migration 026). Placing a pitch announced nothing at all, which was the case the feature exists for |

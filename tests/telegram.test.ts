@@ -63,8 +63,8 @@ describe('escaping', () => {
 describe('modes', () => {
   it('derives the preset a trigger set matches, whatever the order', () => {
     expect(modeOf(['up_next'])).toBe('light');
-    expect(modeOf(['up_next', 'digest'])).toBe('medium');
-    expect(modeOf(['changed', 'added', 'up_next', 'digest'])).toBe('heavy');
+    expect(modeOf(['up_next', 'digest', 'placed'])).toBe('medium');
+    expect(modeOf(['changed', 'added', 'placed', 'up_next', 'digest'])).toBe('heavy');
     expect(modeOf([])).toBe('off');
   });
 
@@ -72,7 +72,7 @@ describe('modes', () => {
     // Light meaning `digest` while the digest was unwritten made "one message
     // each morning" a setting whose whole effect was silence. Every trigger
     // named by a preset has to be one the tick or the write path acts on.
-    const fired = new Set<Trigger>(['up_next', 'digest', 'added', 'changed']);
+    const fired = new Set<Trigger>(['up_next', 'digest', 'added', 'changed', 'placed']);
     for (const triggers of Object.values(MODES))
       for (const trigger of triggers) expect(fired.has(trigger)).toBe(true);
   });
@@ -484,7 +484,7 @@ describe('a session added and a session moved', () => {
     harness.db
       .prepare(
         `UPDATE events SET telegram_chat_id = '-100123', telegram_lead_min = 15,
-                           telegram_triggers = '["up_next","digest","added","changed"]'
+                           telegram_triggers = '["up_next","digest","added","changed","placed"]'
           WHERE id = ?`,
       )
       .run(eventId);
@@ -572,6 +572,63 @@ describe('a session added and a session moved', () => {
     expect(sent[0]!.text).toContain('Second');
   });
 
+  it('announces a pitch as it reaches the grid, and calls it a pitch', async () => {
+    // U5, and the case the whole feature exists for. `POST /proposals/:id/place`
+    // builds its own session rather than going through `POST /sessions`, so for
+    // a while it announced nothing at all however loud the setting was.
+    const id = await addSession(600, 'From the board');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), true);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('Just pitched');
+    expect(sent[0]!.text).not.toContain('Just added');
+  });
+
+  it('separates the two: an event may hear pitches and not every session added', async () => {
+    harness.db
+      .prepare(`UPDATE events SET telegram_triggers = '["up_next","placed"]' WHERE id = ?`)
+      .run(eventId);
+    const id = await addSession(600);
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), false);
+    expect(sent).toEqual([]);
+
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), true);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('places a pitch through the route and the group hears about it', async () => {
+    harness.db
+      .prepare(`UPDATE events SET telegram_triggers = '["placed"]' WHERE id = ?`)
+      .run(eventId);
+    const posted: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((_url: unknown, init?: RequestInit) => {
+      posted.push(String(init?.body ?? ''));
+      return Promise.resolve(
+        new Response(JSON.stringify({ ok: true, result: {} }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    });
+
+    const pitch = await admin
+      .post('/api/e/testconf/proposals')
+      .send({ title: 'Repair café', description: '' })
+      .expect(201);
+    await admin
+      .post(`/api/e/testconf/proposals/${(pitch.body as { id: number }).id}/place`)
+      .send({ roomId, startsAt: at(DAY_ONE, 600), endsAt: at(DAY_ONE, 660) })
+      .expect(201);
+
+    // The route detaches the send, so it lands a turn after the response.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(posted.some((body) => body.includes('Just pitched'))).toBe(true);
+    vi.restoreAllMocks();
+  });
+
   it('says nothing about a move of a session the group never heard of', async () => {
     const id = await addSession(600);
     const { sent, send } = recorder();
@@ -646,7 +703,7 @@ describe('the Telegram settings routes', () => {
     const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'heavy' }).expect(200))
       .body as { mode: string; triggers: string[] };
     expect(body.mode).toBe('heavy');
-    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'up_next']);
+    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'placed', 'up_next']);
     await admin.patch('/api/e/testconf/telegram').send({ mode: 'deafening' }).expect(400);
   });
 

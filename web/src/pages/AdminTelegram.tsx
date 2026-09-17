@@ -42,8 +42,8 @@ const DOCS = 'https://github.com/marceljay/LibreSesh/blob/main/docs/managing.md#
 const MODES = [
   { id: 'off', label: 'Off — connected, but silent' },
   { id: 'light', label: 'Light — what is starting next' },
-  { id: 'medium', label: 'Medium — that, plus the day’s programme each morning' },
-  { id: 'heavy', label: 'Heavy — that, plus sessions added and moved' },
+  { id: 'medium', label: 'Medium — that, the morning’s programme, and pitches as they land' },
+  { id: 'heavy', label: 'Heavy — that, plus every session added or moved' },
 ];
 
 const modeLabel = (id: string): string =>
