@@ -4,6 +4,8 @@ import { api } from '../lib/api';
 import { errorText } from '../lib/errorText';
 import { parseNumberField, telegramLeadField } from '../lib/numberField';
 import { FieldInfo } from '../components/FieldInfo';
+import { TimeField } from '../components/TimeField';
+import { fmtMin, minutesOf } from '../lib/format';
 import { TelegramPreview } from '../components/TelegramPreview';
 import {
   ControlShell,
@@ -32,15 +34,16 @@ const DOCS = 'https://github.com/marceljay/LibreSesh/blob/main/docs/managing.md#
 /**
  * The presets, quietest first, worded as what the group experiences.
  *
- * Two rungs, because two are built. The ladder in `announcements.md` goes on —
- * a morning digest, then sessions as they are placed and moved — and every one
- * of those rungs is a trigger that does not exist yet (LIB-211, LIB-212).
- * Listing them would be offering an organiser a quiet-sounding setting whose
- * whole effect is silence, which is worse than a shorter list.
+ * Each one names something the bot actually does. The list was two rungs long
+ * while the digest and the change messages were unwritten, because a setting
+ * called "one message each morning" that sent nothing is worse than a short
+ * list.
  */
 const MODES = [
   { id: 'off', label: 'Off — connected, but silent' },
-  { id: 'up_next', label: 'What is up next — a message before each start time' },
+  { id: 'light', label: 'Light — what is starting next' },
+  { id: 'medium', label: 'Medium — that, plus the day’s programme each morning' },
+  { id: 'heavy', label: 'Heavy — that, plus sessions added and moved' },
 ];
 
 const modeLabel = (id: string): string =>
@@ -86,6 +89,7 @@ export function AdminTelegram({
   const [lead, setLead] = useState('15');
   const [mode, setMode] = useState('off');
   const [streams, setStreams] = useState(false);
+  const [digest, setDigest] = useState('08:00');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -97,6 +101,7 @@ export function AdminTelegram({
       setLead(String(next.leadMin));
       setMode(next.mode);
       setStreams(next.livestreams);
+      setDigest(fmtMin(next.digestMin));
     } catch (err) {
       setProblem(errorText(err));
     }
@@ -117,6 +122,7 @@ export function AdminTelegram({
       setLead(String(next.leadMin));
       setMode(next.mode);
       setStreams(next.livestreams);
+      setDigest(fmtMin(next.digestMin));
       if (done) toast.show(done);
       return true;
     } catch (err) {
@@ -154,9 +160,11 @@ export function AdminTelegram({
   };
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
+  const digestMin = minutesOf(digest);
   const dirty =
     mode !== status.mode ||
     streams !== status.livestreams ||
+    digestMin !== status.digestMin ||
     (parsedLead.value !== null && parsedLead.value !== status.leadMin);
 
   /**
@@ -172,6 +180,7 @@ export function AdminTelegram({
         api.telegramSettings(slug, {
           mode,
           livestreams: streams,
+          digestMin,
           ...(parsedLead.value !== null ? { leadMin: parsedLead.value } : {}),
         }),
       'Saved.',
@@ -347,6 +356,15 @@ export function AdminTelegram({
               </div>
             </Field>
 
+            {(mode === 'medium' || mode === 'heavy') && (
+              <Field
+                label="When the morning message goes out"
+                hint="The venue’s clock, not the server’s. Missed by more than an hour — a restart mid-morning, say — and that day’s is skipped rather than arriving late."
+              >
+                <TimeField value={digest} onChange={setDigest} aria-label="Digest time" />
+              </Field>
+            )}
+
             <NumberField
               label="How early it says it"
               hint="Before each start time. Everything starting at once goes out in a single message, however many rooms that is."
@@ -396,6 +414,7 @@ export function AdminTelegram({
           mode={mode}
           leadMin={parsedLead.value ?? status.leadMin}
           livestreams={streams}
+          digest={digest}
           event={event}
           sessions={sessions}
           rooms={rooms}

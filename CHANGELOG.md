@@ -12,10 +12,16 @@ All notable changes to this project are documented here.
   goes outside this app is its own job and the next such connection belongs
   beside this one rather than further down Settings.
 
-  It says one thing today — what is starting next — so the panel offers one
-  setting besides Off. A morning digest and a message as a session is placed
-  are designed and unbuilt, and a preset named for them would be a setting
-  whose whole effect is silence.
+  **How loud it is, in four settings, each naming something it really does.**
+  *Light* is a message before each start time. *Medium* adds the whole day each
+  morning, at an hour the event picks on the venue's clock — one line a session,
+  read over breakfast to decide where to be. *Heavy* adds a session the moment
+  it is placed, and a note when one moves. A session added inside the *how
+  early* window is announced as that slot rather than twice over, and moves are
+  held for up to a minute so dragging a morning about is one message and not a
+  dozen. Only sessions the group has already been told about are mentioned when
+  they move — announcing the move of a session nobody knew existed would
+  disclose it.
 
   Every option carries an **Example** button showing the messages that setting
   would actually send, drawn from this event's own schedule and from the

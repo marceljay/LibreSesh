@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.1 · **Status:** implemented, in review (PR #116) · **Team:** LibreSesh
+**Version:** 1.2 · **Status:** implemented · **Team:** LibreSesh
 
 ## Contents
 
@@ -85,9 +85,10 @@ not restate them. Nostr is specified in [`nostr-publishing.md`](nostr-publishing
 
 An event's schedule is readable only behind an event password. This transport
 gives an organiser the option of announcing part of it into a Telegram group
-they control. Built today: what is starting next. Designed and not built: the
-day's programme each morning, and a session as it is placed or moved — see the
-triggers in [`announcements.md`](announcements.md) and §11 here.
+they control: what is starting next, the day's programme each morning, and a
+session as it is added or moved. The triggers themselves are defined in
+[`announcements.md`](announcements.md); this document is how Telegram renders
+and delivers them.
 
 All logic executes inside the LibreSesh server process. There is no separate
 service, no code deployed to Telegram, and no scheduling facility on Telegram's
@@ -211,7 +212,10 @@ sequenceDiagram
 | Group discovered via bind code | Organiser pastes a chat id | A private group's id cannot be obtained without a third-party bot |
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
-| Only presets whose triggers are built are offered | The full Off/Light/Medium/Heavy ladder | Every rung above Off carries `digest`, which is unbuilt, so "Light — one message each morning" would name a setting whose whole effect is silence. §8's own rule: never a control that cannot work |
+| Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
+| Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
+| `changed` is buffered to the next tick | Sent from the route like `added` | A reshuffle is a dozen writes and one piece of news. The 60s tick already *is* the coalescing window |
+| `added` inside the lead window sends the whole slot | Send the one session, then the slot | Two messages seconds apart saying nearly the same thing. Sending the slot and marking it keeps the rooms already in it visible |
 | Livestream links a setting of their own | Part of a preset, or always on | A preset is a *noise* choice; this is a *disclosure* choice. A session link meets the password gate and a stream address does not, so it is not something to acquire by picking a volume |
 | HTML parse mode | MarkdownV2 | Every interpolated value is user-authored; MarkdownV2 needs 18 characters escaped in each, and one miss is a 400 or mangled output |
 
@@ -241,8 +245,10 @@ one per message.
 
 **Purpose.** Decide which slots are due and deliver them.
 
-**Processing.** Per tick, for each event with a binding and `archived = 0`
-whose trigger set contains `up_next`:
+**Processing.** Per tick, for each event with a binding and `archived = 0`,
+each enabled trigger in turn — `changed` first, so a session dragged into the
+next quarter of an hour reads as moved rather than arriving as a fresh slot,
+then `digest`, then `up_next`. For `up_next`:
 
 1. `dueSessions` selects `starts_at > now AND starts_at <= now + lead`, with
    `draft = 0` and `deleted_at IS NULL`.
@@ -254,9 +260,18 @@ Rationale for the range, the mark ordering, and the in-memory record is in
 [`announcements.md`](announcements.md) §The loop. A failure for one event is logged and does not
 stop the others.
 
-**Data structures.** `Set<string>` keyed `telegram:<eventId>:<startsAt>`. The
-transport prefix is required by [`announcements.md`](announcements.md) so one transport cannot
-silence another.
+The digest fires once per local day, inside a one-hour window after
+`telegram_digest_min`, so a process restarted at 14:00 does not open by
+announcing a day half over. `added` is called from the session routes beside
+their `audit()`; `changed` is buffered by `noteMoved` and drained by the next
+tick. Neither can fail a write — `announceQuietly` detaches the promise.
+
+**Data structures.** `Set<string>` keyed `telegram:<eventId>:<startsAt>`, and
+`telegram:digest:<eventId>:<localDate>` for the digest. The transport prefix is
+required by [`announcements.md`](announcements.md) so one transport cannot
+silence another. A second `Set<number>` holds the sessions actually announced:
+`changed` fires only for those, because the move of a session the group was
+never told about would disclose it.
 
 **Interfaces.** Constructed with the database, the instance fallback token, the
 public URL and a `Sender`. `nextSlotText` serves the `/next` command.
@@ -327,6 +342,7 @@ Migration `023_telegram.sql` adds to `events`:
 | `telegram_bind_code` | TEXT null | Unique where not null |
 | `telegram_bind_expires` | TEXT null | ISO-8601 |
 | `telegram_livestreams` | INTEGER | Migration 024. Default 0 — a disclosure choice is never on by default |
+| `telegram_digest_min` | INTEGER | Migration 025. Local minute of day, default 480 (08:00 at the venue) |
 
 **Constraints.** None of these columns appear in an export — the export writes
 an explicit allow-list — so a cloned event cannot post into the original's
@@ -389,7 +405,8 @@ transports join it rather than lengthening Settings.
 | --- | --- |
 | Bot | Token field with a **Save bot** action; once saved, shows the last four characters and **Remove**. An ⓘ explains what a bot is and links to [`docs/managing.md`](../../docs/managing.md) |
 | Group | **Generate a code**, then the line to send in the group; when bound, **Send a test message** and **Disconnect** |
-| How much it says | Select over the presets that are built: **Off** and **What is up next** |
+| How much it says | Select over the presets: **Off**, **Light**, **Medium**, **Heavy** |
+| When the morning message goes out | `TimeField`, shown only for the presets that send one |
 | How early it says it | Number field, 1–180 minutes |
 | Livestreams | Checkbox, off by default, stating in its hint that a stream address does not meet the password gate |
 | Save | One action for the three options above, disabled until a value differs from what is stored |
@@ -410,11 +427,11 @@ transports join it rather than lengthening Settings.
   with what is already saved answers a question nobody asked. These are the
   only settings in the application whose effect cannot be observed from the
   screen that changes them.
-- **The panel offers no preset it cannot honour.** The ladder in
-  [`announcements.md`](announcements.md) reaches Heavy; two rungs are built, so two are listed. A
-  preset named for a morning digest that does not exist is the same fault as a
-  form that cannot submit, and the Example would have to draw a message that
-  never arrives.
+- **The panel offers no preset it cannot honour**, and the Example draws no
+  bubble without a trigger behind it. Both failed once: Light meant `digest`
+  while the digest was unwritten, so the setting sent nothing and the Example
+  drew a message that never arrives. A rung joins the ladder when its trigger
+  does.
 
 ---
 
@@ -425,7 +442,7 @@ transports join it rather than lengthening Settings.
 | U1 | §4.5 routes; §8 panel | `telegram.test.ts` route suite; `adminTelegram.test.tsx` |
 | U2 | §4.1 one message per slot | `telegram.test.ts` "puts every room of one start time in a single message" |
 | U3 | Room scope — **not implemented**, see §11 | — |
-| U4 | `digest` trigger — **not implemented**, LIB-211 | — |
+| U4 | §4.2 digest | `telegram.test.ts` "goes out once a day, at the hour the event chose" |
 | U5 | §4.2 range selection | `telegram.test.ts` "takes a session created inside its own window" |
 | U6 | §4.1 links, and the livestream setting | `telegram.test.ts` "links the title when the instance knows its own address"; "carries a livestream link only when the event asks for it" |
 | U7 | §5 per-event token | `telegram.test.ts` "lets an organiser turn Telegram on with no help from the operator" |
@@ -468,3 +485,4 @@ Requirements without a design element: U3 and U4 (§11).
 | --- | --- | --- |
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from [`announcements.md`](announcements.md) rather than restated |
 | 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |
+| 1.2 | 2026-09-17 | `digest`, `added` and `changed` built, so the ladder is four rungs again. Migration 025 adds the digest hour; the announcer moves onto the request context, because two of the three are write-path triggers |

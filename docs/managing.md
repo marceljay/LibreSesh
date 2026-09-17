@@ -91,7 +91,8 @@ word, *renamed*.
 ## Telegram
 
 **Manage Event → Publish → Telegram.** The event announces itself into a
-Telegram group: what is starting next, before each start time.
+Telegram group: what is starting next, the day's programme each morning, and
+sessions as they are added and moved.
 
 Nothing runs on Telegram's side. A bot is not a program — it is an account with
 a token, and the code that uses it runs inside LibreSesh. So there is nothing
@@ -126,15 +127,28 @@ pushes it up the screen.
 | | Posts |
 | --- | --- |
 | Off | Nothing. The group stays connected |
-| What is up next | One message before each start time |
-
-A morning digest of the whole day, and a message the moment a session is placed
-or moved, are designed and not yet built. They will appear here as further
-choices; nothing you set now will change meaning when they do.
+| Light | One message before each start time |
+| Medium | That, plus the whole day each morning |
+| Heavy | That, plus a session as it is added, and when one moves |
 
 Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
+
+**The morning message** goes out at the time you set, on the venue's clock. It
+is one line a session for the whole day — no speakers, no links to streams,
+because it is read over breakfast to decide where to be. A day with nothing on
+it says nothing. If the server is restarted more than an hour after that time,
+that day's is skipped rather than arriving at lunchtime.
+
+**Added and moved** are the Heavy-only pair. A session added inside the *how
+early* window is announced as that slot rather than twice over, so a pitch
+placed five minutes before it runs produces one message and not two. Moves are
+held for up to a minute and go out together, so dragging a morning about is one
+message rather than a dozen — and only sessions the group has already been told
+about are mentioned, since announcing the move of a session nobody knew existed
+would disclose it. Repeating a session across days announces nothing: one click
+should not produce a fortnight of messages.
 
 **Livestreams.** Off unless you turn it on. With it on, a session that carries
 a stream gets that link in the announcement, under the speakers. Worth knowing

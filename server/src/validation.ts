@@ -446,12 +446,14 @@ const telegramTokenSchema = z
 /** `null` clears the event's own bot and falls back to the instance's. */
 export const telegramSettingsSchema = z
   .object({
-    /** The presets that exist today. `MODES` in `telegram.ts` is the source —
-     *  a name here that it does not know would 500 on `MODES[body.mode]`. */
-    mode: z.enum(['off', 'up_next']).optional(),
+    /** `MODES` in `telegram.ts` is the source — a name here that it does not
+     *  know would 500 on `MODES[body.mode]`. */
+    mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
     livestreams: z.boolean().optional(),
+    /** Local minute of day for the digest, so 0–1439. */
+    digestMin: z.number().int().min(0).max(1439).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Nothing to update' });
 

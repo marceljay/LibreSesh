@@ -4508,7 +4508,9 @@
             "type": "string",
             "enum": [
               "off",
-              "up_next"
+              "light",
+              "medium",
+              "heavy"
             ]
           },
           "leadMin": {
@@ -4529,6 +4531,11 @@
           },
           "livestreams": {
             "type": "boolean"
+          },
+          "digestMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
           }
         },
         "additionalProperties": false

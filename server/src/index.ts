@@ -4,7 +4,7 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
-import { Announcer, PollerPool } from './telegram.js';
+import { PollerPool } from './telegram.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -64,7 +64,10 @@ setInterval(sweep, 24 * 60 * 60_000).unref();
 // organisers have saved. The pool is empty, and everything below inert, until
 // one exists. Reconciling on the same tick is what picks up a token pasted
 // while the process is running.
-const announcer = new Announcer(db, config.telegramBotToken, config.publicUrl);
+// The announcer lives on the request context, because the routes need it too:
+// `added` and `changed` are write-path triggers, announced beside the audit row
+// rather than on a timer.
+const { announcer } = ctx;
 const pollers = new PollerPool(db, config.telegramBotToken, announcer);
 pollers.reconcile();
 setInterval(() => {

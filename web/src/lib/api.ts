@@ -328,7 +328,13 @@ export const api = {
    *  instance's, if it has one. A saved token is never read back. */
   telegramSettings: (
     slug: string,
-    body: { mode?: string; leadMin?: number; botToken?: string | null; livestreams?: boolean },
+    body: {
+      mode?: string;
+      leadMin?: number;
+      botToken?: string | null;
+      livestreams?: boolean;
+      digestMin?: number;
+    },
   ) => request<TelegramStatus>('PATCH', `/e/${encode(slug)}/telegram`, body),
   telegramDisconnect: (slug: string) =>
     request<TelegramStatus>('DELETE', `/e/${encode(slug)}/telegram`),

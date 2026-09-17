@@ -736,6 +736,8 @@ export interface TelegramStatus {
   leadMin: number;
   /** Whether a message carries each session's livestream links. */
   livestreams: boolean;
+  /** Local minute of day the morning digest goes out. */
+  digestMin: number;
   /** A live bind code, if one has been minted and not yet used or expired. */
   bindCode: string | null;
   bindExpires: string | null;

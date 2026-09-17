@@ -3,8 +3,13 @@ import type { Db, EventRow } from '../server/src/db.js';
 import type { TelegramStatus } from '../server/src/shared/types.js';
 import {
   activeTokens,
+  announceableSession,
   Announcer,
+  daySessions,
   MODES,
+  renderDigest,
+  renderMoved,
+  type Trigger,
   dueSessions,
   escapeHtml,
   groupByStart,
@@ -27,6 +32,7 @@ import {
   type Agent,
   type Harness,
 } from './helpers.js';
+import { localDate } from '../server/src/shared/time.js';
 
 const TOKEN = 'test-token';
 
@@ -55,18 +61,27 @@ describe('escaping', () => {
 });
 
 describe('modes', () => {
-  it('derives the preset a trigger set matches', () => {
-    expect(modeOf(['up_next'])).toBe('up_next');
+  it('derives the preset a trigger set matches, whatever the order', () => {
+    expect(modeOf(['up_next'])).toBe('light');
+    expect(modeOf(['up_next', 'digest'])).toBe('medium');
+    expect(modeOf(['changed', 'added', 'up_next', 'digest'])).toBe('heavy');
     expect(modeOf([])).toBe('off');
   });
 
-  it('offers no preset whose triggers are not built', () => {
-    // The ladder in announcements.md reaches Heavy, and every rung above Off
-    // carries `digest`, which does not exist. A preset named "one message each
-    // morning" that sends nothing is the fault this guards.
-    expect(Object.keys(MODES)).toEqual(['off', 'up_next']);
+  it('names a preset only for triggers the announcer actually fires', () => {
+    // Light meaning `digest` while the digest was unwritten made "one message
+    // each morning" a setting whose whole effect was silence. Every trigger
+    // named by a preset has to be one the tick or the write path acts on.
+    const fired = new Set<Trigger>(['up_next', 'digest', 'added', 'changed']);
     for (const triggers of Object.values(MODES))
-      for (const trigger of triggers) expect(trigger).toBe('up_next');
+      for (const trigger of triggers) expect(fired.has(trigger)).toBe(true);
+  });
+
+  it('puts the per-slot message on the quietest rung, so the stored default has a name', () => {
+    // Migration 023 defaults an event to ["up_next"]. If that matched no
+    // preset, every panel opened on "Custom" — a state nobody picked.
+    expect(MODES.light).toEqual(['up_next']);
+    expect(modeOf(parseTriggers('["up_next"]'))).toBe('light');
   });
 
   it('calls an unmatched set custom rather than mislabelling it', () => {
@@ -335,6 +350,234 @@ describe('the announcer', () => {
   });
 });
 
+describe('the morning digest', () => {
+  let harness: Harness;
+  let admin: Agent;
+  let eventId: number;
+  let roomId: number;
+
+  const event = () => eventRow(harness.db, eventId);
+
+  beforeEach(async () => {
+    harness = makeHarness({ telegramBotToken: TOKEN, publicUrl: 'https://s.example' });
+    eventId = seedEvent(harness.db);
+    roomId = seedRoom(harness.db, eventId, { name: 'Main Hall' });
+    admin = await actorWithRole(harness, 'testconf', 'admin-pw');
+    harness.db
+      .prepare(
+        `UPDATE events SET telegram_chat_id = '-100123', telegram_digest_min = 480,
+                           telegram_triggers = '["digest"]' WHERE id = ?`,
+      )
+      .run(eventId);
+    for (const [title, minute] of [
+      ['Scaling an unconference', 600],
+      ['Hallway track', 690],
+    ] as const) {
+      await admin
+        .post('/api/e/testconf/sessions')
+        .send({ roomId, title, startsAt: at(DAY_ONE, minute), endsAt: at(DAY_ONE, minute + 30) })
+        .expect(201);
+    }
+  });
+  afterEach(() => harness.close());
+
+  /** 08:15 at the venue on day one, comfortably inside the digest window. */
+  const morning = (minute: number) => new Date(at(DAY_ONE, minute));
+
+  it('takes the whole day, not one slot', () => {
+    const rows = daySessions(harness.db, event(), localDate(morning(490), event().timezone));
+    expect(rows).toHaveLength(2);
+  });
+
+  it('goes out once a day, at the hour the event chose', async () => {
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.tick(morning(490));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('📋');
+    expect(sent[0]!.text).toContain('Scaling an unconference');
+    expect(sent[0]!.text).toContain('Hallway track');
+    // Same day, later: already said.
+    await a.tick(morning(500));
+    expect(sent).toHaveLength(1);
+  });
+
+  it('stays quiet before its hour', async () => {
+    const { sent, send } = recorder();
+    await new Announcer(harness.db, TOKEN, 'https://s.example', send).tick(morning(470));
+    expect(sent).toEqual([]);
+  });
+
+  it('skips the day rather than announcing a morning that is over', async () => {
+    // A process restarted at 14:00 must not open with "today's programme".
+    const { sent, send } = recorder();
+    await new Announcer(harness.db, TOKEN, 'https://s.example', send).tick(morning(840));
+    expect(sent).toEqual([]);
+  });
+
+  it('says nothing on a day with nothing on it', async () => {
+    harness.db.prepare('UPDATE sessions SET draft = 1 WHERE event_id = ?').run(eventId);
+    const { sent, send } = recorder();
+    await new Announcer(harness.db, TOKEN, 'https://s.example', send).tick(morning(490));
+    expect(sent).toEqual([]);
+  });
+
+  it('renders one line a session, with no speakers and no stream links', () => {
+    const [text] = renderDigest(
+      new Date(at(DAY_ONE, 600)),
+      'Europe/Berlin',
+      [
+        {
+          id: 1,
+          title: 'Scaling an unconference',
+          room: 'Main Hall',
+          speakers: ['Ada Lovelace'],
+          livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
+          startsAt: at(DAY_ONE, 600),
+        },
+      ],
+      () => null,
+    );
+    expect(text).toContain('10:00 · Main Hall — Scaling an unconference');
+    expect(text).not.toContain('Ada Lovelace');
+    expect(text).not.toContain('stream.example');
+  });
+});
+
+describe('a session added and a session moved', () => {
+  let harness: Harness;
+  let admin: Agent;
+  let eventId: number;
+  let roomId: number;
+
+  const event = () => eventRow(harness.db, eventId);
+
+  beforeEach(async () => {
+    harness = makeHarness({ telegramBotToken: TOKEN, publicUrl: 'https://s.example' });
+    eventId = seedEvent(harness.db);
+    roomId = seedRoom(harness.db, eventId, { name: 'Main Hall' });
+    admin = await actorWithRole(harness, 'testconf', 'admin-pw');
+    harness.db
+      .prepare(
+        `UPDATE events SET telegram_chat_id = '-100123', telegram_lead_min = 15,
+                           telegram_triggers = '["up_next","digest","added","changed"]'
+          WHERE id = ?`,
+      )
+      .run(eventId);
+  });
+  afterEach(() => harness.close());
+
+  const addSession = async (minute: number, title = 'A late pitch') => {
+    const res = await admin
+      .post('/api/e/testconf/sessions')
+      .send({ roomId, title, startsAt: at(DAY_ONE, minute), endsAt: at(DAY_ONE, minute + 30) })
+      .expect(201);
+    return (res.body as { id: number }).id;
+  };
+
+  it('names a session that has just appeared', async () => {
+    const id = await addSession(600);
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 480)));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('Just added');
+    expect(sent[0]!.text).toContain('A late pitch');
+  });
+
+  it('never announces a draft as added', async () => {
+    const res = await admin
+      .post('/api/e/testconf/sessions')
+      .send({
+        roomId,
+        title: 'Secret plans',
+        startsAt: at(DAY_ONE, 600),
+        endsAt: at(DAY_ONE, 630),
+        draft: true,
+      })
+      .expect(201);
+    const id = (res.body as { id: number }).id;
+    expect(announceableSession(harness.db, event(), id)).toBeNull();
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 480)));
+    expect(sent).toEqual([]);
+  });
+
+  it('a session added inside the lead window becomes that slot, said once', async () => {
+    // The pitch placed at 13:40 to run at 13:45 — the case the feature is for.
+    // Two messages seconds apart saying the same thing is the failure here.
+    await addSession(600, 'Already on the grid');
+    const late = await addSession(600, 'Squeezed in');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    const now = new Date(at(DAY_ONE, 590));
+    await a.announceAdded(event(), late, now);
+    expect(sent).toHaveLength(1);
+    // The whole slot, so the room that was already there is not hidden by the
+    // suppression this performs.
+    expect(sent[0]!.text).toContain('up next');
+    expect(sent[0]!.text).toContain('Already on the grid');
+    expect(sent[0]!.text).toContain('Squeezed in');
+
+    await a.tick(now);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('holds a move for the tick, and sends one message for a reshuffle', async () => {
+    const first = await addSession(600, 'First');
+    const second = await addSession(660, 'Second');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    // Announced, so a correction about them is owed to the group.
+    await a.announceAdded(event(), first, new Date(at(DAY_ONE, 400)));
+    await a.announceAdded(event(), second, new Date(at(DAY_ONE, 400)));
+    sent.length = 0;
+
+    a.noteMoved(event(), first);
+    a.noteMoved(event(), second);
+    a.noteMoved(event(), first);
+    expect(sent).toEqual([]);
+
+    await a.tick(new Date(at(DAY_ONE, 400)));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('Moved on the schedule');
+    expect(sent[0]!.text).toContain('First');
+    expect(sent[0]!.text).toContain('Second');
+  });
+
+  it('says nothing about a move of a session the group never heard of', async () => {
+    const id = await addSession(600);
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    a.noteMoved(event(), id);
+    await a.tick(new Date(at(DAY_ONE, 400)));
+    // Announcing the move would disclose a session that was never announced.
+    expect(sent).toEqual([]);
+  });
+
+  it('renders a move as one line a session', () => {
+    const text = renderMoved(
+      'Europe/Berlin',
+      [
+        {
+          id: 1,
+          title: 'First',
+          room: 'Main Hall',
+          speakers: [],
+          livestreams: [],
+          startsAt: at(DAY_ONE, 600),
+        },
+      ],
+      () => null,
+    );
+    expect(text).toContain('🔄');
+    expect(text).toContain('10:00 · Main Hall — First');
+  });
+});
+
 describe('the Telegram settings routes', () => {
   let harness: Harness;
   let admin: Agent;
@@ -363,7 +606,7 @@ describe('the Telegram settings routes', () => {
     expect(body.available).toBe(true);
     expect(body.connected).toBe(false);
     // The migration's default is a preset with a name, not an unnameable set.
-    expect(body.mode).toBe('up_next');
+    expect(body.mode).toBe('light');
   });
 
   it('mints a bind code that expires', async () => {
@@ -376,15 +619,20 @@ describe('the Telegram settings routes', () => {
   });
 
   it('sets the mode by name and refuses one it does not know', async () => {
-    const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'off' }).expect(200))
+    const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'heavy' }).expect(200))
       .body as { mode: string; triggers: string[] };
-    expect(body.mode).toBe('off');
-    expect(body.triggers).toEqual([]);
+    expect(body.mode).toBe('heavy');
+    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'up_next']);
     await admin.patch('/api/e/testconf/telegram').send({ mode: 'deafening' }).expect(400);
-    // Named in announcements.md, not built, and so not accepted: the route
-    // would otherwise store a set that announces nothing under a name that
-    // promises a message every morning.
-    await admin.patch('/api/e/testconf/telegram').send({ mode: 'light' }).expect(400);
+  });
+
+  it('takes a digest time as a local minute of day, and refuses one off the clock', async () => {
+    const body = (
+      await admin.patch('/api/e/testconf/telegram').send({ digestMin: 450 }).expect(200)
+    ).body as { digestMin: number };
+    expect(body.digestMin).toBe(450);
+    await admin.patch('/api/e/testconf/telegram').send({ digestMin: 1440 }).expect(400);
+    await admin.patch('/api/e/testconf/telegram').send({ digestMin: -1 }).expect(400);
   });
 
   it('carries livestream links only when switched on, and never by default', async () => {

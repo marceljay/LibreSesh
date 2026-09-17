@@ -56,6 +56,9 @@ export interface EventRow {
    *  default: a stream URL is public the moment it is posted, where a session
    *  link still meets the gate — see migration 024. */
   telegram_livestreams: number;
+  /** Local minute of day the morning digest goes out. Default 480 — 08:00 at
+   *  the venue, never UTC. See migration 025. */
+  telegram_digest_min: number;
 }
 
 export interface IdentityRow {

@@ -41,6 +41,7 @@ function status(ctx: Ctx, event: EventRow): TelegramStatus {
     triggers,
     leadMin: event.telegram_lead_min,
     livestreams: event.telegram_livestreams === 1,
+    digestMin: event.telegram_digest_min,
     bindCode: event.telegram_bind_code,
     bindExpires: event.telegram_bind_expires,
   };
@@ -144,6 +145,11 @@ export function telegramRoutes(ctx: Ctx): Router {
       ctx.db
         .prepare('UPDATE events SET telegram_livestreams = ? WHERE id = ?')
         .run(body.livestreams ? 1 : 0, event.id);
+    }
+    if (body.digestMin !== undefined) {
+      ctx.db
+        .prepare('UPDATE events SET telegram_digest_min = ? WHERE id = ?')
+        .run(body.digestMin, event.id);
     }
     audit(ctx.db, {
       identityId: req.identity.id,
