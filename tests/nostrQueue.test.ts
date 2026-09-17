@@ -208,6 +208,23 @@ describe('sync loop', () => {
     h.close();
   });
 
+  it('a fresh mark does not wait out the backoff', async () => {
+    const { h, eventId, insertSession, pool, tick, row } = setup(['wss://a']);
+    const sid = insertSession();
+    pool.refuse.add('wss://a');
+    markDirty(h.db, eventId, sid, T0);
+    await tick(T0 + s(20));
+    expect(row('session', sid).next_try).toBe(new Date(T0 + s(80)).toISOString());
+    pool.refuse.clear();
+    pool.sent = [];
+    markDirty(h.db, eventId, sid, T0 + s(25));
+    await tick(T0 + s(45));
+    expect(pool.kinds(31923)).toHaveLength(1);
+    expect(row('session', sid).pending).toBe('[]');
+    expect(row('session', sid).next_try).toBeNull();
+    h.close();
+  });
+
   it('caps the backoff at an hour', async () => {
     const { h, eventId, insertSession, pool, tick, row } = setup(['wss://a']);
     const sid = insertSession();

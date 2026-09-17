@@ -52,7 +52,8 @@ const UPSERT = `
   VALUES (?, ?, ?, ?, ?, ?)
   ON CONFLICT (event_id, entity, entity_id) DO UPDATE SET
     touched_at = excluded.touched_at,
-    dirty_since = COALESCE(dirty_since, excluded.dirty_since)`;
+    dirty_since = COALESCE(dirty_since, excluded.dirty_since),
+    next_try = NULL`;
 
 /**
  * Flag what a write changed. With a session id, that session and the
