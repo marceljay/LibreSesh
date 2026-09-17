@@ -37,8 +37,7 @@ import { tagRoutes } from './routes/tags.js';
 import { formatRoutes } from './routes/formats.js';
 import { trackRoutes } from './routes/tracks.js';
 import { Broker } from './sse.js';
-import { SimplePool } from 'nostr-tools/pool';
-import type { Pool } from './nostr/pool.js';
+import { makePool, type Pool } from './nostr/pool.js';
 import { nostrTransport } from './nostr/notes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -50,7 +49,7 @@ export interface App {
   ctx: Ctx;
 }
 
-export function createApp(db: Db, config: Config, nostrPool: Pool = new SimplePool()): App {
+export function createApp(db: Db, config: Config, nostrPool: Pool = makePool()): App {
   const ctx: Ctx = {
     db,
     nostrPool,
