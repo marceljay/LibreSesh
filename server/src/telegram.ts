@@ -115,18 +115,31 @@ export interface AnnounceItem {
   livestreams: LabelledLink[];
 }
 
-/** One block per session, so a split can happen on a session boundary. */
+/**
+ * One session: a line, or two when it is streamed.
+ *
+ * `Title, by Ada Lovelace` on the first, `Stream: Main camera` on the second.
+ * Four lines a session made a five-room slot a message nobody reads to the
+ * bottom, and the slot is the unit that matters — one notification, scannable
+ * in the second it is on screen.
+ *
+ * A block, not a line, because the 4096-character split has to happen on a
+ * session boundary and never between a title and its stream.
+ */
 function itemBlock(item: AnnounceItem, sessionUrl: string | null, streams: boolean): string {
   const title = sessionUrl
     ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
     : `<b>${escapeHtml(item.title)}</b>`;
-  const lines = [escapeHtml(item.room), title];
-  if (item.speakers.length > 0) lines.push(escapeHtml(item.speakers.join(', ')));
+  const by = item.speakers.length > 0 ? `, by ${escapeHtml(item.speakers.join(', '))}` : '';
+  const lines = [`${title}${by}`];
   // The session link lands on the password gate; a stream link does not. That
   // is the whole reason this is a setting and not simply what a message says.
-  if (streams)
-    for (const stream of item.livestreams)
-      lines.push(`▶ <a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`);
+  if (streams && item.livestreams.length > 0) {
+    const links = item.livestreams.map(
+      (stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`,
+    );
+    lines.push(`Stream: ${links.join(', ')}`);
+  }
   return lines.join('\n');
 }
 

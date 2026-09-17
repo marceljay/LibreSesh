@@ -212,6 +212,7 @@ sequenceDiagram
 | Group discovered via bind code | Organiser pastes a chat id | A private group's id cannot be obtained without a third-party bot |
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
+| A line a session, two when streamed | Room, title, speakers and streams on lines of their own | A five-room slot ran to twenty lines. One notification is only one notification if it can be read at a glance |
 | Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
 | Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
 | `changed` is buffered to the next tick | Sent from the route like `added` | A reshuffle is a dozen writes and one piece of news. The 60s tick already *is* the coalescing window |
@@ -228,9 +229,12 @@ sequenceDiagram
 **Purpose.** Convert a slot into Telegram messages. Pure; no I/O.
 
 **Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl, streams)`
-emits a header followed by one block per session: room, linked title, speakers,
-and — only when `streams` is set — one `▶ <label>` link per livestream the
-session carries. Times
+emits a header followed by one block per session. A block is **one line, or two
+when the session is streamed**: `Title, by Ada Lovelace`, then `Stream: Main
+camera, Interpreted` — every stream on the one line — when `streams` is set.
+Four lines a session made a five-room slot a message nobody reads to the
+bottom; the slot is the unit that matters, and it has to be scannable in the
+second it is on screen. Times
 are formatted in the **event's** timezone via `zonedParts`. Every interpolated
 value passes through `escapeHtml`, which escapes `&`, `<`, `>` and nothing
 else. Accumulated length is checked per block against the 4096-character limit;

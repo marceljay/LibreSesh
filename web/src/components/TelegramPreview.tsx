@@ -175,21 +175,26 @@ export function TelegramPreview({
         {upNext && (
           <Bubble when={`${leadMin} minutes before each start time`}>
             <p className="font-semibold">🕐 {slot.time} — up next</p>
+            {/* A line a session, two when it is streamed — the same shape
+              `itemBlock` builds, because a preview of a different shape is
+              the failure this modal exists to prevent. */}
             {slot.rows.map((row, i) => (
               <div key={i} className="mt-2">
-                <p>{row.room}</p>
                 <p>
                   <Title>{row.title}</Title>
+                  {row.speakers && `, by ${row.speakers}`}
                 </p>
-                {row.speakers && (
-                  <p className="text-stone-600 dark:text-stone-300">{row.speakers}</p>
+                {livestreams && row.streams.length > 0 && (
+                  <p>
+                    Stream:{' '}
+                    {row.streams.map((label, n) => (
+                      <span key={label}>
+                        {n > 0 && ', '}
+                        <Title>{label}</Title>
+                      </span>
+                    ))}
+                  </p>
                 )}
-                {livestreams &&
-                  row.streams.map((label) => (
-                    <p key={label}>
-                      ▶ <Title>{label}</Title>
-                    </p>
-                  ))}
               </div>
             ))}
           </Bubble>
@@ -198,9 +203,9 @@ export function TelegramPreview({
         {sends.added && (
           <Bubble when="The moment a session is placed">
             <p>✨ Just added — {slot.time}</p>
-            <p className="mt-2">{slot.rows[0]?.room}</p>
-            <p>
+            <p className="mt-2">
               <Title>{slot.rows[0]?.title}</Title>
+              {slot.rows[0]?.speakers && `, by ${slot.rows[0]?.speakers}`}
             </p>
           </Bubble>
         )}

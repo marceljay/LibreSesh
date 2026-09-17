@@ -133,9 +133,15 @@ describe('rendering a slot', () => {
     const [text, ...rest] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
     expect(rest).toEqual([]);
     expect(text).toContain('10:00');
-    expect(text).toContain('Main Hall');
-    expect(text).toContain('Room 2');
-    expect(text).toContain('Grace Hopper, Alan Turing');
+    expect(text).toContain('Scaling &lt;an&gt; unconference');
+    expect(text).toContain('Hallway track');
+  });
+
+  it('is a line a session: the title, and who is giving it', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
+    expect(text).toContain('<b>Hallway track</b>, by Grace Hopper, Alan Turing');
+    // Four lines a session made a five-room slot a message nobody finishes.
+    expect(text.split('\n').filter((l) => l.trim() !== '')).toHaveLength(3);
   });
 
   it('escapes a title rather than letting it become markup', () => {
@@ -166,11 +172,29 @@ describe('rendering a slot', () => {
     // hold, so it is off unless somebody turned it on.
     const [silent] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
     expect(silent).not.toContain('stream.example');
+    expect(silent).not.toContain('Stream:');
 
     const [loud] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, true);
-    expect(loud).toContain('<a href="https://stream.example/main">Main camera</a>');
-    // A session with no stream gains nothing.
-    expect(loud.match(/▶/g)).toHaveLength(1);
+    expect(loud).toContain('Stream: <a href="https://stream.example/main">Main camera</a>');
+    // A session with no stream gains no second line.
+    expect(loud.match(/Stream:/g)).toHaveLength(1);
+  });
+
+  it('lists every stream of one session on the one line', () => {
+    const twice = [
+      {
+        ...items[0]!,
+        livestreams: [
+          { label: 'Main camera', url: 'https://stream.example/main' },
+          { label: 'Interpreted', url: 'https://stream.example/bsl' },
+        ],
+      },
+    ];
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', twice, () => null, true);
+    expect(text).toContain(
+      'Stream: <a href="https://stream.example/main">Main camera</a>, ' +
+        '<a href="https://stream.example/bsl">Interpreted</a>',
+    );
   });
 
   it('splits on a session boundary rather than letting Telegram refuse it', () => {
