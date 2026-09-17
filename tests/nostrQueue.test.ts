@@ -392,6 +392,14 @@ describe('sync loop', () => {
     h.close();
   });
 
+  it('the sweep leaves an event with no relays alone', () => {
+    const { h, insertSession } = setup([]);
+    insertSession();
+    sweep(h.db, T0);
+    expect(h.db.prepare(`SELECT COUNT(*) AS n FROM nostr_published`).get()).toEqual({ n: 0 });
+    h.close();
+  });
+
   it('send a test publishes the profile and reports each relay', async () => {
     const { h, eventId, pool } = setup();
     pool.refuse.add('wss://b');

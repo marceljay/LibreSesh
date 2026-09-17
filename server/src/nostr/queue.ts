@@ -357,10 +357,13 @@ export async function syncTick(
 
 /** The net under a missed `markDirty` call site: anything newer than its publish. */
 export function sweep(db: Db, nowMs = Date.now()): void {
-  const events = db.prepare(`SELECT id FROM events WHERE nostr_enabled = 1`).all() as {
-    id: number;
-  }[];
-  for (const { id } of events) {
+  const events = db
+    .prepare(`SELECT id, nostr_relays FROM events WHERE nostr_enabled = 1`)
+    .all() as Pick<EventRow, 'id' | 'nostr_relays'>[];
+  for (const { id, nostr_relays } of events) {
+    // With no relay to accept it, nothing ever gets a published_at, and
+    // every sweep would mark the whole programme again for nobody.
+    if (!nostr_relays || (JSON.parse(nostr_relays) as string[]).length === 0) continue;
     const stale = db
       .prepare(
         `SELECT s.id FROM sessions s
