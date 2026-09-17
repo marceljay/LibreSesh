@@ -1070,9 +1070,13 @@ than a message anyone receives by default (`server/src/telegram.ts`, migration
 
 Telegram is the first **transport**, not the feature. What an announcement is,
 when one exists and what must never become one are transport-neutral and live
-in `_planning/specs/announcements.md`; Nostr adapts the same rules. The loop
-below still sits inside `telegram.ts` because it is the only implementation —
-LIB-214 lifts it into `announcer.ts`, leaving rendering and the bot here.
+in `_planning/specs/announcements.md`, implemented once in
+`server/src/announcer.ts`: the 60-second tick, the sent record keyed by
+transport, and the write-path entry points for `added`, `changed`, `pitched`
+and `placed`. A transport is `{ name, enabled, timing, send }` — Telegram's is
+`telegramTransport` in `telegram.ts`, which keeps only rendering, the bot and
+the group; Nostr's posts kind-1 notes (§Publishing to Nostr). The rules
+described below are the announcer's, and hold for every transport.
 
 **The bot belongs to the event, not the instance.** An organiser pastes a token
 from BotFather and Telegram works, with no involvement from whoever deployed

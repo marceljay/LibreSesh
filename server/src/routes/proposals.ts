@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { atLeast, requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { announceQuietly } from '../announcer.js';
 import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { Role } from '../shared/types.js';
@@ -139,6 +140,9 @@ export function proposalRoutes(ctx: Ctx): Router {
         entityId: id,
       });
       ctx.broker.publish(req.event.slug, 'proposal.created', dto);
+      // Beside the audit row, never on the broker: a pitch is one act, said
+      // once, to whichever transports the event has `pitched` on.
+      announceQuietly(ctx.announcer.announcePitched(req.event, id));
 
       // The one kind addressed to a role rather than a person: organisers are
       // who acts on a pitch, and a board nobody looks at is the reason pitches
@@ -344,6 +348,7 @@ export function proposalRoutes(ctx: Ctx): Router {
         entityId: row.id,
       });
       markDirty(ctx.db, req.event.id, sessionId);
+      announceQuietly(ctx.announcer.announcePlaced(req.event, row.id, sessionId));
       ctx.broker.publish(req.event.slug, 'session.created', session);
       ctx.broker.publish(
         req.event.slug,
