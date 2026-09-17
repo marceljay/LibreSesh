@@ -1787,6 +1787,7 @@ export function SchedulePage() {
             onCancel={() => setEditing(null)}
             onSave={(body, opts) => void saveSession(body, opts)}
             canMove={canMove(editing.session)}
+            nostrEnabled={event.nostrEnabled}
             onDelete={
               editing.session && canDelete(editing.session)
                 ? () => void deleteSession(editing.session as SessionDto)
