@@ -136,6 +136,14 @@ describe("the field is capped to the event's day", () => {
           expect(el, label).not.toContain('min=');
           continue;
         }
+        // The third, and the only one outside the grid: the morning digest is
+        // a wall clock, not a point in the programme. An event whose day
+        // starts at 09:00 still wants breakfast reading at 08:00, so capping
+        // this one to the day would forbid the ordinary case.
+        if (label === 'Digest time') {
+          expect(el, label).not.toContain('min=');
+          continue;
+        }
         if (!el.includes('min={dayStartMin}') || !el.includes('max={dayEndMin}')) {
           uncapped.push(`${path.slice(WEB_SRC.length + 1)}: ${label}`);
         }

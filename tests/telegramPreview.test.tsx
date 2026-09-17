@@ -42,6 +42,7 @@ const show = (mode: string, sessions: SessionDto[] = [session({})], livestreams 
       mode={mode}
       leadMin={15}
       livestreams={livestreams}
+      digest="08:00"
       event={event}
       sessions={sessions}
       rooms={rooms}
@@ -57,28 +58,46 @@ afterEach(() => {
 
 describe('the Telegram example', () => {
   it('shows the up-next message, and says when it goes out', () => {
-    show('up_next');
+    show('light');
     expect(screen.getByText(/up next/)).toBeTruthy();
     expect(screen.getByText(/15 minutes before each start time/)).toBeTruthy();
   });
 
-  it('draws no message that the app cannot actually send', () => {
+  it('draws each rung, and nothing from a rung above it', () => {
     // The modal exists to stop somebody discovering the real behaviour in a
-    // roomful of people. Drawing an unbuilt trigger would be the same fault in
-    // reverse: a promise of a message that never arrives.
-    show('up_next');
+    // roomful of people, so every bubble has to belong to the chosen setting.
+    show('light');
     expect(screen.queryByText(/Each morning/)).toBeNull();
     expect(screen.queryByText(/Just added/)).toBeNull();
+    cleanup();
+
+    show('medium');
+    expect(screen.getByText(/Each morning at 08:00/)).toBeTruthy();
+    expect(screen.queryByText(/Just added/)).toBeNull();
+    cleanup();
+
+    show('heavy');
+    expect(screen.getByText(/Just added/)).toBeTruthy();
+    expect(screen.getByText(/Moved on the schedule/)).toBeTruthy();
+  });
+
+  it('draws the digest from the whole day, not one slot repeated', () => {
+    show('medium', [
+      session({}),
+      session({ id: 2, title: 'Later on', startsAt: '2099-06-01T10:00:00.000Z' }),
+    ]);
+    expect(screen.getByText(/10:00 · Main Hall — Scaling an unconference/)).toBeTruthy();
+    expect(screen.getByText(/12:00 · Main Hall — Later on/)).toBeTruthy();
   });
 
   it('shows a livestream link only when that is switched on', () => {
     const streamed = [
       session({ livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }] }),
     ];
-    show('up_next', streamed);
+    show('light', streamed);
     expect(screen.queryByText(/Main camera/)).toBeNull();
     cleanup();
-    show('up_next', streamed, true);
+    show('light', streamed, true);
     expect(screen.getByText(/Main camera/)).toBeTruthy();
   });
 
@@ -89,7 +108,7 @@ describe('the Telegram example', () => {
   });
 
   it('draws the event’s own sessions, in the event’s timezone', () => {
-    show('up_next');
+    show('light');
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
@@ -97,7 +116,7 @@ describe('the Telegram example', () => {
   });
 
   it('puts every room of one start time in the same message', () => {
-    show('up_next', [
+    show('light', [
       session({}),
       session({ id: 2, roomId: 2, title: 'Hallway track', speakers: [] }),
     ]);
@@ -106,12 +125,12 @@ describe('the Telegram example', () => {
   });
 
   it('never previews a draft, because one is never posted', () => {
-    show('up_next', [session({ id: 3, title: 'Secret plans', draft: true })]);
+    show('light', [session({ id: 3, title: 'Secret plans', draft: true })]);
     expect(screen.queryByText('Secret plans')).toBeNull();
   });
 
   it('falls back to stand-in names on an event with nothing scheduled, and says so', () => {
-    show('up_next', []);
+    show('light', []);
     expect(screen.getByText(/stand-in names/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
   });
