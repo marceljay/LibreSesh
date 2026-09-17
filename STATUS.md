@@ -30,8 +30,15 @@ recent cut: **0.7.4**.
   wired; kind-1 notes as the second transport; the Nostr section of the
   Publish tab, with the relay pool moved to `ws` after Node's own WebSocket
   crashed the process on a refused relay; the notice and opt-out on both
-  forms and the *on Nostr* badge. Suite at 2058, lint clean, each UI step
-  driven through headless Chromium. What is left is yours: the relay check
+  forms and the *on Nostr* badge. A review of the PR added seven commits:
+  notes leave out opted-out sessions and pitches (they were named in every
+  note regardless of the box), a removed relay leaves the queue, no
+  deletion requests for sessions that were never published, a fresh mark
+  resets the backoff, the sweep skips an event without relays, the test
+  route answers 400 without a key and resync is audited, and SECURITY.md
+  gains the nsec row, a what-a-relay-sees section and the relay list as an
+  accepted outbound risk. Suite at 2067, lint clean, each UI step driven
+  through headless Chromium. What is left is yours: the relay check
   [LIB-220] and D6, the default relay list [LIB-221] — until it is decided a
   newly enabled event starts with no relays.
 
