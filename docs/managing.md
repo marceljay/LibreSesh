@@ -191,7 +191,8 @@ the old one stop seeing it.
 
 **Relays.** One address per line, `wss://…`, up to ten. A new event starts
 with whatever list the instance provides. A relay added later receives the
-whole programme. The **Delivery** table shows, per relay, what it has not
+whole programme; one taken off the list is asked for nothing more, and what
+it had not accepted is forgotten. The **Delivery** table shows, per relay, what it has not
 accepted yet and its latest refusal in its own words; **Send a test** asks
 each relay now and shows what it said, without posting anything followers
 would see.

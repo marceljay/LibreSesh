@@ -20,6 +20,7 @@ import {
   markResync,
   markRetract,
   publishProfileNow,
+  removePending,
 } from '../nostr/queue.js';
 import { limit } from '../ratelimit.js';
 import {
@@ -134,6 +135,11 @@ export function nostrRoutes(ctx: Ctx): Router {
         ctx.db,
         e.id,
         relays.filter((r) => !before.includes(r)),
+      );
+      removePending(
+        ctx.db,
+        e.id,
+        before.filter((r) => !relays.includes(r)),
       );
     }
     if (body.triggers) set(e.id, 'nostr_triggers = ?', JSON.stringify([...new Set(body.triggers)]));

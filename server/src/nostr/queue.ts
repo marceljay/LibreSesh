@@ -141,6 +141,47 @@ export function appendPending(db: Db, eventId: number, relays: string[]): void {
   })();
 }
 
+/**
+ * A relay taken off the list is owed nothing: drop it from every row's
+ * `pending`, or the row would be retried against it hourly for good and
+ * Delivery on the Publish tab would never reach zero.
+ */
+export function removePending(db: Db, eventId: number, relays: string[]): void {
+  if (relays.length === 0) return;
+  const rows = db
+    .prepare(
+      `SELECT entity, entity_id, pending, last_error FROM nostr_published
+        WHERE event_id = ? AND pending != '[]'`,
+    )
+    .all(eventId) as Pick<NostrPublishedRow, 'entity' | 'entity_id' | 'pending' | 'last_error'>[];
+  const narrow = db.prepare(
+    `UPDATE nostr_published SET pending = ?, last_error = ?
+      WHERE event_id = ? AND entity = ? AND entity_id = ?`,
+  );
+  const clear = db.prepare(
+    `UPDATE nostr_published
+        SET pending = '[]', tries = 0, next_try = NULL, last_error = NULL
+      WHERE event_id = ? AND entity = ? AND entity_id = ?`,
+  );
+  db.transaction(() => {
+    for (const r of rows) {
+      const left = (JSON.parse(r.pending) as string[]).filter((u) => !relays.includes(u));
+      if (left.length === 0) {
+        clear.run(eventId, r.entity, r.entity_id);
+        continue;
+      }
+      const errorGone = relays.some((u) => r.last_error?.startsWith(`${u}: `));
+      narrow.run(
+        JSON.stringify(left),
+        errorGone ? null : r.last_error,
+        eventId,
+        r.entity,
+        r.entity_id,
+      );
+    }
+  })();
+}
+
 /** The current version of a row: what to sign, and whether it is a deletion. */
 function buildRow(
   db: Db,

@@ -7,6 +7,7 @@ import {
   markDirty,
   markRetract,
   publishProfileNow,
+  removePending,
   sweep,
   syncTick,
   type Pool,
@@ -314,6 +315,28 @@ describe('sync loop', () => {
     await tick(T0 + s(30));
     expect(pool.sent.map((x) => x.relay)).toEqual(['wss://c', 'wss://c', 'wss://c']);
     expect(row('session', sid).pending).toBe('[]');
+    h.close();
+  });
+
+  it('a relay taken off the list is dropped from every pending row', async () => {
+    const { h, eventId, insertSession, pool, tick, row } = setup(['wss://a', 'wss://b']);
+    const sid = insertSession();
+    pool.refuse.add('wss://b');
+    markDirty(h.db, eventId, undefined, T0);
+    await tick(T0 + s(20));
+    expect(JSON.parse(row('session', sid).pending)).toEqual(['wss://b']);
+    expect(row('session', sid).tries).toBe(1);
+    h.db.prepare(`UPDATE events SET nostr_relays = '["wss://a"]' WHERE id = ?`).run(eventId);
+    removePending(h.db, eventId, ['wss://b']);
+    for (const r of [row('session', sid), row('calendar', eventId), row('profile', eventId)]) {
+      expect(r.pending).toBe('[]');
+      expect(r.tries).toBe(0);
+      expect(r.next_try).toBeNull();
+      expect(r.last_error).toBeNull();
+    }
+    pool.sent = [];
+    await tick(T0 + s(400));
+    expect(pool.sent).toHaveLength(0);
     h.close();
   });
 

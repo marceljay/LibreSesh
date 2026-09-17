@@ -127,6 +127,39 @@ describe('nostr routes', () => {
     h.close();
   });
 
+  it('changing the relay list moves the queue with it', async () => {
+    const { h, eventId, admin } = await enabledEvent();
+    // Enable marked the calendar; make it a row one refusing relay still owes.
+    h.db
+      .prepare(
+        `UPDATE nostr_published
+            SET published_at = '2026-06-01T00:00:00.000Z', dirty_since = NULL, touched_at = NULL,
+                pending = '["wss://relay.test"]', tries = 3,
+                next_try = '2026-06-01T01:00:00.000Z', last_error = 'wss://relay.test: blocked'
+          WHERE event_id = ? AND entity = 'calendar'`,
+      )
+      .run(eventId);
+    await admin
+      .patch('/api/e/conf/nostr')
+      .send({ relays: ['wss://mine.test'] })
+      .expect(200);
+    const row = h.db
+      .prepare(
+        `SELECT pending, tries, next_try, last_error FROM nostr_published WHERE event_id = ?`,
+      )
+      .get(eventId) as {
+      pending: string;
+      tries: number;
+      next_try: string | null;
+      last_error: string | null;
+    };
+    expect(JSON.parse(row.pending)).toEqual(['wss://mine.test']);
+    expect(row.last_error).toBeNull();
+    const status = (await admin.get('/api/e/conf/nostr')).body;
+    expect(status.relayStatus).toEqual([{ url: 'wss://mine.test', pending: 1, lastError: null }]);
+    h.close();
+  });
+
   it('renders an example note per trigger, even before the first enable', async () => {
     const h = makeHarness({ publicUrl: 'https://sesh.example' });
     seedEvent(h.db, { slug: 'conf', name: 'Conf' });
