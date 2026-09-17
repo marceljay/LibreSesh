@@ -114,8 +114,9 @@ export function proposalRoutes(ctx: Ctx): Router {
           ctx.db
             .prepare(
               `INSERT INTO proposals
-                (event_id, title, description, speaker_id, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                (event_id, title, description, speaker_id, created_by, created_at, updated_at,
+                 nostr_optout)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             )
             .run(
               req.event.id,
@@ -125,6 +126,7 @@ export function proposalRoutes(ctx: Ctx): Router {
               req.identity.id,
               now,
               now,
+              body.nostrOptOut ? 1 : 0,
             ).lastInsertRowid,
         );
         setTags(newId, tagIds);
@@ -192,7 +194,8 @@ export function proposalRoutes(ctx: Ctx): Router {
         );
         ctx.db
           .prepare(
-            `UPDATE proposals SET title = ?, description = ?, speaker_id = ?, updated_at = ?
+            `UPDATE proposals SET title = ?, description = ?, speaker_id = ?, updated_at = ?,
+                    nostr_optout = ?
               WHERE id = ?`,
           )
           .run(
@@ -200,6 +203,7 @@ export function proposalRoutes(ctx: Ctx): Router {
             body.description ?? row.description,
             speakerId,
             new Date().toISOString(),
+            (body.nostrOptOut ?? row.nostr_optout === 1) ? 1 : 0,
             row.id,
           );
         if (body.tagIds) setTags(row.id, body.tagIds);
@@ -289,8 +293,8 @@ export function proposalRoutes(ctx: Ctx): Router {
             .prepare(
               `INSERT INTO sessions
                 (event_id, room_id, type, title, description, speaker,
-                 starts_at, ends_at, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)`,
+                 starts_at, ends_at, created_by, created_at, updated_at, nostr_optout)
+               VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?)`,
             )
             .run(
               req.event.id,
@@ -304,6 +308,8 @@ export function proposalRoutes(ctx: Ctx): Router {
               row.created_by,
               now,
               now,
+              // Their choice about the pitch is their choice about the session.
+              row.nostr_optout,
             ).lastInsertRowid,
         );
         // And its speaker. A pitch names one person; the session it becomes

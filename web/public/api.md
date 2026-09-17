@@ -222,6 +222,12 @@ anywhere — and to everyone else its routes answer `404`. It claims no room or
 time until `PATCH`ed to `"draft": false`, which is checked like a new booking.
 Only the creator and organisers may change the flag.
 
+`"nostrOptOut": true` keeps a session off Nostr while the event publishes
+there (`event.nostrEnabled` in the bundle). The same rule as `draft`: its
+creator and the organisers may set it, and absent leaves it as it is. A pitch
+accepts it too and hands it to the session it becomes. A published session
+carries `nostr.naddr`, its address on the relays, once one has accepted it.
+
 Three rules that will bite a program in particular:
 
 - **Times are UTC ISO-8601 strings, but every rule about them is evaluated in

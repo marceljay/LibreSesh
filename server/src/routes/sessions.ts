@@ -141,8 +141,8 @@ export function sessionRoutes(ctx: Ctx): Router {
           `INSERT INTO sessions
             (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
              description, speaker, livestreams, starts_at, ends_at,
-             created_by, created_at, updated_at, draft)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?)`,
+             created_by, created_at, updated_at, draft, nostr_optout)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           req.event.id,
@@ -160,6 +160,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           now,
           now,
           draft ? 1 : 0,
+          body.nostrOptOut ? 1 : 0,
         );
       const newId = Number(info.lastInsertRowid);
       setTags(ctx, newId, tagIds);
@@ -398,6 +399,12 @@ export function sessionRoutes(ctx: Ctx): Router {
     const nextDraft = body.draft ?? existing.draft === 1;
     const draftChanged = nextDraft !== (existing.draft === 1);
     if (draftChanged) assertMayMutate(matrix, req.role, req.identity.id, existing);
+    // Keeping a session off Nostr is the author's and the organiser's call,
+    // held to the same rule as a draft: a claim on the session, not on its words.
+    const nextOptOut = body.nostrOptOut ?? existing.nostr_optout === 1;
+    if (nextOptOut !== (existing.nostr_optout === 1)) {
+      assertMayMutate(matrix, req.role, req.identity.id, existing);
+    }
     const publishing = draftChanged && !nextDraft;
 
     /**
@@ -565,7 +572,8 @@ export function sessionRoutes(ctx: Ctx): Router {
         .prepare(
           `UPDATE sessions SET room_id = ?, track_id = ?, format_id = ?, type = ?,
                   blocks_open_booking = ?, title = ?, description = ?,
-                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?, draft = ?
+                  livestreams = ?, starts_at = ?, ends_at = ?, updated_at = ?, draft = ?,
+                  nostr_optout = ?
             WHERE id = ?`,
         )
         .run(
@@ -581,6 +589,7 @@ export function sessionRoutes(ctx: Ctx): Router {
           window.endsAt.toISOString(),
           now,
           nextDraft ? 1 : 0,
+          nextOptOut ? 1 : 0,
           existing.id,
         );
       if (body.tagIds) setTags(ctx, existing.id, body.tagIds);
