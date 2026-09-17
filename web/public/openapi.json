@@ -4412,6 +4412,9 @@
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
             }
+          },
+          "nostrOptOut": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -4452,6 +4455,9 @@
               "exclusiveMinimum": 0,
               "maximum": 9007199254740991
             }
+          },
+          "nostrOptOut": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -4683,6 +4689,9 @@
           "draft": {
             "type": "boolean"
           },
+          "nostrOptOut": {
+            "type": "boolean"
+          },
           "expectedUpdatedAt": {
             "type": "string"
           },
@@ -4805,6 +4814,9 @@
             ]
           },
           "draft": {
+            "type": "boolean"
+          },
+          "nostrOptOut": {
             "type": "boolean"
           }
         },

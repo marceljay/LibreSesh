@@ -260,6 +260,129 @@ describe('kind-1 notes', () => {
     );
   });
 
+  describe('an opted-out item is named in no note', () => {
+    const optOut = (sessionId: number) =>
+      h.db.prepare(`UPDATE sessions SET nostr_optout = 1 WHERE id = ?`).run(sessionId);
+    const titles = (note: { content: string } | null) => note?.content ?? '';
+
+    it('a session drops out of its slot, the digest and a move; alone it posts nothing', async () => {
+      const a = await add(roomA, 'Loud one', 840, ['Ada']);
+      const b = await add(roomB, 'Quiet one', 840, ['Grace']);
+      optOut(b);
+      const slot = renderNote(
+        h.db,
+        announcement('up_next', [a, b], at(DAY_ONE, 840)),
+        pubkey,
+        PUB_URL,
+      );
+      expect(titles(slot)).toContain('Loud one');
+      expect(titles(slot)).not.toContain('Quiet one');
+      expect(titles(slot)).not.toContain('Grace');
+      expect(slot!.tags).toEqual([['a', `31923:${pubkey}:e${eventId}-s${a}`]]);
+      expect(slot!.content).not.toContain(naddr(b));
+
+      const digest = renderNote(
+        h.db,
+        announcement('digest', [a, b], at(DAY_ONE, 840)),
+        pubkey,
+        PUB_URL,
+      );
+      expect(titles(digest)).toContain('Loud one');
+      expect(titles(digest)).not.toContain('Quiet one');
+
+      const moved = renderNote(
+        h.db,
+        announcement('changed', [a, b], at(DAY_ONE, 600)),
+        pubkey,
+        PUB_URL,
+      );
+      expect(titles(moved)).toContain('Loud one');
+      expect(titles(moved)).not.toContain('Quiet one');
+
+      for (const trigger of ['up_next', 'digest', 'added', 'placed', 'changed'] as const) {
+        expect(
+          renderNote(h.db, announcement(trigger, [b], at(DAY_ONE, 600)), pubkey, PUB_URL),
+        ).toBeNull();
+      }
+    });
+
+    it('a pitch with the box unticked is not announced, and neither is the session it becomes', async () => {
+      const res = await admin
+        .post('/api/e/longconf/proposals')
+        .send({ title: 'Quiet pitch', description: 'Not for relays.', nostrOptOut: true })
+        .expect(201);
+      const proposal = h.db
+        .prepare<[number], ProposalRow>('SELECT * FROM proposals WHERE id = ?')
+        .get((res.body as { id: number }).id)!;
+      expect(
+        renderNote(h.db, announcement('pitched', [], at(DAY_ONE, 600), proposal), pubkey, PUB_URL),
+      ).toBeNull();
+
+      const placed = await admin
+        .post(`/api/e/longconf/proposals/${proposal.id}/place`)
+        .send({ roomId: roomB, startsAt: at(DAY_TWO, 660), endsAt: at(DAY_TWO, 690) })
+        .expect(201);
+      const sessionId = (placed.body as { session: { id: number } }).session.id;
+      expect(session(sessionId).nostr_optout).toBe(1);
+      expect(
+        renderNote(
+          h.db,
+          announcement('placed', [sessionId], at(DAY_ONE, 600), proposal),
+          pubkey,
+          PUB_URL,
+        ),
+      ).toBeNull();
+    });
+
+    it('the transport publishes nothing for it, through the announcer as on the write path', async () => {
+      const b = await add(roomB, 'Quiet one', 840, ['Grace']);
+      optOut(b);
+      const pool = new FakePool();
+      const announcer = new Announcer(h.db, [nostrTransport(h.db, h.app.ctx.config, pool)]);
+      await announcer.announceAdded(event(), b, new Date(at(DAY_ONE, 600)));
+      await announcer.tick(new Date(at(DAY_ONE, 830)));
+      const res = await admin
+        .post('/api/e/longconf/proposals')
+        .send({ title: 'Quiet pitch', description: 'Not for relays.', nostrOptOut: true })
+        .expect(201);
+      await announcer.announcePitched(event(), (res.body as { id: number }).id);
+      expect(pool.sent).toHaveLength(0);
+    });
+
+    it('the pitch route itself posts nothing for an opted-out pitch and one note otherwise', async () => {
+      const pool = new FakePool();
+      h.close();
+      h = makeHarness({ publicUrl: PUB_URL }, pool);
+      eventId = seedEvent(h.db, { slug: 'longconf', name: 'LongConf' });
+      const keys = generateKeys();
+      h.db
+        .prepare(
+          `UPDATE events SET nostr_enabled = 1, nostr_pubkey = ?, nostr_seckey = ?, nostr_relays = ?,
+                             nostr_triggers = '["pitched"]' WHERE id = ?`,
+        )
+        .run(
+          keys.pubkey,
+          encryptEventKey(keys.seckey, h.app.ctx.config),
+          JSON.stringify(RELAYS),
+          eventId,
+        );
+      admin = await actorWithRole(h, 'longconf', 'admin-pw');
+      const settle = () => new Promise((r) => setTimeout(r, 20));
+      await admin
+        .post('/api/e/longconf/proposals')
+        .send({ title: 'Quiet pitch', description: 'Not for relays.', nostrOptOut: true })
+        .expect(201);
+      await settle();
+      expect(pool.sent).toHaveLength(0);
+      await admin
+        .post('/api/e/longconf/proposals')
+        .send({ title: 'Loud pitch', description: 'For relays.' })
+        .expect(201);
+      await settle();
+      expect(pool.sent.map((e) => e.content)).toEqual([expect.stringContaining('Loud pitch')]);
+    });
+  });
+
   it('the transport signs with the event key and publishes to its relays', async () => {
     const a = await add(roomA, 'Scaling an unconference', 840);
     const pool = new FakePool();

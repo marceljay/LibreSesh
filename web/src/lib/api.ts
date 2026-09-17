@@ -462,6 +462,8 @@ export interface SessionWrite {
   /** Keep it off the schedule. Omit to leave it as it is on an edit; the
    *  server refuses a change from anyone who could not delete the session. */
   draft?: boolean;
+  /** Keep it off Nostr while the event publishes there. Author or organiser. */
+  nostrOptOut?: boolean;
   title: string;
   description?: string;
   /**
@@ -516,6 +518,8 @@ export interface ProposalWrite {
   /** A name that matches nobody creates a person. Used instead of `speakerId`. */
   speakerName?: string;
   tagIds?: number[];
+  /** Keep the pitch off Nostr; the session it becomes inherits this. */
+  nostrOptOut?: boolean;
 }
 
 export interface PlaceWrite {
