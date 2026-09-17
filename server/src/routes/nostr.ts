@@ -219,6 +219,7 @@ export function nostrRoutes(ctx: Ctx): Router {
 
   router.post('/nostr/resync', requireRole(ctx.db, 'admin'), (req, res) => {
     markResync(ctx.db, req.event.id);
+    record(req.identity.id, req.event.id, 'nostr_resync');
     res.status(204).end();
   });
 
@@ -233,6 +234,13 @@ export function nostrRoutes(ctx: Ctx): Router {
     requireRole(ctx.db, 'admin'),
     limit(ctx.limiter, 'auth'),
     async (req, res) => {
+      // Express 5 forwards a rejection from an async handler to the error
+      // middleware, so a throw here answers like the synchronous routes do.
+      if (!openEventKey(req.event, ctx.config)) {
+        throw badRequest(
+          'This event has no key, or the instance secret has changed since it was made',
+        );
+      }
       const relays = await publishProfileNow(ctx.db, ctx.config, ctx.nostrPool, req.event.id);
       res.json({ relays });
     },

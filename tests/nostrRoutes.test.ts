@@ -100,6 +100,20 @@ describe('nostr routes', () => {
     h.close();
   });
 
+  it('send a test answers 400 without a usable key; resync is audited', async () => {
+    const { h, admin } = await enabledEvent();
+    expect((await admin.post('/api/e/conf/nostr/resync')).status).toBe(204);
+    h.app.ctx.config.atRestSecret = 'rotated-without-previous';
+    const res = await admin.post('/api/e/conf/nostr/test');
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/secret has changed/);
+    const actions = (
+      h.db.prepare(`SELECT action FROM audit ORDER BY id`).all() as { action: string }[]
+    ).map((a) => a.action);
+    expect(actions).toContain('nostr_resync');
+    h.close();
+  });
+
   it('never serialises the key columns, and settings stay out of the export', async () => {
     const { h, admin } = await enabledEvent();
     const status = JSON.stringify((await admin.get('/api/e/conf/nostr').expect(200)).body);
