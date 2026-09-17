@@ -135,20 +135,22 @@ Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-**What each line says** is yours. Each session in a message is one line, and
-besides the title — always there — you tick what it carries: **Room**,
-**Track**, **Speakers**, **Format**, **Tags**, **Livestream links**. They land
-in that order, and a session shows only what it has: no format picked, no
-format shown.
+**What each line says, and in what order,** is yours. Each session in a message
+is one line built from parts you tick and arrange with ↑ ↓: **Title**, **Room**,
+**Track**, **Speakers**, **Format**, **Tags**, **Livestream links**. A session
+shows only what it has — no format picked, no format shown.
 
 ```
-Main Hall · Practice · Scaling an unconference, by Ada Lovelace [Workshop] #openspace
+Main Hall · Practice · Scaling an unconference, by Ada Lovelace · [Workshop] · #openspace
 Stream: Main camera
 ```
 
-Livestream links are the one tick that publishes something the password gate
-would otherwise hold — they add a second line, and anyone who can see the group
-can watch. Everything else is already in the message in some form.
+The title cannot be taken out, only moved. Speakers read as *“Title, by Ada
+Lovelace”* when they sit straight after the title, because that is a sentence,
+and as one more part of the list anywhere else. Livestream links always take a
+line of their own, so their position among the rest makes no difference — and
+they are the one tick that publishes something the password gate would otherwise
+hold: anyone who can see the group can watch.
 
 **The morning message** goes out at the time you set, on the venue's clock. It
 is one line a session for the whole day — no speakers, no links to streams,

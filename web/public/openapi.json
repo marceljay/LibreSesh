@@ -4810,11 +4810,12 @@
             ]
           },
           "fields": {
-            "maxItems": 6,
+            "maxItems": 7,
             "type": "array",
             "items": {
               "type": "string",
               "enum": [
+                "title",
                 "room",
                 "track",
                 "speakers",

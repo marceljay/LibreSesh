@@ -42,10 +42,12 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
-  **What each line says is yours.** Besides the title, tick what a session
-  carries: room, track, speakers, format, tags, livestream links. They land in
-  that order and a session shows only what it has — no format picked, no format
-  shown. Livestream links are the only one off in the default set and the only
+  **What each line says, and in what order, is yours.** Tick and arrange the
+  parts a session carries: title, room, track, speakers, format, tags,
+  livestream links. A session shows only what it has — no format picked, no
+  format shown — and speakers read as “Title, by Ada Lovelace” where they
+  follow the title, because that is a sentence. Livestream links always take a
+  line of their own, are the only part off in the default set, and are the only
   one that publishes something the password gate would otherwise hold: a
   session link in a message still asks for the event password, a stream address
   does not.

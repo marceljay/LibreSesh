@@ -153,20 +153,68 @@ describe('rendering a slot', () => {
     expect(text.split('\n').filter((l) => l.trim() !== '')).toHaveLength(3);
   });
 
-  it('composes the ticked fields onto the one line, in our order', () => {
+  it('composes the ticked fields onto the one line, in the order given', () => {
     const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
       'room',
       'track',
+      'title',
       'speakers',
       'format',
       'tags',
     ]);
     expect(text).toContain(
       'Main Hall · Practice · <b>Scaling &lt;an&gt; unconference</b>, ' +
-        'by Ada Lovelace [Workshop] #facilitation #openspace',
+        'by Ada Lovelace · [Workshop] · #facilitation #openspace',
     );
     // A session shows only what it has: no track, no format, no tags on this one.
     expect(text).toContain('Room 2 · <b>Hallway track</b>, by Grace Hopper, Alan Turing');
+  });
+
+  it('follows the order the organiser put the parts in', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
+      'format',
+      'title',
+      'room',
+      'speakers',
+    ]);
+    expect(text).toContain(
+      '[Workshop] · <b>Scaling &lt;an&gt; unconference</b> · Main Hall · by Ada Lovelace',
+    );
+  });
+
+  it('reads as a sentence only where the speakers follow the title', () => {
+    // "Title, by Ada Lovelace" is a sentence. "Main Hall, by Ada Lovelace" is
+    // not, so anywhere else the speakers take the separator everything takes.
+    const [sentence] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
+      'title',
+      'speakers',
+    ]);
+    expect(sentence).toContain('<b>Scaling &lt;an&gt; unconference</b>, by Ada Lovelace');
+
+    const [list] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
+      'title',
+      'room',
+      'speakers',
+    ]);
+    expect(list).toContain('<b>Scaling &lt;an&gt; unconference</b> · Main Hall · by Ada Lovelace');
+  });
+
+  it('renders the title first when the stored set does not place it', () => {
+    // Migration 027's default is ["speakers"], written before the title was
+    // something anybody could move.
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, ['speakers']);
+    expect(text).toContain('<b>Scaling &lt;an&gt; unconference</b>, by Ada Lovelace');
+  });
+
+  it('keeps the streams on their own line wherever they sit in the order', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, [
+      'livestreams',
+      'title',
+    ]);
+    expect(text).toContain(
+      '<b>Scaling &lt;an&gt; unconference</b>\nStream: ' +
+        '<a href="https://stream.example/main">Main camera</a>',
+    );
   });
 
   it('drops a field the event has not ticked, whatever the session carries', () => {
@@ -177,12 +225,14 @@ describe('rendering a slot', () => {
     expect(text).not.toContain('#facilitation');
   });
 
-  it('keeps an unknown field name out of the stored set', () => {
+  it('keeps an unknown field name out of the stored set, and the order intact', () => {
     expect(parseFields('["room","nonsense","speakers"]')).toEqual(['room', 'speakers']);
     expect(parseFields('not json')).toEqual([]);
     expect(parseFields(null)).toEqual([]);
-    // Stored in render order, however it arrived.
-    expect(parseFields('["speakers","room"]')).toEqual(['room', 'speakers']);
+    // The sequence is the setting, so it survives exactly as given.
+    expect(parseFields('["speakers","room"]')).toEqual(['speakers', 'room']);
+    // A repeat is taken once, at its first position.
+    expect(parseFields('["room","speakers","room"]')).toEqual(['room', 'speakers']);
   });
 
   it('escapes a title rather than letting it become markup', () => {
@@ -774,14 +824,15 @@ describe('the Telegram settings routes', () => {
     expect(before.fields).toEqual(['speakers']);
   });
 
-  it('stores the ticked fields in render order, and refuses a name it does not know', async () => {
+  it('stores the fields in the order they arrived, and refuses a name it does not know', async () => {
     const body = (
       await admin
         .patch('/api/e/testconf/telegram')
-        .send({ fields: ['tags', 'room', 'livestreams'] })
+        .send({ fields: ['tags', 'room', 'title', 'livestreams'] })
         .expect(200)
     ).body as { fields: string[] };
-    expect(body.fields).toEqual(['room', 'tags', 'livestreams']);
+    // The order is half the setting; normalising it would undo what was saved.
+    expect(body.fields).toEqual(['tags', 'room', 'title', 'livestreams']);
     await admin
       .patch('/api/e/testconf/telegram')
       .send({ fields: ['nonsense'] })

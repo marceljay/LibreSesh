@@ -483,8 +483,8 @@ export const telegramSettingsSchema = z
      *  not exist has a bug, and silently storing less than it asked for hides
      *  it. */
     fields: z
-      .array(z.enum(['room', 'track', 'speakers', 'format', 'tags', 'livestreams']))
-      .max(6)
+      .array(z.enum(['title', 'room', 'track', 'speakers', 'format', 'tags', 'livestreams']))
+      .max(7)
       .optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),

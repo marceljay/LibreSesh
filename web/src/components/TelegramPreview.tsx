@@ -133,21 +133,48 @@ interface NamedRef {
  * shared (LIB-214).
  */
 function Line({ row, fields }: { row: Row; fields: string[] }) {
-  const on = (field: string) => fields.includes(field);
-  const where = [on('room') ? row.room : '', on('track') ? row.track : '']
-    .filter((part) => part !== '')
-    .map((part) => `${part} · `)
-    .join('');
+  const part = (field: string): { text?: string; title?: boolean } | null => {
+    switch (field) {
+      case 'title':
+        return { title: true };
+      case 'room':
+        return row.room ? { text: row.room } : null;
+      case 'track':
+        return row.track ? { text: row.track } : null;
+      case 'speakers':
+        return row.speakers ? { text: `by ${row.speakers}` } : null;
+      case 'format':
+        return row.format ? { text: `[${row.format}]` } : null;
+      case 'tags':
+        return row.tags.length > 0 ? { text: row.tags.map((t) => `#${t}`).join(' ') } : null;
+      default:
+        return null;
+    }
+  };
+
+  const order = fields.includes('title') ? fields : ['title', ...fields];
+  const parts = order
+    .filter((f) => f !== 'livestreams')
+    .map((field) => ({ field, value: part(field) }))
+    .filter((p): p is { field: string; value: { text?: string; title?: boolean } } =>
+      Boolean(p.value),
+    );
+
   return (
     <>
       <p>
-        {where}
-        <Title>{row.title}</Title>
-        {on('speakers') && row.speakers && `, by ${row.speakers}`}
-        {on('format') && row.format && ` [${row.format}]`}
-        {on('tags') && row.tags.length > 0 && ` ${row.tags.map((t) => `#${t}`).join(' ')}`}
+        {parts.map((p, i) => {
+          const previous = i === 0 ? null : parts[i - 1]!.field;
+          const sep = i === 0 ? '' : previous === 'title' && p.field === 'speakers' ? ', ' : ' · ';
+          return (
+            <span key={p.field}>
+              {sep}
+              {p.value.title ? <Title>{row.title}</Title> : p.value.text}
+            </span>
+          );
+        })}
       </p>
-      {on('livestreams') && row.streams.length > 0 && (
+      {fields.includes('livestreams') && row.streams.length > 0 && (
         <p>
           Stream:{' '}
           {row.streams.map((label, n) => (

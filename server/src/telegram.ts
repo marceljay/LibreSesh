@@ -68,17 +68,22 @@ export const MODES: Record<string, Trigger[]> = {
 };
 
 /**
- * What a session's line may carry, besides its title.
+ * What a session's line carries, in the order it carries it.
  *
- * The order is ours and the choice is the organiser's. Letting them order the
- * parts too would mean owning a template language — placeholders, empty values,
- * escaping, a line that only breaks at 09:45 on day one — to buy a rearrangement
- * nobody has asked for. What people actually want is the format shown, or the
- * room left out.
+ * Both the set and the sequence are the organiser's. That stops well short of a
+ * template language — there are no placeholders to mistype, no empty values to
+ * leave a dangling comma, and nothing to escape that we do not escape already —
+ * because the punctuation stays ours. Reordering a fixed set of parts is a list;
+ * letting somebody write the line is a parser.
+ *
+ * `title` is a member so it can be moved, and is never absent: a stored set
+ * without it renders it first, which is what migration 027's `["speakers"]`
+ * default means.
  */
-export type Field = 'room' | 'track' | 'speakers' | 'format' | 'tags' | 'livestreams';
+export type Field = 'title' | 'room' | 'track' | 'speakers' | 'format' | 'tags' | 'livestreams';
 
 export const FIELDS: readonly Field[] = [
+  'title',
   'room',
   'track',
   'speakers',
@@ -87,13 +92,21 @@ export const FIELDS: readonly Field[] = [
   'livestreams',
 ];
 
-/** Stored as JSON; anything unrecognised is dropped rather than trusted. */
+/**
+ * Stored as JSON, **in the organiser's order**; anything unrecognised is dropped
+ * rather than trusted, and a repeat is taken once.
+ */
 export function parseFields(raw: string | null): Field[] {
   if (!raw) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return FIELDS.filter((f) => parsed.includes(f));
+    const seen = new Set<Field>();
+    for (const value of parsed) {
+      const field = FIELDS.find((f) => f === value);
+      if (field) seen.add(field);
+    }
+    return [...seen];
   } catch {
     return [];
   }
@@ -172,32 +185,53 @@ function itemBlock(
   sessionUrl: string | null,
   fields: readonly Field[],
 ): string {
-  const on = (field: Field): boolean => fields.includes(field);
   const title = sessionUrl
     ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
     : `<b>${escapeHtml(item.title)}</b>`;
 
-  // Where it is, before what it is: somebody reading this is deciding which
-  // door to walk through.
-  const where = [on('room') ? item.room : '', on('track') ? item.track : '']
-    .filter((part) => part !== '')
-    .map((part) => `${escapeHtml(part)} · `)
-    .join('');
-  const by =
-    on('speakers') && item.speakers.length > 0
-      ? `, by ${escapeHtml(item.speakers.join(', '))}`
-      : '';
-  const format = on('format') && item.format !== '' ? ` [${escapeHtml(item.format)}]` : '';
-  const tags =
-    on('tags') && item.tags.length > 0
-      ? ` ${item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ')}`
-      : '';
+  /** Each part reads correctly wherever it lands, which is what lets them move. */
+  const part = (field: Field): string => {
+    switch (field) {
+      case 'title':
+        return title;
+      case 'room':
+        return escapeHtml(item.room);
+      case 'track':
+        return escapeHtml(item.track);
+      case 'speakers':
+        return item.speakers.length > 0 ? `by ${escapeHtml(item.speakers.join(', '))}` : '';
+      case 'format':
+        return item.format === '' ? '' : `[${escapeHtml(item.format)}]`;
+      case 'tags':
+        return item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ');
+      case 'livestreams':
+        return '';
+    }
+  };
 
-  const lines = [`${where}${title}${by}${format}${tags}`];
+  // Absent means first: migration 027's default set is `["speakers"]`, written
+  // before the title was something anyone could move.
+  const order = fields.includes('title') ? fields : (['title', ...fields] as Field[]);
+  const parts = order
+    .filter((field) => field !== 'livestreams')
+    .map((field) => ({ field, text: part(field) }))
+    .filter((p) => p.text !== '');
+
+  const line = parts.reduce((acc, p, i) => {
+    if (i === 0) return p.text;
+    // "Scaling an unconference, by Ada Lovelace" reads as a sentence, and is the
+    // default for that reason. Anywhere else the speakers are one part of a list
+    // and take the separator every other part takes.
+    const previous = parts[i - 1]!.field;
+    const sep = previous === 'title' && p.field === 'speakers' ? ', ' : ' · ';
+    return `${acc}${sep}${p.text}`;
+  }, '');
+
+  const lines = [line];
   // The session link lands on the password gate; a stream link does not. That
   // is the whole reason this is a field an organiser ticks and not simply what
   // a message says.
-  if (on('livestreams') && item.livestreams.length > 0) {
+  if (fields.includes('livestreams') && item.livestreams.length > 0) {
     const links = item.livestreams.map(
       (stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`,
     );

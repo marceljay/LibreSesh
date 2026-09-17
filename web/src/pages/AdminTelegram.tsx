@@ -15,6 +15,7 @@ import {
   InlineForm,
   NumberField,
   PrimaryButton,
+  IconButton,
   SecondaryButton,
   Section,
   TextInput,
@@ -47,26 +48,52 @@ const MODES = [
 ];
 
 /**
- * What a session's line may carry besides its title.
+ * What a session's line carries, and in what order.
  *
- * Checkboxes rather than a template box: the order and the punctuation are a
- * rendering problem, and owning a template language to let somebody move the
- * room behind the title would buy a rearrangement nobody has asked for at the
- * price of empty placeholders and a line that breaks on the day. What people
- * want is the format shown, or the room left out.
+ * A list with ↑ ↓ rather than a template box. Reordering a fixed set of parts
+ * is a list; letting somebody write the line is a parser — placeholders to
+ * mistype, empty values leaving a dangling comma, and a line that breaks for
+ * the first time at 09:45 on day one. The punctuation stays ours, so every
+ * arrangement reads.
  */
-const FIELDS: { id: string; label: string; hint?: string }[] = [
-  { id: 'room', label: 'Room' },
-  { id: 'track', label: 'Track' },
-  { id: 'speakers', label: 'Speakers' },
-  { id: 'format', label: 'Format' },
-  { id: 'tags', label: 'Tags' },
-  {
-    id: 'livestreams',
-    label: 'Livestream links',
-    hint: 'Anyone who sees the group can watch — a stream address does not ask for the event password.',
-  },
-];
+const LABELS: Record<string, string> = {
+  title: 'Title',
+  room: 'Room',
+  track: 'Track',
+  speakers: 'Speakers',
+  format: 'Format',
+  tags: 'Tags',
+  livestreams: 'Livestream links',
+};
+
+/** Everything above the streams can move. The streams are their own line, so
+ *  their position among the rest would mean nothing. */
+const MOVABLE = ['title', 'room', 'track', 'speakers', 'format', 'tags'];
+
+interface FieldRow {
+  id: string;
+  on: boolean;
+}
+
+/**
+ * The stored set — enabled fields, in order — as a list of every field.
+ *
+ * What is switched off has no stored position, so it sits at the end until it
+ * is switched on and moved. `title` is always on: a line with no title is not
+ * a line.
+ */
+function toRows(fields: string[]): FieldRow[] {
+  const chosen = fields.filter((f) => MOVABLE.includes(f));
+  if (!chosen.includes('title')) chosen.unshift('title');
+  const rest = MOVABLE.filter((f) => !chosen.includes(f));
+  return [
+    ...chosen.map((id) => ({ id, on: true })),
+    ...rest.map((id) => ({ id, on: false })),
+    { id: 'livestreams', on: fields.includes('livestreams') },
+  ];
+}
+
+const fromRows = (rows: FieldRow[]): string[] => rows.filter((r) => r.on).map((r) => r.id);
 
 const modeLabel = (id: string): string =>
   MODES.find((m) => m.id === id)?.label ?? 'Custom — a mix of your own';
@@ -117,7 +144,7 @@ export function AdminTelegram({
   const [problem, setProblem] = useState<string | null>(null);
   const [lead, setLead] = useState('15');
   const [mode, setMode] = useState('off');
-  const [fields, setFields] = useState<string[]>([]);
+  const [rows, setRows] = useState<FieldRow[]>(() => toRows([]));
   const [digest, setDigest] = useState('08:00');
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
@@ -129,7 +156,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setFields(next.fields);
+      setRows(toRows(next.fields));
       setDigest(fmtMin(next.digestMin));
     } catch (err) {
       setProblem(errorText(err));
@@ -150,7 +177,7 @@ export function AdminTelegram({
       setStatus(next);
       setLead(String(next.leadMin));
       setMode(next.mode);
-      setFields(next.fields);
+      setRows(toRows(next.fields));
       setDigest(fmtMin(next.digestMin));
       if (done) toast.show(done);
       return true;
@@ -190,8 +217,10 @@ export function AdminTelegram({
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
   const digestMin = minutesOf(digest);
-  const sameFields =
-    fields.length === status.fields.length && fields.every((f) => status.fields.includes(f));
+  const fields = fromRows(rows);
+  // Order is the setting too, so this compares sequences and not sets.
+  const stored = toRows(status.fields);
+  const sameFields = fields.join() === fromRows(stored).join();
   const dirty =
     mode !== status.mode ||
     !sameFields ||
@@ -204,6 +233,17 @@ export function AdminTelegram({
    * settings*, and a screen that quietly committed a choice the moment it was
    * picked would be the only one that did.
    */
+  /** Swap a row with its neighbour. The streams stay last; nothing passes them. */
+  const move = (index: number, direction: -1 | 1) => {
+    setRows((prev) => {
+      const next = [...prev];
+      const to = index + direction;
+      if (to < 0 || to > next.length - 2) return prev;
+      [next[index], next[to]] = [next[to]!, next[index]!];
+      return next;
+    });
+  };
+
   const saveOptions = () => {
     if (!dirty || parsedLead.error) return;
     void run(
@@ -407,35 +447,66 @@ export function AdminTelegram({
 
             <Field
               label="What each line says"
-              hint="Besides the title, which is always there. A session shows only what it has — no format picked, no format shown."
+              hint="Tick what a session carries and put it in the order you want. A session shows only what it has — no format picked, no format shown."
               action={
                 <FieldInfo label="About what a line says" href={DOCS}>
                   <p>
-                    Each session in a message is one line: where it is, its title, who is giving it,
-                    and whatever else you tick here. <strong>Example</strong> shows the result.
+                    Each session in a message is one line, built from these parts in this order.
+                    <strong> Example</strong> shows the result.
                   </p>
                   <p className="mt-2">
-                    Livestream links add a second line, and are the one thing here that leaves the
-                    password gate — anyone who can see the group can watch.
+                    Livestream links are the one thing here that leaves the password gate — anyone
+                    who can see the group can watch — and always take a line of their own.
                   </p>
                 </FieldInfo>
               }
             >
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
-                {FIELDS.map((f) => (
-                  <Toggle
-                    key={f.id}
-                    checked={fields.includes(f.id)}
-                    title={f.hint}
-                    onChange={(next) =>
-                      setFields((prev) =>
-                        next ? [...prev, f.id] : prev.filter((id) => id !== f.id),
-                      )
-                    }
-                    label={f.label}
-                  />
-                ))}
-              </div>
+              <ul className="space-y-1">
+                {rows.map((row, index) => {
+                  const movable = row.id !== 'livestreams';
+                  const last = rows.length - 2;
+                  return (
+                    <li
+                      key={row.id}
+                      className="flex items-center gap-2 rounded-lg bg-stone-50 px-2 py-1 dark:bg-stone-800"
+                    >
+                      <div className="flex shrink-0">
+                        <IconButton
+                          onClick={() => move(index, -1)}
+                          disabled={!movable || index === 0}
+                          aria-label={`Move ${LABELS[row.id]} up`}
+                        >
+                          ↑
+                        </IconButton>
+                        <IconButton
+                          onClick={() => move(index, 1)}
+                          disabled={!movable || index >= last}
+                          aria-label={`Move ${LABELS[row.id]} down`}
+                        >
+                          ↓
+                        </IconButton>
+                      </div>
+                      <Toggle
+                        checked={row.on}
+                        disabled={row.id === 'title'}
+                        title={
+                          row.id === 'title'
+                            ? 'Always there. Move it, but a line without it is not a line.'
+                            : row.id === 'livestreams'
+                              ? 'Its own line, below the rest. Anyone who sees the group can watch.'
+                              : undefined
+                        }
+                        onChange={(next) =>
+                          setRows((prev) =>
+                            prev.map((r) => (r.id === row.id ? { ...r, on: next } : r)),
+                          )
+                        }
+                        label={LABELS[row.id] ?? row.id}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
             </Field>
 
             <div>

@@ -9,7 +9,6 @@ import { limit } from '../ratelimit.js';
 import type { TelegramStatus } from '../shared/types.js';
 import {
   escapeHtml,
-  FIELDS,
   MODES,
   parseFields,
   modeOf,
@@ -144,11 +143,12 @@ export function telegramRoutes(ctx: Ctx): Router {
         .run(body.leadMin, event.id);
     }
     if (body.fields !== undefined) {
-      // Stored in our order, not the order they arrived in, so the column reads
-      // the same whatever a client sends and `sameSet` is never needed here.
+      // Stored in the order it arrived in: the sequence *is* the setting now,
+      // so normalising it here would quietly undo half of what was saved.
+      // `parseFields` drops a repeat and anything it does not know.
       ctx.db
         .prepare('UPDATE events SET telegram_fields = ? WHERE id = ?')
-        .run(JSON.stringify(FIELDS.filter((f) => body.fields!.includes(f))), event.id);
+        .run(JSON.stringify(parseFields(JSON.stringify(body.fields))), event.id);
     }
     if (body.digestMin !== undefined) {
       ctx.db

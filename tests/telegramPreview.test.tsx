@@ -140,12 +140,22 @@ describe('the Telegram example', () => {
     show(
       'light',
       [session({ trackId: 1, formatId: 1, tagIds: [1] })],
-      ['room', 'track', 'speakers', 'format', 'tags'],
+      ['room', 'track', 'title', 'speakers', 'format', 'tags'],
     );
-    expect(screen.getByText(/Main Hall · Practice ·/)).toBeTruthy();
-    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
-    expect(screen.getByText(/\[Workshop\]/)).toBeTruthy();
-    expect(screen.getByText(/#facilitation/)).toBeTruthy();
+    // Read off the whole line: each part is its own span, and the modal is a
+    // portal, so it is document.body rather than the render container.
+    expect(document.body.textContent).toContain(
+      'Main Hall · Practice · Scaling an unconference, by Ada Lovelace · [Workshop] · #facilitation',
+    );
+  });
+
+  it('draws the parts in the order the panel has them', () => {
+    // The preview and `itemBlock` build the same line twice, so this is what
+    // catches them drifting apart until the renderer is shared (LIB-214).
+    show('light', [session({})], ['format', 'title', 'room', 'speakers']);
+    expect(document.body.textContent).toContain(
+      'Scaling an unconference · Main Hall · by Ada Lovelace',
+    );
   });
 
   it('previews a pitch on medium and an organiser’s session only on heavy', () => {
