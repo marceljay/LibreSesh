@@ -29,7 +29,8 @@ import { proposalRoutes } from './routes/proposals.js';
 import { sessionRoutes } from './routes/sessions.js';
 import { settingsRoutes } from './routes/settings.js';
 import { telegramRoutes } from './routes/telegram.js';
-import { Announcer } from './telegram.js';
+import { Announcer } from './announcer.js';
+import { telegramTransport } from './telegram.js';
 import { trashRoutes } from './routes/trash.js';
 import { streamRoutes } from './routes/stream.js';
 import { tagRoutes } from './routes/tags.js';
@@ -57,7 +58,9 @@ export function createApp(db: Db, config: Config, nostrPool: Pool = new SimplePo
     backoff: new Backoff(),
     tally: new Tally(),
     config,
-    announcer: new Announcer(db, config.telegramBotToken, config.publicUrl),
+    announcer: new Announcer(db, [
+      telegramTransport(db, config.telegramBotToken, config.publicUrl),
+    ]),
   };
   const app = express();
 

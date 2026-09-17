@@ -4,7 +4,7 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
-import { PollerPool } from './telegram.js';
+import { nextSlotText, PollerPool } from './telegram.js';
 import { rotateAtRest } from './secretsAtRest.js';
 import { PURPOSE as NOSTR_SECKEY } from './nostr/keys.js';
 import { startNostrSync } from './nostr/queue.js';
@@ -86,7 +86,9 @@ setInterval(sweep, 24 * 60 * 60_000).unref();
 // `added` and `changed` are write-path triggers, announced beside the audit row
 // rather than on a timer.
 const { announcer } = ctx;
-const pollers = new PollerPool(db, config.telegramBotToken, announcer);
+const pollers = new PollerPool(db, config.telegramBotToken, {
+  nextSlotText: (event, now) => nextSlotText(db, event, now, config.publicUrl),
+});
 pollers.reconcile();
 setInterval(() => {
   pollers.reconcile();

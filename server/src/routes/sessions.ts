@@ -11,7 +11,7 @@ import type { SessionRow } from '../db.js';
 import { badRequest, forbidden } from '../errors.js';
 import { loadSessionDto } from '../mappers.js';
 import { isAMove, notifyMentionsIn, notifySessionAudience } from '../notifications.js';
-import { announceQuietly } from '../telegram.js';
+import { announceQuietly } from '../announcer.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
 import {

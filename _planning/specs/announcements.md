@@ -179,19 +179,17 @@ the other; `placed` without `added`; `added` suppresses `up_next` inside
 one line; drafts, deleted and archived silent; scope filters the digest; an
 empty day is silent; a paused transport resumes on the next tick.
 
-## Implementation status (2026-09-16)
+## Implementation status (2026-09-17)
 
-The scheduler loop exists once, in `server/src/telegram.ts` on
-`feat/telegram-announcements` (in review): the `Announcer` class with
-`up_next` built and `digest`, `added`, `changed` filed as
-[LIB-211](https://linear.app/libresesh/issue/LIB-211) and
-[LIB-212](https://linear.app/libresesh/issue/LIB-212). It renders and sends inside the tick and supports a single transport.
-
-Whichever of Nostr and Telegram merges second implements this file. If Telegram
-merges first, [LIB-214](https://linear.app/libresesh/issue/LIB-214) extracts
-the announcer into `announcer.ts` with Telegram as its first transport and its
-suite unchanged; if Nostr goes first, it creates `announcer.ts` from this file
-and the Telegram branch is rebased onto it as a transport. After the merge the
-Telegram spec's *three axes*, *posting loop* and *what must not travel* become
-a pointer here; the message shapes, the bot, the group binding and the commands
-stay there.
+This file is implemented by `server/src/announcer.ts`
+([LIB-214](https://linear.app/libresesh/issue/LIB-214)): the `Announcer`
+class holds the loop, the sent record keyed by transport, the write-path
+entry points (`announceAdded`, `announcePlaced`, `announcePitched`,
+`noteMoved`) and every rule above; `tests/announcer.test.ts` proves them
+against a fake transport. A transport is `{ name, enabled, timing, send }`
+— `timing` gives the lead and the digest hour, since both are per-transport
+settings. Telegram is the first transport (`telegramTransport` in
+`server/src/telegram.ts`, which keeps rendering, the bot, the group binding
+and the commands); Nostr is the second
+([LIB-217](https://linear.app/libresesh/issue/LIB-217)). Scope and verbosity
+are not implemented by either yet.
