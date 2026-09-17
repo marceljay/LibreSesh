@@ -145,6 +145,8 @@ export const SUMMARIES: Record<string, string> = {
   'POST /api/e/{slug}/nostr/resync': 'Republish every calendar event. Organisers',
   'POST /api/e/{slug}/nostr/test':
     'Republish the profile now and return each relay’s answer. Organisers',
+  'GET /api/e/{slug}/nostr/example':
+    'What one trigger would post as a note, rendered from this event’s schedule. Organisers',
   'POST /api/e/{slug}/formats': 'Add a session format. Organisers',
   'PATCH /api/e/{slug}/formats/{id}': 'Edit a session format. Organisers',
   'DELETE /api/e/{slug}/formats/{id}': 'Remove a session format. Organisers',

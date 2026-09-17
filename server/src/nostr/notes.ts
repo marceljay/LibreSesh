@@ -11,7 +11,7 @@
  * events are the durable copy and a late note is a stale one.
  */
 import { finalizeEvent } from 'nostr-tools/pure';
-import type { Announcement, Transport, Trigger } from '../announcer.js';
+import { daySessions, type Announcement, type Transport, type Trigger } from '../announcer.js';
 import type { Config } from '../config.js';
 import type { Db, EventRow, ProposalRow, SessionRow } from '../db.js';
 import { NameResolver } from '../eventIdentity.js';
@@ -220,6 +220,71 @@ function pitcherName(db: Db, event: EventRow, p: ProposalRow): string {
     if (row) return row.name;
   }
   return new NameResolver(db, event.id).get(p.created_by);
+}
+
+/**
+ * What `trigger` would post, from the event's own schedule: the next slot,
+ * its day, its first session, the latest pitch. Null when the schedule has
+ * nothing to show yet.
+ */
+export function exampleNote(
+  db: Db,
+  config: Config,
+  event: EventRow,
+  trigger: Trigger,
+): string | null {
+  const pubkey = event.nostr_pubkey ?? '0'.repeat(64);
+  const now = new Date();
+  const sessions = (from: string): SessionRow[] =>
+    db
+      .prepare<[number, string], SessionRow>(
+        `SELECT * FROM sessions
+          WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND starts_at > ?
+          ORDER BY starts_at, room_id`,
+      )
+      .all(event.id, from);
+  const upcoming = sessions(now.toISOString());
+  const all = upcoming.length > 0 ? upcoming : sessions('');
+  const first = all[0];
+  const slot = first ? all.filter((s) => s.starts_at === first.starts_at) : [];
+  const proposal: ProposalRow | undefined =
+    db
+      .prepare<[number], ProposalRow>(
+        `SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL ORDER BY created_at DESC`,
+      )
+      .get(event.id) ??
+    (first
+      ? {
+          id: 0,
+          event_id: event.id,
+          title: first.title,
+          description: first.description,
+          speaker_id: null,
+          created_by: first.created_by,
+          placed_session_id: first.id,
+          created_at: now.toISOString(),
+          updated_at: now.toISOString(),
+          deleted_at: null,
+          nostr_optout: 0,
+        }
+      : undefined);
+  const nowIso = now.toISOString();
+  const a: Announcement =
+    trigger === 'up_next'
+      ? { trigger, event, at: first?.starts_at ?? nowIso, sessions: slot }
+      : trigger === 'digest'
+        ? {
+            trigger,
+            event,
+            at: first?.starts_at ?? nowIso,
+            sessions: first
+              ? daySessions(db, event, localDate(new Date(first.starts_at), event.timezone))
+              : [],
+          }
+        : trigger === 'pitched'
+          ? { trigger, event, at: nowIso, sessions: [], proposal }
+          : { trigger, event, at: nowIso, sessions: first ? [first] : [], proposal };
+  return renderNote(db, a, pubkey, config.publicUrl)?.content ?? null;
 }
 
 /** The announcer's Nostr transport: kind-1 notes signed by the event's key. */
