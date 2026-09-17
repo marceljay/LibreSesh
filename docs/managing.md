@@ -135,6 +135,9 @@ Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
+Each session in it is a line — the title, and who is giving it — with a second
+line listing its streams when you have those switched on.
+
 **The morning message** goes out at the time you set, on the venue's clock. It
 is one line a session for the whole day — no speakers, no links to streams,
 because it is read over breakfast to decide where to be. A day with nothing on

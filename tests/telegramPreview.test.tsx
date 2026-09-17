@@ -99,6 +99,7 @@ describe('the Telegram example', () => {
     cleanup();
     show('light', streamed, true);
     expect(screen.getByText(/Main camera/)).toBeTruthy();
+    expect(screen.getByText(/Stream:/)).toBeTruthy();
   });
 
   it('says plainly that off sends nothing', () => {
@@ -112,7 +113,8 @@ describe('the Telegram example', () => {
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
-    expect(screen.getByText('Ada Lovelace')).toBeTruthy();
+    // On the title's own line now, not a line of its own.
+    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
   });
 
   it('puts every room of one start time in the same message', () => {
@@ -120,8 +122,13 @@ describe('the Telegram example', () => {
       session({}),
       session({ id: 2, roomId: 2, title: 'Hallway track', speakers: [] }),
     ]);
-    expect(screen.getByText('Main Hall')).toBeTruthy();
-    expect(screen.getByText('Room 2')).toBeTruthy();
+    expect(screen.getByText('Scaling an unconference')).toBeTruthy();
+    expect(screen.getByText('Hallway track')).toBeTruthy();
+  });
+
+  it('draws a session as one line, with its speakers on it', () => {
+    show('light');
+    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
   });
 
   it('never previews a draft, because one is never posted', () => {
