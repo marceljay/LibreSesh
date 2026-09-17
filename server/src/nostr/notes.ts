@@ -127,7 +127,10 @@ export function renderNote(
   const e = a.event;
   const tz = e.timezone;
   const relays = relaysOf(e);
-  const lines = a.sessions.map((s) => lineOf(db, s));
+  // The opt-out is the author's word that this one stays off Nostr: not as a
+  // calendar entry, and not named in a note either. Telegram still sees it,
+  // which is why the announcer hands over the whole slot and the cut is here.
+  const lines = a.sessions.filter((s) => s.nostr_optout === 0).map((s) => lineOf(db, s));
   const refs = lines.map(
     (l) => `nostr:${naddrFor(KIND_SESSION, pubkey, sessionDTag(e.id, l.id), relays)}`,
   );
@@ -195,7 +198,7 @@ export function renderNote(
     }
     case 'pitched': {
       const p = a.proposal;
-      if (!p) return null;
+      if (!p || p.nostr_optout === 1) return null;
       const pitcher = pitcherName(db, e, p);
       const teaser =
         p.description
@@ -239,7 +242,8 @@ export function exampleNote(
     db
       .prepare<[number, string], SessionRow>(
         `SELECT * FROM sessions
-          WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND starts_at > ?
+          WHERE event_id = ? AND deleted_at IS NULL AND draft = 0 AND nostr_optout = 0
+            AND starts_at > ?
           ORDER BY starts_at, room_id`,
       )
       .all(event.id, from);
@@ -250,7 +254,8 @@ export function exampleNote(
   const proposal: ProposalRow | undefined =
     db
       .prepare<[number], ProposalRow>(
-        `SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL ORDER BY created_at DESC`,
+        `SELECT * FROM proposals WHERE event_id = ? AND deleted_at IS NULL AND nostr_optout = 0
+          ORDER BY created_at DESC`,
       )
       .get(event.id) ??
     (first

@@ -205,7 +205,7 @@ entries are kept current whatever is ticked.
 **Opting a session out.** While publishing is on, the session and pitch forms
 say so and carry a **Publish to Nostr** box, ticked by default. Its author or
 an organiser can untick it; a published session then gets a deletion request
-on the next pass.
+on the next pass, and no note names it or the pitch from then on.
 
 **Switching off** stops updates and notes and removes nothing. **Retract
 everything** asks every relay to delete every entry and the profile, then
