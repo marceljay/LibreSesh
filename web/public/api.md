@@ -376,6 +376,8 @@ resolving, so a client written against the old name keeps working. Read
 | `GET /notifications`, `POST /notifications/read`, `PATCH /notifications/mutes` | Your inbox |
 | `POST /calendar-token`, `GET /calendar.ics` | The calendar feed |
 | `GET /export.json` | Whole-event JSON. Organisers |
+| `GET /nostr`, `POST /nostr/enable`, `POST /nostr/disable`, `PATCH /nostr` | Publishing the programme to Nostr: status, the switch (`{acknowledged: true}`), relays and triggers. Organisers |
+| `POST /nostr/import-key`, `POST /nostr/export-key` | The event's signing key as an `nsec`, in and out. Organisers, `auth` budget, audited |
 | `GET /audit`, `GET /login-health`, `POST /login-attempts/reset` | The log, and the sign-in stop |
 | `GET /trash`, `POST /sessions/:id/restore`, `POST /contributions/:id/restore` | Undo |
 | `PATCH /settings`, `PATCH /permissions` | The event itself, and its capability matrix |

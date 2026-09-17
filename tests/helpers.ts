@@ -40,6 +40,8 @@ export function makeHarness(overrides: Partial<Config> = {}): Harness {
     buildCommit: null,
     telegramBotToken: null,
     publicUrl: null,
+    atRestSecret: 'test-secret',
+    nostrDefaultRelays: [],
     ...overrides,
   };
   const app = createApp(db, config);

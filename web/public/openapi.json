@@ -1049,6 +1049,231 @@
         }
       }
     },
+    "/api/e/{slug}/nostr": {
+      "get": {
+        "operationId": "getEventNostr",
+        "summary": "Nostr publishing status: npub, relays, triggers, per-relay delivery. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nostr publishing status: npub, relays, triggers, per-relay delivery. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchEventNostr",
+        "summary": "Relays and note triggers. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NostrPatch"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Relays and note triggers. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/disable": {
+      "post": {
+        "operationId": "postEventNostrDisable",
+        "summary": "Stop publishing; retracts nothing. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done. No content — there is nothing to parse."
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/enable": {
+      "post": {
+        "operationId": "postEventNostrEnable",
+        "summary": "Publish the programme to Nostr; generates the event’s key the first time. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NostrEnable"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publish the programme to Nostr; generates the event’s key the first time. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/export-key": {
+      "post": {
+        "operationId": "postEventNostrExportKey",
+        "summary": "The event’s signing key as an nsec. Organisers, audited",
+        "tags": [
+          "Nostr"
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event’s signing key as an nsec. Organisers, audited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/e/{slug}/nostr/import-key": {
+      "post": {
+        "operationId": "postEventNostrImportKey",
+        "summary": "Replace the event’s signing key with an nsec made elsewhere. Organisers",
+        "tags": [
+          "Nostr"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NostrImport"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replace the event’s signing key with an nsec made elsewhere. Organisers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/e/{slug}/notifications": {
       "get": {
         "operationId": "getEventNotifications",
@@ -3787,6 +4012,61 @@
                 "url"
               ],
               "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "NostrEnable": {
+        "type": "object",
+        "properties": {
+          "acknowledged": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "acknowledged"
+        ],
+        "additionalProperties": false
+      },
+      "NostrImport": {
+        "type": "object",
+        "properties": {
+          "nsec": {
+            "type": "string",
+            "pattern": "^nsec1[02-9ac-hj-np-z]{58}$"
+          }
+        },
+        "required": [
+          "nsec"
+        ],
+        "additionalProperties": false
+      },
+      "NostrPatch": {
+        "type": "object",
+        "properties": {
+          "relays": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "triggers": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "up_next",
+                "digest",
+                "added",
+                "changed",
+                "pitched",
+                "placed"
+              ]
             }
           }
         },

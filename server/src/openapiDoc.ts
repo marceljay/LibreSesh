@@ -131,6 +131,15 @@ export const SUMMARIES: Record<string, string> = {
   'PATCH /api/e/{slug}/contributions/{id}/hidden': 'Hide or unhide one. Organisers',
   'POST /api/e/{slug}/contributions/{id}/restore': 'Restore a deleted contribution',
   'GET /api/e/{slug}/export.json': 'Whole-event JSON. Organisers',
+  'GET /api/e/{slug}/nostr':
+    'Nostr publishing status: npub, relays, triggers, per-relay delivery. Organisers',
+  'POST /api/e/{slug}/nostr/enable':
+    'Publish the programme to Nostr; generates the event’s key the first time. Organisers',
+  'POST /api/e/{slug}/nostr/disable': 'Stop publishing; retracts nothing. Organisers',
+  'PATCH /api/e/{slug}/nostr': 'Relays and note triggers. Organisers',
+  'POST /api/e/{slug}/nostr/import-key':
+    'Replace the event’s signing key with an nsec made elsewhere. Organisers',
+  'POST /api/e/{slug}/nostr/export-key': 'The event’s signing key as an nsec. Organisers, audited',
   'POST /api/e/{slug}/formats': 'Add a session format. Organisers',
   'PATCH /api/e/{slug}/formats/{id}': 'Edit a session format. Organisers',
   'DELETE /api/e/{slug}/formats/{id}': 'Remove a session format. Organisers',
