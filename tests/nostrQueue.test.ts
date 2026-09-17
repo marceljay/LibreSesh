@@ -245,17 +245,27 @@ describe('sync loop', () => {
     h.close();
   });
 
-  it('drafts and opted-out sessions are deletions, not calendar entries', async () => {
-    const { h, eventId, insertSession, pool, tick } = setup(['wss://a']);
+  it('a draft or opted-out session gets no row until it was published; then a deletion', async () => {
+    const { h, eventId, insertSession, pool, tick, row } = setup(['wss://a']);
     const draft = insertSession('draft');
     const optout = insertSession('optout');
+    const live = insertSession('live');
     h.db.prepare(`UPDATE sessions SET draft = 1 WHERE id = ?`).run(draft);
     h.db.prepare(`UPDATE sessions SET nostr_optout = 1 WHERE id = ?`).run(optout);
     markDirty(h.db, eventId, undefined, T0);
+    markDirty(h.db, eventId, draft, T0);
     await tick(T0 + s(20));
-    expect(pool.kinds(31923)).toHaveLength(0);
-    expect(pool.kinds(5)).toHaveLength(2);
+    expect(pool.kinds(31923)).toHaveLength(1);
+    expect(pool.kinds(5)).toHaveLength(0);
     expect(pool.kinds(0)).toHaveLength(1);
+    expect(row('session', draft)).toBeUndefined();
+    expect(row('session', optout)).toBeUndefined();
+
+    h.db.prepare(`UPDATE sessions SET nostr_optout = 1 WHERE id = ?`).run(live);
+    markDirty(h.db, eventId, live, T0 + s(30));
+    await tick(T0 + s(50));
+    expect(pool.kinds(5)).toHaveLength(1);
+    expect(row('session', live).deleted).toBe(1);
     h.close();
   });
 

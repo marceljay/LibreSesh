@@ -67,14 +67,24 @@ export function markDirty(db: Db, eventId: number, sessionId?: number, nowMs = D
     if (!event?.nostr_pubkey) return;
     const now = iso(nowMs);
     const upsert = db.prepare(UPSERT);
-    const ids =
+    // A session that is not going to a relay and never was there — a draft,
+    // an opted-out one — gets no row: with one, every edit to it would send
+    // a deletion request for something no relay has.
+    const enrolled = `(s.draft = 0 AND s.deleted_at IS NULL AND s.nostr_optout = 0)
+      OR EXISTS (SELECT 1 FROM nostr_published p
+                  WHERE p.event_id = s.event_id AND p.entity = 'session' AND p.entity_id = s.id)`;
+    const ids = (
       sessionId !== undefined
-        ? [sessionId]
-        : (
-            db.prepare(`SELECT id FROM sessions WHERE event_id = ?`).all(eventId) as {
-              id: number;
-            }[]
-          ).map((r) => r.id);
+        ? db
+            .prepare(
+              `SELECT s.id FROM sessions s WHERE s.event_id = ? AND s.id = ? AND (${enrolled})`,
+            )
+            .all(eventId, sessionId)
+        : db
+            .prepare(`SELECT s.id FROM sessions s WHERE s.event_id = ? AND (${enrolled})`)
+            .all(eventId)
+    ).map((r) => (r as { id: number }).id);
+    if (sessionId !== undefined && ids.length === 0) return;
     db.transaction(() => {
       for (const id of ids) upsert.run(eventId, 'session', id, sessionDTag(eventId, id), now, now);
       if (sessionId === undefined) upsert.run(eventId, 'profile', eventId, 'profile', now, now);
