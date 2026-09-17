@@ -260,6 +260,17 @@ export function SessionDetail({
               draft
             </span>
           )}
+          {session.nostr && (
+            <a
+              href={`https://njump.me/${session.nostr.naddr}`}
+              target="_blank"
+              rel="noopener"
+              title="Published to Nostr under the event’s key; opens the calendar entry"
+              className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800 hover:underline dark:bg-violet-950/60 dark:text-violet-300"
+            >
+              on Nostr
+            </a>
+          )}
           {session.tagIds.map((id) => {
             const tag = tags.find((t) => t.id === id);
             if (!tag) return null;
