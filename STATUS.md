@@ -19,18 +19,23 @@ at the same commit — its reflog shows an `update by push` after each one — s
 nothing local is unsaved. Suite at **1936**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
-- **Nostr publishing, steps 1 to 4 in review** [LIB-214] [LIB-215] [LIB-216]
-  [LIB-217]. Four stacked PRs, merge in order and retarget each to `dev` as
-  its base lands: #121 `feat/nostr-keys` (encryption at rest with a rotatable
-  secret, migration 026, the per-event signing key, enable / disable /
-  import-key / export-key), #122 `feat/nostr-sync` (NIP-52 builders, the
-  publish queue with per-relay delivery, every write path marking it,
+- **Nostr publishing, steps 1 to 6 in review** [LIB-214] [LIB-215] [LIB-216]
+  [LIB-217] [LIB-218] [LIB-219]. Six stacked PRs, merge in order and retarget
+  each to `dev` as its base lands: #121 `feat/nostr-keys` (encryption at rest
+  with a rotatable secret, migration 026, the per-event signing key, enable /
+  disable / import-key / export-key), #122 `feat/nostr-sync` (NIP-52 builders,
+  the publish queue with per-relay delivery, every write path marking it,
   retract / resync / test), #126 `feat/announcer` (the loop lifted out of
   `telegram.ts` per `announcements.md`, Telegram a transport, `pitched` and
-  `placed` wired), and `feat/nostr-notes` (kind-1 notes as the second
-  transport). Suite at 2032, lint clean. Nothing user-facing yet: an event is
-  enabled through the API until the Publish tab [LIB-218] lands; then the
-  forms and badge [LIB-219], then your relay check [LIB-220] and D6.
+  `placed` wired), #127 `feat/nostr-notes` (kind-1 notes as the second
+  transport), #128 `feat/nostr-tab` (the Nostr section of the Publish tab,
+  and the relay pool moved to `ws` after Node's own WebSocket crashed the
+  process on a refused relay), and `feat/nostr-forms` (the notice and the
+  opt-out on both forms, the *on Nostr* badge, `nostrEnabled` on the event).
+  Suite at 2058, lint clean, each UI step driven through headless Chromium.
+  What is left is yours: the relay check [LIB-220] and D6, the default relay
+  list [LIB-221] — until it is decided a newly enabled event starts with no
+  relays.
 
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
   commits on `dev`). It already caught a route that threw, but it sat inside
