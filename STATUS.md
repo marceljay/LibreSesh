@@ -19,18 +19,18 @@ at the same commit — its reflog shows an `update by push` after each one — s
 nothing local is unsaved. Suite at **1936**, lint clean, build clean. Most
 recent cut: **0.7.4**.
 
-- **Nostr publishing, steps 2 and 3 in review** [LIB-215] [LIB-216]. Two
-  stacked PRs off `dev`: #121 `feat/nostr-keys` (encryption at rest with a
-  rotatable secret, migration 023, the per-event signing key, the enable /
-  disable / import-key / export-key routes) and #122 `feat/nostr-sync` on top
-  of it (NIP-52 builders, the publish queue with per-relay delivery, every
-  write path marking it, retract / resync / test). Both suites green (1905),
-  lint clean. Nothing user-facing yet: an event is enabled through the API
-  until the Publish tab (LIB-218) lands. **Next is the shared announcer
-  [LIB-214]**, which waits on a decision: the Telegram PR #116 is still open,
-  and the spec prefers extracting the announcer from it once merged rather
-  than writing it fresh and rebasing Telegram onto it. Then notes [LIB-217],
-  the tab [LIB-218], the forms and badge [LIB-219].
+- **Nostr publishing, steps 1 to 4 in review** [LIB-214] [LIB-215] [LIB-216]
+  [LIB-217]. Four stacked PRs, merge in order and retarget each to `dev` as
+  its base lands: #121 `feat/nostr-keys` (encryption at rest with a rotatable
+  secret, migration 026, the per-event signing key, enable / disable /
+  import-key / export-key), #122 `feat/nostr-sync` (NIP-52 builders, the
+  publish queue with per-relay delivery, every write path marking it,
+  retract / resync / test), #126 `feat/announcer` (the loop lifted out of
+  `telegram.ts` per `announcements.md`, Telegram a transport, `pitched` and
+  `placed` wired), and `feat/nostr-notes` (kind-1 notes as the second
+  transport). Suite at 2032, lint clean. Nothing user-facing yet: an event is
+  enabled through the API until the Publish tab [LIB-218] lands; then the
+  forms and badge [LIB-219], then your relay check [LIB-220] and D6.
 
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
   commits on `dev`). It already caught a route that threw, but it sat inside
