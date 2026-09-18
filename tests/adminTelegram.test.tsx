@@ -73,7 +73,7 @@ describe('the Telegram panel', () => {
     show();
     // The regression: these were gated on a connected group, so changing the
     // bot — which clears the binding — made them disappear.
-    expect(await screen.findByRole('button', { name: 'Example' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Example of every message/ })).toBeTruthy();
     expect(screen.getByLabelText('How much it says')).toBeTruthy();
     expect(screen.getByText('How early it says it')).toBeTruthy();
   });
@@ -99,7 +99,7 @@ describe('the Telegram panel', () => {
 
   it('does not save the options until something has changed', async () => {
     show();
-    await screen.findByRole('button', { name: 'Example' });
+    await screen.findByRole('button', { name: /Example of every message/ });
     // The bot's button is *Save bot*, so this one is unambiguous.
     const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
@@ -111,7 +111,7 @@ describe('the Telegram panel', () => {
     show();
     const lead = (await screen.findByLabelText(/How early it says it/)) as HTMLInputElement;
     fireEvent.change(lead, { target: { value: '30' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Example' }));
+    fireEvent.click(screen.getByRole('button', { name: /Example of every message/ }));
     expect(screen.getByText(/30 minutes before each start time/)).toBeTruthy();
   });
 
@@ -136,7 +136,7 @@ describe('the Telegram panel', () => {
 
   it('says which messages the line is for, and which keep their own shape', async () => {
     show();
-    expect(await screen.findByText(/in the up-next and just-added messages/)).toBeTruthy();
+    expect(await screen.findByText(/what-is-up-next, just-added and just-pitched/)).toBeTruthy();
     expect(
       screen.getByText(/morning digest and the moved note keep their own short shape/),
     ).toBeTruthy();
@@ -146,6 +146,6 @@ describe('the Telegram panel', () => {
     telegram.mockResolvedValue(status({ available: false, instanceBot: false }));
     show();
     await screen.findByPlaceholderText('123456789:AA…');
-    expect(screen.queryByRole('button', { name: 'Example' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Example of every message/ })).toBeNull();
   });
 });

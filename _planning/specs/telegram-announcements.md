@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.5 · **Status:** implemented · **Team:** LibreSesh
+**Version:** 1.6 · **Status:** implemented · **Team:** LibreSesh
 
 ## Contents
 
@@ -425,9 +425,14 @@ transports join it rather than lengthening Settings.
 | How much it says | Select over the presets: **Off**, **Light**, **Medium**, **Heavy** |
 | When the morning message goes out | `TimeField`, shown only for the presets that send one |
 | How early it says it | Number field, 1–180 minutes |
-| How a session reads | A two-row textarea holding the template, **the line it renders as directly beneath it**, the placeholder names, and three presets. The label names the messages it governs, because the digest and the moved note do not use it. `checkTemplate` runs as it is typed, so a bad line reports itself and disables Save |
+| How a session reads | Its own group. A two-row textarea, the placeholder names beneath it **as buttons that insert at the caret**, `[ ]` to wrap a selection, then the line it renders as, then three presets. `checkTemplate` runs as it is typed, so a bad line reports itself and disables Save |
 | Save | One action for the three options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
+
+**Two groups.** *The bot and the group* is the connection — a thing you set up
+once. *What it posts* and *How a session reads* are the content, and they share
+one Save and one **Example of every message**. Flat, the panel was nine controls
+in a column with no seam between "which bot" and "what it says".
 
 **Rules.**
 
@@ -506,3 +511,4 @@ Requirements without a design element: U3 and U4 (§11).
 | 1.3 | 2026-09-17 | What a line says, and in what order, becomes the organiser's (migration 027, seven ticked and arrangeable fields replacing migration 024's livestream boolean). `placed` becomes its own trigger (migration 026) — placing a pitch announced nothing at all, which was the case the feature exists for |
 | 1.4 | 2026-09-17 | The organiser writes the line (migration 028). Ticking and ordering a fixed set of parts was still our sentence; `{placeholders}` and `[optional parts]` are theirs. 027's field set is gone rather than sitting beside it |
 | 1.5 | 2026-09-18 | The grammar moves to `shared/telegramTemplate.ts`, so the bot, the Example and the new live line under the box all draw the same parts. The control says which messages it governs — the digest and the moved note keep their own shape |
+| 1.6 | 2026-09-18 | The panel splits into labelled groups; the placeholder names become buttons that insert at the caret. Caret behaviour is covered by `scripts/browserPass.ts`, jsdom having no selection model |

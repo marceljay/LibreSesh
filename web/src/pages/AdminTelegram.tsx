@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EventDto, RoomDto, SessionDto, TelegramStatus } from '@shared/types';
 import { api } from '../lib/api';
 import { errorText } from '../lib/errorText';
@@ -11,7 +11,9 @@ import { Line, sampleRow, TelegramPreview } from '../components/TelegramPreview'
 import {
   ControlShell,
   Field,
+  FieldGroup,
   FormError,
+  FormRow,
   FormStack,
   InlineForm,
   NumberField,
@@ -68,6 +70,11 @@ function templateMessage(problem: TemplateProblem): string {
     ? `There is no “{${problem.name}}” to fill in — see the list below`
     : 'That line uses something there is no value for';
 }
+
+/** The small pill the token and preset buttons wear. One class, because a row
+ *  of buttons that do not match reads as a row of unrelated things. */
+const chipClass =
+  'rounded-full border border-stone-300 px-2 py-0.5 font-mono text-xs text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:text-stone-100';
 
 /** A starting point for anybody who does not want to write one. */
 const PRESETS: { label: string; template: string }[] = [
@@ -130,6 +137,7 @@ export function AdminTelegram({
   const [mode, setMode] = useState('off');
   const [template, setTemplate] = useState('');
   const [digest, setDigest] = useState('08:00');
+  const boxRef = useRef<HTMLTextAreaElement>(null);
   const [token, setToken] = useState('');
   const [busy, setBusy] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -219,6 +227,37 @@ export function AdminTelegram({
    * settings*, and a screen that quietly committed a choice the moment it was
    * picked would be the only one that did.
    */
+  /**
+   * Put a token where the caret is, and leave the caret after it.
+   *
+   * Typing `{speakers}` by hand means knowing the list and spelling it; every
+   * misspelling is a save that gets refused. A click cannot misspell, and
+   * landing the caret afterwards is what keeps it a writing tool rather than a
+   * thing that scatters tokens at the end of the line.
+   */
+  const insert = (token: string, wrap = false) => {
+    const box = boxRef.current;
+    if (!box) {
+      setTemplate((current) => current + token);
+      return;
+    }
+    const from = box.selectionStart ?? template.length;
+    const to = box.selectionEnd ?? from;
+    const selected = template.slice(from, to);
+    // A bracket pair around a selection is the common move: mark the part that
+    // should vanish when it is empty, rather than retyping it inside brackets.
+    const inserted = wrap ? `[${selected}]` : token;
+    setTemplate(template.slice(0, from) + inserted + template.slice(to));
+    // Empty brackets want the caret inside them, ready to type; everything
+    // else wants it after what just landed.
+    const caret = wrap && selected === '' ? from + 1 : from + inserted.length;
+    // After React has written the value, or the range lands on the old one.
+    requestAnimationFrame(() => {
+      box.focus();
+      box.setSelectionRange(caret, caret);
+    });
+  };
+
   const saveOptions = () => {
     if (!dirty || parsedLead.error || templateProblem) return;
     void run(
@@ -242,129 +281,134 @@ export function AdminTelegram({
       {problem && <FormError className="mb-4">{problem}</FormError>}
 
       <FormStack>
-        {status.ownBot ? (
-          <Field
-            label="Bot"
-            hint="Saved, and not readable again. Remove it to use a different one."
-            action={
-              <FieldInfo label="About the bot" href={DOCS}>
-                <p>
-                  The bot is the account that posts for you. This event has its own, so the group
-                  sees your conference’s name rather than whoever runs this instance.
-                </p>
-              </FieldInfo>
-            }
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <ControlShell className="flex-1">
-                <span className="font-mono text-sm text-stone-600 dark:text-stone-300">
-                  {status.ownBotHint}
-                </span>
-              </ControlShell>
-              <SecondaryButton
-                disabled={busy}
-                onClick={() =>
-                  void run(
-                    () => api.telegramSettings(slug, { botToken: null }),
-                    status.instanceBot ? 'Back to the shared bot.' : 'Bot removed.',
-                  )
-                }
-              >
-                Remove
-              </SecondaryButton>
-            </div>
-          </Field>
-        ) : (
-          <InlineForm className="contents" onSubmit={saveToken}>
+        <FieldGroup title="The bot and the group">
+          {status.ownBot ? (
             <Field
               label="Bot"
-              hint={
-                status.instanceBot
-                  ? 'This instance provides a bot, so you can leave this empty. Paste your own to post under your event’s name instead.'
-                  : 'Message @BotFather in Telegram, send /newbot, and paste back the token it gives you.'
-              }
+              hint="Saved, and not readable again. Remove it to use a different one."
               action={
                 <FieldInfo label="About the bot" href={DOCS}>
                   <p>
-                    The bot is the account that posts for you. You make it yourself in Telegram —
-                    message <strong>@BotFather</strong>, send <strong>/newbot</strong>, and it hands
-                    you a token.
-                  </p>
-                  <p className="mt-2">
-                    The token stays on the server and is never shown again. Anyone holding it can
-                    post as that bot, so treat it like a password.
+                    The bot is the account that posts for you. This event has its own, so the group
+                    sees your conference’s name rather than whoever runs this instance.
                   </p>
                 </FieldInfo>
               }
             >
               <div className="flex flex-wrap items-center gap-2">
                 <ControlShell className="flex-1">
-                  <TextInput
-                    value={token}
-                    placeholder="123456789:AA…"
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="w-full"
-                    onChange={(e) => setToken(e.target.value)}
-                  />
+                  <span className="font-mono text-sm text-stone-600 dark:text-stone-300">
+                    {status.ownBotHint}
+                  </span>
                 </ControlShell>
-                <PrimaryButton type="submit" disabled={busy || token.trim() === ''}>
-                  Save bot
+                <SecondaryButton
+                  disabled={busy}
+                  onClick={() =>
+                    void run(
+                      () => api.telegramSettings(slug, { botToken: null }),
+                      status.instanceBot ? 'Back to the shared bot.' : 'Bot removed.',
+                    )
+                  }
+                >
+                  Remove
+                </SecondaryButton>
+              </div>
+            </Field>
+          ) : (
+            <InlineForm className="contents" onSubmit={saveToken}>
+              <Field
+                label="Bot"
+                hint={
+                  status.instanceBot
+                    ? 'This instance provides a bot, so you can leave this empty. Paste your own to post under your event’s name instead.'
+                    : 'Message @BotFather in Telegram, send /newbot, and paste back the token it gives you.'
+                }
+                action={
+                  <FieldInfo label="About the bot" href={DOCS}>
+                    <p>
+                      The bot is the account that posts for you. You make it yourself in Telegram —
+                      message <strong>@BotFather</strong>, send <strong>/newbot</strong>, and it
+                      hands you a token.
+                    </p>
+                    <p className="mt-2">
+                      The token stays on the server and is never shown again. Anyone holding it can
+                      post as that bot, so treat it like a password.
+                    </p>
+                  </FieldInfo>
+                }
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <ControlShell className="flex-1">
+                    <TextInput
+                      value={token}
+                      placeholder="123456789:AA…"
+                      autoComplete="off"
+                      spellCheck={false}
+                      className="w-full"
+                      onChange={(e) => setToken(e.target.value)}
+                    />
+                  </ControlShell>
+                  <PrimaryButton type="submit" disabled={busy || token.trim() === ''}>
+                    Save bot
+                  </PrimaryButton>
+                </div>
+              </Field>
+            </InlineForm>
+          )}
+
+          {status.available && status.connected && (
+            <Field
+              label="Group"
+              hint="Everyone in it sees these sessions — titles, speakers, rooms and times. Drafts are never posted, and the links still ask for the event password."
+            >
+              <div className="flex flex-wrap gap-2">
+                <SecondaryButton disabled={busy} onClick={() => void test()}>
+                  Send a test message
+                </SecondaryButton>
+                <SecondaryButton
+                  disabled={busy}
+                  onClick={() =>
+                    void run(() => api.telegramDisconnect(slug), 'Disconnected from the group.')
+                  }
+                >
+                  Disconnect
+                </SecondaryButton>
+              </div>
+            </Field>
+          )}
+
+          {status.available && !status.connected && (
+            <Field
+              label="Group"
+              hint={
+                status.bindCode
+                  ? `Send this line as an ordinary message in your Telegram group. That message is what tells the bot which group to post in.${
+                      status.bindExpires ? ` Works once, expires ${clock(status.bindExpires)}.` : ''
+                    }`
+                  : 'Add the bot to your Telegram group first. Generating a code gives you a line to send as a message in that group — that message is what tells the bot which group to post in.'
+              }
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                {status.bindCode && (
+                  <ControlShell className="flex-1">
+                    <TextInput
+                      readOnly
+                      aria-label="Message to send in your Telegram group"
+                      className="w-full font-mono"
+                      value={`/bind ${status.bindCode}`}
+                    />
+                  </ControlShell>
+                )}
+                <PrimaryButton
+                  disabled={busy}
+                  onClick={() => void run(() => api.telegramCode(slug))}
+                >
+                  {status.bindCode ? 'New code' : 'Generate a code'}
                 </PrimaryButton>
               </div>
             </Field>
-          </InlineForm>
-        )}
-
-        {status.available && status.connected && (
-          <Field
-            label="Group"
-            hint="Everyone in it sees these sessions — titles, speakers, rooms and times. Drafts are never posted, and the links still ask for the event password."
-          >
-            <div className="flex flex-wrap gap-2">
-              <SecondaryButton disabled={busy} onClick={() => void test()}>
-                Send a test message
-              </SecondaryButton>
-              <SecondaryButton
-                disabled={busy}
-                onClick={() =>
-                  void run(() => api.telegramDisconnect(slug), 'Disconnected from the group.')
-                }
-              >
-                Disconnect
-              </SecondaryButton>
-            </div>
-          </Field>
-        )}
-
-        {status.available && !status.connected && (
-          <Field
-            label="Group"
-            hint={
-              status.bindCode
-                ? `Send this line as an ordinary message in your Telegram group. That message is what tells the bot which group to post in.${
-                    status.bindExpires ? ` Works once, expires ${clock(status.bindExpires)}.` : ''
-                  }`
-                : 'Add the bot to your Telegram group first. Generating a code gives you a line to send as a message in that group — that message is what tells the bot which group to post in.'
-            }
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              {status.bindCode && (
-                <ControlShell className="flex-1">
-                  <TextInput
-                    readOnly
-                    aria-label="Message to send in your Telegram group"
-                    className="w-full font-mono"
-                    value={`/bind ${status.bindCode}`}
-                  />
-                </ControlShell>
-              )}
-              <PrimaryButton disabled={busy} onClick={() => void run(() => api.telegramCode(slug))}>
-                {status.bindCode ? 'New code' : 'Generate a code'}
-              </PrimaryButton>
-            </div>
-          </Field>
-        )}
+          )}
+        </FieldGroup>
 
         {/* Not gated on a connected group. Deciding how loud this will be, and
           seeing what that means, is how somebody works out whether they want a
@@ -373,21 +417,13 @@ export function AdminTelegram({
           cleared the binding. */}
         {status.available && (
           <InlineForm className="contents" onSubmit={saveOptions}>
-            <Field
-              label="How much it says"
-              hint="A group is a conversation, and every announcement pushes it up the screen. Medium is the usual choice."
-              action={
-                <FieldInfo label="About what it posts" href={DOCS}>
-                  <p>
-                    Each setting sends a different set of messages. <strong>Example</strong> shows
-                    exactly what this one would post, using your own schedule.
-                  </p>
-                </FieldInfo>
-              }
-            >
-              <div className="flex flex-wrap items-center gap-2">
+            <FieldGroup title="What it posts">
+              <Field
+                label="How much it says"
+                hint="A group is a conversation, and every announcement pushes it up the screen. Medium is the usual choice."
+              >
                 <Select value={mode} onValueChange={(v) => setMode(String(v))}>
-                  <SelectTrigger aria-label="How much it says" className="w-72">
+                  <SelectTrigger aria-label="How much it says" className="w-full sm:w-96">
                     <SelectValue>{(v: string | null) => modeLabel(v ?? 'off')}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -398,70 +434,88 @@ export function AdminTelegram({
                     ))}
                   </SelectContent>
                 </Select>
-                <SecondaryButton onClick={() => setPreviewing(true)}>Example</SecondaryButton>
-              </div>
-            </Field>
-
-            {(mode === 'medium' || mode === 'heavy') && (
-              <Field
-                label="When the morning message goes out"
-                hint="The venue’s clock, not the server’s. Missed by more than an hour — a restart mid-morning, say — and that day’s is skipped rather than arriving late."
-              >
-                <TimeField value={digest} onChange={setDigest} aria-label="Digest time" />
               </Field>
-            )}
 
-            <NumberField
-              label="How early it says it"
-              hint="Before each start time. Everything starting at once goes out in a single message, however many rooms that is."
-              spec={telegramLeadField}
-              value={lead}
-              onChange={setLead}
-              suffix="minutes before"
-            />
-
-            <Field
-              label="How a session reads, in the up-next and just-added messages"
-              hint="Your own words. The morning digest and the moved note keep their own short shape — those are read across a whole day and stay one terse line a session."
-              action={
-                <FieldInfo label="About the line" href={DOCS}>
-                  <p>
-                    This is the line each session gets in <strong>what is up next</strong>, and in
-                    the <strong>just added</strong> and <strong>just pitched</strong> messages.
-                  </p>
-                  <p className="mt-2">
-                    The morning digest is deliberately not yours to shape: it lists a whole day, so
-                    it is always <code>time · room — title</code>. Nor is the note about a session
-                    moving. <strong>Example</strong> shows all of them together.
-                  </p>
-                  <p className="mt-2">
-                    Square brackets are what stop “Repair café, by ” on a session with nobody
-                    credited: <code>{'{title}[, by {speakers}]'}</code> drops the whole “, by …”
-                    when there are no speakers.
-                  </p>
-                  <p className="mt-2">
-                    <code>{'{streams}'}</code> is the one that leaves the password gate — anyone who
-                    can see the group can watch.
-                  </p>
-                </FieldInfo>
-              }
-              error={templateProblem ?? undefined}
-            >
-              <ControlShell>
-                <TextArea
-                  rows={2}
-                  value={template}
-                  spellCheck={false}
-                  className="w-full font-mono text-xs"
-                  aria-label="The line each session renders as"
-                  onChange={(e) => setTemplate(e.target.value)}
+              <FormRow>
+                <NumberField
+                  label="How early it says it"
+                  hint="Before each start time."
+                  spec={telegramLeadField}
+                  value={lead}
+                  onChange={setLead}
+                  suffix="minutes before"
                 />
-              </ControlShell>
+                {(mode === 'medium' || mode === 'heavy') && (
+                  <Field label="Morning message" hint="On the venue’s clock, not the server’s.">
+                    <TimeField value={digest} onChange={setDigest} aria-label="Digest time" />
+                  </Field>
+                )}
+              </FormRow>
+            </FieldGroup>
+
+            <FieldGroup title="How a session reads">
+              <Field
+                label="The line"
+                hint="Used in what-is-up-next, just-added and just-pitched. The morning digest and the moved note keep their own short shape — both list a whole day, so both stay one terse line a session."
+                action={
+                  <FieldInfo label="About the line" href={DOCS}>
+                    <p>
+                      Write it however you like. <code>{'{title}'}</code> and the rest are filled in
+                      per session; everything else is your own words.
+                    </p>
+                    <p className="mt-2">
+                      Square brackets are what stop “Repair café, by ” on a session with nobody
+                      credited: <code>{'{title}[, by {speakers}]'}</code> drops the whole “, by …”
+                      when there are no speakers. Select a part and press <strong>[ ]</strong> to
+                      wrap it.
+                    </p>
+                    <p className="mt-2">
+                      <code>{'{streams}'}</code> is the one that leaves the password gate — anyone
+                      who can see the group can watch.
+                    </p>
+                  </FieldInfo>
+                }
+                error={templateProblem ?? undefined}
+              >
+                <ControlShell>
+                  <TextArea
+                    ref={boxRef}
+                    rows={2}
+                    value={template}
+                    spellCheck={false}
+                    className="w-full font-mono text-xs"
+                    aria-label="The line each session renders as"
+                    onChange={(e) => setTemplate(e.target.value)}
+                  />
+                </ControlShell>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1">
+                  {PLACEHOLDERS.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => insert(`{${name}}`)}
+                      className={chipClass}
+                      title={`Put {${name}} where the cursor is`}
+                    >
+                      {`{${name}}`}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => insert('[]', true)}
+                    className={chipClass}
+                    title="Wrap the selected part in brackets, so it disappears when it is empty"
+                  >
+                    [ ]
+                  </button>
+                </div>
+              </Field>
 
               {/* The line as typed, against this event's own schedule. Every
                 other setting here can be checked by looking; this one used to
-                need a save and a wait, and then a group of strangers. */}
-              <div className="mt-2 rounded-lg bg-stone-100 px-3 py-2 dark:bg-stone-800">
+                need a save, a wait, and then a group of strangers. */}
+              <div className="rounded-lg bg-stone-100 px-3 py-2 dark:bg-stone-800">
                 <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
                   {usingRealData ? 'This event’s next session' : 'A stand-in session'}
                 </p>
@@ -474,30 +528,28 @@ export function AdminTelegram({
                 </p>
               </div>
 
-              <p className="mt-1.5 font-mono text-xs text-stone-500 dark:text-stone-400">
-                {PLACEHOLDERS.map((name) => `{${name}}`).join('  ')}
-              </p>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-stone-500 dark:text-stone-400">Start from:</span>
                 {PRESETS.map((preset) => (
                   <button
                     key={preset.label}
                     type="button"
                     onClick={() => setTemplate(preset.template)}
-                    className={`rounded-full border border-stone-300 px-2 py-0.5 text-xs text-stone-600 hover:border-stone-500 hover:text-stone-900 dark:border-stone-600 dark:text-stone-300 dark:hover:text-stone-100 ${
-                      template === preset.template ? 'border-stone-500 dark:border-stone-400' : ''
-                    }`}
+                    className={chipClass}
                   >
                     {preset.label}
                   </button>
                 ))}
               </div>
-            </Field>
+            </FieldGroup>
 
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
               <PrimaryButton type="submit" disabled={busy || !dirty || Boolean(templateProblem)}>
                 Save
               </PrimaryButton>
+              <SecondaryButton onClick={() => setPreviewing(true)}>
+                Example of every message
+              </SecondaryButton>
             </div>
           </InlineForm>
         )}

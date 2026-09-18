@@ -170,6 +170,12 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     label: 'How much it says',
     tab: 'publish',
     keywords: 'telegram loud quiet noise up next mode silent off',
+  },
+  {
+    id: 'telegram-line',
+    label: 'How a session reads',
+    tab: 'publish',
+    keywords: 'telegram line template message format wording placeholder title speakers',
     anchor: 'telegram',
   },
   {
