@@ -895,38 +895,52 @@ export function Calendar({
                       style={{ background: tagColor.get(id) ?? '#6B7280' }}
                     />
                   ))}
-                  {session.draft && (
-                    <span
-                      title="Off the schedule: only the organisers and the people behind it can see it"
-                      className="ms-auto rounded-sm bg-stone-200 dark:bg-stone-700 px-1 text-xs font-bold text-stone-700 dark:text-stone-200"
-                    >
-                      draft
-                    </span>
-                  )}
-                  {clash && (
-                    <span
-                      title="Overlaps another session in this room"
-                      className="ms-auto rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
-                    >
-                      clash
-                    </span>
-                  )}
-                  {competes && (
-                    <span
-                      title="Runs against a session everyone should be at"
-                      className={`${clash ? '' : 'ms-auto '}rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300`}
-                    >
-                      competing
-                    </span>
-                  )}
-                  {live && (
-                    <span
-                      className={`${clash || competes || session.draft ? '' : 'ms-auto '}rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900`}
-                    >
-                      now
-                    </span>
-                  )}
                 </div>
+                {/* Out of the flow, for the reason the star below is: a badge
+                    is a 16px chip and the tag strip it used to sit in is 4px,
+                    so any badge grew that row and pushed the title and time
+                    12px down the block. The clock made that visible — a
+                    session going live moved its own text and fell out of line
+                    with the blocks beside it, and on a short block the push
+                    sent the time past the bottom edge. Overlaid, the chip
+                    keeps the corner it always had and costs the block no
+                    height. `bg-inherit` takes whichever background the block
+                    itself is wearing — white, dark, or a draft's grey — so a
+                    title long enough to reach the chip truncates under it
+                    instead of running through it. */}
+                {(session.draft || clash || competes || live) && (
+                  <div className="absolute end-2 top-1 flex items-center gap-1 bg-inherit ps-1.5">
+                    {session.draft && (
+                      <span
+                        title="Off the schedule: only the organisers and the people behind it can see it"
+                        className="rounded-sm bg-stone-200 dark:bg-stone-700 px-1 text-xs font-bold text-stone-700 dark:text-stone-200"
+                      >
+                        draft
+                      </span>
+                    )}
+                    {clash && (
+                      <span
+                        title="Overlaps another session in this room"
+                        className="rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
+                      >
+                        clash
+                      </span>
+                    )}
+                    {competes && (
+                      <span
+                        title="Runs against a session everyone should be at"
+                        className="rounded-sm bg-amber-100 dark:bg-amber-950/60 px-1 text-xs font-bold text-amber-800 dark:text-amber-300"
+                      >
+                        competing
+                      </span>
+                    )}
+                    {live && (
+                      <span className="rounded-sm bg-highlight px-1 text-xs font-bold text-stone-900">
+                        now
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="mt-0.5 truncate text-xs font-semibold leading-tight">
                   {session.title}
                 </div>
