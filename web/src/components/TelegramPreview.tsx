@@ -1,6 +1,7 @@
 import type { EventDto, RoomDto, SessionDto } from '@shared/types';
 import { lineParts } from '@shared/telegramTemplate';
 import { MODES } from '@shared/telegramTriggers';
+import { hhmm } from '@shared/time';
 import { Modal } from './Modal';
 import { SecondaryButton } from './ui';
 
@@ -95,7 +96,7 @@ function pickSlot(
   const anchorDay = fmtOf(anchor.startsAt, { year: 'numeric', month: 'short', day: 'numeric' });
 
   return {
-    time: fmt({ hour: '2-digit', minute: '2-digit', hour12: false }),
+    time: hhmm(at, event.timezone),
     dayLabel: fmt({ weekday: 'long', day: 'numeric', month: 'long' }),
     // The digest is the whole day, so it is drawn from the whole day and not
     // from the anchor's slot — showing one slot three times was a lie about
@@ -106,7 +107,7 @@ function pickSlot(
       )
       .slice(0, 6)
       .map((x) => ({
-        time: fmtOf(x.startsAt, { hour: '2-digit', minute: '2-digit', hour12: false }),
+        time: hhmm(new Date(x.startsAt), event.timezone),
         room: roomName.get(x.roomId) ?? '',
         title: x.title,
       })),
@@ -114,7 +115,7 @@ function pickSlot(
       .filter((s) => s.startsAt === anchor.startsAt)
       .slice(0, 4)
       .map((s) => ({
-        time: fmtOf(s.startsAt, { hour: '2-digit', minute: '2-digit', hour12: false }),
+        time: hhmm(new Date(s.startsAt), event.timezone),
         room: roomName.get(s.roomId) ?? '',
         track: trackName.get(s.trackId ?? -1) ?? '',
         title: s.title,

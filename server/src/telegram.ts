@@ -18,7 +18,7 @@
 import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
 import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
-import { localDate, localMinuteOfDay, zonedParts, zonedTimeToUtc } from './shared/time.js';
+import { hhmm, localDate, localMinuteOfDay, zonedTimeToUtc } from './shared/time.js';
 import { DEFAULT_TEMPLATE, lineParts, type Placeholder } from './shared/telegramTemplate.js';
 import { parseTriggers } from './shared/telegramTriggers.js';
 
@@ -66,12 +66,6 @@ export function escapeHtml(value: string): string {
  */
 export function escapeAttr(value: string): string {
   return escapeHtml(value).replace(/"/g, '&quot;');
-}
-
-/** 'HH:MM' as the clock reads it at the venue, never UTC. */
-export function hhmm(instant: Date, timeZone: string): string {
-  const p = zonedParts(instant, timeZone);
-  return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
 }
 
 export interface AnnounceItem {
