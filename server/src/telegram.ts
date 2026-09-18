@@ -101,6 +101,18 @@ export function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/**
+ * The same, plus the quote, for a value inside `href="…"`.
+ *
+ * A stream address is typed by whoever entered the session, and the link rule
+ * only asks that it parse — `https://x/a"b` does. Unescaped, that quote ends
+ * the attribute early and Telegram refuses the message, which loses the whole
+ * slot for one bad link in one room.
+ */
+export function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/"/g, '&quot;');
+}
+
 /** 'HH:MM' as the clock reads it at the venue, never UTC. */
 export function hhmm(instant: Date, timeZone: string): string {
   const p = zonedParts(instant, timeZone);
@@ -170,12 +182,12 @@ export function renderTemplate(
       // become a 400 from Telegram's parser.
       if (part.name === 'title') {
         return sessionUrl
-          ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
+          ? `<a href="${escapeAttr(sessionUrl)}">${escapeHtml(item.title)}</a>`
           : `<b>${escapeHtml(item.title)}</b>`;
       }
       if (part.name === 'streams') {
         return item.livestreams
-          .map((stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`)
+          .map((stream) => `<a href="${escapeAttr(stream.url)}">${escapeHtml(stream.label)}</a>`)
           .join(', ');
       }
       if (part.name === 'tags') {
@@ -266,7 +278,7 @@ export function renderDigest(
 /** A title, linked where the instance knows its own address. */
 function linked(item: AnnounceItem, url: string | null): string {
   return url
-    ? `<a href="${escapeHtml(url)}">${escapeHtml(item.title)}</a>`
+    ? `<a href="${escapeAttr(url)}">${escapeHtml(item.title)}</a>`
     : escapeHtml(item.title);
 }
 

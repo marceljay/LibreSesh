@@ -222,6 +222,20 @@ describe('rendering a slot', () => {
     expect(text).toContain('<a href="https://s.example/s/2">Hallway track</a>');
   });
 
+  it('escapes a quote inside a link, so one odd address cannot lose the slot', () => {
+    // The link rule only asks that an address parse, and `https://x/a"b` does.
+    // Unescaped, the quote ends the href early and Telegram refuses the message.
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      [{ ...items[0]!, livestreams: [{ label: 'Odd', url: 'https://x/a"b' }] }],
+      () => 'https://s.example/s/1?q="x"',
+      '{title} {streams}',
+    );
+    expect(text).toContain('<a href="https://x/a&quot;b">Odd</a>');
+    expect(text).toContain('<a href="https://s.example/s/1?q=&quot;x&quot;">');
+  });
+
   it('refuses a template it cannot render, when it is saved and not when it is sent', () => {
     expect(checkTemplate('')).toEqual({ code: 'empty' });
     expect(checkTemplate('  \n ')).toEqual({ code: 'empty' });
