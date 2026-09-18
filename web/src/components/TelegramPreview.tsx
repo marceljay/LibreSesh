@@ -1,5 +1,6 @@
 import type { EventDto, RoomDto, SessionDto } from '@shared/types';
 import { lineParts } from '@shared/telegramTemplate';
+import { MODES } from '@shared/telegramTriggers';
 import { Modal } from './Modal';
 import { SecondaryButton } from './ui';
 
@@ -146,7 +147,8 @@ export function Line({ row, template }: { row: Row; template: string }) {
     track: row.track,
     speakers: row.speakers,
     format: row.format,
-    tags: row.tags.map((t) => `#${t}`).join(' '),
+    // One word each, as the bot posts them: a hashtag ends at the first space.
+    tags: row.tags.map((t) => `#${t.replace(/\s+/g, '')}`).join(' '),
     streams: row.streams.join(', '),
     time: row.time,
   });
@@ -233,15 +235,16 @@ export function TelegramPreview({
   const slot = pickSlot(event, sessions, rooms, tracks, formats, tags);
   const usingRealData = sessions.some((s) => !s.draft);
 
-  // Mirrors MODES in telegram.ts. Every branch below is a trigger the announcer
-  // really fires — a bubble here for something unwritten is the failure this
-  // modal exists to prevent, and it shipped once.
+  // The presets themselves, not a copy of them. Every bubble below is a
+  // trigger the announcer really fires — a bubble for something unwritten is
+  // the failure this modal exists to prevent, and it shipped once, from a copy.
+  const triggers = MODES[mode] ?? [];
   const sends = {
-    upNext: mode === 'light' || mode === 'medium' || mode === 'heavy',
-    digest: mode === 'medium' || mode === 'heavy',
-    placed: mode === 'medium' || mode === 'heavy',
-    added: mode === 'heavy',
-    moved: mode === 'heavy',
+    upNext: triggers.includes('up_next'),
+    digest: triggers.includes('digest'),
+    placed: triggers.includes('placed'),
+    added: triggers.includes('added'),
+    moved: triggers.includes('changed'),
   };
   const upNext = sends.upNext;
 

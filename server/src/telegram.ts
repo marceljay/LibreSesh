@@ -20,6 +20,7 @@ import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedParts, zonedTimeToUtc } from './shared/time.js';
 import { DEFAULT_TEMPLATE, lineParts, type Placeholder } from './shared/telegramTemplate.js';
+import { parseTriggers } from './shared/telegramTriggers.js';
 
 const API = 'https://api.telegram.org';
 
@@ -41,53 +42,7 @@ const DIGEST_WINDOW_MIN = 60;
 /** How long `getUpdates` is allowed to hold the connection open. */
 const POLL_SECONDS = 25;
 
-export type Trigger = 'up_next' | 'digest' | 'added' | 'changed' | 'placed';
-
-export const TRIGGERS: readonly Trigger[] = ['up_next', 'digest', 'added', 'changed', 'placed'];
-
-/**
- * Modes are **presets over the trigger set**, not a stored value of their own.
- * Storing both would let the label disagree with the behaviour; deriving it
- * means a set matching no preset reports "custom", which is the truth.
- *
- * Every rung has a trigger behind it that actually fires — that is the rule the
- * ladder is held to, and for a while it had only two rungs because `digest`,
- * `added` and `changed` were named and unwritten. Light sending nothing while
- * calling itself "one message each morning" is the failure this guards.
- *
- * **Light is `up_next`, not `digest`.** `announcements.md` fixes only that
- * Medium carries the digest; which rung is quietest is ours to choose. Putting
- * the per-slot message at the bottom makes migration 023's stored default —
- * `["up_next"]` — a preset with a name, so no event opens its panel on
- * "Custom", a state nobody picked and no control could return to.
- */
-export const MODES: Record<string, Trigger[]> = {
-  off: [],
-  light: ['up_next'],
-  medium: ['digest', 'up_next', 'placed'],
-  heavy: ['digest', 'up_next', 'placed', 'added', 'changed'],
-};
-
-const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
-  a.length === b.length && [...a].sort().join() === [...b].sort().join();
-
-/** Which preset this trigger set is, or 'custom' when it is none of them. */
-export function modeOf(triggers: readonly Trigger[]): string {
-  for (const [name, set] of Object.entries(MODES)) if (sameSet(triggers, set)) return name;
-  return 'custom';
-}
-
-/** Stored as JSON; anything unrecognised is dropped rather than trusted. */
-export function parseTriggers(raw: string | null): Trigger[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((t): t is Trigger => TRIGGERS.includes(t as Trigger));
-  } catch {
-    return [];
-  }
-}
+export { MODES, modeOf, parseTriggers, TRIGGERS, type Trigger } from './shared/telegramTriggers.js';
 
 /**
  * The three characters Telegram's HTML parse mode reserves.
