@@ -300,7 +300,11 @@ noted during one of those awaits has to survive to the next tick.
 required by [`announcements.md`](announcements.md) so one transport cannot
 silence another. A second `Set<number>` holds the sessions actually announced:
 `changed` fires only for those, because the move of a session the group was
-never told about would disclose it.
+never told about would disclose it. It is in memory like the first, with a
+cost the first does not have: after a restart nothing counts as announced, so
+a move goes unreported until the digest or an up-next names that session
+again. Accepted for now, and recorded as LIB-225; the `announced` table
+[`announcements.md`](announcements.md) names would close both costs at once.
 
 **Interfaces.** Constructed with the database, the instance fallback token, the
 public URL and a `Sender`. `nextSlotText` serves the `/next` command.

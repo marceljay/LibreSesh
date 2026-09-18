@@ -74,7 +74,12 @@ recent cut: **0.7.4**.
   first thing to do with a live token — and now more so, since three more
   triggers post without ever having been seen to post. Still open: room scope,
   lifting the loop into `announcer.ts` [LIB-214], and the deploy-doc issue whose
-  creation timed out.
+  creation timed out. The review filed five more, all yours to call: a deleted
+  session the group was told about announces nothing [LIB-222]; any group
+  member can `/unbind`, and SECURITY.md does not say so [LIB-223]; migrations
+  027 and 028 could be one before merge [LIB-224]; a restart empties the
+  announced set, so moves go quiet until re-announced [LIB-225]; saving a bot
+  or minting a code discards an unsaved line [LIB-226].
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
