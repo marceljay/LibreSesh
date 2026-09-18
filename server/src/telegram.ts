@@ -573,7 +573,16 @@ export class Announcer {
   }
 
   async tick(now: Date = new Date()): Promise<void> {
-    for (const event of configuredEvents(this.db)) {
+    const events = configuredEvents(this.db);
+    // Moves buffered for an event that has since disconnected are dropped
+    // rather than kept for a group that may never be reconnected. Pruned here,
+    // and never by clearing the map after the loop: a tick awaits every send,
+    // and a move noted during one of those awaits would otherwise be thrown
+    // away before any tick had looked at it.
+    const listening = new Set(events.map((event) => event.id));
+    for (const id of this.moved.keys()) if (!listening.has(id)) this.moved.delete(id);
+
+    for (const event of events) {
       const triggers = parseTriggers(event.telegram_triggers);
       try {
         // Moves first: a session that has just been dragged into the next
@@ -586,9 +595,6 @@ export class Announcer {
         console.warn(`telegram: ${event.slug}: ${(err as Error).message}`);
       }
     }
-    // Anything buffered for an event that has since stopped listening is
-    // dropped rather than kept for a group that may never be reconnected.
-    this.moved.clear();
   }
 
   /** Where a message goes, or null when this event cannot send one. */

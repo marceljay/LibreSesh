@@ -680,6 +680,42 @@ describe('a session added and a session moved', () => {
     vi.restoreAllMocks();
   });
 
+  it('keeps a move noted while a tick is mid-send for the next tick', async () => {
+    // A tick awaits every send, and a drag can land in the middle of one. The
+    // move was buffered and then thrown away with the tick's own tidy-up, so a
+    // reshuffle during a slow Telegram call reached nobody.
+    const id = await addSession(600, 'First');
+    const sent: TelegramMessage[] = [];
+    const send: Sender = async (_token, message) => {
+      sent.push(message);
+      if (sent.length === 1) a.noteMoved(event(), id);
+    };
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    await a.tick(new Date(at(DAY_ONE, 590)));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('up next');
+
+    await a.tick(new Date(at(DAY_ONE, 591)));
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.text).toContain('Moved on the schedule');
+  });
+
+  it('drops a move buffered for an event that has since disconnected', async () => {
+    const id = await addSession(600, 'First');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)));
+    sent.length = 0;
+
+    a.noteMoved(event(), id);
+    harness.db.prepare('UPDATE events SET telegram_chat_id = NULL WHERE id = ?').run(eventId);
+    await a.tick(new Date(at(DAY_ONE, 400)));
+    harness.db.prepare(`UPDATE events SET telegram_chat_id = '-100123' WHERE id = ?`).run(eventId);
+    await a.tick(new Date(at(DAY_ONE, 401)));
+    expect(sent).toEqual([]);
+  });
+
   it('says nothing about a move of a session the group never heard of', async () => {
     const id = await addSession(600);
     const { sent, send } = recorder();
