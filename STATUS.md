@@ -54,10 +54,14 @@ recent cut: **0.7.4**.
   are built, migration 025 carries the digest hour, and the four-rung ladder is
   back with every rung naming a trigger that fires. The announcer moved onto the
   request context, because three of the four are write-path triggers. What a
-  session's line says is now six ticked fields (migration 027, which folded
-  024's livestream boolean into them); `placed` is separate from `added`
+  session's line says is now a line the organiser writes — `{placeholders}`
+  and `[optional parts]`, migration 028, which replaced 027's ticked fields
+  and 024's livestream boolean; `placed` is separate from `added`
   (migration 026) because placing a pitch — the case the feature exists for —
-  announced nothing at all until it was.
+  announced nothing at all until it was. A review pass on 2026-09-18 fixed the
+  pitch that lands in a slot already announced (it was silent), a move noted
+  while a tick was mid-send (it was dropped), a quote in a stream address (it
+  lost the slot) and a blank line (it was accepted).
   **The bot belongs to the event**: an
   organiser pastes a token from BotFather (migration 023) and needs nothing
   from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a

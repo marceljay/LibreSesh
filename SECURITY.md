@@ -153,8 +153,9 @@ Connecting a group is a **publication decision**, and the only one an organiser
 can make that puts event content somewhere this app cannot reach. Manage Event
 says so in front of the control rather than in a tooltip.
 
-What leaves: session titles, speaker display names, room names and times, as
-plain messages, to everyone who can see that group — and onward to anyone they
+What leaves: session titles, speaker display names, room, track and format
+names, tags and times — whichever of those the organiser's line names — as
+plain messages, to everyone who can see that group, and onward to anyone they
 forward it to. What does not: drafts (never, under any trigger), deleted
 sessions, archived events, and every contribution, note, question, star and
 pitch interest. The links in the messages still land on the password gate; the

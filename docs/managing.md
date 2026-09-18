@@ -168,8 +168,10 @@ The names sit under the box as buttons — press one and it lands where your
 cursor is, so there is nothing to spell. **[ ]** wraps whatever you have
 selected in brackets. Underneath that is the line as it will actually arrive,
 drawn from this event's own next session, redrawn as you type. A line that uses a name there is
-no value for, or leaves a `[` unclosed, says so there and cannot be saved — so
-a broken line never reaches a group. Angle brackets and the like are shown as
+no value for, leaves a `[` unclosed, or is blank says so there and cannot be
+saved — so a broken line never reaches a group. And a session whose line would
+come out empty — nobody credited, no room, whatever your brackets dropped —
+shows its title instead, so no session is ever listed under no name. Angle brackets and the like are shown as
 typed rather than treated as formatting.
 
 `{streams}` is the one that publishes something the password gate would

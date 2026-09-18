@@ -100,7 +100,7 @@ describe('the Telegram example', () => {
     expect(screen.getByText(/12:00 · Main Hall — Later on/)).toBeTruthy();
   });
 
-  it('shows a livestream link only when that is switched on', () => {
+  it('shows a stream link only when the line asks for one', () => {
     const streamed = [
       session({ livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }] }),
     ];
