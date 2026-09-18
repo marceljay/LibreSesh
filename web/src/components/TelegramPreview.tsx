@@ -1,5 +1,5 @@
 import type { EventDto, RoomDto, SessionDto } from '@shared/types';
-import { templateParts } from '@shared/telegramTemplate';
+import { lineParts } from '@shared/telegramTemplate';
 import { Modal } from './Modal';
 import { SecondaryButton } from './ui';
 
@@ -134,13 +134,13 @@ export interface NamedRef {
 /**
  * One session's line, drawn from the same parts the bot sends.
  *
- * `templateParts` in `@shared/telegramTemplate` decides what survives; this
+ * `lineParts` in `@shared/telegramTemplate` decides what survives; this
  * decides what a surviving part looks like on screen. The bot does the same
  * with Telegram's HTML, so an organiser reading this is reading what the group
  * will get rather than an impression of it.
  */
 export function Line({ row, template }: { row: Row; template: string }) {
-  const parts = templateParts(template, {
+  const parts = lineParts(template, {
     title: row.title,
     room: row.room,
     track: row.track,

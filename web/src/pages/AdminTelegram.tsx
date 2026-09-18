@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { EventDto, RoomDto, SessionDto, TelegramStatus } from '@shared/types';
 import { api } from '../lib/api';
-import { errorText } from '../lib/errorText';
+import { errorText, templateProblemText } from '../lib/errorText';
 import { parseNumberField, telegramLeadField } from '../lib/numberField';
 import { FieldInfo } from '../components/FieldInfo';
-import { checkTemplate, PLACEHOLDERS, type TemplateProblem } from '@shared/telegramTemplate';
+import { checkTemplate, PLACEHOLDERS } from '@shared/telegramTemplate';
 import { TimeField } from '../components/TimeField';
 import { fmtMin, minutesOf } from '../lib/format';
 import { Line, sampleRow, TelegramPreview } from '../components/TelegramPreview';
@@ -48,28 +48,6 @@ const MODES = [
   { id: 'medium', label: 'Medium — that, the morning’s programme, and pitches as they land' },
   { id: 'heavy', label: 'Heavy — that, plus every session added or moved' },
 ];
-
-/**
- * The line a session renders as, written by the organiser.
- *
- * Ticking parts in a chosen order was still our sentence with their words in
- * it — it could not say "Annnoooounciiiiiing: Repair café". This can. The
- * grammar stays two things, because a third is where a template box turns into
- * a language nobody can debug from a phone at a conference.
- */
-/**
- * What is wrong with the line, in a sentence.
- *
- * The same three cases `errorText` answers for the route's codes — said here
- * as it is typed, so nobody presses Save to find out.
- */
-function templateMessage(problem: TemplateProblem): string {
-  if (problem.code === 'unbalanced') return 'Every [ needs a matching ]';
-  if (problem.code === 'too_long') return 'That line is too long';
-  return problem.name
-    ? `There is no “{${problem.name}}” to fill in — see the list below`
-    : 'That line uses something there is no value for';
-}
 
 /** The small pill the token and preset buttons wear. One class, because a row
  *  of buttons that do not match reads as a row of unrelated things. */
@@ -212,7 +190,7 @@ export function AdminTelegram({
   // Checked as it is typed, with the same function the route refuses it by, so
   // the box never disagrees with the answer Save would give.
   const badTemplate = checkTemplate(template);
-  const templateProblem = badTemplate === null ? null : templateMessage(badTemplate);
+  const templateProblem = badTemplate === null ? null : templateProblemText(badTemplate);
   const row = sampleRow(event, sessions, rooms, tracks, formats, tags);
   const usingRealData = sessions.some((session) => !session.draft);
   const dirty =

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { LINK_RULE, safeLink } from './shared/links.js';
 import { badRequest } from './errors.js';
 import { isValidTimezone } from './shared/time.js';
+import { MAX_TEMPLATE } from './shared/telegramTemplate.js';
 
 /** Trimmed string that must still have content after trimming. */
 export const trimmed = (max: number) =>
@@ -481,7 +482,7 @@ export const telegramSettingsSchema = z
     /** The line a session renders as. Its own grammar is checked in the route
      *  by `checkTemplate`, which knows the placeholder names; this only holds
      *  the shape and the ceiling. */
-    template: z.string().max(500).optional(),
+    template: z.string().max(MAX_TEMPLATE).optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),
   })

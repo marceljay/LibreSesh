@@ -19,7 +19,7 @@ import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
 import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedParts, zonedTimeToUtc } from './shared/time.js';
-import { DEFAULT_TEMPLATE, templateParts, type Placeholder } from './shared/telegramTemplate.js';
+import { DEFAULT_TEMPLATE, lineParts, type Placeholder } from './shared/telegramTemplate.js';
 
 const API = 'https://api.telegram.org';
 
@@ -163,7 +163,7 @@ export function renderTemplate(
     time: item.startsAt === '' ? '' : hhmm(new Date(item.startsAt), timeZone),
   };
 
-  return templateParts(template, plain)
+  return lineParts(template, plain)
     .map((part) => {
       // Two parts are links rather than words. Everything else, the organiser's
       // own text included, is escaped: a stray `<` stays a `<` and can never

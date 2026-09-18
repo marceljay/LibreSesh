@@ -148,6 +148,11 @@ describe('the Telegram example', () => {
     expect(document.body.textContent).not.toContain(', by');
   });
 
+  it('falls back to the title when the line comes out empty, the way the server does', () => {
+    show('light', [session({ speakers: [] })], '[, by {speakers}]');
+    expect(document.body.textContent).toContain('Scaling an unconference');
+  });
+
   it('fills every placeholder the panel offers', () => {
     show(
       'light',

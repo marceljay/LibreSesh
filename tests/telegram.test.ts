@@ -209,7 +209,22 @@ describe('rendering a slot', () => {
     expect(text).toContain('&lt;b&gt;<b>Scaling &lt;an&gt; unconference</b>&lt;/b&gt;');
   });
 
+  it('never leaves a session blank: a line that comes out empty falls back to the title', () => {
+    // `[{room} · {speakers}]` is a fine line until a session has neither, and
+    // a slot message with a nameless entry is wrong for everyone reading it.
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      [{ ...items[1]!, speakers: [], room: '' }],
+      (id) => `https://s.example/s/${id}`,
+      '[{room} · {speakers}]',
+    );
+    expect(text).toContain('<a href="https://s.example/s/2">Hallway track</a>');
+  });
+
   it('refuses a template it cannot render, when it is saved and not when it is sent', () => {
+    expect(checkTemplate('')).toEqual({ code: 'empty' });
+    expect(checkTemplate('  \n ')).toEqual({ code: 'empty' });
     expect(checkTemplate('{title}')).toBeNull();
     expect(checkTemplate('{title}[, by {speakers}]')).toBeNull();
     expect(checkTemplate('{tilte}')).toEqual({ code: 'unknown_placeholder', name: 'tilte' });
@@ -828,6 +843,10 @@ describe('the Telegram settings routes', () => {
       await admin.patch('/api/e/testconf/telegram').send({ template: '{tilte}' }).expect(400)
     ).body as { error: { code: string; details?: { name?: string } } };
     expect(bad.error.code).toBe('template_unknown_placeholder');
+    const blank = (
+      await admin.patch('/api/e/testconf/telegram').send({ template: '   ' }).expect(400)
+    ).body as { error: { code: string } };
+    expect(blank.error.code).toBe('template_empty');
     expect(bad.error.details?.name).toBe('tilte');
 
     await admin

@@ -41,7 +41,7 @@ export const MAX_TEMPLATE = 500;
 
 export interface TemplateProblem {
   /** A code the client turns into a sentence; never prose from the server. */
-  code: 'unknown_placeholder' | 'unbalanced' | 'too_long';
+  code: 'unknown_placeholder' | 'unbalanced' | 'too_long' | 'empty';
   /** The offending name, for `unknown_placeholder`. */
   name?: string;
 }
@@ -55,6 +55,9 @@ export interface TemplateProblem {
  */
 export function checkTemplate(template: string): TemplateProblem | null {
   if (template.length > MAX_TEMPLATE) return { code: 'too_long' };
+  // A blank line is a slot message that lists nothing under its header. The
+  // schema accepts any string, so this is where blank is refused.
+  if (template.trim() === '') return { code: 'empty' };
 
   let depth = 0;
   for (const char of template) {
@@ -156,4 +159,24 @@ export function templateParts(
   };
 
   return walk(template).parts;
+}
+
+/**
+ * The parts of one session's line, never none.
+ *
+ * A line can come out empty for a session even when the template is fine:
+ * `[{room} · {speakers}]` on a session with neither, or a line that never
+ * mentions the title. An announcement that lists a slot and leaves one of its
+ * sessions blank is wrong for everybody who reads it, so the fallback is the
+ * one thing every session has — its title, drawn the way the line would have
+ * drawn it. Both renderers go through here, so the preview and the group
+ * agree on the fallback too.
+ */
+export function lineParts(
+  template: string,
+  values: Partial<Record<Placeholder, string>>,
+): TemplatePart[] {
+  const parts = templateParts(template, values);
+  if (parts.some((part) => part.text.trim() !== '')) return parts;
+  return [{ name: 'title', text: values.title ?? '' }];
 }
