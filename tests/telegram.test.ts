@@ -578,6 +578,28 @@ describe('a session added and a session moved', () => {
     expect(sent).toHaveLength(1);
   });
 
+  it('a session added after its slot went out is still named, without repeating the slot', async () => {
+    // The 13:50 slot was announced at 13:35; a pitch lands in it at 13:47.
+    // The slot must not go out twice — but silence here is the one failure
+    // the feature exists to prevent.
+    await addSession(600, 'Already on the grid');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.tick(new Date(at(DAY_ONE, 586)));
+    expect(sent).toHaveLength(1);
+
+    const late = await addSession(600, 'Squeezed in');
+    await a.announceAdded(event(), late, new Date(at(DAY_ONE, 597)), true);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.text).toContain('Just pitched');
+    expect(sent[1]!.text).toContain('Squeezed in');
+    expect(sent[1]!.text).not.toContain('Already on the grid');
+
+    // And a later tick does not say the slot again.
+    await a.tick(new Date(at(DAY_ONE, 598)));
+    expect(sent).toHaveLength(2);
+  });
+
   it('holds a move for the tick, and sends one message for a reshuffle', async () => {
     const first = await addSession(600, 'First');
     const second = await addSession(660, 'Second');

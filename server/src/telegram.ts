@@ -697,9 +697,14 @@ export class Announcer {
 
     const startsAt = new Date(session.starts_at);
     const leadMs = event.telegram_lead_min * 60_000;
-    const imminent = startsAt > now && startsAt.getTime() - now.getTime() <= leadMs;
     const key = this.key(event.id, session.starts_at);
-    if (imminent && this.sent.has(key)) return;
+    // Inside the window *and* the slot not yet announced: this becomes the
+    // slot's up-next. Inside the window with the slot already out — the pitch
+    // placed at 13:47 for a 13:50 slot that went out at 13:35 — the slot must
+    // not repeat, but the one session still has to be said, or the case the
+    // feature exists for is the one case it stays silent on.
+    const imminent =
+      startsAt > now && startsAt.getTime() - now.getTime() <= leadMs && !this.sent.has(key);
 
     this.announced.add(sessionId);
     if (imminent) {
