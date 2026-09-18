@@ -1,4 +1,7 @@
 import type { EventDto, RoomDto, SessionDto } from '@shared/types';
+import { lineParts } from '@shared/telegramTemplate';
+import { MODES } from '@shared/telegramTriggers';
+import { hhmm } from '@shared/time';
 import { Modal } from './Modal';
 import { SecondaryButton } from './ui';
 
@@ -14,9 +17,20 @@ import { SecondaryButton } from './ui';
  */
 
 /** A sample drawn from the event, or an honest stand-in when it is empty. */
+export interface Row {
+  time: string;
+  room: string;
+  track: string;
+  title: string;
+  speakers: string;
+  format: string;
+  tags: string[];
+  streams: string[];
+}
+
 interface Slot {
   time: string;
-  rows: { room: string; title: string; speakers: string; streams: string[] }[];
+  rows: Row[];
   /** Every non-draft session of the anchor's day, for the digest. */
   day: { time: string; room: string; title: string }[];
   dayLabel: string;
@@ -32,16 +46,36 @@ const FALLBACK: Slot = {
   ],
   rows: [
     {
+      time: '10:00',
       room: 'Main Hall',
+      track: 'Practice',
       title: 'Scaling an unconference',
       speakers: 'Ada Lovelace',
+      format: 'Workshop',
+      tags: ['facilitation'],
       streams: ['Main camera'],
     },
-    { room: 'Room 2', title: 'Hallway track, formalised', speakers: 'Grace Hopper', streams: [] },
+    {
+      time: '10:00',
+      room: 'Room 2',
+      track: '',
+      title: 'Hallway track, formalised',
+      speakers: 'Grace Hopper',
+      format: '',
+      tags: [],
+      streams: [],
+    },
   ],
 };
 
-function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Slot {
+function pickSlot(
+  event: EventDto,
+  sessions: SessionDto[],
+  rooms: RoomDto[],
+  tracks: NamedRef[],
+  formats: NamedRef[],
+  tags: NamedRef[],
+): Slot {
   const live = sessions
     .filter((s) => !s.draft)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -50,6 +84,9 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
   if (!anchor) return FALLBACK;
 
   const roomName = new Map(rooms.map((r) => [r.id, r.name]));
+  const trackName = new Map(tracks.map((t) => [t.id, t.name]));
+  const formatName = new Map(formats.map((f) => [f.id, f.name]));
+  const tagName = new Map(tags.map((t) => [t.id, t.name]));
   const at = new Date(anchor.startsAt);
   const fmt = (opts: Intl.DateTimeFormatOptions) =>
     new Intl.DateTimeFormat('en-GB', { timeZone: event.timezone, ...opts }).format(at);
@@ -59,7 +96,7 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
   const anchorDay = fmtOf(anchor.startsAt, { year: 'numeric', month: 'short', day: 'numeric' });
 
   return {
-    time: fmt({ hour: '2-digit', minute: '2-digit', hour12: false }),
+    time: hhmm(at, event.timezone),
     dayLabel: fmt({ weekday: 'long', day: 'numeric', month: 'long' }),
     // The digest is the whole day, so it is drawn from the whole day and not
     // from the anchor's slot — showing one slot three times was a lie about
@@ -70,7 +107,7 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
       )
       .slice(0, 6)
       .map((x) => ({
-        time: fmtOf(x.startsAt, { hour: '2-digit', minute: '2-digit', hour12: false }),
+        time: hhmm(new Date(x.startsAt), event.timezone),
         room: roomName.get(x.roomId) ?? '',
         title: x.title,
       })),
@@ -78,12 +115,76 @@ function pickSlot(event: EventDto, sessions: SessionDto[], rooms: RoomDto[]): Sl
       .filter((s) => s.startsAt === anchor.startsAt)
       .slice(0, 4)
       .map((s) => ({
+        time: hhmm(new Date(s.startsAt), event.timezone),
         room: roomName.get(s.roomId) ?? '',
+        track: trackName.get(s.trackId ?? -1) ?? '',
         title: s.title,
         speakers: s.speakers.map((p) => p.name).join(', '),
+        format: formatName.get(s.formatId ?? -1) ?? '',
+        tags: s.tagIds.map((id) => tagName.get(id) ?? '').filter((t) => t !== ''),
         streams: s.livestreams.map((l) => l.label),
       })),
   };
+}
+
+/** Everything the preview needs of a track, a format or a tag: its name. */
+export interface NamedRef {
+  id: number;
+  name: string;
+}
+
+/**
+ * One session's line, drawn from the same parts the bot sends.
+ *
+ * `lineParts` in `@shared/telegramTemplate` decides what survives; this
+ * decides what a surviving part looks like on screen. The bot does the same
+ * with Telegram's HTML, so an organiser reading this is reading what the group
+ * will get rather than an impression of it.
+ */
+export function Line({ row, template }: { row: Row; template: string }) {
+  const parts = lineParts(template, {
+    title: row.title,
+    room: row.room,
+    track: row.track,
+    speakers: row.speakers,
+    format: row.format,
+    // One word each, as the bot posts them: a hashtag ends at the first space.
+    tags: row.tags.map((t) => `#${t.replace(/\s+/g, '')}`).join(' '),
+    streams: row.streams.join(', '),
+    time: row.time,
+  });
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        // The two that are links in a real message are links here: seeing which
+        // parts are tappable is half of what the preview is for.
+        part.name === 'title' || part.name === 'streams' ? (
+          <Title key={i}>{part.text}</Title>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+/**
+ * One session to draw a line from — the event's own wherever there is one.
+ *
+ * Exported because the panel puts a live line under the box an organiser is
+ * typing in, and it has to be the same session the Example uses or the two
+ * disagree on the same screen.
+ */
+export function sampleRow(
+  event: EventDto,
+  sessions: SessionDto[],
+  rooms: RoomDto[],
+  tracks: NamedRef[],
+  formats: NamedRef[],
+  tags: NamedRef[],
+): Row {
+  return pickSlot(event, sessions, rooms, tracks, formats, tags).rows[0] ?? FALLBACK.rows[0]!;
 }
 
 /** One message, drawn the way Telegram draws it: a bubble, not a form field. */
@@ -107,36 +208,44 @@ const Title = ({ children }: { children: React.ReactNode }) => (
 export function TelegramPreview({
   mode,
   leadMin,
-  livestreams,
+  template,
   digest,
   event,
   sessions,
   rooms,
+  tracks = [],
+  formats = [],
+  tags = [],
   onClose,
 }: {
   mode: string;
   leadMin: number;
-  /** Whether a stream link rides along. Previewed because it is the one thing
-   *  here that leaves the password gate. */
-  livestreams: boolean;
+  /** The line each session renders as. Previewed from what is on screen, which
+   *  is how somebody decides whether to press Save. */
+  template: string;
   /** 'HH:MM' the morning message goes out, as the field currently reads. */
   digest: string;
   event: EventDto;
   sessions: SessionDto[];
   rooms: RoomDto[];
+  tracks?: NamedRef[];
+  formats?: NamedRef[];
+  tags?: NamedRef[];
   onClose: () => void;
 }) {
-  const slot = pickSlot(event, sessions, rooms);
+  const slot = pickSlot(event, sessions, rooms, tracks, formats, tags);
   const usingRealData = sessions.some((s) => !s.draft);
 
-  // Mirrors MODES in telegram.ts. Every branch below is a trigger the announcer
-  // really fires — a bubble here for something unwritten is the failure this
-  // modal exists to prevent, and it shipped once.
+  // The presets themselves, not a copy of them. Every bubble below is a
+  // trigger the announcer really fires — a bubble for something unwritten is
+  // the failure this modal exists to prevent, and it shipped once, from a copy.
+  const triggers = MODES[mode] ?? [];
   const sends = {
-    upNext: mode === 'light' || mode === 'medium' || mode === 'heavy',
-    digest: mode === 'medium' || mode === 'heavy',
-    added: mode === 'heavy',
-    moved: mode === 'heavy',
+    upNext: triggers.includes('up_next'),
+    digest: triggers.includes('digest'),
+    placed: triggers.includes('placed'),
+    added: triggers.includes('added'),
+    moved: triggers.includes('changed'),
   };
   const upNext = sends.upNext;
 
@@ -162,6 +271,9 @@ export function TelegramPreview({
         {sends.digest && (
           <Bubble when={`Each morning at ${digest}`}>
             <p className="font-semibold">📋 {slot.dayLabel}</p>
+            <p className="mt-1 text-[11px] italic text-stone-500 dark:text-stone-400">
+              Always one line a session, whatever your line says.
+            </p>
             <div className="mt-2 space-y-0.5 font-mono text-xs">
               {slot.day.map((row, i) => (
                 <p key={i}>
@@ -180,33 +292,27 @@ export function TelegramPreview({
               the failure this modal exists to prevent. */}
             {slot.rows.map((row, i) => (
               <div key={i} className="mt-2">
-                <p>
-                  <Title>{row.title}</Title>
-                  {row.speakers && `, by ${row.speakers}`}
-                </p>
-                {livestreams && row.streams.length > 0 && (
-                  <p>
-                    Stream:{' '}
-                    {row.streams.map((label, n) => (
-                      <span key={label}>
-                        {n > 0 && ', '}
-                        <Title>{label}</Title>
-                      </span>
-                    ))}
-                  </p>
-                )}
+                <Line row={row} template={template} />
               </div>
             ))}
           </Bubble>
         )}
 
-        {sends.added && (
-          <Bubble when="The moment a session is placed">
+        {sends.placed && slot.rows[0] && (
+          <Bubble when="The moment a pitch reaches the grid">
+            <p>🙌 Just pitched — {slot.time}</p>
+            <div className="mt-2">
+              <Line row={slot.rows[0]} template={template} />
+            </div>
+          </Bubble>
+        )}
+
+        {sends.added && slot.rows[0] && (
+          <Bubble when="The moment an organiser puts a session up">
             <p>✨ Just added — {slot.time}</p>
-            <p className="mt-2">
-              <Title>{slot.rows[0]?.title}</Title>
-              {slot.rows[0]?.speakers && `, by ${slot.rows[0]?.speakers}`}
-            </p>
+            <div className="mt-2">
+              <Line row={slot.rows[0]} template={template} />
+            </div>
           </Bubble>
         )}
 

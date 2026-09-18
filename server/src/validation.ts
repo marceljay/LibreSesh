@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { LINK_RULE, safeLink } from './shared/links.js';
 import { badRequest } from './errors.js';
 import { isValidTimezone } from './shared/time.js';
+import { MAX_TEMPLATE } from './shared/telegramTemplate.js';
 
 /** Trimmed string that must still have content after trimming. */
 export const trimmed = (max: number) =>
@@ -478,7 +479,10 @@ export const telegramSettingsSchema = z
     mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
-    livestreams: z.boolean().optional(),
+    /** The line a session renders as. Its own grammar is checked in the route
+     *  by `checkTemplate`, which knows the placeholder names; this only holds
+     *  the shape and the ceiling. */
+    template: z.string().max(MAX_TEMPLATE).optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),
   })

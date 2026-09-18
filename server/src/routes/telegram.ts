@@ -15,6 +15,7 @@ import {
   resolveToken,
   sendMessage,
 } from '../telegram.js';
+import { checkTemplate } from '../shared/telegramTemplate.js';
 import { parse, telegramSettingsSchema } from '../validation.js';
 
 /** Long enough to walk to the group and paste it, short enough to be useless
@@ -40,7 +41,7 @@ function status(ctx: Ctx, event: EventRow): TelegramStatus {
     mode: modeOf(triggers),
     triggers,
     leadMin: event.telegram_lead_min,
-    livestreams: event.telegram_livestreams === 1,
+    template: event.telegram_template,
     digestMin: event.telegram_digest_min,
     bindCode: event.telegram_bind_code,
     bindExpires: event.telegram_bind_expires,
@@ -141,10 +142,18 @@ export function telegramRoutes(ctx: Ctx): Router {
         .prepare('UPDATE events SET telegram_lead_min = ? WHERE id = ?')
         .run(body.leadMin, event.id);
     }
-    if (body.livestreams !== undefined) {
+    if (body.template !== undefined) {
+      // Checked here rather than at send time. A template that only breaks on a
+      // session with no speakers would break for the first time in front of a
+      // room, which is the failure this whole design is avoiding.
+      const problem = checkTemplate(body.template);
+      if (problem)
+        throw new HttpError(400, `template_${problem.code}`, 'That line cannot be used', {
+          ...(problem.name === undefined ? {} : { name: problem.name }),
+        });
       ctx.db
-        .prepare('UPDATE events SET telegram_livestreams = ? WHERE id = ?')
-        .run(body.livestreams ? 1 : 0, event.id);
+        .prepare('UPDATE events SET telegram_template = ? WHERE id = ?')
+        .run(body.template, event.id);
     }
     if (body.digestMin !== undefined) {
       ctx.db

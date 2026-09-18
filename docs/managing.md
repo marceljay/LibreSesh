@@ -128,36 +128,55 @@ pushes it up the screen.
 | --- | --- |
 | Off | Nothing. The group stays connected |
 | Light | One message before each start time |
-| Medium | That, plus the whole day each morning |
-| Heavy | That, plus a session as it is added, and when one moves |
+| Medium | That, the whole day each morning, and a pitch as it lands |
+| Heavy | That, plus every session an organiser adds, and when one moves |
 
 Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-Each session in it is a line — the title, and who is giving it — with a second
-line listing its streams when you have those switched on.
+**Write the line yourself.** In **what is up next**, and in the **just added**
+and **just pitched** messages, each session renders through a line you write.
+The morning digest and the note about a session moving keep their own short
+shape — both are read across a whole day, so both stay one terse line a
+session.
 
-**The morning message** goes out at the time you set, on the venue's clock. It
-is one line a session for the whole day — no speakers, no links to streams,
-because it is read over breakfast to decide where to be. A day with nothing on
-it says nothing. If the server is restarted more than an hour after that time,
-that day's is skipped rather than arriving at lunchtime.
+Two things in your line are special and everything else is literal:
 
-**Added and moved** are the Heavy-only pair. A session added inside the *how
-early* window is announced as that slot rather than twice over, so a pitch
-placed five minutes before it runs produces one message and not two. Moves are
-held for up to a minute and go out together, so dragging a morning about is one
-message rather than a dozen — and only sessions the group has already been told
-about are mentioned, since announcing the move of a session nobody knew existed
-would disclose it. Repeating a session across days announces nothing: one click
-should not produce a fortnight of messages.
+- `{title}` and friends are filled in per session: `{title}`, `{room}`,
+  `{track}`, `{speakers}`, `{format}`, `{tags}`, `{streams}`, `{time}`.
+- Anything in `[square brackets]` disappears when everything inside it is
+  empty.
 
-**Livestreams.** Off unless you turn it on. With it on, a session that carries
-a stream gets that link in the announcement, under the speakers. Worth knowing
-before you do: the session link in a message still asks for the event password,
-and a stream address does not — anyone who can see the group, or anyone they
-forward the message to, can watch.
+So `{title}[, by {speakers}]` gives *“Repair café, by Ada Lovelace”*, and on a
+session nobody is credited for it gives *“Repair café”* — not *“Repair café,
+by ”*. That is the whole reason the brackets exist, and it is worth reaching
+for whenever a part of your line might be missing.
+
+Everything else is yours:
+
+```
+Annnoooounciiiiiing: {title}!
+```
+
+```
+{time} · {room} · {title}[, by {speakers}][
+Stream: {streams}]
+```
+
+The names sit under the box as buttons — press one and it lands where your
+cursor is, so there is nothing to spell. **[ ]** wraps whatever you have
+selected in brackets. Underneath that is the line as it will actually arrive,
+drawn from this event's own next session, redrawn as you type. A line that uses a name there is
+no value for, leaves a `[` unclosed, or is blank says so there and cannot be
+saved — so a broken line never reaches a group. And a session whose line would
+come out empty — nobody credited, no room, whatever your brackets dropped —
+shows its title instead, so no session is ever listed under no name. Angle brackets and the like are shown as
+typed rather than treated as formatting.
+
+`{streams}` is the one that publishes something the password gate would
+otherwise hold: anyone who can see the group can watch. Leave it out unless you
+mean it.
 
 **Example** shows exactly what these settings would post, drawn from your own
 schedule. Use it — this is the one screen in LibreSesh whose effect you cannot

@@ -89,13 +89,13 @@ erDiagram
     INTEGER telegram_lead_min "default 15"
     TEXT telegram_bind_code "nullable"
     TEXT telegram_bind_expires "nullable"
-    INTEGER telegram_livestreams "default 0"
     INTEGER telegram_digest_min "default 480"
     INTEGER nostr_enabled "default 0"
     TEXT nostr_pubkey "nullable"
     TEXT nostr_seckey "nullable"
     TEXT nostr_relays "nullable"
     TEXT nostr_triggers "default '['placed','up_next','digest']'"
+    TEXT telegram_template "default '{title}[, by {speakers}]'"
   }
   identities {
     INTEGER id PK
