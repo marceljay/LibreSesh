@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.4 · **Status:** implemented · **Team:** LibreSesh
+**Version:** 1.5 · **Status:** implemented · **Team:** LibreSesh
 
 ## Contents
 
@@ -140,6 +140,7 @@ LibreSesh server process
 
 | Component | Responsibility | File |
 | --- | --- | --- |
+| Template grammar | `{placeholder}` and `[optional]` → parts, for every side | `server/src/shared/telegramTemplate.ts` |
 | Renderer | Announcement value → Telegram HTML, split to fit | `server/src/telegram.ts` |
 | Announcer | Decides what is due; marks and sends | `server/src/telegram.ts` |
 | Poller | One bot's inbound connection and commands | `server/src/telegram.ts` |
@@ -216,7 +217,9 @@ sequenceDiagram
 | The organiser writes the line | Parts ticked and ordered (what 027 shipped to review) | A chosen order over a fixed set of parts is still *our* sentence with their words in it. It cannot say "Annnoooounciiiiiing: Repair café", and that turned out to be the actual request |
 | Two rules of grammar and no third | Conditionals, filters, formatting | `{name}` and `[optional]` between them solve every case the field set solved plus the ones it could not. A third rule is where a template box becomes a language nobody can debug from a phone at a conference |
 | Literal text is escaped | Allow Telegram's own `<b>`/`<i>` | A template is the one string in this system an organiser writes and Telegram parses. Escaping it means a stray `<` is a `<`, and never a 400 at 09:45 that nobody can see coming |
-| Checked on save, not on send | Validate at render time | A template that only breaks on a session with no speakers breaks for the first time in front of a room. Unknown placeholders and unbalanced brackets are both knowable early, so they are refused early |
+| Checked on save, not on send | Validate at render time | A template that only breaks on a session with no speakers breaks for the first time in front of a room. Unknown placeholders and unbalanced brackets are both knowable early, so they are refused early — and, since `checkTemplate` is shared, reported as the organiser types rather than when they press Save |
+| The grammar lives in `shared/` | A copy per side | It is rendered three times — Telegram HTML, the Example modal, the live line under the box — and three copies of one grammar is three places for the preview to start lying. `templateParts` resolves the structure; each side draws it |
+| The digest and the moved note are not templated | One template for every message | Both list a day rather than a moment, so both are terse by design (`announcements.md` fixes the digest at terse). A line written for one session in a slot reads badly forty times over |
 | `placed` separate from `added` | One trigger for both | Building a programme is twenty sessions in an afternoon; a pitch landing mid-conference is the case the feature exists for (U5). One trigger cannot serve both |
 | Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
 | Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
@@ -422,7 +425,7 @@ transports join it rather than lengthening Settings.
 | How much it says | Select over the presets: **Off**, **Light**, **Medium**, **Heavy** |
 | When the morning message goes out | `TimeField`, shown only for the presets that send one |
 | How early it says it | Number field, 1–180 minutes |
-| What each line says | A two-row textarea holding the template, the placeholder names beneath it, and three presets that fill it. A line that fails `checkTemplate` is refused with the reason |
+| How a session reads | A two-row textarea holding the template, **the line it renders as directly beneath it**, the placeholder names, and three presets. The label names the messages it governs, because the digest and the moved note do not use it. `checkTemplate` runs as it is typed, so a bad line reports itself and disables Save |
 | Save | One action for the three options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
 
@@ -502,3 +505,4 @@ Requirements without a design element: U3 and U4 (§11).
 | 1.2 | 2026-09-17 | `digest`, `added` and `changed` built, so the ladder is four rungs again. Migration 025 adds the digest hour; the announcer moves onto the request context, because two of the three are write-path triggers |
 | 1.3 | 2026-09-17 | What a line says, and in what order, becomes the organiser's (migration 027, seven ticked and arrangeable fields replacing migration 024's livestream boolean). `placed` becomes its own trigger (migration 026) — placing a pitch announced nothing at all, which was the case the feature exists for |
 | 1.4 | 2026-09-17 | The organiser writes the line (migration 028). Ticking and ordering a fixed set of parts was still our sentence; `{placeholders}` and `[optional parts]` are theirs. 027's field set is gone rather than sitting beside it |
+| 1.5 | 2026-09-18 | The grammar moves to `shared/telegramTemplate.ts`, so the bot, the Example and the new live line under the box all draw the same parts. The control says which messages it governs — the digest and the moved note keep their own shape |

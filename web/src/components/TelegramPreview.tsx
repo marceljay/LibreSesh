@@ -1,4 +1,5 @@
 import type { EventDto, RoomDto, SessionDto } from '@shared/types';
+import { templateParts } from '@shared/telegramTemplate';
 import { Modal } from './Modal';
 import { SecondaryButton } from './ui';
 
@@ -14,7 +15,7 @@ import { SecondaryButton } from './ui';
  */
 
 /** A sample drawn from the event, or an honest stand-in when it is empty. */
-interface Row {
+export interface Row {
   time: string;
   room: string;
   track: string;
@@ -125,21 +126,21 @@ function pickSlot(
 }
 
 /** Everything the preview needs of a track, a format or a tag: its name. */
-interface NamedRef {
+export interface NamedRef {
   id: number;
   name: string;
 }
 
 /**
- * One session's line, rendered through the organiser's template.
+ * One session's line, drawn from the same parts the bot sends.
  *
- * The same two rules `renderTemplate` applies on the server, written a second
- * time because the server's version emits Telegram HTML and this emits React.
- * Two implementations of one grammar is the drift this modal exists to catch,
- * so it is the thing to delete first when the renderer is shared (LIB-214).
+ * `templateParts` in `@shared/telegramTemplate` decides what survives; this
+ * decides what a surviving part looks like on screen. The bot does the same
+ * with Telegram's HTML, so an organiser reading this is reading what the group
+ * will get rather than an impression of it.
  */
-function Line({ row, template }: { row: Row; template: string }) {
-  const fill: Record<string, string> = {
+export function Line({ row, template }: { row: Row; template: string }) {
+  const parts = templateParts(template, {
     title: row.title,
     room: row.room,
     track: row.track,
@@ -148,83 +149,39 @@ function Line({ row, template }: { row: Row; template: string }) {
     tags: row.tags.map((t) => `#${t}`).join(' '),
     streams: row.streams.join(', '),
     time: row.time,
-  };
+  });
 
-  const walk = (text: string): { nodes: React.ReactNode[]; filled: boolean } => {
-    const nodes: React.ReactNode[] = [];
-    let filled = false;
-    let literal = '';
-    let i = 0;
-    const flush = () => {
-      if (literal !== '') nodes.push(literal);
-      literal = '';
-    };
-    while (i < text.length) {
-      const char = text[i]!;
-      if (char === '[') {
-        const close = matching(text, i);
-        const inner = walk(text.slice(i + 1, close));
-        if (inner.filled) {
-          flush();
-          nodes.push(...inner.nodes);
-          filled = true;
-        }
-        i = close + 1;
-        continue;
-      }
-      if (char === '{') {
-        const close = text.indexOf('}', i);
-        if (close === -1) {
-          literal += char;
-          i += 1;
-          continue;
-        }
-        const name = text.slice(i + 1, close);
-        const value = fill[name] ?? '';
-        if (value !== '') {
-          flush();
-          // The title and the streams are links in a real message, so they are
-          // links here: seeing which parts are tappable is half the point.
-          nodes.push(
-            name === 'title' || name === 'streams' ? (
-              <Title key={`${name}-${i}`}>{value}</Title>
-            ) : (
-              value
-            ),
-          );
-          filled = true;
-        }
-        i = close + 1;
-        continue;
-      }
-      literal += char;
-      i += 1;
-    }
-    flush();
-    return { nodes, filled };
-  };
-
-  const { nodes } = walk(template);
   return (
     <>
-      {nodes.map((node, i) => (
-        <span key={i}>{node}</span>
-      ))}
+      {parts.map((part, i) =>
+        // The two that are links in a real message are links here: seeing which
+        // parts are tappable is half of what the preview is for.
+        part.name === 'title' || part.name === 'streams' ? (
+          <Title key={i}>{part.text}</Title>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
     </>
   );
 }
 
-/** The `]` closing the `[` at `open`. An unbalanced template cannot be saved. */
-function matching(text: string, open: number): number {
-  let depth = 0;
-  for (let i = open; i < text.length; i += 1) {
-    if (text[i] === '[') depth += 1;
-    else if (text[i] === ']') {
-      depth -= 1;
-      if (depth === 0) return i;
-    }
-  }
-  return text.length;
+/**
+ * One session to draw a line from — the event's own wherever there is one.
+ *
+ * Exported because the panel puts a live line under the box an organiser is
+ * typing in, and it has to be the same session the Example uses or the two
+ * disagree on the same screen.
+ */
+export function sampleRow(
+  event: EventDto,
+  sessions: SessionDto[],
+  rooms: RoomDto[],
+  tracks: NamedRef[],
+  formats: NamedRef[],
+  tags: NamedRef[],
+): Row {
+  return pickSlot(event, sessions, rooms, tracks, formats, tags).rows[0] ?? FALLBACK.rows[0]!;
 }
 
 /** One message, drawn the way Telegram draws it: a bubble, not a form field. */
@@ -310,6 +267,9 @@ export function TelegramPreview({
         {sends.digest && (
           <Bubble when={`Each morning at ${digest}`}>
             <p className="font-semibold">📋 {slot.dayLabel}</p>
+            <p className="mt-1 text-[11px] italic text-stone-500 dark:text-stone-400">
+              Always one line a session, whatever your line says.
+            </p>
             <div className="mt-2 space-y-0.5 font-mono text-xs">
               {slot.day.map((row, i) => (
                 <p key={i}>

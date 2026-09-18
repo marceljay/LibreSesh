@@ -19,6 +19,7 @@ import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
 import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
 import { localDate, localMinuteOfDay, zonedParts, zonedTimeToUtc } from './shared/time.js';
+import { DEFAULT_TEMPLATE, templateParts, type Placeholder } from './shared/telegramTemplate.js';
 
 const API = 'https://api.telegram.org';
 
@@ -66,62 +67,6 @@ export const MODES: Record<string, Trigger[]> = {
   medium: ['digest', 'up_next', 'placed'],
   heavy: ['digest', 'up_next', 'placed', 'added', 'changed'],
 };
-
-/**
- * The placeholders a template may use. Anything else is a typo, and is refused
- * when the template is saved rather than printed as `{tilte}` at 09:45.
- */
-export const PLACEHOLDERS = [
-  'title',
-  'room',
-  'track',
-  'speakers',
-  'format',
-  'tags',
-  'streams',
-  'time',
-] as const;
-
-export type Placeholder = (typeof PLACEHOLDERS)[number];
-
-/** What an organiser gets if they never touch it: today's line, exactly. */
-export const DEFAULT_TEMPLATE = '{title}[, by {speakers}]';
-
-/** The longest template we will store. A Telegram message caps at 4096 and a
- *  template is repeated once per session in a slot. */
-export const MAX_TEMPLATE = 500;
-
-export interface TemplateProblem {
-  /** What to tell the organiser, as a code the client turns into a sentence. */
-  code: 'unknown_placeholder' | 'unbalanced' | 'too_long';
-  /** The offending name, for `unknown_placeholder`. */
-  name?: string;
-}
-
-/**
- * Whether a template can be stored.
- *
- * Checked on save, never at send time: a template that only fails when a
- * session happens to have no speakers is the failure mode this whole design is
- * trying to avoid, so everything that can be known early is known early.
- */
-export function checkTemplate(template: string): TemplateProblem | null {
-  if (template.length > MAX_TEMPLATE) return { code: 'too_long' };
-
-  let depth = 0;
-  for (const char of template) {
-    if (char === '[') depth += 1;
-    else if (char === ']') depth -= 1;
-    if (depth < 0) return { code: 'unbalanced' };
-  }
-  if (depth !== 0) return { code: 'unbalanced' };
-
-  for (const match of template.matchAll(/\{([^{}]*)\}/g)) {
-    const name = match[1] ?? '';
-    if (!PLACEHOLDERS.includes(name as Placeholder)) return { code: 'unknown_placeholder', name };
-  }
-  return null;
-}
 
 const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
   a.length === b.length && [...a].sort().join() === [...b].sort().join();
@@ -194,43 +139,12 @@ export interface AnnounceItem {
  * session boundary and never between a title and its stream.
  */
 /**
- * The values a template can put in a line, each already escaped.
+ * Render one session's line through the organiser's template.
  *
- * `streams` is the one that is a link rather than a word, and the one that is
- * empty for most sessions — which is what `[...]` is for.
- */
-function values(
-  item: AnnounceItem,
-  sessionUrl: string | null,
-  timeZone: string,
-): Record<Placeholder, string> {
-  return {
-    title: sessionUrl
-      ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
-      : `<b>${escapeHtml(item.title)}</b>`,
-    room: escapeHtml(item.room),
-    track: escapeHtml(item.track),
-    speakers: escapeHtml(item.speakers.join(', ')),
-    format: escapeHtml(item.format),
-    tags: item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' '),
-    streams: item.livestreams
-      .map((stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`)
-      .join(', '),
-    time: item.startsAt === '' ? '' : hhmm(new Date(item.startsAt), timeZone),
-  };
-}
-
-/**
- * Render one session through the organiser's template.
- *
- * Two rules and no more. `{name}` is a value. `[...]` is a part that disappears
- * when every placeholder inside it came back empty — which is the whole reason
- * a plain placeholder string is not enough: `{title}, by {speakers}` leaves
- * "Repair café, by " on a session nobody is credited for, and no amount of
- * careful writing by the organiser avoids it.
- *
- * Everything outside those is literal and escaped, so "Annnoooounciiiiiing:"
- * arrives as written and a stray `<` stays a `<`.
+ * `templateParts` decides *what survives* — which placeholders had a value and
+ * which bracketed parts therefore stay — and this decides what each surviving
+ * part looks like in Telegram's HTML. The panel does the same thing with React,
+ * from the same parts, which is what keeps the Example honest.
  */
 export function renderTemplate(
   template: string,
@@ -238,56 +152,39 @@ export function renderTemplate(
   sessionUrl: string | null,
   timeZone: string,
 ): string {
-  const fill = values(item, sessionUrl, timeZone);
-
-  /** One pass over a stretch of template, returning the text and whether any
-   *  placeholder in it had something to say. */
-  const walk = (text: string): { out: string; filled: boolean } => {
-    let out = '';
-    let filled = false;
-    let i = 0;
-    while (i < text.length) {
-      const char = text[i]!;
-      if (char === '[') {
-        const close = matching(text, i);
-        const inner = walk(text.slice(i + 1, close));
-        // The part is kept only if something in it was there to keep.
-        if (inner.filled) {
-          out += inner.out;
-          filled = true;
-        }
-        i = close + 1;
-        continue;
-      }
-      if (char === '{') {
-        const close = text.indexOf('}', i);
-        const name = text.slice(i + 1, close) as Placeholder;
-        const value = fill[name] ?? '';
-        out += value;
-        if (value !== '') filled = true;
-        i = close + 1;
-        continue;
-      }
-      out += escapeHtml(char);
-      i += 1;
-    }
-    return { out, filled };
+  const plain: Partial<Record<Placeholder, string>> = {
+    title: item.title,
+    room: item.room,
+    track: item.track,
+    speakers: item.speakers.join(', '),
+    format: item.format,
+    tags: item.tags.join(' '),
+    streams: item.livestreams.map((stream) => stream.label).join(', '),
+    time: item.startsAt === '' ? '' : hhmm(new Date(item.startsAt), timeZone),
   };
 
-  return walk(template).out.trim();
-}
-
-/** The `]` that closes the `[` at `open`, which `checkTemplate` guarantees. */
-function matching(text: string, open: number): number {
-  let depth = 0;
-  for (let i = open; i < text.length; i += 1) {
-    if (text[i] === '[') depth += 1;
-    else if (text[i] === ']') {
-      depth -= 1;
-      if (depth === 0) return i;
-    }
-  }
-  return text.length;
+  return templateParts(template, plain)
+    .map((part) => {
+      // Two parts are links rather than words. Everything else, the organiser's
+      // own text included, is escaped: a stray `<` stays a `<` and can never
+      // become a 400 from Telegram's parser.
+      if (part.name === 'title') {
+        return sessionUrl
+          ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
+          : `<b>${escapeHtml(item.title)}</b>`;
+      }
+      if (part.name === 'streams') {
+        return item.livestreams
+          .map((stream) => `<a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`)
+          .join(', ');
+      }
+      if (part.name === 'tags') {
+        return item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ');
+      }
+      return escapeHtml(part.text);
+    })
+    .join('')
+    .trim();
 }
 
 /**

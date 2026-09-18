@@ -115,6 +115,33 @@ describe('the Telegram panel', () => {
     expect(screen.getByText(/30 minutes before each start time/)).toBeTruthy();
   });
 
+  it('renders the line as it is typed, and refuses to save a broken one', async () => {
+    // The one screen whose effect used to need a save, a wait and a roomful of
+    // people to observe.
+    show();
+    const box = (await screen.findByLabelText(
+      'The line each session renders as',
+    )) as HTMLTextAreaElement;
+
+    fireEvent.change(box, { target: { value: 'Annnoooounciiiiiing: {title}!' } });
+    // Twice over: the box it was typed into, and the line drawn beneath it.
+    expect(screen.getAllByText(/Annnoooounciiiiiing:/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/stand-in session|next session/)).toBeTruthy();
+
+    fireEvent.change(box, { target: { value: '{title}[, by {speakers}' } });
+    expect(screen.getByText(/Every \[ needs a matching \]/)).toBeTruthy();
+    const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+  });
+
+  it('says which messages the line is for, and which keep their own shape', async () => {
+    show();
+    expect(await screen.findByText(/in the up-next and just-added messages/)).toBeTruthy();
+    expect(
+      screen.getByText(/morning digest and the moved note keep their own short shape/),
+    ).toBeTruthy();
+  });
+
   it('says the instance has no bot rather than offering a dead form', async () => {
     telegram.mockResolvedValue(status({ available: false, instanceBot: false }));
     show();

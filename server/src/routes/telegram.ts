@@ -8,7 +8,6 @@ import { badRequest, HttpError } from '../errors.js';
 import { limit } from '../ratelimit.js';
 import type { TelegramStatus } from '../shared/types.js';
 import {
-  checkTemplate,
   escapeHtml,
   MODES,
   modeOf,
@@ -16,6 +15,7 @@ import {
   resolveToken,
   sendMessage,
 } from '../telegram.js';
+import { checkTemplate } from '../shared/telegramTemplate.js';
 import { parse, telegramSettingsSchema } from '../validation.js';
 
 /** Long enough to walk to the group and paste it, short enough to be useless

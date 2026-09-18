@@ -135,8 +135,13 @@ Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-**Write the line yourself.** Each session in a message renders through a line
-you write. Two things in it are special and everything else is literal:
+**Write the line yourself.** In **what is up next**, and in the **just added**
+and **just pitched** messages, each session renders through a line you write.
+The morning digest and the note about a session moving keep their own short
+shape — both are read across a whole day, so both stay one terse line a
+session.
+
+Two things in your line are special and everything else is literal:
 
 - `{title}` and friends are filled in per session: `{title}`, `{room}`,
   `{track}`, `{speakers}`, `{format}`, `{tags}`, `{streams}`, `{time}`.
@@ -159,9 +164,11 @@ Annnoooounciiiiiing: {title}!
 Stream: {streams}]
 ```
 
-A line is refused when you save it if it uses a name there is no value for, or
-if a `[` has no `]` — so a broken line cannot reach a group. Angle brackets and
-the like are shown as typed rather than treated as formatting.
+Underneath the box is the line as it will actually arrive, drawn from this
+event's own next session, redrawn as you type. A line that uses a name there is
+no value for, or leaves a `[` unclosed, says so there and cannot be saved — so
+a broken line never reaches a group. Angle brackets and the like are shown as
+typed rather than treated as formatting.
 
 `{streams}` is the one that publishes something the password gate would
 otherwise hold: anyone who can see the group can watch. Leave it out unless you

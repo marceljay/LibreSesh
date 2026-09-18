@@ -4,7 +4,6 @@ import type { TelegramStatus } from '../server/src/shared/types.js';
 import {
   activeTokens,
   announceableSession,
-  checkTemplate,
   Announcer,
   daySessions,
   MODES,
@@ -33,6 +32,7 @@ import {
   type Agent,
   type Harness,
 } from './helpers.js';
+import { checkTemplate } from '../server/src/shared/telegramTemplate.js';
 import { localDate } from '../server/src/shared/time.js';
 
 const TOKEN = 'test-token';

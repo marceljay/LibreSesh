@@ -4,9 +4,10 @@ import { api } from '../lib/api';
 import { errorText } from '../lib/errorText';
 import { parseNumberField, telegramLeadField } from '../lib/numberField';
 import { FieldInfo } from '../components/FieldInfo';
+import { checkTemplate, PLACEHOLDERS, type TemplateProblem } from '@shared/telegramTemplate';
 import { TimeField } from '../components/TimeField';
 import { fmtMin, minutesOf } from '../lib/format';
-import { TelegramPreview } from '../components/TelegramPreview';
+import { Line, sampleRow, TelegramPreview } from '../components/TelegramPreview';
 import {
   ControlShell,
   Field,
@@ -54,7 +55,19 @@ const MODES = [
  * grammar stays two things, because a third is where a template box turns into
  * a language nobody can debug from a phone at a conference.
  */
-const PLACEHOLDERS = ['title', 'room', 'track', 'speakers', 'format', 'tags', 'streams', 'time'];
+/**
+ * What is wrong with the line, in a sentence.
+ *
+ * The same three cases `errorText` answers for the route's codes — said here
+ * as it is typed, so nobody presses Save to find out.
+ */
+function templateMessage(problem: TemplateProblem): string {
+  if (problem.code === 'unbalanced') return 'Every [ needs a matching ]';
+  if (problem.code === 'too_long') return 'That line is too long';
+  return problem.name
+    ? `There is no “{${problem.name}}” to fill in — see the list below`
+    : 'That line uses something there is no value for';
+}
 
 /** A starting point for anybody who does not want to write one. */
 const PRESETS: { label: string; template: string }[] = [
@@ -188,6 +201,12 @@ export function AdminTelegram({
 
   const parsedLead = parseNumberField(lead, telegramLeadField);
   const digestMin = minutesOf(digest);
+  // Checked as it is typed, with the same function the route refuses it by, so
+  // the box never disagrees with the answer Save would give.
+  const badTemplate = checkTemplate(template);
+  const templateProblem = badTemplate === null ? null : templateMessage(badTemplate);
+  const row = sampleRow(event, sessions, rooms, tracks, formats, tags);
+  const usingRealData = sessions.some((session) => !session.draft);
   const dirty =
     mode !== status.mode ||
     template !== status.template ||
@@ -201,7 +220,7 @@ export function AdminTelegram({
    * picked would be the only one that did.
    */
   const saveOptions = () => {
-    if (!dirty || parsedLead.error) return;
+    if (!dirty || parsedLead.error || templateProblem) return;
     void run(
       () =>
         api.telegramSettings(slug, {
@@ -402,14 +421,18 @@ export function AdminTelegram({
             />
 
             <Field
-              label="What each line says"
-              hint="Your own words. {title} and the rest are filled in per session; anything in [square brackets] disappears when what is inside it is empty."
+              label="How a session reads, in the up-next and just-added messages"
+              hint="Your own words. The morning digest and the moved note keep their own short shape — those are read across a whole day and stay one terse line a session."
               action={
                 <FieldInfo label="About the line" href={DOCS}>
                   <p>
-                    Write the line however you like — <em>Annnoooounciiiiiing: {'{title}'}</em> is a
-                    perfectly good line. <strong>Example</strong> shows it against this event’s own
-                    sessions before you save.
+                    This is the line each session gets in <strong>what is up next</strong>, and in
+                    the <strong>just added</strong> and <strong>just pitched</strong> messages.
+                  </p>
+                  <p className="mt-2">
+                    The morning digest is deliberately not yours to shape: it lists a whole day, so
+                    it is always <code>time · room — title</code>. Nor is the note about a session
+                    moving. <strong>Example</strong> shows all of them together.
                   </p>
                   <p className="mt-2">
                     Square brackets are what stop “Repair café, by ” on a session with nobody
@@ -422,6 +445,7 @@ export function AdminTelegram({
                   </p>
                 </FieldInfo>
               }
+              error={templateProblem ?? undefined}
             >
               <ControlShell>
                 <TextArea
@@ -433,11 +457,26 @@ export function AdminTelegram({
                   onChange={(e) => setTemplate(e.target.value)}
                 />
               </ControlShell>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-xs text-stone-500 dark:text-stone-400">
-                  {PLACEHOLDERS.map((name) => `{${name}}`).join('  ')}
-                </span>
+
+              {/* The line as typed, against this event's own schedule. Every
+                other setting here can be checked by looking; this one used to
+                need a save and a wait, and then a group of strangers. */}
+              <div className="mt-2 rounded-lg bg-stone-100 px-3 py-2 dark:bg-stone-800">
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                  {usingRealData ? 'This event’s next session' : 'A stand-in session'}
+                </p>
+                <p className="text-sm leading-relaxed text-stone-800 dark:text-stone-100">
+                  {templateProblem ? (
+                    <span className="text-stone-500 dark:text-stone-400">—</span>
+                  ) : (
+                    <Line row={row} template={template} />
+                  )}
+                </p>
               </div>
+
+              <p className="mt-1.5 font-mono text-xs text-stone-500 dark:text-stone-400">
+                {PLACEHOLDERS.map((name) => `{${name}}`).join('  ')}
+              </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 <span className="text-xs text-stone-500 dark:text-stone-400">Start from:</span>
                 {PRESETS.map((preset) => (
@@ -456,7 +495,7 @@ export function AdminTelegram({
             </Field>
 
             <div>
-              <PrimaryButton type="submit" disabled={busy || !dirty}>
+              <PrimaryButton type="submit" disabled={busy || !dirty || Boolean(templateProblem)}>
                 Save
               </PrimaryButton>
             </div>
