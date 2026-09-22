@@ -50,10 +50,18 @@ recent cut: **0.7.4**.
   will live too), 82 tests. Merged into `dev` on 2026-09-16 (PR #116). A review
   pass added migration 024 — livestream links in an announcement, off by default
   because a stream address does not meet the password gate. The next day
-  [LIB-211] and [LIB-212] landed too: `digest`, `added` and `changed` are built,
-  migration 025 carries the digest hour, and the four-rung ladder is back with
-  every rung naming a trigger that fires. The announcer moved onto the request
-  context, because two of the three are write-path triggers.
+  [LIB-211] and [LIB-212] landed too: `digest`, `added`, `changed` and `placed`
+  are built, migration 025 carries the digest hour, and the four-rung ladder is
+  back with every rung naming a trigger that fires. The announcer moved onto the
+  request context, because three of the four are write-path triggers. What a
+  session's line says is now a line the organiser writes — `{placeholders}`
+  and `[optional parts]`, migration 028, which replaced 027's ticked fields
+  and 024's livestream boolean; `placed` is separate from `added`
+  (migration 026) because placing a pitch — the case the feature exists for —
+  announced nothing at all until it was. A review pass on 2026-09-18 fixed the
+  pitch that lands in a slot already announced (it was silent), a move noted
+  while a tick was mid-send (it was dropped), a quote in a stream address (it
+  lost the slot) and a blank line (it was accepted).
   **The bot belongs to the event**: an
   organiser pastes a token from BotFather (migration 023) and needs nothing
   from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a
@@ -66,7 +74,12 @@ recent cut: **0.7.4**.
   first thing to do with a live token — and now more so, since three more
   triggers post without ever having been seen to post. Still open: room scope,
   lifting the loop into `announcer.ts` [LIB-214], and the deploy-doc issue whose
-  creation timed out.
+  creation timed out. The review filed five more, all yours to call: a deleted
+  session the group was told about announces nothing [LIB-222]; any group
+  member can `/unbind`, and SECURITY.md does not say so [LIB-223]; migrations
+  027 and 028 could be one before merge [LIB-224]; a restart empties the
+  announced set, so moves go quiet until re-announced [LIB-225]; saving a bot
+  or minting a code discards an unsaved line [LIB-226].
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own

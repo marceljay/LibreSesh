@@ -332,7 +332,7 @@ export const api = {
       mode?: string;
       leadMin?: number;
       botToken?: string | null;
-      livestreams?: boolean;
+      template?: string;
       digestMin?: number;
     },
   ) => request<TelegramStatus>('PATCH', `/e/${encode(slug)}/telegram`, body),

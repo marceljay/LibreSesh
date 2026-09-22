@@ -32,20 +32,30 @@ const session = (over: Partial<SessionDto>): SessionDto =>
     endsAt: '2099-06-01T08:30:00.000Z',
     speakers: [{ id: 1, name: 'Ada Lovelace' }],
     livestreams: [],
+    trackId: null,
+    formatId: null,
+    tagIds: [],
     draft: false,
     ...over,
   }) as SessionDto;
 
-const show = (mode: string, sessions: SessionDto[] = [session({})], livestreams = false) =>
+const show = (
+  mode: string,
+  sessions: SessionDto[] = [session({})],
+  template = '{title}[, by {speakers}]',
+) =>
   render(
     <TelegramPreview
       mode={mode}
       leadMin={15}
-      livestreams={livestreams}
+      template={template}
       digest="08:00"
       event={event}
       sessions={sessions}
       rooms={rooms}
+      tracks={[{ id: 1, name: 'Practice' }]}
+      formats={[{ id: 1, name: 'Workshop' }]}
+      tags={[{ id: 1, name: 'facilitation' }]}
       onClose={() => {}}
     />,
   );
@@ -68,7 +78,7 @@ describe('the Telegram example', () => {
     // roomful of people, so every bubble has to belong to the chosen setting.
     show('light');
     expect(screen.queryByText(/Each morning/)).toBeNull();
-    expect(screen.queryByText(/Just added/)).toBeNull();
+    expect(screen.queryByText(/Just pitched/)).toBeNull();
     cleanup();
 
     show('medium');
@@ -90,16 +100,16 @@ describe('the Telegram example', () => {
     expect(screen.getByText(/12:00 · Main Hall — Later on/)).toBeTruthy();
   });
 
-  it('shows a livestream link only when that is switched on', () => {
+  it('shows a stream link only when the line asks for one', () => {
     const streamed = [
       session({ livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }] }),
     ];
     show('light', streamed);
     expect(screen.queryByText(/Main camera/)).toBeNull();
     cleanup();
-    show('light', streamed, true);
+    show('light', streamed, '{title}[\nStream: {streams}]');
     expect(screen.getByText(/Main camera/)).toBeTruthy();
-    expect(screen.getByText(/Stream:/)).toBeTruthy();
+    expect(document.body.textContent).toContain('Stream:');
   });
 
   it('says plainly that off sends nothing', () => {
@@ -113,8 +123,6 @@ describe('the Telegram example', () => {
     // 08:00 UTC is 10:00 in Berlin — the venue's clock, not the server's.
     expect(screen.getByText(/10:00 — up next/)).toBeTruthy();
     expect(screen.getByText('Scaling an unconference')).toBeTruthy();
-    // On the title's own line now, not a line of its own.
-    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
   });
 
   it('puts every room of one start time in the same message', () => {
@@ -126,9 +134,44 @@ describe('the Telegram example', () => {
     expect(screen.getByText('Hallway track')).toBeTruthy();
   });
 
-  it('draws a session as one line, with its speakers on it', () => {
-    show('light');
-    expect(screen.getByText(/, by Ada Lovelace/)).toBeTruthy();
+  it('draws the organiser’s own line, words and all', () => {
+    // The whole point of the modal: what is on screen is what the group gets.
+    show('light', [session({})], 'Annnoooounciiiiiing: {title}!');
+    expect(document.body.textContent).toContain('Annnoooounciiiiiing: Scaling an unconference!');
+  });
+
+  it('drops a bracketed part with nothing in it, the way the server does', () => {
+    // The preview and `renderTemplate` implement one grammar twice, so this is
+    // what catches them drifting until the renderer is shared (LIB-214).
+    show('light', [session({ speakers: [] })], '{title}[, by {speakers}]');
+    expect(document.body.textContent).toContain('Scaling an unconference');
+    expect(document.body.textContent).not.toContain(', by');
+  });
+
+  it('falls back to the title when the line comes out empty, the way the server does', () => {
+    show('light', [session({ speakers: [] })], '[, by {speakers}]');
+    expect(document.body.textContent).toContain('Scaling an unconference');
+  });
+
+  it('fills every placeholder the panel offers', () => {
+    show(
+      'light',
+      [session({ trackId: 1, formatId: 1, tagIds: [1] })],
+      '{time} {room} {track} {title} {speakers} {format} {tags}',
+    );
+    expect(document.body.textContent).toContain(
+      '10:00 Main Hall Practice Scaling an unconference Ada Lovelace Workshop #facilitation',
+    );
+  });
+
+  it('previews a pitch on medium and an organiser’s session only on heavy', () => {
+    show('medium');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.queryByText(/Just added/)).toBeNull();
+    cleanup();
+    show('heavy');
+    expect(screen.getByText(/Just pitched/)).toBeTruthy();
+    expect(screen.getByText(/Just added/)).toBeTruthy();
   });
 
   it('never previews a draft, because one is never posted', () => {

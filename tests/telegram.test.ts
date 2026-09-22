@@ -32,6 +32,7 @@ import {
   type Agent,
   type Harness,
 } from './helpers.js';
+import { checkTemplate } from '../server/src/shared/telegramTemplate.js';
 import { localDate } from '../server/src/shared/time.js';
 
 const TOKEN = 'test-token';
@@ -63,8 +64,8 @@ describe('escaping', () => {
 describe('modes', () => {
   it('derives the preset a trigger set matches, whatever the order', () => {
     expect(modeOf(['up_next'])).toBe('light');
-    expect(modeOf(['up_next', 'digest'])).toBe('medium');
-    expect(modeOf(['changed', 'added', 'up_next', 'digest'])).toBe('heavy');
+    expect(modeOf(['up_next', 'digest', 'placed'])).toBe('medium');
+    expect(modeOf(['changed', 'added', 'placed', 'up_next', 'digest'])).toBe('heavy');
     expect(modeOf([])).toBe('off');
   });
 
@@ -72,7 +73,7 @@ describe('modes', () => {
     // Light meaning `digest` while the digest was unwritten made "one message
     // each morning" a setting whose whole effect was silence. Every trigger
     // named by a preset has to be one the tick or the write path acts on.
-    const fired = new Set<Trigger>(['up_next', 'digest', 'added', 'changed']);
+    const fired = new Set<Trigger>(['up_next', 'digest', 'added', 'changed', 'placed']);
     for (const triggers of Object.values(MODES))
       for (const trigger of triggers) expect(fired.has(trigger)).toBe(true);
   });
@@ -114,16 +115,24 @@ describe('rendering a slot', () => {
   const items = [
     {
       id: 1,
+      startsAt: at(DAY_ONE, 600),
       title: 'Scaling <an> unconference',
       room: 'Main Hall',
+      track: 'Practice',
       speakers: ['Ada Lovelace'],
+      format: 'Workshop',
+      tags: ['facilitation', 'open space'],
       livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
     },
     {
       id: 2,
+      startsAt: at(DAY_ONE, 600),
       title: 'Hallway track',
       room: 'Room 2',
+      track: '',
       speakers: ['Grace Hopper', 'Alan Turing'],
+      format: '',
+      tags: [],
       livestreams: [],
     },
   ];
@@ -137,72 +146,117 @@ describe('rendering a slot', () => {
     expect(text).toContain('Hallway track');
   });
 
-  it('is a line a session: the title, and who is giving it', () => {
+  it('is the title and its speakers when nobody has written a line', () => {
     const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
-    expect(text).toContain('<b>Hallway track</b>, by Grace Hopper, Alan Turing');
-    // Four lines a session made a five-room slot a message nobody finishes.
+    expect(text).toContain('<b>Scaling &lt;an&gt; unconference</b>, by Ada Lovelace');
     expect(text.split('\n').filter((l) => l.trim() !== '')).toHaveLength(3);
   });
 
-  it('escapes a title rather than letting it become markup', () => {
-    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
-    expect(text).toContain('Scaling &lt;an&gt; unconference');
-    expect(text).not.toContain('<an>');
-  });
-
-  it('links the title when the instance knows its own address', () => {
+  it('puts the organiser’s own words around the values', () => {
+    // The whole point: this is their sentence, not ours with their words in it.
     const [text] = renderUpNext(
       startsAt,
       'Europe/Berlin',
       items,
-      (id) => `https://s.example/e/x/s/${id}`,
+      () => null,
+      'Annnoooounciiiiiing: {title}!',
     );
-    expect(text).toContain('<a href="https://s.example/e/x/s/1">');
+    expect(text).toContain('Annnoooounciiiiiing: <b>Scaling &lt;an&gt; unconference</b>!');
   });
 
-  it('renders in the event timezone, including a non-whole-hour offset', () => {
-    const [berlin] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
-    const [kathmandu] = renderUpNext(startsAt, 'Asia/Kathmandu', items, () => null);
-    expect(berlin).toContain('10:00');
-    expect(kathmandu).toContain('13:45');
-  });
-
-  it('carries a livestream link only when the event asks for it', () => {
-    // The one thing an announcement can publish that the gate would otherwise
-    // hold, so it is off unless somebody turned it on.
-    const [silent] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null);
-    expect(silent).not.toContain('stream.example');
-    expect(silent).not.toContain('Stream:');
-
-    const [loud] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, true);
-    expect(loud).toContain('Stream: <a href="https://stream.example/main">Main camera</a>');
-    // A session with no stream gains no second line.
-    expect(loud.match(/Stream:/g)).toHaveLength(1);
-  });
-
-  it('lists every stream of one session on the one line', () => {
-    const twice = [
-      {
-        ...items[0]!,
-        livestreams: [
-          { label: 'Main camera', url: 'https://stream.example/main' },
-          { label: 'Interpreted', url: 'https://stream.example/bsl' },
-        ],
-      },
-    ];
-    const [text] = renderUpNext(startsAt, 'Europe/Berlin', twice, () => null, true);
+  it('fills every placeholder it knows', () => {
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      items,
+      () => null,
+      '{time} {room} {track} {title} {speakers} {format} {tags}',
+    );
     expect(text).toContain(
-      'Stream: <a href="https://stream.example/main">Main camera</a>, ' +
-        '<a href="https://stream.example/bsl">Interpreted</a>',
+      '10:00 Main Hall Practice <b>Scaling &lt;an&gt; unconference</b> ' +
+        'Ada Lovelace Workshop #facilitation #openspace',
     );
+  });
+
+  it('drops a bracketed part whose values are all empty', () => {
+    // "Hallway track, by " is the failure a plain placeholder string cannot
+    // avoid, and the only reason the brackets exist.
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      items,
+      () => null,
+      '{title}[ · {format}]',
+    );
+    expect(text).toContain('<b>Scaling &lt;an&gt; unconference</b> · Workshop');
+    expect(text).toContain('<b>Hallway track</b>');
+    expect(text).not.toContain('Hallway track</b> · ');
+  });
+
+  it('keeps a bracketed part when any one of its values is there', () => {
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      items,
+      () => null,
+      '{title}[ ({format}{tags})]',
+    );
+    expect(text).toContain('(Workshop#facilitation #openspace)');
+  });
+
+  it('treats everything outside the grammar as literal, and escapes it', () => {
+    const [text] = renderUpNext(startsAt, 'Europe/Berlin', items, () => null, '<b>{title}</b>');
+    expect(text).toContain('&lt;b&gt;<b>Scaling &lt;an&gt; unconference</b>&lt;/b&gt;');
+  });
+
+  it('never leaves a session blank: a line that comes out empty falls back to the title', () => {
+    // `[{room} · {speakers}]` is a fine line until a session has neither, and
+    // a slot message with a nameless entry is wrong for everyone reading it.
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      [{ ...items[1]!, speakers: [], room: '' }],
+      (id) => `https://s.example/s/${id}`,
+      '[{room} · {speakers}]',
+    );
+    expect(text).toContain('<a href="https://s.example/s/2">Hallway track</a>');
+  });
+
+  it('escapes a quote inside a link, so one odd address cannot lose the slot', () => {
+    // The link rule only asks that an address parse, and `https://x/a"b` does.
+    // Unescaped, the quote ends the href early and Telegram refuses the message.
+    const [text] = renderUpNext(
+      startsAt,
+      'Europe/Berlin',
+      [{ ...items[0]!, livestreams: [{ label: 'Odd', url: 'https://x/a"b' }] }],
+      () => 'https://s.example/s/1?q="x"',
+      '{title} {streams}',
+    );
+    expect(text).toContain('<a href="https://x/a&quot;b">Odd</a>');
+    expect(text).toContain('<a href="https://s.example/s/1?q=&quot;x&quot;">');
+  });
+
+  it('refuses a template it cannot render, when it is saved and not when it is sent', () => {
+    expect(checkTemplate('')).toEqual({ code: 'empty' });
+    expect(checkTemplate('  \n ')).toEqual({ code: 'empty' });
+    expect(checkTemplate('{title}')).toBeNull();
+    expect(checkTemplate('{title}[, by {speakers}]')).toBeNull();
+    expect(checkTemplate('{tilte}')).toEqual({ code: 'unknown_placeholder', name: 'tilte' });
+    expect(checkTemplate('{title}[, by {speakers}')).toEqual({ code: 'unbalanced' });
+    expect(checkTemplate('{title}]')).toEqual({ code: 'unbalanced' });
+    expect(checkTemplate('x'.repeat(501))).toEqual({ code: 'too_long' });
   });
 
   it('splits on a session boundary rather than letting Telegram refuse it', () => {
     const many = Array.from({ length: 120 }, (_, i) => ({
       id: i,
+      startsAt: at(DAY_ONE, 600),
       title: `A session with a fairly long title, number ${i}`.repeat(2),
       room: `Room ${i}`,
+      track: '',
       speakers: ['Someone With A Name'],
+      format: '',
+      tags: [],
       livestreams: [],
     }));
     const texts = renderUpNext(startsAt, 'Europe/Berlin', many, () => null);
@@ -453,9 +507,13 @@ describe('the morning digest', () => {
       [
         {
           id: 1,
+          startsAt: at(DAY_ONE, 600),
           title: 'Scaling an unconference',
           room: 'Main Hall',
+          track: '',
           speakers: ['Ada Lovelace'],
+          format: '',
+          tags: [],
           livestreams: [{ label: 'Main camera', url: 'https://stream.example/main' }],
           startsAt: at(DAY_ONE, 600),
         },
@@ -484,7 +542,7 @@ describe('a session added and a session moved', () => {
     harness.db
       .prepare(
         `UPDATE events SET telegram_chat_id = '-100123', telegram_lead_min = 15,
-                           telegram_triggers = '["up_next","digest","added","changed"]'
+                           telegram_triggers = '["up_next","digest","added","changed","placed"]'
           WHERE id = ?`,
       )
       .run(eventId);
@@ -549,6 +607,28 @@ describe('a session added and a session moved', () => {
     expect(sent).toHaveLength(1);
   });
 
+  it('a session added after its slot went out is still named, without repeating the slot', async () => {
+    // The 13:50 slot was announced at 13:35; a pitch lands in it at 13:47.
+    // The slot must not go out twice — but silence here is the one failure
+    // the feature exists to prevent.
+    await addSession(600, 'Already on the grid');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.tick(new Date(at(DAY_ONE, 586)));
+    expect(sent).toHaveLength(1);
+
+    const late = await addSession(600, 'Squeezed in');
+    await a.announceAdded(event(), late, new Date(at(DAY_ONE, 597)), true);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.text).toContain('Just pitched');
+    expect(sent[1]!.text).toContain('Squeezed in');
+    expect(sent[1]!.text).not.toContain('Already on the grid');
+
+    // And a later tick does not say the slot again.
+    await a.tick(new Date(at(DAY_ONE, 598)));
+    expect(sent).toHaveLength(2);
+  });
+
   it('holds a move for the tick, and sends one message for a reshuffle', async () => {
     const first = await addSession(600, 'First');
     const second = await addSession(660, 'Second');
@@ -572,6 +652,99 @@ describe('a session added and a session moved', () => {
     expect(sent[0]!.text).toContain('Second');
   });
 
+  it('announces a pitch as it reaches the grid, and calls it a pitch', async () => {
+    // U5, and the case the whole feature exists for. `POST /proposals/:id/place`
+    // builds its own session rather than going through `POST /sessions`, so for
+    // a while it announced nothing at all however loud the setting was.
+    const id = await addSession(600, 'From the board');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), true);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('Just pitched');
+    expect(sent[0]!.text).not.toContain('Just added');
+  });
+
+  it('separates the two: an event may hear pitches and not every session added', async () => {
+    harness.db
+      .prepare(`UPDATE events SET telegram_triggers = '["up_next","placed"]' WHERE id = ?`)
+      .run(eventId);
+    const id = await addSession(600);
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), false);
+    expect(sent).toEqual([]);
+
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)), true);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('places a pitch through the route and the group hears about it', async () => {
+    harness.db
+      .prepare(`UPDATE events SET telegram_triggers = '["placed"]' WHERE id = ?`)
+      .run(eventId);
+    const posted: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url: string | URL | Request, init?) => {
+      posted.push(String((init?.body as string) ?? ''));
+      return Promise.resolve(
+        new Response(JSON.stringify({ ok: true, result: {} }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    });
+
+    const pitch = await admin
+      .post('/api/e/testconf/proposals')
+      .send({ title: 'Repair café', description: '' })
+      .expect(201);
+    await admin
+      .post(`/api/e/testconf/proposals/${(pitch.body as { id: number }).id}/place`)
+      .send({ roomId, startsAt: at(DAY_ONE, 600), endsAt: at(DAY_ONE, 660) })
+      .expect(201);
+
+    // The route detaches the send, so it lands a turn after the response.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(posted.some((body) => body.includes('Just pitched'))).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it('keeps a move noted while a tick is mid-send for the next tick', async () => {
+    // A tick awaits every send, and a drag can land in the middle of one. The
+    // move was buffered and then thrown away with the tick's own tidy-up, so a
+    // reshuffle during a slow Telegram call reached nobody.
+    const id = await addSession(600, 'First');
+    const sent: TelegramMessage[] = [];
+    const send: Sender = async (_token, message) => {
+      sent.push(message);
+      if (sent.length === 1) a.noteMoved(event(), id);
+    };
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+
+    await a.tick(new Date(at(DAY_ONE, 590)));
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.text).toContain('up next');
+
+    await a.tick(new Date(at(DAY_ONE, 591)));
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.text).toContain('Moved on the schedule');
+  });
+
+  it('drops a move buffered for an event that has since disconnected', async () => {
+    const id = await addSession(600, 'First');
+    const { sent, send } = recorder();
+    const a = new Announcer(harness.db, TOKEN, 'https://s.example', send);
+    await a.announceAdded(event(), id, new Date(at(DAY_ONE, 400)));
+    sent.length = 0;
+
+    a.noteMoved(event(), id);
+    harness.db.prepare('UPDATE events SET telegram_chat_id = NULL WHERE id = ?').run(eventId);
+    await a.tick(new Date(at(DAY_ONE, 400)));
+    harness.db.prepare(`UPDATE events SET telegram_chat_id = '-100123' WHERE id = ?`).run(eventId);
+    await a.tick(new Date(at(DAY_ONE, 401)));
+    expect(sent).toEqual([]);
+  });
+
   it('says nothing about a move of a session the group never heard of', async () => {
     const id = await addSession(600);
     const { sent, send } = recorder();
@@ -588,9 +761,13 @@ describe('a session added and a session moved', () => {
       [
         {
           id: 1,
+          startsAt: at(DAY_ONE, 600),
           title: 'First',
           room: 'Main Hall',
+          track: '',
           speakers: [],
+          format: '',
+          tags: [],
           livestreams: [],
           startsAt: at(DAY_ONE, 600),
         },
@@ -646,7 +823,7 @@ describe('the Telegram settings routes', () => {
     const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'heavy' }).expect(200))
       .body as { mode: string; triggers: string[] };
     expect(body.mode).toBe('heavy');
-    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'up_next']);
+    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'placed', 'up_next']);
     await admin.patch('/api/e/testconf/telegram').send({ mode: 'deafening' }).expect(400);
   });
 
@@ -659,15 +836,60 @@ describe('the Telegram settings routes', () => {
     await admin.patch('/api/e/testconf/telegram').send({ digestMin: -1 }).expect(400);
   });
 
-  it('carries livestream links only when switched on, and never by default', async () => {
+  it('starts at the line nobody wrote, which is the one it always sent', async () => {
     const before = (await admin.get('/api/e/testconf/telegram').expect(200)).body as {
-      livestreams: boolean;
+      template: string;
     };
-    expect(before.livestreams).toBe(false);
-    const after = (
-      await admin.patch('/api/e/testconf/telegram').send({ livestreams: true }).expect(200)
-    ).body as { livestreams: boolean };
-    expect(after.livestreams).toBe(true);
+    expect(before.template).toBe('{title}[, by {speakers}]');
+  });
+
+  it('stores a line of the organiser’s own, and refuses one it cannot render', async () => {
+    const body = (
+      await admin
+        .patch('/api/e/testconf/telegram')
+        .send({ template: 'Annnoooounciiiiiing: {title}!' })
+        .expect(200)
+    ).body as { template: string };
+    expect(body.template).toBe('Annnoooounciiiiiing: {title}!');
+
+    // Refused on save, with the reason as a code the client turns into English.
+    const bad = (
+      await admin.patch('/api/e/testconf/telegram').send({ template: '{tilte}' }).expect(400)
+    ).body as { error: { code: string; details?: { name?: string } } };
+    expect(bad.error.code).toBe('template_unknown_placeholder');
+    const blank = (
+      await admin.patch('/api/e/testconf/telegram').send({ template: '   ' }).expect(400)
+    ).body as { error: { code: string } };
+    expect(blank.error.code).toBe('template_empty');
+    expect(bad.error.details?.name).toBe('tilte');
+
+    await admin
+      .patch('/api/e/testconf/telegram')
+      .send({ template: '{title}[, by {speakers}' })
+      .expect(400);
+
+    // And the refusal changed nothing.
+    const after = (await admin.get('/api/e/testconf/telegram').expect(200)).body as {
+      template: string;
+    };
+    expect(after.template).toBe('Annnoooounciiiiiing: {title}!');
+  });
+
+  it('sets the mode by name and refuses one it does not know', async () => {
+    const body = (await admin.patch('/api/e/testconf/telegram').send({ mode: 'heavy' }).expect(200))
+      .body as { mode: string; triggers: string[] };
+    expect(body.mode).toBe('heavy');
+    expect(body.triggers.sort()).toEqual(['added', 'changed', 'digest', 'placed', 'up_next']);
+    await admin.patch('/api/e/testconf/telegram').send({ mode: 'deafening' }).expect(400);
+  });
+
+  it('takes a digest time as a local minute of day, and refuses one off the clock', async () => {
+    const body = (
+      await admin.patch('/api/e/testconf/telegram').send({ digestMin: 450 }).expect(200)
+    ).body as { digestMin: number };
+    expect(body.digestMin).toBe(450);
+    await admin.patch('/api/e/testconf/telegram').send({ digestMin: 1440 }).expect(400);
+    await admin.patch('/api/e/testconf/telegram').send({ digestMin: -1 }).expect(400);
   });
 
   it('refuses a lead time outside the sane range', async () => {

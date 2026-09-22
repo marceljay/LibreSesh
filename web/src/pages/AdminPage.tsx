@@ -2112,6 +2112,9 @@ export function AdminPage() {
                 event={event}
                 sessions={bundle.sessions}
                 rooms={bundle.rooms}
+                tracks={bundle.tracks}
+                formats={bundle.formats}
+                tags={bundle.tags}
               />
             </SettingAnchor>
           </div>

@@ -38,7 +38,7 @@ const status = (over: Partial<TelegramStatus> = {}): TelegramStatus => ({
   mode: 'light',
   triggers: ['up_next'],
   leadMin: 15,
-  livestreams: false,
+  template: '{title}[, by {speakers}]',
   digestMin: 480,
   bindCode: null,
   bindExpires: null,
@@ -73,7 +73,7 @@ describe('the Telegram panel', () => {
     show();
     // The regression: these were gated on a connected group, so changing the
     // bot — which clears the binding — made them disappear.
-    expect(await screen.findByRole('button', { name: 'Example' })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Example of every message/ })).toBeTruthy();
     expect(screen.getByLabelText('How much it says')).toBeTruthy();
     expect(screen.getByText('How early it says it')).toBeTruthy();
   });
@@ -99,7 +99,7 @@ describe('the Telegram panel', () => {
 
   it('does not save the options until something has changed', async () => {
     show();
-    await screen.findByRole('button', { name: 'Example' });
+    await screen.findByRole('button', { name: /Example of every message/ });
     // The bot's button is *Save bot*, so this one is unambiguous.
     const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
@@ -111,14 +111,41 @@ describe('the Telegram panel', () => {
     show();
     const lead = (await screen.findByLabelText(/How early it says it/)) as HTMLInputElement;
     fireEvent.change(lead, { target: { value: '30' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Example' }));
+    fireEvent.click(screen.getByRole('button', { name: /Example of every message/ }));
     expect(screen.getByText(/30 minutes before each start time/)).toBeTruthy();
+  });
+
+  it('renders the line as it is typed, and refuses to save a broken one', async () => {
+    // The one screen whose effect used to need a save, a wait and a roomful of
+    // people to observe.
+    show();
+    const box = (await screen.findByLabelText(
+      'The line each session renders as',
+    )) as HTMLTextAreaElement;
+
+    fireEvent.change(box, { target: { value: 'Annnoooounciiiiiing: {title}!' } });
+    // Twice over: the box it was typed into, and the line drawn beneath it.
+    expect(screen.getAllByText(/Annnoooounciiiiiing:/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/stand-in session|next session/)).toBeTruthy();
+
+    fireEvent.change(box, { target: { value: '{title}[, by {speakers}' } });
+    expect(screen.getByText(/Every \[ needs a matching \]/)).toBeTruthy();
+    const save = screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+    expect(save.disabled).toBe(true);
+  });
+
+  it('says which messages the line is for, and which keep their own shape', async () => {
+    show();
+    expect(await screen.findByText(/what-is-up-next, just-added and just-pitched/)).toBeTruthy();
+    expect(
+      screen.getByText(/morning digest and the moved note keep their own short shape/),
+    ).toBeTruthy();
   });
 
   it('says the instance has no bot rather than offering a dead form', async () => {
     telegram.mockResolvedValue(status({ available: false, instanceBot: false }));
     show();
     await screen.findByPlaceholderText('123456789:AA…');
-    expect(screen.queryByRole('button', { name: 'Example' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Example of every message/ })).toBeNull();
   });
 });

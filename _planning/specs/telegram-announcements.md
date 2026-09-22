@@ -1,6 +1,6 @@
 # Telegram announcements — software design specification
 
-**Version:** 1.2 · **Status:** implemented · **Team:** LibreSesh
+**Version:** 1.7 · **Status:** implemented · **Team:** LibreSesh
 
 ## Contents
 
@@ -140,6 +140,8 @@ LibreSesh server process
 
 | Component | Responsibility | File |
 | --- | --- | --- |
+| Template grammar | `{placeholder}` and `[optional]` → parts, for every side | `server/src/shared/telegramTemplate.ts` |
+| Triggers and presets | The trigger names and the sets each preset fires, for every side | `server/src/shared/telegramTriggers.ts` |
 | Renderer | Announcement value → Telegram HTML, split to fit | `server/src/telegram.ts` |
 | Announcer | Decides what is due; marks and sends | `server/src/telegram.ts` |
 | Poller | One bot's inbound connection and commands | `server/src/telegram.ts` |
@@ -213,11 +215,19 @@ sequenceDiagram
 | Bot token per event | Instance-wide only | Organisers run their own events; a shared bot makes the operator a gatekeeper and puts their name on every message |
 | One message per slot | One per session | A twelve-room slot would be twelve notifications (U2) |
 | A line a session, two when streamed | Room, title, speakers and streams on lines of their own | A five-room slot ran to twenty lines. One notification is only one notification if it can be read at a glance |
+| The organiser writes the line | Parts ticked and ordered (what 027 shipped to review) | A chosen order over a fixed set of parts is still *our* sentence with their words in it. It cannot say "Annnoooounciiiiiing: Repair café", and that turned out to be the actual request |
+| Two rules of grammar and no third | Conditionals, filters, formatting | `{name}` and `[optional]` between them solve every case the field set solved plus the ones it could not. A third rule is where a template box becomes a language nobody can debug from a phone at a conference |
+| Literal text is escaped | Allow Telegram's own `<b>`/`<i>` | A template is the one string in this system an organiser writes and Telegram parses. Escaping it means a stray `<` is a `<`, and never a 400 at 09:45 that nobody can see coming |
+| Checked on save, not on send | Validate at render time | A template that only breaks on a session with no speakers breaks for the first time in front of a room. Unknown placeholders and unbalanced brackets are both knowable early, so they are refused early — and, since `checkTemplate` is shared, reported as the organiser types rather than when they press Save |
+| The grammar lives in `shared/` | A copy per side | It is rendered three times — Telegram HTML, the Example modal, the live line under the box — and three copies of one grammar is three places for the preview to start lying. `templateParts` resolves the structure; each side draws it |
+| The digest and the moved note are not templated | One template for every message | Both list a day rather than a moment, so both are terse by design (`announcements.md` fixes the digest at terse). A line written for one session in a slot reads badly forty times over |
+| `placed` separate from `added` | One trigger for both | Building a programme is twenty sessions in an afternoon; a pitch landing mid-conference is the case the feature exists for (U5). One trigger cannot serve both |
 | Every preset names a trigger that fires | A ladder that anticipates unbuilt triggers | "Light — one message each morning" sent nothing for as long as `digest` was unwritten. §8's own rule: never a control that cannot work |
 | Light is `up_next`, not `digest` | The digest at the bottom | [`announcements.md`](announcements.md) fixes only that Medium carries the digest. Putting the per-slot message lowest makes migration 023's stored default a named preset, so no event opens its panel on "custom" |
 | `changed` is buffered to the next tick | Sent from the route like `added` | A reshuffle is a dozen writes and one piece of news. The 60s tick already *is* the coalescing window |
 | `added` inside the lead window sends the whole slot | Send the one session, then the slot | Two messages seconds apart saying nearly the same thing. Sending the slot and marking it keeps the rooms already in it visible |
-| Livestream links a setting of their own | Part of a preset, or always on | A preset is a *noise* choice; this is a *disclosure* choice. A session link meets the password gate and a stream address does not, so it is not something to acquire by picking a volume |
+| `{streams}` is a placeholder the organiser adds, absent from the default line | Part of a preset, or always on | A preset is a *noise* choice; this is a *disclosure* choice. A session link meets the password gate and a stream address does not, so it is not something to acquire by picking a volume, and the panel says what it costs beside the placeholder |
+| A blank line is refused, and a line that comes out empty for a session shows its title | Trust the organiser's line as written | A slot message listing a session under no name is wrong for everyone who reads it. `checkTemplate` refuses blank; `lineParts` falls back to the title, on the bot and in the preview alike |
 | HTML parse mode | MarkdownV2 | Every interpolated value is user-authored; MarkdownV2 needs 18 characters escaped in each, and one miss is a 400 or mangled output |
 
 ---
@@ -228,22 +238,28 @@ sequenceDiagram
 
 **Purpose.** Convert a slot into Telegram messages. Pure; no I/O.
 
-**Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl, streams)`
-emits a header followed by one block per session. A block is **one line, or two
-when the session is streamed**: `Title, by Ada Lovelace`, then `Stream: Main
-camera, Interpreted` — every stream on the one line — when `streams` is set.
-Four lines a session made a five-room slot a message nobody reads to the
+**Processing.** `renderUpNext(startsAt, timeZone, items, sessionUrl, template)`
+emits a header followed by one block per session. A block is the organiser's
+line rendered for that session: `renderTemplate` hands the template and the
+session's plain values to `lineParts`, which fills `{placeholders}`, drops
+`[bracketed parts]` whose values are all empty, and falls back to the title
+alone when nothing survives. Each surviving part is then drawn — the title as a
+link where the instance knows its own address and bold otherwise, `{streams}`
+as one link per stream, `{tags}` as hashtags with their spaces removed, and
+everything else, the organiser's own words included, through `escapeHtml`. The
+default line is one line a session; a line with `{streams}` on its own row is
+two. Four lines a session made a five-room slot a message nobody reads to the
 bottom; the slot is the unit that matters, and it has to be scannable in the
-second it is on screen. Times
-are formatted in the **event's** timezone via `zonedParts`. Every interpolated
-value passes through `escapeHtml`, which escapes `&`, `<`, `>` and nothing
-else. Accumulated length is checked per block against the 4096-character limit;
-overflow starts a continuation message, always at a session boundary.
+second it is on screen. `{time}` and the header are formatted in the
+**event's** timezone via `zonedParts`. `escapeHtml` escapes `&`, `<`, `>` and
+nothing else; `escapeAttr` adds the quote, for every `href`. Accumulated length
+is checked per block against the 4096-character limit; overflow starts a
+continuation message, always at a session boundary.
 
-**Interfaces.** In: `AnnounceItem[]` (`id`, `title`, `room`, `speakers`,
-`livestreams`) plus a URL function returning `null` when the instance has no
-configured public address, and the event's livestream choice. Out: `string[]`,
-one per message.
+**Interfaces.** In: `AnnounceItem[]` (`id`, `startsAt`, `title`, `room`,
+`track`, `speakers`, `format`, `tags`, `livestreams`), a URL function returning
+`null` when the instance has no configured public address, and the event's
+template. Out: `string[]`, one per message.
 
 ### 4.2 Announcer
 
@@ -266,16 +282,29 @@ stop the others.
 
 The digest fires once per local day, inside a one-hour window after
 `telegram_digest_min`, so a process restarted at 14:00 does not open by
-announcing a day half over. `added` is called from the session routes beside
-their `audit()`; `changed` is buffered by `noteMoved` and drained by the next
-tick. Neither can fail a write — `announceQuietly` detaches the promise.
+announcing a day half over. `added` and `placed` are called from the session
+and proposal routes beside their `audit()`; `changed` is buffered by
+`noteMoved` and drained by the next tick. Neither can fail a write —
+`announceQuietly` detaches the promise.
+
+A session added inside the lead window goes out as its whole slot, and the
+slot is marked, when that slot has not been sent yet; when it has, the one
+session goes out as a just-added or just-pitched line, because the slot must
+not repeat and the short-notice pitch must not be the one case that stays
+silent. The move buffer is pruned at the start of a tick, for events no longer
+configured, and never cleared after it: a tick awaits every send, and a move
+noted during one of those awaits has to survive to the next tick.
 
 **Data structures.** `Set<string>` keyed `telegram:<eventId>:<startsAt>`, and
 `telegram:digest:<eventId>:<localDate>` for the digest. The transport prefix is
 required by [`announcements.md`](announcements.md) so one transport cannot
 silence another. A second `Set<number>` holds the sessions actually announced:
 `changed` fires only for those, because the move of a session the group was
-never told about would disclose it.
+never told about would disclose it. It is in memory like the first, with a
+cost the first does not have: after a restart nothing counts as announced, so
+a move goes unreported until the digest or an up-next names that session
+again. Accepted for now, and recorded as LIB-225; the `announced` table
+[`announcements.md`](announcements.md) names would close both costs at once.
 
 **Interfaces.** Constructed with the database, the instance fallback token, the
 public URL and a `Sender`. `nextSlotText` serves the `/next` command.
@@ -325,7 +354,7 @@ write, so a rejected field cannot leave a partial change behind.
 | Route | Effect |
 | --- | --- |
 | `GET /telegram` | Status; never the token |
-| `PATCH /telegram` | `mode`, `leadMin`, `botToken`, `livestreams`. Setting or clearing a token also clears the binding |
+| `PATCH /telegram` | `mode`, `leadMin`, `botToken`, `template`, `digestMin`. A template is refused with `template_<problem>` when blank, unbalanced, too long or naming an unknown placeholder. Setting or clearing a token also clears the binding |
 | `POST /telegram/code` | Mints a bind code, valid 15 minutes |
 | `DELETE /telegram` | Clears the binding; keeps the token |
 | `POST /telegram/test` | Sends a test message; returns Telegram's error text verbatim on failure |
@@ -345,7 +374,7 @@ Migration `023_telegram.sql` adds to `events`:
 | `telegram_lead_min` | INTEGER | Default 15 |
 | `telegram_bind_code` | TEXT null | Unique where not null |
 | `telegram_bind_expires` | TEXT null | ISO-8601 |
-| `telegram_livestreams` | INTEGER | Migration 024. Default 0 — a disclosure choice is never on by default |
+| `telegram_template` | TEXT | Migration 028. The line a session renders as. Default `{title}[, by {speakers}]`, which is what 027's field set rendered by default. Replaced that column, which replaced 024's boolean |
 | `telegram_digest_min` | INTEGER | Migration 025. Local minute of day, default 480 (08:00 at the venue) |
 
 **Constraints.** None of these columns appear in an export — the export writes
@@ -412,9 +441,14 @@ transports join it rather than lengthening Settings.
 | How much it says | Select over the presets: **Off**, **Light**, **Medium**, **Heavy** |
 | When the morning message goes out | `TimeField`, shown only for the presets that send one |
 | How early it says it | Number field, 1–180 minutes |
-| Livestreams | Checkbox, off by default, stating in its hint that a stream address does not meet the password gate |
+| How a session reads | Its own group. A two-row textarea, the placeholder names beneath it **as buttons that insert at the caret**, `[ ]` to wrap a selection, then the line it renders as, then three presets. `checkTemplate` runs as it is typed, so a bad line reports itself and disables Save |
 | Save | One action for the three options above, disabled until a value differs from what is stored |
 | Example | Opens the preview |
+
+**Two groups.** *The bot and the group* is the connection — a thing you set up
+once. *What it posts* and *How a session reads* are the content, and they share
+one Save and one **Example of every message**. Flat, the panel was nine controls
+in a column with no seam between "which bot" and "what it says".
 
 **Rules.**
 
@@ -447,15 +481,15 @@ transports join it rather than lengthening Settings.
 | U2 | §4.1 one message per slot | `telegram.test.ts` "puts every room of one start time in a single message" |
 | U3 | Room scope — **not implemented**, see §11 | — |
 | U4 | §4.2 digest | `telegram.test.ts` "goes out once a day, at the hour the event chose" |
-| U5 | §4.2 range selection | `telegram.test.ts` "takes a session created inside its own window" |
-| U6 | §4.1 links, and the livestream setting | `telegram.test.ts` "links the title when the instance knows its own address"; "carries a livestream link only when the event asks for it" |
+| U5 | §4.2 range selection, and the `placed` trigger | `telegram.test.ts` "takes a session created inside its own window"; "announces a pitch as it reaches the grid" |
+| U6 | §4.1 links, and the `{streams}` placeholder | `telegram.test.ts` "fills every placeholder it knows"; `telegramPreview.test.tsx` "shows a stream link only when the line asks for one" |
 | U7 | §5 per-event token | `telegram.test.ts` "lets an organiser turn Telegram on with no help from the operator" |
 | Drafts never announced | §4.2 selection predicate | `telegram.test.ts` "never takes a draft" |
 | Token confidentiality | §4.5 status projection | `telegram.test.ts` "never sends the token back" |
 | Command scoping | §4.3 `servedEvents` | `telegram.test.ts` "will not let one event's bot redeem another event's code" |
 | Timezone correctness | §4.1 `zonedParts` | `telegram.test.ts` non-whole-hour offset case |
 
-Requirements without a design element: U3 and U4 (§11).
+Requirements without a design element: U3 (§11).
 
 ---
 
@@ -479,7 +513,6 @@ Requirements without a design element: U3 and U4 (§11).
 | 2 | Supergroup topics as a configurable target? | One nullable column is already present |
 | 3 | Should a slot that holds the floor say so? | `blocks_open_booking` is currently invisible here |
 | 4 | Localisation | The application has no i18n layer; this inherits that gap |
-| 5 | Should a livestream link be verbosity (`full`) rather than its own flag? | [`announcements.md`](announcements.md) puts it on the "how much" axis; it is kept separate here because it is a disclosure choice, and folding it into a verbosity level would hand it out with one |
 
 ---
 
@@ -490,3 +523,8 @@ Requirements without a design element: U3 and U4 (§11).
 | 1.0 | 2026-09-16 | First implemented specification. Transport-neutral rules referenced from [`announcements.md`](announcements.md) rather than restated |
 | 1.1 | 2026-09-16 | Review pass. Presets cut to the ones whose triggers are built; livestream links added as a setting of their own (migration 024); the Example reads the screen, not the store; a failed test message reports Telegram's own words |
 | 1.2 | 2026-09-17 | `digest`, `added` and `changed` built, so the ladder is four rungs again. Migration 025 adds the digest hour; the announcer moves onto the request context, because two of the three are write-path triggers |
+| 1.3 | 2026-09-17 | What a line says, and in what order, becomes the organiser's (migration 027, seven ticked and arrangeable fields replacing migration 024's livestream boolean). `placed` becomes its own trigger (migration 026) — placing a pitch announced nothing at all, which was the case the feature exists for |
+| 1.4 | 2026-09-17 | The organiser writes the line (migration 028). Ticking and ordering a fixed set of parts was still our sentence; `{placeholders}` and `[optional parts]` are theirs. 027's field set is gone rather than sitting beside it |
+| 1.5 | 2026-09-18 | The grammar moves to `shared/telegramTemplate.ts`, so the bot, the Example and the new live line under the box all draw the same parts. The control says which messages it governs — the digest and the moved note keep their own shape |
+| 1.6 | 2026-09-18 | The panel splits into labelled groups; the placeholder names become buttons that insert at the caret. Caret behaviour is covered by `scripts/browserPass.ts`, jsdom having no selection model |
+| 1.7 | 2026-09-18 | Review pass. §4.1 rewritten for the template — it still described 027's ticked fields. A blank line is refused and an empty one falls back to the title; every `href` escapes the quote; a pitch landing in a slot already announced is named on its own; a move noted mid-tick survives. The presets move to `shared/telegramTriggers.ts` so the Example reads them rather than a copy. Open question 5 closed by 028: the stream link is a placeholder, not a flag |

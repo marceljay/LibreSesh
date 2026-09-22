@@ -10,6 +10,7 @@ import { notify, organiserIdentities } from '../notifications.js';
 import { loadSessionDto, speakerNames, toProposalDto } from '../mappers.js';
 import { can, getPermissions, requireCapability } from '../permissions.js';
 import { limit } from '../ratelimit.js';
+import { announceQuietly } from '../telegram.js';
 import { resolveSpeaker, setSessionSpeakers, type Actor } from '../speakers.js';
 import {
   assertMayPlace,
@@ -342,6 +343,12 @@ export function proposalRoutes(ctx: Ctx): Router {
         entity: 'proposal',
         entityId: row.id,
       });
+      // Beside the audit row, like the session routes, and never on the
+      // broker beneath it: `Broker.publish` returns early with no subscribers.
+      // This path builds its own session rather than going through
+      // `POST /sessions`, which is why it needs its own call — the hook there
+      // never fires for a pitch, so placing one announced nothing at all.
+      announceQuietly(ctx.announcer.announceAdded(req.event, sessionId, new Date(), true));
       ctx.broker.publish(req.event.slug, 'session.created', session);
       ctx.broker.publish(
         req.event.slug,

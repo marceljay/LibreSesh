@@ -153,8 +153,9 @@ Connecting a group is a **publication decision**, and the only one an organiser
 can make that puts event content somewhere this app cannot reach. Manage Event
 says so in front of the control rather than in a tooltip.
 
-What leaves: session titles, speaker display names, room names and times, as
-plain messages, to everyone who can see that group — and onward to anyone they
+What leaves: session titles, speaker display names, room, track and format
+names, tags and times — whichever of those the organiser's line names — as
+plain messages, to everyone who can see that group, and onward to anyone they
 forward it to. What does not: drafts (never, under any trigger), deleted
 sessions, archived events, and every contribution, note, question, star and
 pitch interest. The links in the messages still land on the password gate; the
@@ -164,10 +165,13 @@ message bodies do not.
 session link in a message is a URL to the gate: following it asks for the event
 password. A stream address is not — it is frequently the one unguessable thing
 standing between a stranger and the room, and posting it into a group publishes
-it to everyone there and to anyone the message is forwarded to. So carrying
-them is its own setting (migration 024), off for every event including one
-already announcing, and the panel says what it costs in front of the control.
-Turning it off stops the next message and does nothing about the last one.
+it to everyone there and to anyone the message is forwarded to.
+
+So it is a placeholder an organiser has to put in the line themselves —
+`{streams}`, migration 028 — and it is not in the line they start with.
+Everything else the line can carry (room, track, speakers, format, tags, time)
+is already disclosed by the message that carries it. Taking `{streams}` out
+stops the next message and does nothing about the last one.
 
 A posted message is **not recallable by this app** — Disconnect stops the next
 one and changes nothing about the last one. `/revoke` in BotFather is the only
