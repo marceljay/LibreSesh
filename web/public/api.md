@@ -222,6 +222,12 @@ anywhere — and to everyone else its routes answer `404`. It claims no room or
 time until `PATCH`ed to `"draft": false`, which is checked like a new booking.
 Only the creator and organisers may change the flag.
 
+`"nostrOptOut": true` keeps a session off Nostr while the event publishes
+there (`event.nostrEnabled` in the bundle). The same rule as `draft`: its
+creator and the organisers may set it, and absent leaves it as it is. A pitch
+accepts it too and hands it to the session it becomes. A published session
+carries `nostr.naddr`, its address on the relays, once one has accepted it.
+
 Three rules that will bite a program in particular:
 
 - **Times are UTC ISO-8601 strings, but every rule about them is evaluated in
@@ -378,6 +384,8 @@ resolving, so a client written against the old name keeps working. Read
 | `GET /export.json` | Whole-event JSON. Organisers |
 | `GET /nostr`, `POST /nostr/enable`, `POST /nostr/disable`, `PATCH /nostr` | Publishing the programme to Nostr: status, the switch (`{acknowledged: true}`), relays and triggers. Organisers |
 | `POST /nostr/import-key`, `POST /nostr/export-key` | The event's signing key as an `nsec`, in and out. Organisers, `auth` budget, audited |
+| `GET /nostr/example?trigger=` | What one trigger would post as a note, from this event's own schedule. Organisers |
+| `POST /nostr/retract`, `POST /nostr/resync`, `POST /nostr/test` | Ask the relays to delete everything and stop; republish every calendar event; republish the profile now and hear what each relay said. Organisers |
 | `GET /audit`, `GET /login-health`, `POST /login-attempts/reset` | The log, and the sign-in stop |
 | `GET /trash`, `POST /sessions/:id/restore`, `POST /contributions/:id/restore` | Undo |
 | `PATCH /settings`, `PATCH /permissions` | The event itself, and its capability matrix |

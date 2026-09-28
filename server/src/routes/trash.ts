@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireRole, requireWritable } from '../auth.js';
 import { audit } from '../audit.js';
+import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { ContributionRow, SessionRow } from '../db.js';
 import { publishSession } from '../drafts.js';
@@ -80,6 +81,7 @@ export function trashRoutes(ctx: Ctx): Router {
       entity: 'session',
       entityId: row.id,
     });
+    markDirty(ctx.db, req.event.id, row.id);
     // A draft comes back a draft, to the people who could see it before.
     publishSession(ctx.db, ctx.broker, req.event, 'session.created', restored, dto);
     res.json(dto);

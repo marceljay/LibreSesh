@@ -298,6 +298,7 @@ export function ProposalBoard() {
           canCreditOthers={can(bundle.permissions, bundle.role, 'session.credit_others')}
           tags={bundle.tags}
           saving={saving}
+          nostrEnabled={bundle.event.nostrEnabled}
           onCancel={() => setEditing(null)}
           onSave={(body) => void saveProposal(body)}
           onDelete={

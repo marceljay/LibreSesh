@@ -81,6 +81,7 @@ rows, open the database file in a read-only viewer (a copy for production:
 | `contributions` | Notes, links, questions; `hidden` for moderation |
 | `stars`, `proposal_interest` | Private per-identity interest |
 | `audit` | Append-only log of every write |
+| `nostr_published` | The Nostr publish queue: one row per session, plus the calendar and the profile, per event that has ever been enabled. Marks (`dirty_since`, `touched_at`), the relays still to accept the latest version (`pending`), backoff, and whether the last version sent was a deletion (§Publishing to Nostr) |
 
 Times are stored as **UTC ISO-8601 strings**. Every rule that a human would
 express in local time — the five-minute snap, the day viewport, the event date
@@ -868,6 +869,65 @@ The document format itself is documented for the people writing one, in
 template, and the test suite dry-runs that exact file so it cannot drift from
 the schema.
 
+### Publishing to Nostr
+
+An event that turns this on (Manage Event → Publish, organisers only) gets a
+signing key of its own: the public half is its identity on Nostr, the one a
+follower adds; the private half is stored encrypted at rest
+(`server/src/secretsAtRest.ts`, under a key derived from `COOKIE_SECRET`
+unless `SECRETS_AT_REST_KEY` is set) and decrypted only while signing and in
+the organiser's export route. The design, the decisions and the NIP-52
+mapping are in `_planning/specs/nostr-publishing.md`; SECURITY.md has what
+leaves the instance and what a leaked key means.
+
+**Calendar sync is state, not history.** Every published session is one
+kind-31923 event with a `d` tag derived from ids (`e<event>-s<session>`),
+never the slug, so a republish replaces the earlier version on the relay
+rather than adding a second entry. One 31924 calendar lists them and one
+kind-0 profile names the event. All three are kept equal to the database by
+the publish queue, `nostr_published`:
+
+- **Marking.** Every write that changes what a calendar event would contain
+  calls `markDirty` beside its `audit()` call (`server/src/nostr/queue.ts`):
+  session create, update, delete, restore, link, unlink, repeat, draft
+  publish, pitch place; a room, tag or format rename or delete, a change to
+  the event's name, dates or timezone, and a person's rename or merge, which
+  mark every session concerned. One upsert, no relay I/O, and it never throws
+  into the request. **Never the SSE broker** — that is delivery to open tabs,
+  not an event bus.
+- **Debounce.** `touched_at` moves on every mark, `dirty_since` only on the
+  first. The loop (`setInterval` 10 s in `index.ts`, `unref`'d) takes a row
+  fifteen seconds after its last mark, or a minute after its first, so a
+  burst of drag edits is one publish and a burst that never pauses still goes
+  out. Clearing the marks compares `touched_at` to the value read, so a mark
+  that lands during a build survives it.
+- **Per-relay delivery.** A built version is signed once and sent to every
+  relay in `pending`; each `OK` removes that relay. A relay that refuses keeps
+  its rows pending for itself alone, retried with exponential backoff capped
+  at an hour, and shows in the status table; a relay added to the list is
+  appended to every published row's `pending`, so it receives the whole
+  programme. Delivery is at-least-once, which is harmless: republishing an
+  addressable event is idempotent on the relay.
+- **Deletions.** A row whose session is now deleted, a draft or opted out
+  becomes a kind-5 deletion request with an `a` coordinate and a `k` tag, and
+  stays with `deleted = 1` so a restore can re-enter (a later `created_at` is
+  accepted again, per NIP-09). *Retract everything* marks every row deleted
+  and turns the event off; the loop keeps draining deletions for an event
+  that is off. A relay *may* ignore a deletion; nothing here promises more.
+- **The net.** Every five minutes a sweep marks any publishable session whose
+  `updated_at` is newer than its row's `published_at`, or that has no row at
+  all, so a missed call site costs minutes rather than a stale programme.
+
+**Kind-1 notes are history, not state:** the announcer's Nostr transport
+(`server/src/nostr/notes.ts`) posts a plain-text note when a slot is about to
+start, a day begins, a session is added or moved, a pitch is made or placed —
+whichever of the six triggers the event ticked in `nostr_triggers`. Each note
+carries one `a` tag per session it names and the same reference inline as
+`nostr:naddr…`, so a capable client opens the calendar event; the site link
+comes last, only with `PUBLIC_URL`. Notes are never edited and never
+retracted, and a failed publish is logged and dropped: the calendar events
+are the durable copy and a late note is a stale one.
+
 ### Migrations
 
 Numbered `.sql` files in `server/migrations/`, applied at boot, each in its own
@@ -1016,9 +1076,13 @@ than a message anyone receives by default (`server/src/telegram.ts`, migration
 
 Telegram is the first **transport**, not the feature. What an announcement is,
 when one exists and what must never become one are transport-neutral and live
-in `_planning/specs/announcements.md`; Nostr adapts the same rules. The loop
-below still sits inside `telegram.ts` because it is the only implementation —
-LIB-214 lifts it into `announcer.ts`, leaving rendering and the bot here.
+in `_planning/specs/announcements.md`, implemented once in
+`server/src/announcer.ts`: the 60-second tick, the sent record keyed by
+transport, and the write-path entry points for `added`, `changed`, `pitched`
+and `placed`. A transport is `{ name, enabled, timing, send }` — Telegram's is
+`telegramTransport` in `telegram.ts`, which keeps only rendering, the bot and
+the group; Nostr's posts kind-1 notes (§Publishing to Nostr). The rules
+described below are the announcer's, and hold for every transport.
 
 **The bot belongs to the event, not the instance.** An organiser pastes a token
 from BotFather and Telegram works, with no involvement from whoever deployed

@@ -3,6 +3,8 @@ import { audit } from '../audit.js';
 import { requireRole } from '../auth.js';
 import type { Ctx } from '../context.js';
 import type { EventRow, NostrPublishedRow } from '../db.js';
+import type { NostrStatus } from '../shared/types.js';
+import { exampleNote } from '../nostr/notes.js';
 import { badRequest } from '../errors.js';
 import {
   encryptEventKey,
@@ -12,25 +14,23 @@ import {
   toNpub,
   toNsec,
 } from '../nostr/keys.js';
+import {
+  appendPending,
+  markDirty,
+  markResync,
+  markRetract,
+  publishProfileNow,
+  removePending,
+} from '../nostr/queue.js';
 import { limit } from '../ratelimit.js';
 import {
   nostrEnableSchema,
+  nostrExampleSchema,
   nostrImportSchema,
   nostrPatchSchema,
   parse,
   type NostrTrigger,
 } from '../validation.js';
-
-export interface NostrStatus {
-  enabled: boolean;
-  /** The event's identity on Nostr; null until first enabled. */
-  npub: string | null;
-  relays: string[];
-  triggers: NostrTrigger[];
-  counts: { published: number; dirty: number; pending: number; deleted: number };
-  /** Per relay: how many rows it has not accepted yet, and its latest refusal. */
-  relayStatus: { url: string; pending: number; lastError: string | null }[];
-}
 
 export const relaysOf = (event: EventRow): string[] =>
   event.nostr_relays ? (JSON.parse(event.nostr_relays) as string[]) : [];
@@ -109,6 +109,7 @@ export function nostrRoutes(ctx: Ctx): Router {
       set(e.id, 'nostr_relays = ?', JSON.stringify(ctx.config.nostrDefaultRelays));
     }
     set(e.id, 'nostr_enabled = 1');
+    markDirty(ctx.db, e.id);
     record(req.identity.id, e.id, 'nostr_enable');
     res.json({ npub: toNpub(reload(e.id).nostr_pubkey!) });
   });
@@ -126,7 +127,21 @@ export function nostrRoutes(ctx: Ctx): Router {
     if (isProd && body.relays?.some((u) => u.startsWith('ws://'))) {
       throw badRequest('Relay URLs start with wss:// — plain ws:// is for local testing only');
     }
-    if (body.relays) set(e.id, 'nostr_relays = ?', JSON.stringify([...new Set(body.relays)]));
+    if (body.relays) {
+      const before = relaysOf(e);
+      const relays = [...new Set(body.relays)];
+      set(e.id, 'nostr_relays = ?', JSON.stringify(relays));
+      appendPending(
+        ctx.db,
+        e.id,
+        relays.filter((r) => !before.includes(r)),
+      );
+      removePending(
+        ctx.db,
+        e.id,
+        before.filter((r) => !relays.includes(r)),
+      );
+    }
     if (body.triggers) set(e.id, 'nostr_triggers = ?', JSON.stringify([...new Set(body.triggers)]));
     record(req.identity.id, e.id, 'nostr_settings');
     const after = reload(e.id);
@@ -157,6 +172,7 @@ export function nostrRoutes(ctx: Ctx): Router {
         keys.pubkey,
         encryptEventKey(keys.seckey, ctx.config),
       );
+      markDirty(ctx.db, req.event.id);
       record(req.identity.id, req.event.id, 'nostr_key_imported');
       res.json({ npub: toNpub(keys.pubkey) });
     },
@@ -180,6 +196,53 @@ export function nostrRoutes(ctx: Ctx): Router {
       }
       record(req.identity.id, req.event.id, 'nostr_key_exported');
       res.json({ nsec: toNsec(seckey) });
+    },
+  );
+
+  /**
+   * What a trigger would post, rendered from this event's own schedule. The
+   * effect of every setting on the tab is only visible on a relay, so the
+   * tab shows the note itself; before the first enable the reference uses a
+   * placeholder key, which is fine for reading.
+   */
+  router.get('/nostr/example', requireRole(ctx.db, 'admin'), (req, res) => {
+    const { trigger } = parse(nostrExampleSchema, req.query);
+    res.json({ content: exampleNote(ctx.db, ctx.config, req.event, trigger) });
+  });
+
+  /** Kind 5 for everything, then off. The loop drains the deletions. */
+  router.post('/nostr/retract', requireRole(ctx.db, 'admin'), (req, res) => {
+    markRetract(ctx.db, req.event.id);
+    record(req.identity.id, req.event.id, 'nostr_retract');
+    res.status(204).end();
+  });
+
+  router.post('/nostr/resync', requireRole(ctx.db, 'admin'), (req, res) => {
+    markResync(ctx.db, req.event.id);
+    record(req.identity.id, req.event.id, 'nostr_resync');
+    res.status(204).end();
+  });
+
+  /**
+   * Send a test: the profile again, now, with each relay's answer verbatim.
+   * The effect of every setting on this tab is only visible in the external
+   * service, and republishing the profile is the one send followers do not
+   * see as a new post.
+   */
+  router.post(
+    '/nostr/test',
+    requireRole(ctx.db, 'admin'),
+    limit(ctx.limiter, 'auth'),
+    async (req, res) => {
+      // Express 5 forwards a rejection from an async handler to the error
+      // middleware, so a throw here answers like the synchronous routes do.
+      if (!openEventKey(req.event, ctx.config)) {
+        throw badRequest(
+          'This event has no key, or the instance secret has changed since it was made',
+        );
+      }
+      const relays = await publishProfileNow(ctx.db, ctx.config, ctx.nostrPool, req.event.id);
+      res.json({ relays });
     },
   );
 

@@ -224,6 +224,7 @@ export function exportEvent(
       // Only when set, so a published session reads exactly as it always has.
       // Left out, a draft would come back from its own export as published.
       ...(s.draft === 1 ? { draft: true } : {}),
+      ...(s.nostr_optout === 1 ? { nostrOptOut: true } : {}),
     }));
   }
 
@@ -271,6 +272,7 @@ export function exportEvent(
       createdAt: p.created_at,
       updatedAt: p.updated_at,
       interestCount: interestCounts.get(p.id) ?? 0,
+      ...(p.nostr_optout === 1 ? { nostrOptOut: true } : {}),
     }));
   }
 

@@ -29,6 +29,9 @@ import type {
   InboxDto,
   NotificationKind,
   TelegramStatus,
+  NostrRelayAnswer,
+  NostrStatus,
+  NostrTrigger,
 } from '@shared/types';
 import type { Repeat } from '@shared/repeat';
 import type { ExportPart } from '@shared/exportParts';
@@ -341,6 +344,32 @@ export const api = {
   telegramTest: (slug: string) =>
     request<{ ok: boolean }>('POST', `/e/${encode(slug)}/telegram/test`),
 
+  // Nostr. Organisers only; the private key never travels except through
+  // export-key, which the organiser asks for on purpose.
+  nostr: (slug: string) => request<NostrStatus>('GET', `/e/${encode(slug)}/nostr`),
+  nostrEnable: (slug: string) =>
+    request<{ npub: string }>('POST', `/e/${encode(slug)}/nostr/enable`, { acknowledged: true }),
+  nostrDisable: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/disable`),
+  nostrSettings: (slug: string, body: { relays?: string[]; triggers?: NostrTrigger[] }) =>
+    request<{ relays: string[]; triggers: NostrTrigger[] }>(
+      'PATCH',
+      `/e/${encode(slug)}/nostr`,
+      body,
+    ),
+  nostrRetract: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/retract`),
+  nostrResync: (slug: string) => request<void>('POST', `/e/${encode(slug)}/nostr/resync`),
+  nostrTest: (slug: string) =>
+    request<{ relays: NostrRelayAnswer[] }>('POST', `/e/${encode(slug)}/nostr/test`),
+  nostrImportKey: (slug: string, nsec: string) =>
+    request<{ npub: string }>('POST', `/e/${encode(slug)}/nostr/import-key`, { nsec }),
+  nostrExportKey: (slug: string) =>
+    request<{ nsec: string }>('POST', `/e/${encode(slug)}/nostr/export-key`),
+  nostrExample: (slug: string, trigger: NostrTrigger) =>
+    request<{ content: string | null }>(
+      'GET',
+      `/e/${encode(slug)}/nostr/example?trigger=${encodeURIComponent(trigger)}`,
+    ),
+
   // Proposal pool — the unconference pitch board (SPEC §8).
   createProposal: (slug: string, body: ProposalWrite) =>
     request<ProposalDto>('POST', `/e/${encode(slug)}/proposals`, body),
@@ -433,6 +462,8 @@ export interface SessionWrite {
   /** Keep it off the schedule. Omit to leave it as it is on an edit; the
    *  server refuses a change from anyone who could not delete the session. */
   draft?: boolean;
+  /** Keep it off Nostr while the event publishes there. Author or organiser. */
+  nostrOptOut?: boolean;
   title: string;
   description?: string;
   /**
@@ -487,6 +518,8 @@ export interface ProposalWrite {
   /** A name that matches nobody creates a person. Used instead of `speakerId`. */
   speakerName?: string;
   tagIds?: number[];
+  /** Keep the pitch off Nostr; the session it becomes inherits this. */
+  nostrOptOut?: boolean;
 }
 
 export interface PlaceWrite {
