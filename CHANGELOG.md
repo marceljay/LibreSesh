@@ -122,6 +122,22 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- **A session going live no longer shoves its own title and time down the
+  block.** A grid block's badges — `draft`, `clash`, `competing`, `now` — sat
+  in the same row as the tag dashes. That row is the height of the dashes,
+  4px; a badge is a 16px chip, so any badge grew the row and carried the title,
+  the time and the lines under them 12px further down the block. The other
+  three badges are fixed properties of a session, so a block wearing one merely
+  looked different from its neighbours, but `now` arrives on the clock: at the
+  minute a session started, its text jumped down a line and fell out of step
+  with every block beside it, and on a short block the push sent the time under
+  the bottom edge, which is clipped. The badges are now drawn over the block's
+  top corner instead of inside its flow — the corner they already appeared to
+  occupy — so they cost the block no height and every block's title sits on the
+  same line whether or not it is running. The strip takes the block's own
+  background, so a title long enough to reach a chip truncates under it rather
+  than running through it.
+
 - **`/robots.txt` is a file, not the app.** Every path the server does not
   recognise is handed `index.html` so a deep link survives a refresh, and
   `robots.txt` was one of those paths: a crawler asking for it got a page of
