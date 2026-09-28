@@ -42,10 +42,18 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
-  **Livestream links, if you want them.** Off for every event until switched
-  on: a session link in a message still meets the password gate, and a stream
-  address does not, so handing one to a group is a disclosure choice of its own
-  rather than something acquired by picking a volume.
+  **You write the line.** Each session renders through a line of your own:
+  `{title}`, `{room}`, `{track}`, `{speakers}`, `{format}`, `{tags}`,
+  `{streams}` and `{time}` are filled in per session, anything in
+  `[square brackets]` disappears when what is inside it is empty, and the rest
+  is literal — *Annnoooounciiiiiing: {title}!* is a perfectly good line. The
+  brackets are what stop “Repair café, by ” on a session nobody is credited
+  for. A line that names something there is no value for, or leaves a bracket
+  open, is refused when you save it rather than at 09:45 on the day.
+  `{streams}` is the one that publishes something the password gate would
+  otherwise hold — a session link in a message still asks for the event
+  password, a stream address does not — so it is not in the line you start
+  with.
 
   Drafts, deleted sessions and archived events are never announced, and the
   connection never travels in an export. What a connected group can see is in
@@ -113,6 +121,22 @@ All notable changes to this project are documented here.
   nothing the three tasks needed was missing.
 
 ### Fixed
+
+- **A session going live no longer shoves its own title and time down the
+  block.** A grid block's badges — `draft`, `clash`, `competing`, `now` — sat
+  in the same row as the tag dashes. That row is the height of the dashes,
+  4px; a badge is a 16px chip, so any badge grew the row and carried the title,
+  the time and the lines under them 12px further down the block. The other
+  three badges are fixed properties of a session, so a block wearing one merely
+  looked different from its neighbours, but `now` arrives on the clock: at the
+  minute a session started, its text jumped down a line and fell out of step
+  with every block beside it, and on a short block the push sent the time under
+  the bottom edge, which is clipped. The badges are now drawn over the block's
+  top corner instead of inside its flow — the corner they already appeared to
+  occupy — so they cost the block no height and every block's title sits on the
+  same line whether or not it is running. The strip takes the block's own
+  background, so a title long enough to reach a chip truncates under it rather
+  than running through it.
 
 - **`/robots.txt` is a file, not the app.** Every path the server does not
   recognise is handed `index.html` so a deep link survives a refresh, and

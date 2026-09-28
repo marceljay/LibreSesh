@@ -353,6 +353,11 @@ export function proposalRoutes(ctx: Ctx): Router {
         entity: 'proposal',
         entityId: row.id,
       });
+      // Beside the audit row, like the session routes, and never on the
+      // broker beneath it: `Broker.publish` returns early with no subscribers.
+      // This path builds its own session rather than going through
+      // `POST /sessions`, so it marks the queue and announces on its own —
+      // as `placed`, its own trigger, with the pitch it came from.
       markDirty(ctx.db, req.event.id, sessionId);
       announceQuietly(ctx.announcer.announcePlaced(req.event, row.id, sessionId));
       ctx.broker.publish(req.event.slug, 'session.created', session);

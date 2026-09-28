@@ -106,11 +106,23 @@ the window as soon as it exists and is announced on the next tick. Firing
 only at the instant `starts_at - lead` passes would miss that case, which is
 the main use case.
 
+**Inside the window with the slot already out**, a session that has just
+arrived is still said, alone, under `added` or `placed`: the slot must not
+repeat, but the pitch placed at 13:47 for a 13:50 slot that went out at
+13:35 is the case the feature exists for, and silence there is the one
+failure it must not have.
+
 **Mark before send.** A send that times out after the remote end accepted
 it would otherwise be repeated; a duplicate post cannot be removed, a missed
 one can be resent. The set is in memory, so a restart inside a window
 repeats that slot. Accepted. If this turns out to matter in practice, add an
 `announced` table keyed `UNIQUE(transport, event_id, trigger, key)`.
+
+**Moves survive a tick in flight.** The buffer of moved sessions is pruned
+at the start of a tick, dropping only what is held for an audience no longer
+listening; it is never cleared after the loop, because a tick awaits every
+send and a move noted during one of those awaits would be thrown away before
+any tick had looked at it.
 
 **Per transport.** The sent set and the trigger set are keyed by transport,
 so a failing or disabled transport does not affect another.

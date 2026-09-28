@@ -173,17 +173,25 @@ export const ADMIN_SETTINGS: AdminSetting[] = [
     anchor: 'telegram',
   },
   {
+    id: 'telegram-digest',
+    label: 'Morning message',
+    tab: 'publish',
+    keywords: 'telegram digest morning programme day breakfast time',
+    anchor: 'telegram',
+  },
+  {
+    id: 'telegram-line',
+    label: 'How a session reads',
+    tab: 'publish',
+    keywords:
+      'telegram line template message format wording placeholder title speakers livestream stream',
+    anchor: 'telegram',
+  },
+  {
     id: 'telegram-lead',
     label: 'How early it says it',
     tab: 'publish',
     keywords: 'telegram lead minutes before warning reminder',
-    anchor: 'telegram',
-  },
-  {
-    id: 'telegram-livestreams',
-    label: 'Livestreams',
-    tab: 'publish',
-    keywords: 'telegram livestream stream link video watch remote online',
     anchor: 'telegram',
   },
   {

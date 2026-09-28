@@ -4979,8 +4979,9 @@
               }
             ]
           },
-          "livestreams": {
-            "type": "boolean"
+          "template": {
+            "type": "string",
+            "maxLength": 500
           },
           "digestMin": {
             "type": "integer",

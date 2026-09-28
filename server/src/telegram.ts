@@ -18,10 +18,11 @@
 import type { Db, EventRow, RoomRow, SessionRow } from './db.js';
 import { parseLinks, speakersBySession } from './mappers.js';
 import type { LabelledLink } from './shared/types.js';
-import { zonedParts } from './shared/time.js';
+import { hhmm } from './shared/time.js';
+import { DEFAULT_TEMPLATE, lineParts, type Placeholder } from './shared/telegramTemplate.js';
+import { parseTriggers } from './shared/telegramTriggers.js';
 import {
   Announcer as CoreAnnouncer,
-  TRIGGERS,
   announceQuietly,
   announceableSession,
   daySessions,
@@ -29,11 +30,9 @@ import {
   groupByStart,
   type Announcement,
   type Transport,
-  type Trigger,
 } from './announcer.js';
 
-export type { Trigger } from './announcer.js';
-export { TRIGGERS, announceQuietly, announceableSession, daySessions, groupByStart };
+export { announceQuietly, announceableSession, daySessions, groupByStart };
 
 const API = 'https://api.telegram.org';
 
@@ -46,49 +45,7 @@ const CALL_TIMEOUT_MS = 10_000;
 /** How long `getUpdates` is allowed to hold the connection open. */
 const POLL_SECONDS = 25;
 
-/**
- * Modes are **presets over the trigger set**, not a stored value of their own.
- * Storing both would let the label disagree with the behaviour; deriving it
- * means a set matching no preset reports "custom", which is the truth.
- *
- * Every rung has a trigger behind it that actually fires — that is the rule the
- * ladder is held to, and for a while it had only two rungs because `digest`,
- * `added` and `changed` were named and unwritten. Light sending nothing while
- * calling itself "one message each morning" is the failure this guards.
- *
- * **Light is `up_next`, not `digest`.** `announcements.md` fixes only that
- * Medium carries the digest; which rung is quietest is ours to choose. Putting
- * the per-slot message at the bottom makes migration 023's stored default —
- * `["up_next"]` — a preset with a name, so no event opens its panel on
- * "Custom", a state nobody picked and no control could return to.
- */
-export const MODES: Record<string, Trigger[]> = {
-  off: [],
-  light: ['up_next'],
-  medium: ['digest', 'up_next'],
-  heavy: ['digest', 'up_next', 'added', 'changed'],
-};
-
-const sameSet = (a: readonly string[], b: readonly string[]): boolean =>
-  a.length === b.length && [...a].sort().join() === [...b].sort().join();
-
-/** Which preset this trigger set is, or 'custom' when it is none of them. */
-export function modeOf(triggers: readonly Trigger[]): string {
-  for (const [name, set] of Object.entries(MODES)) if (sameSet(triggers, set)) return name;
-  return 'custom';
-}
-
-/** Stored as JSON; anything unrecognised is dropped rather than trusted. */
-export function parseTriggers(raw: string | null): Trigger[] {
-  if (!raw) return [];
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((t): t is Trigger => TRIGGERS.includes(t as Trigger));
-  } catch {
-    return [];
-  }
-}
+export { MODES, modeOf, parseTriggers, TRIGGERS, type Trigger } from './shared/telegramTriggers.js';
 
 /**
  * The three characters Telegram's HTML parse mode reserves.
@@ -102,34 +59,96 @@ export function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** 'HH:MM' as the clock reads it at the venue, never UTC. */
-export function hhmm(instant: Date, timeZone: string): string {
-  const p = zonedParts(instant, timeZone);
-  return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
+/**
+ * The same, plus the quote, for a value inside `href="…"`.
+ *
+ * A stream address is typed by whoever entered the session, and the link rule
+ * only asks that it parse — `https://x/a"b` does. Unescaped, that quote ends
+ * the attribute early and Telegram refuses the message, which loses the whole
+ * slot for one bad link in one room.
+ */
+export function escapeAttr(value: string): string {
+  return escapeHtml(value).replace(/"/g, '&quot;');
 }
 
 export interface AnnounceItem {
   id: number;
+  /** UTC ISO, so a template may say `{time}` wherever it likes. */
+  startsAt: string;
   title: string;
   room: string;
+  /** '' when the event has no tracks, or this session is not on one. */
+  track: string;
   speakers: string[];
+  /** '' when the event defines no formats, or nobody picked one. */
+  format: string;
+  tags: string[];
   /** Whatever the session carries. Posted only when the event asks for it. */
   livestreams: LabelledLink[];
 }
 
-/** One block per session, so a split can happen on a session boundary. */
-function itemBlock(item: AnnounceItem, sessionUrl: string | null, streams: boolean): string {
-  const title = sessionUrl
-    ? `<a href="${escapeHtml(sessionUrl)}">${escapeHtml(item.title)}</a>`
-    : `<b>${escapeHtml(item.title)}</b>`;
-  const lines = [escapeHtml(item.room), title];
-  if (item.speakers.length > 0) lines.push(escapeHtml(item.speakers.join(', ')));
-  // The session link lands on the password gate; a stream link does not. That
-  // is the whole reason this is a setting and not simply what a message says.
-  if (streams)
-    for (const stream of item.livestreams)
-      lines.push(`▶ <a href="${escapeHtml(stream.url)}">${escapeHtml(stream.label)}</a>`);
-  return lines.join('\n');
+/**
+ * One session: a line, or two when it is streamed.
+ *
+ * `Main Hall · Title, by Ada Lovelace [Workshop] #accessibility`, then
+ * `Stream: Main camera` beneath it. Everything but the title is a field the
+ * event switched on; with none of them it is the title alone.
+ *
+ * Four lines a session made a five-room slot a message nobody reads to the
+ * bottom, and the slot is the unit that matters — one notification, scannable
+ * in the second it is on screen. So the fields compose onto one line and only
+ * the streams, which are links and would wrap anyway, get their own.
+ *
+ * A block, not a line, because the 4096-character split has to happen on a
+ * session boundary and never between a title and its stream.
+ */
+/**
+ * Render one session's line through the organiser's template.
+ *
+ * `templateParts` decides *what survives* — which placeholders had a value and
+ * which bracketed parts therefore stay — and this decides what each surviving
+ * part looks like in Telegram's HTML. The panel does the same thing with React,
+ * from the same parts, which is what keeps the Example honest.
+ */
+export function renderTemplate(
+  template: string,
+  item: AnnounceItem,
+  sessionUrl: string | null,
+  timeZone: string,
+): string {
+  const plain: Partial<Record<Placeholder, string>> = {
+    title: item.title,
+    room: item.room,
+    track: item.track,
+    speakers: item.speakers.join(', '),
+    format: item.format,
+    tags: item.tags.join(' '),
+    streams: item.livestreams.map((stream) => stream.label).join(', '),
+    time: item.startsAt === '' ? '' : hhmm(new Date(item.startsAt), timeZone),
+  };
+
+  return lineParts(template, plain)
+    .map((part) => {
+      // Two parts are links rather than words. Everything else, the organiser's
+      // own text included, is escaped: a stray `<` stays a `<` and can never
+      // become a 400 from Telegram's parser.
+      if (part.name === 'title') {
+        return sessionUrl
+          ? `<a href="${escapeAttr(sessionUrl)}">${escapeHtml(item.title)}</a>`
+          : `<b>${escapeHtml(item.title)}</b>`;
+      }
+      if (part.name === 'streams') {
+        return item.livestreams
+          .map((stream) => `<a href="${escapeAttr(stream.url)}">${escapeHtml(stream.label)}</a>`)
+          .join(', ');
+      }
+      if (part.name === 'tags') {
+        return item.tags.map((tag) => `#${escapeHtml(tag.replace(/\s+/g, ''))}`).join(' ');
+      }
+      return escapeHtml(part.text);
+    })
+    .join('')
+    .trim();
 }
 
 /**
@@ -145,14 +164,14 @@ export function renderUpNext(
   timeZone: string,
   items: AnnounceItem[],
   sessionUrl: (id: number) => string | null,
-  streams = false,
+  template: string = DEFAULT_TEMPLATE,
 ): string[] {
   const header = `🕐 ${hhmm(startsAt, timeZone)} — up next`;
   const out: string[] = [];
   let current = header;
 
   for (const item of items) {
-    const block = `\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
+    const block = `\n\n${renderTemplate(template, item, sessionUrl(item.id), timeZone)}`;
     if (current.length + block.length > MAX_MESSAGE) {
       out.push(current);
       current = `${header} (continued)${block}`;
@@ -174,8 +193,9 @@ export function dayLabel(instant: Date, timeZone: string): string {
   }).format(instant);
 }
 
-/** A session in a message that spans a day, so the time has to be on the line. */
-export type TimedItem = AnnounceItem & { startsAt: string };
+/** Kept as a name: a digest or a moved line spans a day, so it always shows a
+ *  time where an up-next block usually does not. */
+export type TimedItem = AnnounceItem;
 
 /**
  * The whole day in one message, deliberately terser than `up_next`.
@@ -210,19 +230,27 @@ export function renderDigest(
 /** A title, linked where the instance knows its own address. */
 function linked(item: AnnounceItem, url: string | null): string {
   return url
-    ? `<a href="${escapeHtml(url)}">${escapeHtml(item.title)}</a>`
+    ? `<a href="${escapeAttr(url)}">${escapeHtml(item.title)}</a>`
     : escapeHtml(item.title);
 }
 
-/** One session that has just appeared on the grid, named rather than listed. */
+/**
+ * One session that has just appeared on the grid, named rather than listed.
+ *
+ * A pitch says so. "Just pitched" is the message a group at an unconference
+ * actually acts on — somebody put a session up twenty minutes ago and there is
+ * still time to go — where "just added" reads like programme admin.
+ */
 export function renderAdded(
   startsAt: Date,
   timeZone: string,
   item: AnnounceItem,
   sessionUrl: (id: number) => string | null,
-  streams = false,
+  template: string = DEFAULT_TEMPLATE,
+  placed = false,
 ): string {
-  return `✨ Just added — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
+  const head = placed ? '🙌 Just pitched' : '✨ Just added';
+  return `${head} — ${hhmm(startsAt, timeZone)}\n\n${renderTemplate(template, item, sessionUrl(item.id), timeZone)}`;
 }
 
 /**
@@ -328,7 +356,7 @@ export function activeTokens(db: Db, fallback: string | null): string[] {
 export const dueSessions = (db: Db, event: EventRow, now: Date): SessionRow[] =>
   dueWithin(db, event, now, event.telegram_lead_min);
 
-/** Turn rows into what the renderer needs, resolving rooms and speakers once. */
+/** Turn rows into what the renderer needs, resolving the lookups once. */
 export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): AnnounceItem[] {
   if (sessions.length === 0) return [];
   const rooms = new Map(
@@ -337,15 +365,45 @@ export function toItems(db: Db, event: EventRow, sessions: SessionRow[]): Announ
       .all(event.id)
       .map((r) => [r.id, r.name]),
   );
+  // Resolved whether or not the event shows them: one query each for the whole
+  // slot is cheaper than branching, and the renderer decides what it uses.
+  const named = (table: 'tracks' | 'session_formats'): Map<number, string> =>
+    new Map(
+      db
+        .prepare<[number], { id: number; name: string }>(
+          `SELECT id, name FROM ${table} WHERE event_id = ?`,
+        )
+        .all(event.id)
+        .map((r) => [r.id, r.name]),
+    );
+  const tracks = named('tracks');
+  const formats = named('session_formats');
+  const tags = new Map<number, string[]>();
+  for (const row of db
+    .prepare<[number], { session_id: number; name: string }>(
+      `SELECT st.session_id, t.name FROM session_tags st
+         JOIN tags t ON t.id = st.tag_id
+        WHERE t.event_id = ?
+        ORDER BY t.name`,
+    )
+    .all(event.id)) {
+    const list = tags.get(row.session_id);
+    if (list) list.push(row.name);
+    else tags.set(row.session_id, [row.name]);
+  }
   const speakers = speakersBySession(
     db,
     sessions.map((s) => s.id),
   );
   return sessions.map((s) => ({
     id: s.id,
+    startsAt: s.starts_at,
     title: s.title,
     room: rooms.get(s.room_id) ?? '',
+    track: s.track_id === null ? '' : (tracks.get(s.track_id) ?? ''),
     speakers: (speakers.get(s.id) ?? []).map((p) => p.name),
+    format: s.format_id === null ? '' : (formats.get(s.format_id) ?? ''),
+    tags: tags.get(s.id) ?? [],
     livestreams: parseLinks(s.livestreams),
   }));
 }
@@ -361,17 +419,6 @@ export function renderPitched(
     : `<b>${escapeHtml(title)}</b>`;
   const by = pitcher ? `\nby ${escapeHtml(pitcher)}` : '';
   return `💡 Pitched — ${head}${by}`;
-}
-
-/** A pitch that has become a session: `added`, but saying where it came from. */
-export function renderPlaced(
-  startsAt: Date,
-  timeZone: string,
-  item: AnnounceItem,
-  sessionUrl: (id: number) => string | null,
-  streams = false,
-): string {
-  return `📌 Placed from the pitch board — ${hhmm(startsAt, timeZone)}\n\n${itemBlock(item, sessionUrl(item.id), streams)}`;
 }
 
 /**
@@ -409,38 +456,38 @@ export function telegramTransport(
     }
   };
 
-  /** `toItems`, plus the start time each line has to carry. */
-  const timed = (event: EventRow, sessions: SessionRow[]): TimedItem[] =>
-    toItems(db, event, sessions).map((item, i) => ({ ...item, startsAt: sessions[i]!.starts_at }));
-
   return {
     name: 'telegram',
+    // Telegram's trigger set is the shared module's, a subset of the
+    // announcer's: a trigger it does not know is simply one it is not on.
     enabled: (event, trigger) =>
-      destination(event) !== null && parseTriggers(event.telegram_triggers).includes(trigger),
+      destination(event) !== null &&
+      (parseTriggers(event.telegram_triggers) as readonly string[]).includes(trigger),
     timing: (event) => ({ leadMin: event.telegram_lead_min, digestMin: event.telegram_digest_min }),
     async send(event: EventRow, a: Announcement): Promise<void> {
       const tz = event.timezone;
       const url = sessionUrl(event);
-      const streams = event.telegram_livestreams === 1;
+      const template = event.telegram_template;
       switch (a.trigger) {
         case 'up_next':
           await post(
             event,
-            renderUpNext(new Date(a.at), tz, toItems(db, event, a.sessions), url, streams),
+            renderUpNext(new Date(a.at), tz, toItems(db, event, a.sessions), url, template),
           );
           return;
         case 'digest':
-          await post(event, renderDigest(new Date(a.at), tz, timed(event, a.sessions), url));
+          await post(event, renderDigest(new Date(a.at), tz, toItems(db, event, a.sessions), url));
           return;
         case 'changed':
-          await post(event, [renderMoved(tz, timed(event, a.sessions), url)]);
+          await post(event, [renderMoved(tz, toItems(db, event, a.sessions), url)]);
           return;
         case 'added':
         case 'placed': {
           const [item] = toItems(db, event, a.sessions);
           if (!item) return;
-          const render = a.trigger === 'added' ? renderAdded : renderPlaced;
-          await post(event, [render(new Date(a.at), tz, item, url, streams)]);
+          await post(event, [
+            renderAdded(new Date(a.at), tz, item, url, template, a.trigger === 'placed'),
+          ]);
           return;
         }
         case 'pitched': {
@@ -482,7 +529,7 @@ export function nextSlotText(
     event.timezone,
     toItems(db, event, slot),
     (id) => (publicUrl ? `${publicUrl}/e/${event.slug}/s/${id}` : null),
-    event.telegram_livestreams === 1,
+    event.telegram_template,
   );
 }
 
@@ -504,6 +551,21 @@ export class Announcer extends CoreAnnouncer implements NextSlot {
     send: Sender = sendMessage,
   ) {
     super(db, [telegramTransport(db, fallbackToken, publicUrl, send)]);
+  }
+
+  /**
+   * A session that has just appeared, or a pitch that has just reached the
+   * grid when `placed` is set: the two triggers an organiser sets apart, so a
+   * programme being built announces nothing while a conference in progress
+   * announces every pitch.
+   */
+  override async announceAdded(
+    event: EventRow,
+    sessionId: number,
+    now: Date = new Date(),
+    placed = false,
+  ): Promise<void> {
+    await this.arrival(placed ? 'placed' : 'added', event, sessionId, undefined, now);
   }
 
   /** Exposed so a test can assert a slot is announced exactly once. */

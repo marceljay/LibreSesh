@@ -171,7 +171,21 @@ export class Announcer {
   }
 
   async tick(now: Date = new Date()): Promise<void> {
-    for (const event of this.liveEvents()) {
+    const events = this.liveEvents();
+    // Moves buffered for an audience that has since stopped listening are
+    // dropped rather than kept for a group that may never be reconnected.
+    // Pruned here, and never by clearing the map after the loop: a tick
+    // awaits every send, and a move noted during one of those awaits would
+    // otherwise be thrown away before any tick had looked at it.
+    const listening = new Set<string>();
+    for (const event of events) {
+      for (const transport of this.transports) {
+        if (transport.enabled(event, 'changed')) listening.add(`${transport.name}:${event.id}`);
+      }
+    }
+    for (const key of this.moved.keys()) if (!listening.has(key)) this.moved.delete(key);
+
+    for (const event of events) {
       for (const transport of this.transports) {
         try {
           // Moves first: a session that has just been dragged into the next
@@ -184,10 +198,6 @@ export class Announcer {
         }
       }
     }
-    // Anything buffered for an event or transport that has since stopped
-    // listening is dropped rather than kept for an audience that may never
-    // be reconnected.
-    this.moved.clear();
   }
 
   private async sendUpNext(transport: Transport, event: EventRow, now: Date): Promise<void> {
@@ -254,7 +264,7 @@ export class Announcer {
    * does not say the same thing again a few seconds later. Sending the slot
    * rather than the one session keeps the other rooms in it visible.
    */
-  private async arrival(
+  protected async arrival(
     trigger: 'added' | 'placed',
     event: EventRow,
     sessionId: number,
@@ -268,9 +278,14 @@ export class Announcer {
       try {
         const startsAt = new Date(session.starts_at);
         const leadMs = transport.timing(event).leadMin * 60_000;
-        const imminent = startsAt > now && startsAt.getTime() - now.getTime() <= leadMs;
         const key = this.key(transport.name, event.id, session.starts_at);
-        if (imminent && this.sent.has(key)) continue;
+        // Inside the window *and* the slot not yet announced: this becomes
+        // the slot's up-next. Inside the window with the slot already out —
+        // the pitch placed at 13:47 for a 13:50 slot that went out at 13:35 —
+        // the slot must not repeat, but the one session still has to be
+        // said, or the case the feature exists for is the one it is silent on.
+        const imminent =
+          startsAt > now && startsAt.getTime() - now.getTime() <= leadMs && !this.sent.has(key);
         const announced = this.announcedBy(transport.name);
         announced.add(sessionId);
         if (imminent) {
