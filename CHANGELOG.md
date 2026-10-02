@@ -6,6 +6,25 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **An event can publish its programme to Nostr.** Organisers switch it on
+  from Manage → **Publish** → Nostr, behind a list of exactly what leaves the
+  instance: every session that is not a draft becomes a NIP-52 calendar entry
+  under the event's own key, kept equal to the database by a publish queue
+  that debounces a drag storm into one update and retries a refusing relay
+  with backoff; the event itself is a calendar and a profile, so a follower
+  sees its name rather than a bare `npub`. Deleting, drafting or opting out a
+  session sends a deletion request; **Retract everything** sends one for all
+  of it and switches off. Kind-1 notes ride the shared announcer beside
+  Telegram, one per trigger, each naming its sessions by address so a capable
+  client opens them. The signing key is generated once, encrypted at rest
+  under a key derived from the instance secret, exportable and importable
+  from the tab, and never appears in a response or an export. Authors and
+  organisers can keep a session or a pitch off Nostr with a box on the form,
+  ticked by default while the event publishes; an opted-out item is named in
+  no note either. The session sheet shows an *on Nostr* badge once a relay
+  has it. Nothing changes for an event that never switches it on.
+  `SECURITY.md` gains the key as a credential, a *What a Nostr relay sees*
+  section and the relay list as an accepted outbound risk.
 - **An event can announce itself into a Telegram group.** Organisers connect
   one from Manage → **Publish** → Telegram: add the bot, generate a code, type
   `/bind <code>` in the group. Publish is a new tab, because where the schedule
