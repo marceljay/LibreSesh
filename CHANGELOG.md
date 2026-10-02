@@ -124,6 +124,13 @@ All notable changes to this project are documented here.
   on a notification's actor before it deletes, leaves alone an identity that
   owns anything at all, and a sweep that fails is logged and skipped rather
   than fatal.
+- **The Telegram poller no longer fails every quiet poll.** `getUpdates` is a
+  long poll that Telegram holds open for twenty-five seconds when nothing has
+  happened, and the call ran under the ten-second timeout meant for sending a
+  message. Every quiet poll was cut off and counted as a failure — seventeen
+  thousand in one production log, one line every twenty — and a real reply
+  could wait up to a minute for the backoff to clear. The poll now gets a
+  timeout longer than the time Telegram may hold it.
 - **`/robots.txt` is a file, not the app.** Every path the server does not
   recognise is handed `index.html` so a deep link survives a refresh, and
   `robots.txt` was one of those paths: a crawler asking for it got a page of
