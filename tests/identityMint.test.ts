@@ -2,7 +2,7 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { LIMITS } from '../server/src/ratelimit.js';
 import { sweepIdleIdentities } from '../server/src/sweepIdentities.js';
-import { agentFor, makeHarness, seedEvent, type Harness } from './helpers.js';
+import { agentFor, makeHarness, seedEvent, seedRoom, type Harness } from './helpers.js';
 
 /**
  * D3 §3. A request with no valid cookie was minting an identity row before
@@ -144,6 +144,71 @@ describe('sweeping identities that never became anybody', () => {
     expect(alive(withRole)).toBe(true);
     expect(alive(withName)).toBe(true);
     expect(alive(withFeed)).toBe(true);
+  });
+
+  it('a failed password attempt does not keep the identity, and does not stop the sweep', () => {
+    // The row that took production down on 2026-10-02: a visitor typed a wrong
+    // password, the audit log kept their identity id, and thirty days later the
+    // delete hit the foreign key with no cascade behind it.
+    const old = new Date(Date.now() - 40 * 24 * 60 * 60_000).toISOString();
+    const eventId = seedEvent(harness.db, { slug: 'conf' });
+    const tried = insert(old);
+    harness.db
+      .prepare(
+        `INSERT INTO audit (identity_id, event_id, action, entity, entity_id, at)
+         VALUES (?, ?, 'auth_failed', 'event', ?, ?)`,
+      )
+      .run(tried, eventId, eventId, old);
+
+    expect(sweepIdleIdentities(harness.db)).toBe(1);
+    expect(harness.db.prepare('SELECT 1 FROM identities WHERE id = ?').get(tried)).toBeUndefined();
+    const row = harness.db
+      .prepare(`SELECT identity_id FROM audit WHERE action = 'auth_failed'`)
+      .get() as { identity_id: number | null };
+    expect(row.identity_id).toBeNull();
+  });
+
+  it('keeps an identity that owns anything, and lets go of one that only acted', () => {
+    const old = new Date(Date.now() - 40 * 24 * 60 * 60_000).toISOString();
+    const eventId = seedEvent(harness.db, { slug: 'conf' });
+    const roomId = seedRoom(harness.db, eventId);
+    const author = insert(old);
+    const starrer = insert(old);
+    const addressee = insert(old);
+    const actor = insert(old);
+    const sessionId = Number(
+      harness.db
+        .prepare(
+          `INSERT INTO sessions (event_id, room_id, type, title, description, starts_at, ends_at,
+             created_by, created_at, updated_at)
+           VALUES (?, ?, 'official', 'Kept', '', ?, ?, ?, ?, ?)`,
+        )
+        .run(eventId, roomId, old, old, author, old, old).lastInsertRowid,
+    );
+    harness.db
+      .prepare('INSERT INTO stars (identity_id, session_id, created_at) VALUES (?, ?, ?)')
+      .run(starrer, sessionId, old);
+    harness.db
+      .prepare(
+        `INSERT INTO notifications (event_id, identity_id, kind, subject_type, subject_id, title,
+           actor_id, created_at)
+         VALUES (?, ?, 'mention', 'session', ?, 'Hello', ?, ?)`,
+      )
+      .run(eventId, addressee, sessionId, actor, old);
+
+    // The author, the starrer and the person notified own something; the one
+    // who only caused a notification does not, and the pointer to them goes.
+    expect(sweepIdleIdentities(harness.db)).toBe(1);
+    const alive = (id: number): boolean =>
+      harness.db.prepare('SELECT 1 FROM identities WHERE id = ?').get(id) !== undefined;
+    expect(alive(author)).toBe(true);
+    expect(alive(starrer)).toBe(true);
+    expect(alive(addressee)).toBe(true);
+    expect(alive(actor)).toBe(false);
+    const n = harness.db.prepare('SELECT actor_id FROM notifications').get() as {
+      actor_id: number | null;
+    };
+    expect(n.actor_id).toBeNull();
   });
 });
 
