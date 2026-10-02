@@ -1,0 +1,14 @@
+-- What an edit changed, as JSON, or NULL for a row that is not an edit.
+--
+-- A row said "edited event" and the reader was left to guess which of the
+-- fourteen settings moved. Worse, the name the line shows is looked up at
+-- read time, so once an event was renamed every earlier line — the creation
+-- included — carried the new name and the old one was nowhere in the log.
+--
+-- The row now carries the fields that changed, each with the value before and
+-- after: `[{"field":"name","from":"Old","to":"New"}]`. A creation lists the
+-- values it started with (`to` only). A password change names the field and
+-- nothing else — the log must never hold a password, and the hash would tell
+-- the reader nothing. JSON rather than columns, because the fields differ per
+-- entity and the log is read as a list of lines, never queried by what moved.
+ALTER TABLE audit ADD COLUMN changes TEXT;

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { AuditEntryDto, AuditItemDto } from '@shared/types';
 import { api } from '../lib/api';
 import { LoginHealthNotice } from '../components/LoginHealthNotice';
+import { changeText, describeChange } from '../lib/auditChanges';
 import { auditActorHref, auditSubjectHref } from '../lib/auditLinks';
 import { relativeTime, rowId, uid } from '../lib/format';
 import { plural, pluralForm } from '../lib/plural';
@@ -171,6 +172,45 @@ function What({ slug, entry }: { slug: string; entry: AuditEntryDto }) {
 }
 
 /**
+ * What an edit changed, under its line: each setting by the form's own label,
+ * the value before struck through and the value after beside it. A creation
+ * lists what the thing started as; a password says only that it changed. The
+ * label the line itself shows is the name *now* — this is where the name it
+ * had before a rename survives.
+ */
+function Changes({ entity, entry }: { entity: string; entry: AuditEntryDto }) {
+  if (entry.changes.length === 0) return null;
+  return (
+    <ul className="mt-1 basis-full space-y-0.5 border-s border-stone-200 ps-3 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
+      {entry.changes.map((change) => {
+        const text = describeChange(entity, change);
+        return (
+          <li key={change.field} className="flex flex-wrap items-baseline gap-x-1.5">
+            <span>{text.label}</span>
+            {text.from === null && text.to === null ? (
+              <span className="text-stone-700 dark:text-stone-200">changed</span>
+            ) : (
+              <>
+                {text.from !== null && (
+                  <>
+                    <span className="line-through decoration-stone-400 dark:decoration-stone-500">
+                      {text.from}
+                    </span>
+                    <span className="sr-only">to</span>
+                    <span aria-hidden="true">→</span>
+                  </>
+                )}
+                <span className="font-medium text-stone-700 dark:text-stone-200">{text.to}</span>
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
  * One line: usually one row, sometimes a whole bulk action.
  *
  * A repeat placed across a fortnight writes fourteen rows, and it must —
@@ -194,6 +234,7 @@ function Entry({ slug, entry }: { slug: string; entry: AuditItemDto }) {
         <span className="text-stone-500 dark:text-stone-400">{pluralForm(1, forms)}</span>
         <What slug={slug} entry={entry} />
         <When at={entry.at} />
+        <Changes entity={entry.entity} entry={entry} />
       </li>
     );
   }
@@ -229,6 +270,7 @@ function Entry({ slug, entry }: { slug: string; entry: AuditItemDto }) {
               <span>{pluralForm(1, forms)}</span>
               <What slug={slug} entry={member} />
               <When at={member.at} />
+              <Changes entity={entry.entity} entry={member} />
             </li>
           ))}
         </ul>
@@ -288,6 +330,8 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       ...(e.members ?? [e]).flatMap((m) => [
         m.entityLabel,
         m.entityId === null ? '' : rowId(m.entityId),
+        // The old name is only here, so a search for it finds the rename.
+        ...m.changes.map((c) => changeText(e.entity, c)),
       ]),
     ]
       .join(' ')

@@ -24,6 +24,7 @@ erDiagram
     INTEGER entity_id "nullable"
     TEXT at
     TEXT batch "nullable"
+    TEXT changes "nullable"
   }
   breaks {
     INTEGER id PK

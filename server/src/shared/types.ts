@@ -576,10 +576,29 @@ export interface EventExport {
   }[];
 }
 
+/** A value the log can hold before or after a change: a setting, not a row. */
+export type AuditValue = string | number | boolean | null;
+
+/**
+ * One field an action changed, with the value before and after.
+ *
+ * Both present for an edit; `to` alone for a creation, which lists what the
+ * thing started as; neither for a secret — a password change says which
+ * password and nothing more, because the log must never hold one and its hash
+ * would tell the reader nothing. `field` is the API name of the setting
+ * (`startDate`, `auditKeep`) or, for permissions, the capability id.
+ */
+export interface AuditChangeDto {
+  field: string;
+  from?: AuditValue;
+  to?: AuditValue;
+}
+
 /**
  * One line of the append-only write log. `entityLabel` is the thing's name at
  * read time — resolved for the page being shown rather than stored, because
- * the log records *what happened*, not what things were called then.
+ * the log records *what happened*, not what things were called then. What a
+ * thing *was* called is in `changes`, on the line that renamed it.
  */
 export interface AuditEntryDto {
   id: number;
@@ -608,6 +627,10 @@ export interface AuditEntryDto {
   /** The session a contribution belongs to: a note has no page of its own,
    *  so its line opens the session it was left on. Null for everything else. */
   entityParentId: number | null;
+  /** The fields this action changed, in the order the settings form shows
+   *  them. Empty for an action that is not an edit, and for rows written
+   *  before the log recorded this. */
+  changes: AuditChangeDto[];
 }
 
 /**

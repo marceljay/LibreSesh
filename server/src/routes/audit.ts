@@ -7,7 +7,7 @@ import type { Ctx } from '../context.js';
 import type { Db } from '../db.js';
 import { NameResolver } from '../eventIdentity.js';
 import { limit } from '../ratelimit.js';
-import type { AuditEntryDto, AuditItemDto, AuditPageDto } from '../shared/types.js';
+import type { AuditChangeDto, AuditEntryDto, AuditItemDto, AuditPageDto } from '../shared/types.js';
 import { parse } from '../validation.js';
 
 const PAGE = 50;
@@ -26,6 +26,21 @@ interface Row {
   entity_id: number | null;
   at: string;
   batch: string | null;
+  /** JSON list of {@link AuditChangeDto}, or null; see migration 029. */
+  changes: string | null;
+}
+
+/** The stored change list, or none. The column is written by this process
+ *  alone, so a value that does not parse is a bug and not an input — but the
+ *  log must render whatever it holds, so it falls back to an empty list. */
+function parseChanges(json: string | null): AuditChangeDto[] {
+  if (json === null) return [];
+  try {
+    const parsed: unknown = JSON.parse(json);
+    return Array.isArray(parsed) ? (parsed as AuditChangeDto[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** The key a row is grouped under: its batch, or itself. Written the same way
@@ -222,7 +237,7 @@ export function auditRoutes(ctx: Ctx): Router {
         ? []
         : ctx.db
             .prepare<(number | string)[], Row>(
-              `SELECT id, identity_id, action, entity, entity_id, at, batch
+              `SELECT id, identity_id, action, entity, entity_id, at, batch, changes
                  FROM audit
                 WHERE event_id = ? AND ${GROUP_KEY} IN (${keys.map(() => '?').join(',')})
                 ORDER BY id DESC`,
@@ -283,6 +298,7 @@ export function auditRoutes(ctx: Ctx): Router {
         entityLabel: subject?.label ?? '',
         entityState: subject?.state ?? null,
         entityParentId: subject?.parentId ?? null,
+        changes: parseChanges(row.changes),
       };
     };
 

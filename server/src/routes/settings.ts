@@ -1,17 +1,25 @@
 import { Router } from 'express';
 import { hashPassword, requireRole, roleForPassword } from '../auth.js';
 import { clearEventLimits } from '../ratelimit.js';
-import { audit, pruneAudit } from '../audit.js';
+import { audit, diffFields, pruneAudit } from '../audit.js';
 import { markDirty } from '../nostr/queue.js';
 import type { Ctx } from '../context.js';
 import type { EventRow } from '../db.js';
 import type { Role } from '../shared/types.js';
 import { badRequest, conflict, forbidden } from '../errors.js';
-import { toEventDto } from '../mappers.js';
+import { SETTINGS_FIELDS, settingsReading, toEventDto } from '../mappers.js';
 import { limit } from '../ratelimit.js';
-import { getPermissions, setPermissions } from '../permissions.js';
+import { CAPABILITY_IDS, type Capability, getPermissions, setPermissions } from '../permissions.js';
 import { renameEvent, slugTaken } from '../slugs.js';
 import { authSchema, parse, permissionsSchema, settingsSchema } from '../validation.js';
+
+/** The settings field each role's password arrives under, so the log can say
+ *  which password changed without ever holding one. */
+const PASSWORD_FIELDS: Record<'viewer' | 'user' | 'admin', string> = {
+  viewer: 'viewerPassword',
+  user: 'userPassword',
+  admin: 'adminPassword',
+};
 
 export function settingsRoutes(ctx: Ctx): Router {
   const router = Router({ mergeParams: true });
@@ -101,13 +109,15 @@ export function settingsRoutes(ctx: Ctx): Router {
         user: 'attendee',
         admin: 'organiser',
       };
-      const changes = [
+      const passwords = [
         ['viewer', body.viewerPassword],
         ['user', body.userPassword],
         ['admin', body.adminPassword],
       ] as const;
-      const alsoBeingReplaced = new Set<Role>(changes.filter(([, pw]) => pw).map(([role]) => role));
-      for (const [role, password] of changes) {
+      const alsoBeingReplaced = new Set<Role>(
+        passwords.filter(([, pw]) => pw).map(([role]) => role),
+      );
+      for (const [role, password] of passwords) {
         if (!password) continue;
         const held = roleForPassword(current, password);
         // A clash with a role whose password is being replaced in this same
@@ -188,6 +198,13 @@ export function settingsRoutes(ctx: Ctx): Router {
       const updated = ctx.db
         .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
         .get(current.id) as EventRow;
+      // Diffed against the stored row, not read off the request: the form
+      // sends every field whether it moved or not, and only the row knows
+      // what was there before. A password is listed by name alone.
+      const changes = [
+        ...diffFields(SETTINGS_FIELDS, settingsReading(current), settingsReading(updated)),
+        ...passwords.filter(([, pw]) => pw).map(([role]) => ({ field: PASSWORD_FIELDS[role] })),
+      ];
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: current.id,
@@ -197,6 +214,7 @@ export function settingsRoutes(ctx: Ctx): Router {
         action: renaming ? 'rename' : 'update',
         entity: 'event',
         entityId: current.id,
+        changes,
       });
       // Name, dates and timezone all appear in every published calendar event.
       markDirty(ctx.db, current.id);
@@ -222,14 +240,24 @@ export function settingsRoutes(ctx: Ctx): Router {
     limit(ctx.limiter, 'write'),
     (req, res) => {
       const body = parse(permissionsSchema, req.body);
+      const before = getPermissions(ctx.db, req.event.id);
       setPermissions(ctx.db, req.event.id, body);
       const matrix = getPermissions(ctx.db, req.event.id);
+      // One change per capability whose roles moved, roles as a comma-joined
+      // list: the log's values are scalars, and the reader wants the row of
+      // ticks as it was and as it is, not a set difference to work out.
+      const roles = (m: typeof matrix): Record<Capability, string> =>
+        Object.fromEntries(CAPABILITY_IDS.map((cap) => [cap, m[cap].join(',')])) as Record<
+          Capability,
+          string
+        >;
       audit(ctx.db, {
         identityId: req.identity.id,
         eventId: req.event.id,
         action: 'update',
         entity: 'permissions',
         entityId: req.event.id,
+        changes: diffFields(CAPABILITY_IDS, roles(before), roles(matrix)),
       });
       ctx.broker.publish(req.event.slug, 'permissions.updated', matrix);
       res.json(matrix);

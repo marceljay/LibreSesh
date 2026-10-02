@@ -3,7 +3,9 @@ import { pruneAudit, resetPruneCounters } from '../server/src/audit.js';
 import type { AuditPageDto } from '../server/src/shared/types.js';
 import {
   DAY_ONE,
+  DAY_TWO,
   actorWithRole,
+  agentFor,
   at,
   makeHarness,
   seedEvent,
@@ -286,6 +288,112 @@ describe('the audit log, read back', () => {
       await admin.patch('/api/e/testconf/settings').send({ auditKeep: -1 }).expect(400);
       await admin.patch('/api/e/testconf/settings').send({ auditKeep: 100 }).expect(200);
       await admin.patch('/api/e/testconf/settings').send({ auditKeep: 0 }).expect(200);
+    });
+  });
+
+  /**
+   * A line said "edited event" and left the reader to guess which setting
+   * moved; and because the name on every line is looked up when the page is
+   * read, a rename took the old name out of the log altogether — the creation
+   * line included. The row now itemises what changed, before and after.
+   */
+  describe('what an edit changed', () => {
+    const patch = (body: object) => admin.patch('/api/e/testconf/settings').send(body);
+
+    it('says what the event was called before a rename, and after', async () => {
+      await patch({ name: 'Test Conf Renamed' }).expect(200);
+      const [line] = (await read()).entries;
+      expect(line).toMatchObject({ action: 'update', entity: 'event' });
+      expect(line?.entityLabel).toBe('Test Conf Renamed');
+      expect(line?.changes).toEqual([
+        { field: 'name', from: 'Test Conf', to: 'Test Conf Renamed' },
+      ]);
+    });
+
+    it('lists only the settings that moved, in the form’s order', async () => {
+      await patch({
+        name: 'Test Conf', // sent back unchanged, as the form does
+        endDate: '2026-12-31',
+        dayStartMin: 540,
+        pitchesEnabled: false,
+        auditKeep: 0,
+      }).expect(200);
+      const [line] = (await read()).entries;
+      expect(line?.changes).toEqual([
+        { field: 'endDate', from: DAY_TWO, to: '2026-12-31' },
+        { field: 'dayStartMin', from: 480, to: 540 },
+        { field: 'auditKeep', from: 1000, to: 0 },
+        { field: 'pitchesEnabled', from: true, to: false },
+      ]);
+    });
+
+    it('records a slug change as a rename with the old address', async () => {
+      await patch({ slug: 'moved-conf', name: 'Moved' }).expect(200);
+      const page = (await admin.get('/api/e/moved-conf/audit').expect(200)).body as AuditPageDto;
+      expect(page.entries[0]?.action).toBe('rename');
+      expect(page.entries[0]?.changes).toEqual([
+        { field: 'name', from: 'Test Conf', to: 'Moved' },
+        { field: 'slug', from: 'testconf', to: 'moved-conf' },
+      ]);
+    });
+
+    /** The log must never hold a password, and a hash would say nothing. */
+    it('names a changed password and nothing more', async () => {
+      await patch({ adminPassword: 'brand-new-pw', viewerPassword: 'viewer-new' }).expect(200);
+      const [line] = (await read()).entries;
+      expect(line?.changes).toEqual([{ field: 'viewerPassword' }, { field: 'adminPassword' }]);
+      expect(JSON.stringify(line)).not.toContain('brand-new-pw');
+      expect(JSON.stringify(line)).not.toContain('viewer-new');
+    });
+
+    it('says which capability a permissions change touched, and who may now', async () => {
+      await admin
+        .patch('/api/e/testconf/permissions')
+        .send({ 'session.star': ['user', 'speaker', 'admin'], 'proposal.vote': [] })
+        .expect(200);
+      const [line] = (await read()).entries;
+      expect(line).toMatchObject({ action: 'update', entity: 'permissions' });
+      expect(line?.changes).toEqual([
+        { field: 'proposal.vote', from: 'viewer,user,speaker,admin', to: 'admin' },
+        { field: 'session.star', from: 'viewer,user,speaker,admin', to: 'user,speaker,admin' },
+      ]);
+    });
+
+    it('a creation lists what the event started as', async () => {
+      const maker = agentFor(harness);
+      await maker.get('/api/me').expect(200);
+      await maker
+        .post('/api/events')
+        .set('X-Instance-Key', 'instance-pw')
+        .send({
+          slug: 'newconf',
+          name: 'New Conf',
+          timezone: 'Europe/Berlin',
+          startDate: '2027-06-01',
+          endDate: '2027-06-02',
+          viewerPassword: 'viewer2',
+          userPassword: 'user222',
+          adminPassword: 'admin22',
+        })
+        .expect(201);
+      await maker.patch('/api/e/newconf/settings').send({ name: 'Renamed Conf' }).expect(200);
+      const page = (await maker.get('/api/e/newconf/audit').expect(200)).body as AuditPageDto;
+      // The label is the name now; the creation line is where the first one is.
+      expect(page.entries[1]).toMatchObject({ action: 'create', entityLabel: 'Renamed Conf' });
+      expect(page.entries[1]?.changes).toEqual([
+        { field: 'name', to: 'New Conf' },
+        { field: 'slug', to: 'newconf' },
+        { field: 'timezone', to: 'Europe/Berlin' },
+        { field: 'startDate', to: '2027-06-01' },
+        { field: 'endDate', to: '2027-06-02' },
+      ]);
+    });
+
+    it('an action that is not an edit carries an empty list', async () => {
+      await makeSession('Talk');
+      const [line] = (await read()).entries;
+      expect(line?.action).toBe('create');
+      expect(line?.changes).toEqual([]);
     });
   });
 });

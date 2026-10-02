@@ -80,7 +80,7 @@ rows, open the database file in a read-only viewer (a copy for production:
 | `people` | One per identity that has entered the event (made at the login page, migration 010), plus organiser-typed shells nobody has claimed yet. Holds the full name; the username lives on `event_identities`. `archived_at` files a row out of the lists without deleting it (migration 013). Manage → People lists these and nothing else |
 | `contributions` | Notes, links, questions; `hidden` for moderation |
 | `stars`, `proposal_interest` | Private per-identity interest |
-| `audit` | Append-only log of every write |
+| `audit` | Append-only log of every write. `changes` itemises an edit to the event's settings or permissions, field by field with the value before and after (migration 029); never a password |
 | `nostr_published` | The Nostr publish queue: one row per session, plus the calendar and the profile, per event that has ever been enabled. Marks (`dirty_since`, `touched_at`), the relays still to accept the latest version (`pending`), backoff, and whether the last version sent was a deletion (§Publishing to Nostr) |
 
 Times are stored as **UTC ISO-8601 strings**. Every rule that a human would
