@@ -98,10 +98,12 @@ recent cut: **0.7.4**.
   lifting the loop into `announcer.ts` [LIB-214], and the deploy-doc issue whose
   creation timed out. The review filed five more, all yours to call: a deleted
   session the group was told about announces nothing [LIB-222]; any group
-  member can `/unbind`, and SECURITY.md does not say so [LIB-223]; migrations
-  027 and 028 could be one before merge [LIB-224]; a restart empties the
-  announced set, so moves go quiet until re-announced [LIB-225]; saving a bot
-  or minting a code discards an unsaved line [LIB-226].
+  member can `/unbind`, and SECURITY.md does not say so [LIB-223]; a restart
+  empties the announced set, so moves go quiet until re-announced [LIB-225];
+  saving a bot or minting a code discards an unsaved line [LIB-226]. Squashing
+  migrations 027 and 028 was filed as [LIB-224] and closed on 2026-09-22 — the
+  merge put both in every `dev` database, and the downgrade guard makes
+  undoing that a reset of each.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
