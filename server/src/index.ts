@@ -48,10 +48,18 @@ if (config.seedDemoEvent) {
 const { express: app, ctx } = createApp(db, config);
 
 // Identities that never became anybody are swept at boot and once a day
-// after it (D3 §3). `unref` so the timer never holds the process open.
+// after it (D3 §3). `unref` so the timer never holds the process open. A
+// sweep that fails is logged and skipped: it is housekeeping, and a row it
+// cannot delete today is not a reason to stop serving the schedule — one
+// such row took production down on 2026-10-02.
 const sweep = (): void => {
-  const removed = sweepIdleIdentities(db);
-  if (removed > 0) console.log(`swept ${removed} identities idle for ${IDLE_IDENTITY_DAYS}+ days`);
+  try {
+    const removed = sweepIdleIdentities(db);
+    if (removed > 0)
+      console.log(`swept ${removed} identities idle for ${IDLE_IDENTITY_DAYS}+ days`);
+  } catch (err) {
+    console.error('identity sweep failed; will try again tomorrow', err);
+  }
 };
 sweep();
 setInterval(sweep, 24 * 60 * 60_000).unref();

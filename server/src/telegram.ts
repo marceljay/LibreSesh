@@ -273,12 +273,14 @@ export async function callTelegram<T>(
   token: string,
   method: string,
   payload: Record<string, unknown>,
+  /** How long to wait before giving the call up; a long poll needs more than a send. */
+  timeoutMs: number = CALL_TIMEOUT_MS,
 ): Promise<T> {
   const res = await fetch(`${API}/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   const body = (await res.json()) as { ok: boolean; result?: T; description?: string };
   if (!body.ok) throw new Error(body.description ?? `Telegram refused ${method}`);
@@ -789,11 +791,20 @@ export class Poller {
   private async loop(): Promise<void> {
     while (this.running) {
       try {
-        const updates = await callTelegram<Update[]>(this.token, 'getUpdates', {
-          offset: this.offset,
-          timeout: POLL_SECONDS,
-          allowed_updates: ['message'],
-        });
+        // Telegram holds a quiet poll open for the full POLL_SECONDS before
+        // answering with an empty list, so the abort has to outlast that. With
+        // the ten-second send timeout, every quiet poll was cut off and counted
+        // as a failure — seventeen thousand of them in one production log.
+        const updates = await callTelegram<Update[]>(
+          this.token,
+          'getUpdates',
+          {
+            offset: this.offset,
+            timeout: POLL_SECONDS,
+            allowed_updates: ['message'],
+          },
+          (POLL_SECONDS + 10) * 1000,
+        );
         this.failures = 0;
         for (const update of updates) {
           this.offset = update.update_id + 1;
