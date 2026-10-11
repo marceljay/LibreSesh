@@ -5,7 +5,7 @@ the device that held their identity, re-entered the event on another device,
 became a second person there, and the organiser's merge could not give them
 back their old username without signing them out. Status: agreed in
 principle, not built. Open items live in
-`_planning/profile-and-identity-todo.md`.
+`_planning/backlog/profile-and-identity.md`.
 
 ## Where this sits among the security work
 

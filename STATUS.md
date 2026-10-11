@@ -372,7 +372,7 @@ them.
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
 19. **R28 · Forms close-out** [LIB-174] (2026-09-05, on `docs/forms-overhaul-close-out`,
-    the eight leftovers from `_planning/forms-overhaul-review.md`). At the
+    the eight leftovers from `_planning/reviews/2026-09-05-forms-overhaul-review.md`). At the
     login page: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
     as well as the password box, and Enter with no name says *Pick a username
@@ -478,7 +478,7 @@ reused number would repoint a filename and every link to it. Rule recorded in
   `git reflog expire --expire-unreachable=now --all && git gc --prune=now` —
   irreversible, drops *all* unreachable objects, none of value today. Separately:
   `_planning/valley-2026-09-02.json` and its `.import.json` twin are gone from
-  disk (`export-to-import.py` remains); if that wasn't deliberate, an editor
+  disk (`_planning/tools/export-to-import.py` remains); if that wasn't deliberate, an editor
   buffer may be the last copy.
 - **D2 · The pitch board's server guard.** [LIB-100] You said deactivation is "a simple
   hide from UI and route". I went one step further: `POST /proposals` returns
@@ -769,7 +769,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** [LIB-111] Noticed 2026-09-02 when a `git add -A` swept
   `_planning/valley-2026-09-02.json` (72 KB, 2447 lines), its `.import.json`
-  twin and `export-to-import.py` into a commit; they were taken back out
+  twin and `_planning/tools/export-to-import.py` into a commit; they were taken back out
   before it was pushed, but nothing stops it happening again. `.gitignore`
   covers only `_planning/transcripts-backup/` and
   `docs/hosting.md`, so every other working file there is
@@ -845,7 +845,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   call site cannot win this with a class name.
 
 - **Profile and identity data-model items** [LIB-122, LIB-123, LIB-185] live in
-  `_planning/profile-and-identity-todo.md` (split out 2026-09-09 at your
+  `_planning/backlog/profile-and-identity.md` (split out 2026-09-09 at your
   request): the login page not suggesting device linking to a merged-out device,
   and the new one — a lost account cannot be merged back under its old
   username, because the username is held by the signed-out identity and the

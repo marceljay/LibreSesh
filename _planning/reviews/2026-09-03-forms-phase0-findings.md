@@ -1,6 +1,6 @@
 # Forms overhaul — Phase 0 findings
 
-Audit confirmation for `forms_overhaul_strategy.md`. Read-only; nothing changed.
+Audit confirmation for `../plans/2026-09-03-forms-overhaul.md`. Read-only; nothing changed.
 Verified against `dev` (`ee4f6dd`). Contrast ratios computed with the WCAG 2.x
 relative-luminance formula, not eyeballed.
 

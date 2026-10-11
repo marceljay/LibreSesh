@@ -1,8 +1,9 @@
 # Forms overhaul — review of the whole undertaking
 
 Written 2026-09-04 against `dev` (`362c126`). Companion to
-`forms-overview.md` (the briefing), `forms_overhaul_strategy.md` (the plan),
-`forms-phase0-findings.md` (the audit) and
+`2026-09-03-forms-overview.md` (the briefing),
+`../plans/2026-09-03-forms-overhaul.md` (the plan),
+`2026-09-03-forms-phase0-findings.md` (the audit) and
 `plans/2026-09-04-shadcn-baseui-migration.md` (the pivot). This file is the
 retrospective: what was set out to do, what route it took, and what is in the
 tree now. Every count below was re-measured, not copied.
@@ -39,7 +40,7 @@ else. Explicit non-goals: no form library, no design system (shadcn named, and
 
 | Phase | Planned | Outcome |
 |---|---|---|
-| 0 · Audit | Verify ten claims; classify every multi-value control | **Done** (`forms-phase0-findings.md`). All ten confirmed; two corrections to later phases: no free-text tag input exists so Zag was dropped, and the `<button>` ban was wrong by ~50× and dropped. |
+| 0 · Audit | Verify ten claims; classify every multi-value control | **Done** (`2026-09-03-forms-phase0-findings.md`). All ten confirmed; two corrections to later phases: no free-text tag input exists so Zag was dropped, and the `<button>` ban was wrong by ~50× and dropped. |
 | 1 · Primitives | `ControlShell`, `TextInput`, `FieldContext`, `FieldError`; prove via `NumberField` | **Done** — `671c668`, PR #28, 2026-09-03. |
 | 2 · Convert | Every `inputClass` site → shell + input; ESLint bans | **Done** — `b13ca1a`, `f863275`, `eee9b3c`. `inputClass` has 0 references. |
 | 3 · Tokens | Borders ≥3:1, text ≥4.5:1, real focus ring | **Done, in four attempts** — `a7c6ed7`, then `1c064ec`, `9a25839`, and after the pivot `54c08bb` re-measured against Tailwind v4's OKLCH palette. |
