@@ -1,3 +1,12 @@
+---
+title: Everyone who enters is a person: username, full name, one People list, a merge dialog
+kind: spec
+status: built
+written: 2026-09-02
+updated: 2026-09-05
+decisions: []
+linear: []
+---
 # Everyone who enters is a person: username and full name, one People list, and a merge dialog that shows who is who
 
 Status: **built and on `dev`, 2026-09-02** — see *What was built* below.

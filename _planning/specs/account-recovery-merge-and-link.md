@@ -1,3 +1,12 @@
+---
+title: Account recovery: merging two identities and linking the device that is left
+kind: spec
+status: active
+written: 2026-09-09
+updated: 2026-09-09
+decisions: []
+linear: [P-LIB-22]
+---
 # Account recovery: merging two identities and linking the device that is left
 
 **Written 2026-09-09** from a conversation about a real case: a person lost
@@ -5,7 +14,7 @@ the device that held their identity, re-entered the event on another device,
 became a second person there, and the organiser's merge could not give them
 back their old username without signing them out. Status: agreed in
 principle, not built. Open items live in
-`_planning/profile-and-identity-todo.md`.
+`_planning/backlog/profile-and-identity.md`.
 
 ## Where this sits among the security work
 

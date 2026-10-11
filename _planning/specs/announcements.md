@@ -1,3 +1,12 @@
+---
+title: Announcement engine
+kind: spec
+status: built
+written: 2026-09-16
+updated: 2026-09-17
+decisions: []
+linear: [P-LIB-31, P-LIB-32]
+---
 # Announcement engine spec
 
 **Status:** written 2026-09-16. Shared rules for the Telegram and Nostr

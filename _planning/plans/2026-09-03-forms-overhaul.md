@@ -1,3 +1,13 @@
+---
+title: Form layer refactor
+kind: plan
+status: superseded
+superseded_by: 2026-09-04-shadcn-baseui-migration.md
+written: 2026-09-03
+updated: 2026-09-03
+decisions: []
+linear: [P-LIB-15]
+---
 # LibreSesh — form layer refactor plan
 
 Brief for an agent working in this repo. Read this whole file before editing.

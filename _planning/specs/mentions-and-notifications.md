@@ -1,3 +1,12 @@
+---
+title: Mentioning a person, and somewhere for a mention to land
+kind: spec
+status: built
+written: 2026-09-04
+updated: 2026-09-05
+decisions: []
+linear: [P-LIB-14]
+---
 # Mentioning a person, and somewhere for a mention to land
 
 **Status:** resolution done and shipped in 0.3.0 (first cut 2026-09-04, the `@`
@@ -135,7 +144,7 @@ has been used in anger.
 **Undecided as of 2026-09-04.** Prod already holds usernames with emoji, so any
 rule has to reckon with names that exist, not just names we would allow. A
 visual side-by-side of the options is at
-`_planning/specs/username-mentions-decision.html` — decide from that.
+`_planning/reviews/2026-09-04-username-mentions-decision.html` — decide from that.
 
 ### What a username is today
 
@@ -229,4 +238,4 @@ space — precisely what `tokenizeMentions` needs to read it back.
 
 - Backlog pointer: `STATUS.md` → High Priority → "Mentioning a person…".
 - The shared link-safety rule the same renderer already honours: `shared/links.ts`.
-- Username decision, visual: `_planning/specs/username-mentions-decision.html`.
+- Username decision, visual: `_planning/reviews/2026-09-04-username-mentions-decision.html`.

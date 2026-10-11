@@ -1,3 +1,12 @@
+---
+title: Telegram announcements
+kind: spec
+status: built
+written: 2026-09-16
+updated: 2026-09-17
+decisions: []
+linear: [P-LIB-31]
+---
 # Telegram announcements — software design specification
 
 **Version:** 1.7 · **Status:** implemented · **Team:** LibreSesh
