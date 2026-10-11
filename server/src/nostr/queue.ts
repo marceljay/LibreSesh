@@ -42,6 +42,8 @@ export const MAX_WAIT_MS = 60_000;
 export const BACKOFF_CAP_MS = 60 * 60_000;
 export const TICK_MS = 10_000;
 export const SWEEP_MS = 5 * 60_000;
+/** Rows published side by side within one tick. */
+export const PUBLISH_CONCURRENCY = 8;
 
 const iso = (ms: number): string => new Date(ms).toISOString();
 const relaysOf = (event: EventRow): string[] =>
@@ -350,12 +352,21 @@ export async function syncTick(
       continue;
     }
     const relays = relaysOf(event);
-    for (const row of dueRows(db, event, nowMs)) {
-      try {
-        await processRow(db, config, pool, event, seckey, relays, row, nowMs);
-      } catch (err) {
-        console.error(`nostr: ${row.entity} ${row.entity_id} of event ${event.id} failed`, err);
-      }
+    // A few rows at a time, not one: a relay that holds the connection open
+    // and never answers costs each publish its full timeout, and one after
+    // another a hundred sessions took ten minutes a tick. The calendar row
+    // sorts last and lands in the final batch, after the sessions it lists.
+    const due = dueRows(db, event, nowMs);
+    for (let i = 0; i < due.length; i += PUBLISH_CONCURRENCY) {
+      await Promise.all(
+        due.slice(i, i + PUBLISH_CONCURRENCY).map(async (row) => {
+          try {
+            await processRow(db, config, pool, event, seckey, relays, row, nowMs);
+          } catch (err) {
+            console.error(`nostr: ${row.entity} ${row.entity_id} of event ${event.id} failed`, err);
+          }
+        }),
+      );
     }
   }
 }
