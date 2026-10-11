@@ -131,13 +131,18 @@ export function markRetract(db: Db, eventId: number, nowMs = Date.now()): void {
   })();
 }
 
-/** A relay added to the list has none of the programme: give it every published row. */
+/**
+ * A relay added to the list has none of the programme: give it every row that
+ * is not a deletion. Not only the published ones — a row no relay has ever
+ * accepted, because the list was empty or every relay refused, is exactly the
+ * row the new relay is there to take, and nothing else would ever send it.
+ */
 export function appendPending(db: Db, eventId: number, relays: string[]): void {
   if (relays.length === 0) return;
   const rows = db
     .prepare(
       `SELECT entity, entity_id, pending FROM nostr_published
-        WHERE event_id = ? AND published_at IS NOT NULL`,
+        WHERE event_id = ? AND deleted = 0`,
     )
     .all(eventId) as Pick<NostrPublishedRow, 'entity' | 'entity_id' | 'pending'>[];
   const update = db.prepare(

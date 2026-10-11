@@ -345,6 +345,26 @@ describe('sync loop', () => {
     h.close();
   });
 
+  it('a relay added later also receives rows no relay ever accepted', async () => {
+    // The list was empty when the programme was marked, so the first tick
+    // cleared the marks with nothing to send; the first relay added must take
+    // everything, or nothing ever would.
+    const { h, eventId, insertSession, pool, tick, row } = setup([]);
+    const sid = insertSession();
+    markDirty(h.db, eventId, undefined, T0);
+    await tick(T0 + s(20));
+    expect(row('session', sid).published_at).toBeNull();
+    expect(row('session', sid).dirty_since).toBeNull();
+    h.db.prepare(`UPDATE events SET nostr_relays = '["wss://a"]' WHERE id = ?`).run(eventId);
+    appendPending(h.db, eventId, ['wss://a']);
+    await tick(T0 + s(30));
+    expect(pool.kinds(31923)).toHaveLength(1);
+    expect(pool.kinds(31924)).toHaveLength(1);
+    expect(pool.kinds(0)).toHaveLength(1);
+    expect(row('session', sid).published_at).not.toBeNull();
+    h.close();
+  });
+
   it('a relay taken off the list is dropped from every pending row', async () => {
     const { h, eventId, insertSession, pool, tick, row } = setup(['wss://a', 'wss://b']);
     const sid = insertSession();

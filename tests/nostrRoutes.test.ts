@@ -209,7 +209,9 @@ describe('nostr routes', () => {
     expect(JSON.parse(row.pending)).toEqual(['wss://mine.test']);
     expect(row.last_error).toBeNull();
     const status = (await admin.get('/api/e/conf/nostr')).body;
-    expect(status.relayStatus).toEqual([{ url: 'wss://mine.test', pending: 1, lastError: null }]);
+    // The calendar row and the profile row enable marked: a new relay takes
+    // every row that is not a deletion, accepted somewhere before or not.
+    expect(status.relayStatus).toEqual([{ url: 'wss://mine.test', pending: 2, lastError: null }]);
     h.close();
   });
 });
