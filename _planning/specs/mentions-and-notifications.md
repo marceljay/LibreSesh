@@ -1,3 +1,12 @@
+---
+title: Mentioning a person, and somewhere for a mention to land
+kind: spec
+status: built
+written: 2026-09-04
+updated: 2026-09-05
+decisions: []
+linear: [P-LIB-14]
+---
 # Mentioning a person, and somewhere for a mention to land
 
 **Status:** resolution done and shipped in 0.3.0 (first cut 2026-09-04, the `@`

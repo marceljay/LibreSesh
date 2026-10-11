@@ -1,3 +1,12 @@
+---
+title: Forms overhaul: review of the whole undertaking
+kind: review
+status: final
+written: 2026-09-05
+updated: 2026-09-05
+decisions: []
+linear: [P-LIB-15]
+---
 # Forms overhaul — review of the whole undertaking
 
 Written 2026-09-04 against `dev` (`362c126`). Companion to

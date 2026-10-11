@@ -1,3 +1,13 @@
+---
+title: OpenGrid, the original specification (v1.0)
+kind: spec
+status: superseded
+superseded_by: ../../ARCHITECTURE.md
+written: 2026-08-28
+updated: 2026-08-28
+decisions: []
+linear: []
+---
 # Spec: "OpenGrid" — a lightweight (un)conference scheduler
 
 Version: 1.0 (draft for implementation)

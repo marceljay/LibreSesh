@@ -1,3 +1,12 @@
+---
+title: Security hardening
+kind: plan
+status: built
+written: 2026-09-05
+updated: 2026-09-10
+decisions: [D3, D4]
+linear: [P-LIB-10, LIB-101, LIB-188]
+---
 # Plan: security hardening
 
 **Spec:** [`specs/D3-security-hardening.md`](../specs/D3-security-hardening.md).

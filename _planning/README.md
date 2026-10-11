@@ -18,3 +18,36 @@ One folder per kind of document, and a file is named for what it is:
 
 The brand assets the app ships — logos, marks, the favicon — are not planning
 and live in [`../assets/`](../assets/).
+
+## Frontmatter
+
+Every Markdown file here except this one opens with YAML frontmatter. The date
+in a plan's or review's filename is the day it was written and nothing more;
+the frontmatter says the rest.
+
+```yaml
+---
+title: Nostr publishing
+kind: spec # spec | plan | review | backlog
+status: built # draft | active | built | final | superseded | retired
+written: 2026-09-16 # the day the document was written
+updated: 2026-10-02 # the last day its content changed
+decisions: [D6, D7] # the numbered decisions this document carries
+linear: [P-LIB-32] # the Linear projects or issues it is the spec or plan for
+---
+```
+
+- `status` means: **draft**, written but not agreed; **active**, agreed and
+  being built or partly built; **built**, shipped and in CHANGELOG; **final**,
+  a review or audit, complete as written; **superseded**, replaced by another
+  document, named in `superseded_by`; **retired**, dropped without a successor.
+- `decisions` and `linear` are always lists, empty when there is nothing to
+  list. A document lists only the decisions decided inside it or filed from it,
+  not every one it mentions. Where a Linear project exists for the document,
+  list the project (`P-LIB-32`) rather than every issue in it; list an issue
+  (`LIB-106`) where the document is the plan for that issue alone.
+- A spec that carries one numbered decision may keep the decision in its name,
+  as `D3-security-hardening.md` does; a new file is named for its subject and
+  carries the decision in `decisions`.
+- `.html` files take no frontmatter; a rendered page is named for its date and
+  subject like the Markdown beside it.

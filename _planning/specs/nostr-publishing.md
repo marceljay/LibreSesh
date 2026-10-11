@@ -1,3 +1,12 @@
+---
+title: Nostr publishing
+kind: spec
+status: built
+written: 2026-09-16
+updated: 2026-09-17
+decisions: [D6, D7]
+linear: [P-LIB-32]
+---
 # Nostr publishing spec
 
 **Status:** designed 2026-09-16, not built. No branch yet. Decided in an

@@ -1,3 +1,12 @@
+---
+title: Publishing a session: a link that works without the gate
+kind: spec
+status: draft
+written: 2026-09-04
+updated: 2026-09-04
+decisions: []
+linear: [P-LIB-23]
+---
 # Publishing a session — a link that works without the gate
 
 **Status:** designed, not built. No commit yet. Decision of 2026-09-02 recorded

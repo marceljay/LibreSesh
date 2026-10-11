@@ -1,3 +1,12 @@
+---
+title: Security hardening
+kind: spec
+status: built
+written: 2026-09-05
+updated: 2026-09-10
+decisions: [D3, D4]
+linear: [P-LIB-10, LIB-101, LIB-188]
+---
 # Security hardening
 
 **Status:** approved 2026-09-09, **scope narrowed 2026-09-10**. This is **D3**

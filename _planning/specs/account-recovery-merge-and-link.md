@@ -1,3 +1,12 @@
+---
+title: Account recovery: merging two identities and linking the device that is left
+kind: spec
+status: active
+written: 2026-09-09
+updated: 2026-09-09
+decisions: []
+linear: [P-LIB-22]
+---
 # Account recovery: merging two identities and linking the device that is left
 
 **Written 2026-09-09** from a conversation about a real case: a person lost

@@ -1,3 +1,12 @@
+---
+title: Forms overhaul: phase 0 findings
+kind: review
+status: final
+written: 2026-09-03
+updated: 2026-09-03
+decisions: []
+linear: [P-LIB-15]
+---
 # Forms overhaul — Phase 0 findings
 
 Audit confirmation for `../plans/2026-09-03-forms-overhaul.md`. Read-only; nothing changed.

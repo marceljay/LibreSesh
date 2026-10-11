@@ -1,3 +1,12 @@
+---
+title: Nostr publishing
+kind: plan
+status: built
+written: 2026-09-16
+updated: 2026-09-16
+decisions: [D6]
+linear: [P-LIB-32]
+---
 # Nostr Publishing Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
