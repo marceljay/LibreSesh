@@ -25,6 +25,7 @@ erDiagram
     TEXT at
     TEXT batch "nullable"
     TEXT changes "nullable"
+    TEXT label "nullable"
   }
   breaks {
     INTEGER id PK

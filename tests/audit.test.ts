@@ -378,8 +378,9 @@ describe('the audit log, read back', () => {
         .expect(201);
       await maker.patch('/api/e/newconf/settings').send({ name: 'Renamed Conf' }).expect(200);
       const page = (await maker.get('/api/e/newconf/audit').expect(200)).body as AuditPageDto;
-      // The label is the name now; the creation line is where the first one is.
-      expect(page.entries[1]).toMatchObject({ action: 'create', entityLabel: 'Renamed Conf' });
+      // Each line keeps the name the event had when it was written.
+      expect(page.entries[0]).toMatchObject({ action: 'update', entityLabel: 'Renamed Conf' });
+      expect(page.entries[1]).toMatchObject({ action: 'create', entityLabel: 'New Conf' });
       expect(page.entries[1]?.changes).toEqual([
         { field: 'name', to: 'New Conf' },
         { field: 'slug', to: 'newconf' },
@@ -387,6 +388,31 @@ describe('the audit log, read back', () => {
         { field: 'startDate', to: '2027-06-01' },
         { field: 'endDate', to: '2027-06-02' },
       ]);
+    });
+
+    /** The report that started this: renaming the event rewrote its past. */
+    it('a rename leaves the lines before it saying the old name', async () => {
+      await makeSession('Talk');
+      await patch({ name: 'Second Name' }).expect(200);
+      await patch({ dayEndMin: 1200 }).expect(200);
+      const labels = (await read()).entries.map((e) => [e.action, e.entity, e.entityLabel]);
+      expect(labels).toEqual([
+        ['update', 'event', 'Second Name'],
+        ['update', 'event', 'Second Name'],
+        ['create', 'session', 'Talk'],
+      ]);
+    });
+
+    it('a session keeps the title it had on each of its lines', async () => {
+      const created = await makeSession('Working title');
+      const id = (created.body as { id: number }).id;
+      await admin
+        .patch(`/api/e/testconf/sessions/${id}`)
+        .send({ title: 'Final title' })
+        .expect(200);
+      const page = await read();
+      expect(page.entries[0]).toMatchObject({ action: 'update', entityLabel: 'Final title' });
+      expect(page.entries[1]).toMatchObject({ action: 'create', entityLabel: 'Working title' });
     });
 
     it('an action that is not an edit carries an empty list', async () => {

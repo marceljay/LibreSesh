@@ -135,10 +135,10 @@ function When({ at }: { at: string }) {
   );
 }
 
-/** What was acted on: its name if it could still be looked up, and always its
- *  id — the name is what it is called now, the id is what was acted on. The
- *  name opens the thing, or the bin it is in (`auditSubjectHref`); when there
- *  is no name to hold the link, the id holds it. */
+/** What was acted on: its name as it was then, and always its id — a rename
+ *  leaves earlier lines saying what the thing was called when they were
+ *  written. The name opens the thing, or the bin it is in (`auditSubjectHref`);
+ *  when there is no name to hold the link, the id holds it. */
 function What({ slug, entry }: { slug: string; entry: AuditEntryDto }) {
   const href = auditSubjectHref(slug, entry);
   const label = entry.entityLabel ? `“${entry.entityLabel}”` : null;
@@ -174,9 +174,8 @@ function What({ slug, entry }: { slug: string; entry: AuditEntryDto }) {
 /**
  * What an edit changed, under its line: each setting by the form's own label,
  * the value before struck through and the value after beside it. A creation
- * lists what the thing started as; a password says only that it changed. The
- * label the line itself shows is the name *now* — this is where the name it
- * had before a rename survives.
+ * lists what the thing started as; a password says only that it changed. A
+ * rename's line is labelled with the new name; the old one is here.
  */
 function Changes({ entity, entry }: { entity: string; entry: AuditEntryDto }) {
   if (entry.changes.length === 0) return null;
@@ -330,7 +329,7 @@ export function AdminAudit({ slug, auditKeep }: { slug: string; auditKeep: numbe
       ...(e.members ?? [e]).flatMap((m) => [
         m.entityLabel,
         m.entityId === null ? '' : rowId(m.entityId),
-        // The old name is only here, so a search for it finds the rename.
+        // So a search for the old name finds the line that changed it.
         ...m.changes.map((c) => changeText(e.entity, c)),
       ]),
     ]

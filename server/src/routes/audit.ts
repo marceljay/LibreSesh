@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireRole } from '../auth.js';
-import { audit } from '../audit.js';
+import { LABEL_LENGTH, LABEL_SOURCES, audit } from '../audit.js';
 import { clearEventLimits } from '../ratelimit.js';
 import type { Ctx } from '../context.js';
 import type { Db } from '../db.js';
@@ -28,6 +28,9 @@ interface Row {
   batch: string | null;
   /** JSON list of {@link AuditChangeDto}, or null; see migration 029. */
   changes: string | null;
+  /** What the thing was called when this was written, or null for a row from
+   *  before that was stored; see migration 030. */
+  label: string | null;
 }
 
 /** The stored change list, or none. The column is written by this process
@@ -48,36 +51,10 @@ function parseChanges(json: string | null): AuditChangeDto[] {
 const GROUP_KEY = "COALESCE(batch, 'row:' || id)";
 
 /**
- * What each entity is *called*, for the rows on this page only.
- *
- * "deleted session 12" is a row in a table; "deleted session — Opening
- * keynote" is something an organiser can act on. Soft deletes are what make
- * this possible: the title of a deleted session is still there to look up. A
- * hard-deleted or never-existed id simply resolves to nothing and the entry
- * falls back to its id.
+ * Where each entity on this page is *now*: live or in the bin, and what it
+ * belongs to — enough for the line to link somewhere. The name comes along
+ * for rows written before the writer stored one (migration 030).
  */
-const LABEL_SOURCES: Record<
-  string,
-  {
-    table: string;
-    column: string;
-    /** The table soft-deletes, so "is it in the bin" is a column away. */
-    bin: boolean;
-    /** The column naming what this belongs to, when it has no page of its own. */
-    parent?: string;
-  }
-> = {
-  session: { table: 'sessions', column: 'title', bin: true },
-  room: { table: 'rooms', column: 'name', bin: true },
-  tag: { table: 'tags', column: 'name', bin: true },
-  track: { table: 'tracks', column: 'name', bin: true },
-  format: { table: 'session_formats', column: 'name', bin: true },
-  person: { table: 'people', column: 'name', bin: true },
-  proposal: { table: 'proposals', column: 'title', bin: true },
-  contribution: { table: 'contributions', column: 'body', bin: true, parent: 'session_id' },
-  event: { table: 'events', column: 'name', bin: false },
-};
-
 /** What was found about an entity: its name, whether it is in the bin, and
  *  what it belongs to — enough for the line to link somewhere. */
 interface Subject {
@@ -115,7 +92,7 @@ function labelsFor(db: Db, rows: Row[]): Map<string, Subject> {
       .all(...list);
     for (const row of found) {
       out.set(`${entity}:${row.id}`, {
-        label: row.label.slice(0, 80),
+        label: row.label.slice(0, LABEL_LENGTH),
         state: row.trashed === null ? null : row.trashed ? 'trashed' : 'live',
         parentId: row.parent,
       });
@@ -237,7 +214,7 @@ export function auditRoutes(ctx: Ctx): Router {
         ? []
         : ctx.db
             .prepare<(number | string)[], Row>(
-              `SELECT id, identity_id, action, entity, entity_id, at, batch, changes
+              `SELECT id, identity_id, action, entity, entity_id, at, batch, changes, label
                  FROM audit
                 WHERE event_id = ? AND ${GROUP_KEY} IN (${keys.map(() => '?').join(',')})
                 ORDER BY id DESC`,
@@ -295,7 +272,9 @@ export function auditRoutes(ctx: Ctx): Router {
         action: row.action,
         entity: row.entity,
         entityId: row.entity_id,
-        entityLabel: subject?.label ?? '',
+        // The name then, as the row stored it; the name now only for a row
+        // written before names were stored.
+        entityLabel: row.label ?? subject?.label ?? '',
         entityState: subject?.state ?? null,
         entityParentId: subject?.parentId ?? null,
         changes: parseChanges(row.changes),

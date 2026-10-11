@@ -595,10 +595,11 @@ export interface AuditChangeDto {
 }
 
 /**
- * One line of the append-only write log. `entityLabel` is the thing's name at
- * read time — resolved for the page being shown rather than stored, because
- * the log records *what happened*, not what things were called then. What a
- * thing *was* called is in `changes`, on the line that renamed it.
+ * One line of the append-only write log. `entityLabel` is what the thing was
+ * called when the line was written, so a rename does not rewrite the lines
+ * before it; the rename's own line carries the new name and, in `changes`,
+ * the old. Where it links, and whether it is live or in the bin, are looked
+ * up at read time — those are about where the thing is now.
  */
 export interface AuditEntryDto {
   id: number;
@@ -618,7 +619,9 @@ export interface AuditEntryDto {
   action: string;
   entity: string;
   entityId: number | null;
-  /** Title or name, when it could still be looked up; otherwise empty. */
+  /** Title or name as it was when this was written. For a row from before
+   *  that was stored, the name now, when it could still be looked up;
+   *  otherwise empty. */
   entityLabel: string;
   /** Whether the thing is still there or in the bin — the difference between
    *  a line that opens the session and one that opens Trash. Null when it

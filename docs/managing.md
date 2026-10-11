@@ -27,10 +27,11 @@ many edits can push an earlier action off the end.
 
 A line about the event's settings or permissions says what moved: each
 setting by the label the form gives it, with the value before and the value
-after, so a rename reads *Name: "Old" → "New"*. The name beside every line is
-the event's name now; the one it had before is on the line that changed it,
-and the line that created the event lists what it started as. A password
-change says which password, never the password.
+after, so a rename reads *Name: "Old" → "New"*. Every line names the thing
+as it was called when the line was written, so renaming an event, a session
+or a room leaves its earlier lines as they were; the line that created the
+event also lists what it started as. A password change says which password,
+never the password.
 
 ## When passwords are being guessed
 

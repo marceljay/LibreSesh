@@ -30,6 +30,60 @@ const SLACK = 100;
  */
 const sinceLastPrune = new Map<number, number>();
 
+/**
+ * Where each entity's name lives, for the label a row stores and the lookup
+ * the reader falls back to for rows written before it was stored.
+ *
+ * Soft deletes are what make either possible: the title of a deleted session
+ * is still there to look up. A hard-deleted or never-existed id resolves to
+ * nothing and the line falls back to its id.
+ */
+export const LABEL_SOURCES: Record<
+  string,
+  {
+    table: string;
+    column: string;
+    /** The table soft-deletes, so "is it in the bin" is a column away. */
+    bin: boolean;
+    /** The column naming what this belongs to, when it has no page of its own. */
+    parent?: string;
+  }
+> = {
+  session: { table: 'sessions', column: 'title', bin: true },
+  room: { table: 'rooms', column: 'name', bin: true },
+  tag: { table: 'tags', column: 'name', bin: true },
+  track: { table: 'tracks', column: 'name', bin: true },
+  format: { table: 'session_formats', column: 'name', bin: true },
+  person: { table: 'people', column: 'name', bin: true },
+  proposal: { table: 'proposals', column: 'title', bin: true },
+  contribution: { table: 'contributions', column: 'body', bin: true, parent: 'session_id' },
+  event: { table: 'events', column: 'name', bin: false },
+};
+
+/** Labels are stored and shown cut to this; a title is a line, not a page. */
+export const LABEL_LENGTH = 80;
+
+/**
+ * What the thing is called right now, for the row being written. Null for an
+ * entity with no name to look up, or one that is already gone.
+ *
+ * Looked up at write time and stored, so a later rename leaves the line
+ * saying what the thing was called when this happened. Call sites write
+ * their row after the change, so a rename's own line carries the new name
+ * and the old one is in its `changes`.
+ */
+function labelNow(db: Db, entity: string, entityId: number | null): string | null {
+  const source = LABEL_SOURCES[entity];
+  if (!source || entityId === null) return null;
+  const row = db
+    .prepare<[number], { label: string | null }>(
+      // Table and column come from the constant map above, never from input.
+      `SELECT ${source.column} AS label FROM ${source.table} WHERE id = ?`,
+    )
+    .get(entityId);
+  return row?.label == null ? null : row.label.slice(0, LABEL_LENGTH);
+}
+
 /** Append-only write log for post-hoc cleanup after vandalism (SPEC §8). */
 export function audit(
   db: Db,
@@ -48,8 +102,8 @@ export function audit(
   },
 ): void {
   db.prepare(
-    `INSERT INTO audit (identity_id, event_id, action, entity, entity_id, at, batch, changes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO audit (identity_id, event_id, action, entity, entity_id, at, batch, changes, label)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     entry.identityId,
     entry.eventId,
@@ -61,6 +115,7 @@ export function audit(
     entry.changes === undefined || entry.changes.length === 0
       ? null
       : JSON.stringify(entry.changes),
+    labelNow(db, entry.entity, entry.entityId),
   );
 
   if (entry.eventId === null) return;
