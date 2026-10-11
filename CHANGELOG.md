@@ -6,6 +6,26 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- **The audit log says what a settings change changed.** A line used to say
+  "edited event" and leave the organiser to guess which of the fourteen
+  settings moved. Worse, the name on every line is looked up when the page is
+  read, so after a rename every earlier line — the creation included —
+  carried the new name and the old one was nowhere in the log. Each line
+  about the event's settings or its permissions now lists what moved, by the
+  label the form gives it, with the value before struck through and the value
+  after beside it: *Name: "Old" → "New"*, *Day starts: 08:00 → 09:00*,
+  *Star sessions: viewers, attendees → attendees*. The line that created the
+  event (or imported it) lists what it started as. A password change names
+  the password and nothing more. The filter box searches these too, so the
+  old name still finds the rename (migration 029).
+
+  **And every line keeps the name the thing had at the time.** Renaming an
+  event, a session or a room used to rewrite its whole history, because the
+  name beside each line was looked up when the page was read. The writer now
+  stores it, so the lines before a rename go on saying the old name and the
+  rename's own line says the new one. Lines from before this are frozen at
+  the names they showed when the upgrade ran (migration 030).
+
 - **An event can announce itself into a Telegram group.** Organisers connect
   one from Manage → **Publish** → Telegram: add the bot, generate a code, type
   `/bind <code>` in the group. Publish is a new tab, because where the schedule

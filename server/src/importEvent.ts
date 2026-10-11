@@ -28,9 +28,10 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { hashPassword, setRole } from './auth.js';
-import { audit } from './audit.js';
+import { audit, initialFields } from './audit.js';
 import { type Config, isDemoEvent } from './config.js';
 import type { Db, EventRow } from './db.js';
+import { CREATION_FIELDS, settingsReading } from './mappers.js';
 import { badRequest, conflict, HttpError } from './errors.js';
 import { resolveEventPasswords } from './eventPasswords.js';
 import { setPermissions, type PermissionMatrix } from './permissions.js';
@@ -805,12 +806,17 @@ export function importEvent(
     if (dryRun) throw new DryRunFinished({ ...result, eventId: null });
 
     setRole(db, actorIdentityId, eventId, 'admin');
+    const row = db
+      .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
+      .get(eventId) as EventRow;
+    // An import is this event's creation: the line lists what it started as.
     audit(db, {
       identityId: actorIdentityId,
       eventId,
       action: 'import',
       entity: 'event',
       entityId: eventId,
+      changes: initialFields(CREATION_FIELDS, settingsReading(row)),
     });
     return result;
   };

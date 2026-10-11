@@ -15,6 +15,7 @@ import type {
   FormatDto,
   TrackDto,
   TrackWindowDto,
+  AuditValue,
 } from './shared/types.js';
 import type {
   BreakRow,
@@ -54,6 +55,60 @@ export const toEventDto = (e: EventRow): EventDto => ({
   defaultView: e.default_view === 'cal' ? 'cal' : 'list',
   pitchesEnabled: e.pitches_enabled === 1,
   nostrEnabled: e.nostr_enabled === 1,
+});
+
+/**
+ * The settings the audit log itemises, in the order the Settings form shows
+ * them, so an edit's line reads the way the organiser remembers making it.
+ * Passwords are not here: the row records *that* one changed, never a value.
+ * Timezone is fixed at creation and listed so the creation line carries it.
+ */
+export const SETTINGS_FIELDS = [
+  'name',
+  'slug',
+  'timezone',
+  'startDate',
+  'endDate',
+  'dayStartMin',
+  'dayEndMin',
+  'weekRailFrom',
+  'defaultView',
+  'userRoleLabel',
+  'auditKeep',
+  'showOfficialBadge',
+  'pitchesEnabled',
+  'archived',
+] as const;
+
+export type SettingsField = (typeof SETTINGS_FIELDS)[number];
+
+/** What a creation line lists: enough to say what the event was, and no more.
+ *  Every other setting's starting value is the `from` of its first edit. */
+export const CREATION_FIELDS = [
+  'name',
+  'slug',
+  'timezone',
+  'startDate',
+  'endDate',
+] as const satisfies readonly SettingsField[];
+
+/** One reading of an event's settings, in the API's names and types, for
+ *  `diffFields` to compare against another. */
+export const settingsReading = (e: EventRow): Record<SettingsField, AuditValue> => ({
+  name: e.name,
+  slug: e.slug,
+  timezone: e.timezone,
+  startDate: e.start_date,
+  endDate: e.end_date,
+  dayStartMin: e.day_start_min,
+  dayEndMin: e.day_end_min,
+  weekRailFrom: e.week_rail_from,
+  defaultView: e.default_view,
+  userRoleLabel: e.user_role_label,
+  auditKeep: e.audit_keep,
+  showOfficialBadge: e.show_official_badge === 1,
+  pitchesEnabled: e.pitches_enabled === 1,
+  archived: e.archived === 1,
 });
 
 export const toRoomDto = (r: RoomRow): RoomDto => ({

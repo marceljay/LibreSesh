@@ -25,6 +25,14 @@ ones arrive. Settings changes the number, and 0 keeps everything. That is a
 real trade rather than a detail: a low cap means someone making a great
 many edits can push an earlier action off the end.
 
+A line about the event's settings or permissions says what moved: each
+setting by the label the form gives it, with the value before and the value
+after, so a rename reads *Name: "Old" → "New"*. Every line names the thing
+as it was called when the line was written, so renaming an event, a session
+or a room leaves its earlier lines as they were; the line that created the
+event also lists what it started as. A password change says which password,
+never the password.
+
 ## When passwords are being guessed
 
 Above the audit log you will sometimes find a line saying how many password
