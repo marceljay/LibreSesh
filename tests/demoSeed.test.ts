@@ -62,6 +62,22 @@ describe('demo event seeding', () => {
     expect(total('session_tags')).toBeGreaterThan(0);
   });
 
+  it('replaces a demo event that had Nostr on, queue rows included', () => {
+    seedDemoEvent(db);
+    const id = eventId(db)!;
+    db.prepare(
+      `UPDATE events SET nostr_pubkey = 'ab', nostr_seckey = 'v1.x', nostr_enabled = 1 WHERE id = ?`,
+    ).run(id);
+    db.prepare(
+      `INSERT INTO nostr_published (event_id, entity, entity_id, d_tag) VALUES (?, 'calendar', ?, 'programme')`,
+    ).run(id, id);
+    expect(() => seedDemoEvent(db, { replace: true })).not.toThrow();
+    expect(
+      db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM nostr_published').get()!.n,
+    ).toBe(0);
+    expect(db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM events').get()!.n).toBe(1);
+  });
+
   it('honours slug, name and day-count overrides', () => {
     const result = seedDemoEvent(db, { slug: 'longconf', name: 'LongConf', days: 14 })!;
     expect(result.slug).toBe('longconf');

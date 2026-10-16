@@ -42,6 +42,8 @@ export const MAX_WAIT_MS = 60_000;
 export const BACKOFF_CAP_MS = 60 * 60_000;
 export const TICK_MS = 10_000;
 export const SWEEP_MS = 5 * 60_000;
+/** Rows published side by side within one tick. */
+export const PUBLISH_CONCURRENCY = 8;
 
 const iso = (ms: number): string => new Date(ms).toISOString();
 const relaysOf = (event: EventRow): string[] =>
@@ -131,13 +133,18 @@ export function markRetract(db: Db, eventId: number, nowMs = Date.now()): void {
   })();
 }
 
-/** A relay added to the list has none of the programme: give it every published row. */
+/**
+ * A relay added to the list has none of the programme: give it every row that
+ * is not a deletion. Not only the published ones — a row no relay has ever
+ * accepted, because the list was empty or every relay refused, is exactly the
+ * row the new relay is there to take, and nothing else would ever send it.
+ */
 export function appendPending(db: Db, eventId: number, relays: string[]): void {
   if (relays.length === 0) return;
   const rows = db
     .prepare(
       `SELECT entity, entity_id, pending FROM nostr_published
-        WHERE event_id = ? AND published_at IS NOT NULL`,
+        WHERE event_id = ? AND deleted = 0`,
     )
     .all(eventId) as Pick<NostrPublishedRow, 'entity' | 'entity_id' | 'pending'>[];
   const update = db.prepare(
@@ -345,12 +352,21 @@ export async function syncTick(
       continue;
     }
     const relays = relaysOf(event);
-    for (const row of dueRows(db, event, nowMs)) {
-      try {
-        await processRow(db, config, pool, event, seckey, relays, row, nowMs);
-      } catch (err) {
-        console.error(`nostr: ${row.entity} ${row.entity_id} of event ${event.id} failed`, err);
-      }
+    // A few rows at a time, not one: a relay that holds the connection open
+    // and never answers costs each publish its full timeout, and one after
+    // another a hundred sessions took ten minutes a tick. The calendar row
+    // sorts last and lands in the final batch, after the sessions it lists.
+    const due = dueRows(db, event, nowMs);
+    for (let i = 0; i < due.length; i += PUBLISH_CONCURRENCY) {
+      await Promise.all(
+        due.slice(i, i + PUBLISH_CONCURRENCY).map(async (row) => {
+          try {
+            await processRow(db, config, pool, event, seckey, relays, row, nowMs);
+          } catch (err) {
+            console.error(`nostr: ${row.entity} ${row.entity_id} of event ${event.id} failed`, err);
+          }
+        }),
+      );
     }
   }
 }
