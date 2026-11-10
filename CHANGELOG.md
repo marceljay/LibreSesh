@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-10
+
 ### Added
 
 - **The audit log says what a settings change changed.** A line used to say

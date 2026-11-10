@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "LibreSesh",
-    "version": "0.7.4",
+    "version": "0.8.0",
     "summary": "The HTTP API of one LibreSesh instance.",
     "description": "Generated from the zod schemas and the routers — see `/api.md` for the\nprose reference, and `/agents.md` if you are a program acting for someone.\n\n**Identity is a signed cookie, not a bearer token.** `POST /api/e/{slug}/auth`\nwith an event password sets it; keep your cookie jar or every later request\nis a `401`. `GET /api/me` tells you which events you already hold a role in.\n\n**What a role may do is not in this document.** Capabilities are middleware,\nand an organiser can change them while the event runs, so the answer lives at\nruntime in the bundle’s `permissions` map (capability → the roles allowed to\nuse it). Read it rather than provoking a `403` to find out.\n\n**Response bodies are described loosely.** Request bodies are generated from\nthe schemas that validate them and are exact; responses are TypeScript\ninterfaces rather than schemas, so they are typed as objects here and written\nout in `/api.md`.",
     "license": {
