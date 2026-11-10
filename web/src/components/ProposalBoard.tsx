@@ -313,6 +313,7 @@ export function ProposalBoard() {
         <PlaceProposalModal
           proposal={placing}
           rooms={bundle.rooms}
+          sessions={bundle.sessions}
           timezone={timezone}
           days={days}
           dayLabels={dayLabels}

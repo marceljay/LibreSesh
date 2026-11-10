@@ -123,6 +123,19 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- **The session form shows which times a room has left.** A taken slot used to
+  be found out by pressing Save and reading the refusal. The Start list now
+  greys the times that would run into another session in the chosen room, for
+  the day and length picked, and the Duration list greys the lengths that
+  would not fit from the chosen start; both follow the room, the day and a
+  repeat onto several days. A time typed past the list is named under the
+  fields — *"Rust for people who like Python" (10:00–10:45) is already in this
+  room* — and is not sent. Attendees are also kept off the hours a session
+  holds the floor. Placing a pitch does the same. An organiser may still
+  double-book through the session form, as before: the rows are greyed and
+  the overlap named, but they stay pickable. Saving as a draft is never held
+  back, since a draft claims no slot.
+
 - **A dropped stream is caught up, not answered with the whole event again.**
   Reconnecting refetched the entire bundle — 102 KB, 6.1 KB gzipped, 4.4 ms of
   server CPU — every time. The stream tells browsers to retry three seconds

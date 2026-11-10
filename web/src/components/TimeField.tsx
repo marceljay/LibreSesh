@@ -65,6 +65,9 @@ const ARROW_STEP = 5;
  * as it goes", and the server would reject seven anyway. The two fields that
  * *define* the day pass no cap.
  *
+ * `taken` greys the rows of the list that are already booked, so a room's
+ * free slots can be read off it without a round trip through Save.
+ *
  * Value in and out is the `HH:MM` string the old input used, so no caller's
  * state changed shape.
  */
@@ -74,6 +77,8 @@ export function TimeField({
   min = 0,
   max = DAY,
   disabled,
+  taken,
+  takenRefused = true,
   className = 'w-28',
   'aria-label': ariaLabel,
 }: {
@@ -83,6 +88,12 @@ export function TimeField({
   min?: number;
   max?: number;
   disabled?: boolean;
+  /** Whether a time in the list is already spoken for — given the minute
+   *  since midnight. Those rows are greyed and say so. */
+  taken?: (minute: number) => boolean;
+  /** A taken row cannot be picked. `false` leaves it pickable, for someone
+   *  the server lets double-book. */
+  takenRefused?: boolean;
   className?: string;
   'aria-label'?: string;
 }) {
@@ -216,11 +227,23 @@ export function TimeField({
               (Base UI's default, which is right for a select and wrong for a
               list beside a box). */}
           <SelectContent anchor={anchor} alignItemWithTrigger={false} className="tabular-nums">
-            {choices.map((t) => (
-              <SelectItem key={t} value={t}>
-                {t}
-              </SelectItem>
-            ))}
+            {choices.map((t) => {
+              // Greyed in the list only. The box still takes any time typed
+              // into it: what is free depends on the room and the length
+              // beside this field, and the form says so when they disagree.
+              const isTaken = taken?.(minutesOf(t)) ?? false;
+              return (
+                <SelectItem
+                  key={t}
+                  value={t}
+                  disabled={isTaken && takenRefused}
+                  className={isTaken && !takenRefused ? 'text-muted-foreground' : undefined}
+                >
+                  {t}
+                  {isTaken && <span className="ms-2 text-xs">taken</span>}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </BaseSelect.Root>
       </ControlShell>

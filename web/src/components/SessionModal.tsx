@@ -14,7 +14,8 @@ import type {
 import { LINK_RULE, safeLink } from '@shared/links';
 import { windowLabel, windowOn } from '@shared/trackHours';
 import type { SessionWrite } from '../lib/api';
-import { fmtMin, place } from '../lib/format';
+import { fmtMin, minutesOf, place } from '../lib/format';
+import { clashAt, clashLabel, roomBusy } from '../lib/roomAvailability';
 import {
   checkRepeat,
   MAX_REPEAT_DAYS,
@@ -75,6 +76,9 @@ const PLACEMENTS: readonly { value: 'official' | 'open'; label: string; note?: s
 export interface SessionModalProps {
   session?: SessionDto;
   rooms: RoomDto[];
+  /** What is already on the grid, so the form can grey the slots it fills.
+   *  Optional: without it nothing is greyed and the server still decides. */
+  sessions?: SessionDto[];
   tags: TagDto[];
   /** What kinds of session this event runs. Empty when the organiser has
    *  defined none, and the Format row is then absent entirely. */
@@ -122,6 +126,7 @@ export interface SaveOpts {
 export function SessionModal({
   session,
   rooms,
+  sessions,
   tags,
   formats,
   tracks,
@@ -255,6 +260,47 @@ export function SessionModal({
     ? checkRepeat(day, repeat, { eventEndDate: lastDay, max: MAX_REPEAT_DAYS })
     : null;
 
+  // What is free in the chosen room, read from the schedule already on the
+  // page — the rules `assertNoOverlap` and `assertNotBlocked` apply on Save,
+  // shown in the lists before it. An attendee is also held off the hours a
+  // session holds the floor; a speaker or organiser is not. An organiser may
+  // double-book, so for them a taken slot is greyed and named but still theirs
+  // to pick; for everyone else it is refused here as it would be there.
+  const busy = useMemo(
+    () =>
+      roomBusy(sessions ?? [], {
+        roomId,
+        excludeId: session?.id,
+        holdsCount: role === 'viewer' || role === 'user',
+      }),
+    [sessions, roomId, session?.id, role],
+  );
+  // Every day of a run has to be free, not just the first.
+  const placedDays = repeat ? repeatDates(day, repeat).dates : [day];
+  const clashFor = (startMin: number, minutes: number) => {
+    for (const d of placedDays) {
+      const hit = clashAt(busy, d, startMin, minutes, timezone);
+      if (hit) return { ...hit, day: d };
+    }
+    return null;
+  };
+  // A session left where it is has booked nothing new. The server lets it be
+  // saved even against a hold announced after it, and the grid already badges
+  // a double-booking, so the form only speaks up about a slot being chosen.
+  const moved =
+    !existing ||
+    isDraft ||
+    roomId !== session?.roomId ||
+    day !== existing.date ||
+    minutesOf(start) !== existing.startMin ||
+    durMin !== existing.durMin;
+  const clash = canMove && moved ? clashFor(minutesOf(start), durMin) : null;
+  const clashText = clash
+    ? `${clashLabel(clash, timezone)}${clash.day !== day ? ` on ${dayLabels[clash.day] ?? clash.day}` : ''} ${
+        clash.hold ? 'holds the floor then' : 'is already in this room'
+      }`
+    : null;
+
   /** `asDraft` is which of the two buttons was pressed: the primary one puts
    *  the session on the schedule, the one beside it keeps it off. */
   const save = (asDraft = false) => {
@@ -298,6 +344,11 @@ export function SessionModal({
     }
     if (repeatProblem) {
       setError(repeatProblem);
+      return;
+    }
+    // A draft claims no slot, so it may sit on a taken one.
+    if (clashText && !isAdmin && !asDraft) {
+      setError(`${clashText}. Pick a free time, a shorter length or another room.`);
       return;
     }
     onSave(
@@ -720,6 +771,8 @@ export function SessionModal({
                 min={dayStartMin}
                 max={dayEndMin}
                 disabled={!canMove}
+                taken={(minute) => clashFor(minute, durMin) !== null}
+                takenRefused={!isAdmin}
               />
             </Field>
             {/* A list plus a way past it. The list used to stop at three
@@ -750,11 +803,19 @@ export function SessionModal({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {DURATION_CHOICES.map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {durationLabel(d)}
-                    </SelectItem>
-                  ))}
+                  {DURATION_CHOICES.map((d) => {
+                    const tooLong = clashFor(minutesOf(start), d) !== null;
+                    return (
+                      <SelectItem
+                        key={d}
+                        value={String(d)}
+                        disabled={tooLong && !isAdmin}
+                        className={tooLong && isAdmin ? 'text-muted-foreground' : undefined}
+                      >
+                        {durationLabel(d)}
+                      </SelectItem>
+                    );
+                  })}
                   <SelectItem value="other">Other…</SelectItem>
                 </SelectContent>
               </Select>
@@ -780,6 +841,19 @@ export function SessionModal({
               )}
             </Field>
           </FormGrid>
+
+          {/* Named, not just greyed: a typed time never passes through the list,
+              and "taken" is easier to act on with the session's name on it. */}
+          {clashText &&
+            (isAdmin ? (
+              <p className={hintClass} role="status">
+                {clashText}. You can double-book it; the schedule will flag the overlap.
+              </p>
+            ) : (
+              <FormError>
+                {clashText}. Pick a free time, a shorter length or another room.
+              </FormError>
+            ))}
 
           {canRepeat && (
             <Field label="Repeat">
