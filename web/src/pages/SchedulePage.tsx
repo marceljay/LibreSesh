@@ -1771,6 +1771,7 @@ export function SchedulePage() {
           <SessionModal
             session={editing.session}
             rooms={bundle.rooms}
+            sessions={bundle.sessions}
             tags={bundle.tags}
             formats={bundle.formats}
             tracks={bundle.tracks}

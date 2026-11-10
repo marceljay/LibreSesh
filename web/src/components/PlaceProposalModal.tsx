@@ -1,8 +1,9 @@
 import { Modal } from './Modal';
-import { useState } from 'react';
-import type { ProposalDto, RoomDto } from '@shared/types';
+import { useMemo, useState } from 'react';
+import type { ProposalDto, RoomDto, SessionDto } from '@shared/types';
 import type { PlaceWrite } from '../lib/api';
-import { fmtMin } from '../lib/format';
+import { fmtMin, minutesOf } from '../lib/format';
+import { clashAt, clashLabel, roomBusy } from '../lib/roomAvailability';
 import { zonedTimeToUtc } from '@shared/time';
 import {
   DURATION_CHOICES,
@@ -26,6 +27,8 @@ import {
 export interface PlaceProposalModalProps {
   proposal: ProposalDto;
   rooms: RoomDto[];
+  /** What is already on the grid, so the form can grey the slots it fills. */
+  sessions: SessionDto[];
   timezone: string;
   days: string[];
   dayLabels: Record<string, string>;
@@ -42,6 +45,7 @@ export interface PlaceProposalModalProps {
 export function PlaceProposalModal({
   proposal,
   rooms,
+  sessions,
   timezone,
   days,
   dayLabels,
@@ -59,9 +63,19 @@ export function PlaceProposalModal({
   const [customDur, setCustomDur] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Placing a pitch is refused on an overlap whoever does it — the route runs
+  // `assertNoOverlap` with no organiser exemption — so taken slots cannot be
+  // picked here, and a typed one is stopped before the request.
+  const busy = useMemo(() => roomBusy(sessions, { roomId }), [sessions, roomId]);
+  const clash = clashAt(busy, day, minutesOf(start), durMin, timezone);
+
   const place = () => {
     if (!roomId) {
       setError('Add a room first');
+      return;
+    }
+    if (clash) {
+      setError('That slot is already taken in this room');
       return;
     }
     const [h, m] = start.split(':').map(Number);
@@ -131,6 +145,7 @@ export function PlaceProposalModal({
             onChange={setStart}
             min={dayStartMin}
             max={dayEndMin}
+            taken={(minute) => clashAt(busy, day, minute, durMin, timezone) !== null}
           />
         </Field>
         {/* Same list and same escape hatch as the session form: a pitch being
@@ -159,7 +174,11 @@ export function PlaceProposalModal({
             </SelectTrigger>
             <SelectContent>
               {DURATION_CHOICES.map((d) => (
-                <SelectItem key={d} value={String(d)}>
+                <SelectItem
+                  key={d}
+                  value={String(d)}
+                  disabled={clashAt(busy, day, minutesOf(start), d, timezone) !== null}
+                >
                   {durationLabel(d)}
                 </SelectItem>
               ))}
@@ -182,6 +201,12 @@ export function PlaceProposalModal({
           )}
         </Field>
       </FormGrid>
+      {clash && (
+        <FormError className="mt-3">
+          {clashLabel(clash, timezone)} is already in this room. Pick a free time, a shorter length
+          or another room.
+        </FormError>
+      )}
     </Modal>
   );
 }
