@@ -19,6 +19,26 @@ All notable changes to this project are documented here.
   the overlap named, but they stay pickable. Saving as a draft is never held
   back, since a draft claims no slot.
 
+### Fixed
+
+- **The identity sweep no longer takes the server down.** Every night, and at
+  each boot, identities that never became anybody are deleted after thirty
+  idle days. The audit log keeps a visitor's identity id when they type a
+  wrong password, and the schema has no cascades, so the first such row to
+  reach thirty days made the delete fail on its foreign key and the process
+  exit with it — production, 2 October, in a restart loop until the row was
+  older than the code. The sweep now nulls the pointer in the audit log and
+  on a notification's actor before it deletes, leaves alone an identity that
+  owns anything at all, and a sweep that fails is logged and skipped rather
+  than fatal.
+- **The Telegram poller no longer fails every quiet poll.** `getUpdates` is a
+  long poll that Telegram holds open for twenty-five seconds when nothing has
+  happened, and the call ran under the ten-second timeout meant for sending a
+  message. Every quiet poll was cut off and counted as a failure — seventeen
+  thousand in one production log, one line every twenty — and a real reply
+  could wait up to a minute for the backoff to clear. The poll now gets a
+  timeout longer than the time Telegram may hold it.
+
 ## [0.8.0] - 2026-11-10
 
 ### Added
