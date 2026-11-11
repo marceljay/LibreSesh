@@ -28,9 +28,10 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { hashPassword, setRole } from './auth.js';
-import { audit } from './audit.js';
+import { audit, initialFields } from './audit.js';
 import { type Config, isDemoEvent } from './config.js';
 import type { Db, EventRow } from './db.js';
+import { CREATION_FIELDS, settingsReading } from './mappers.js';
 import { badRequest, conflict, HttpError } from './errors.js';
 import { resolveEventPasswords } from './eventPasswords.js';
 import { setPermissions, type PermissionMatrix } from './permissions.js';
@@ -161,6 +162,7 @@ const importSessionSchema = z
     blocksOpenBooking: z.boolean().optional(),
     /** Kept off the schedule until an organiser publishes it. */
     draft: z.boolean().optional(),
+    nostrOptOut: z.boolean().optional(),
     /** Retired: breaks are their own top-level list now, not a session flag.
      *  Still accepted so an older document imports, and warned about. */
     background: z.boolean().optional(),
@@ -619,8 +621,8 @@ export function importEvent(
       `INSERT INTO sessions
         (event_id, room_id, track_id, format_id, type, blocks_open_booking, title,
          description, speaker, livestreams, starts_at, ends_at,
-         created_by, created_at, updated_at, draft, series_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?)`,
+         created_by, created_at, updated_at, draft, series_id, nostr_optout)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     /** The document's series labels, each given the id the app would have. */
     const seriesIds = new Map<string, string>();
@@ -744,6 +746,7 @@ export function importEvent(
           now,
           session.draft ? 1 : 0,
           seriesIdFor(session.series),
+          session.nostrOptOut ? 1 : 0,
         ).lastInsertRowid,
       );
       for (const tagId of new Set(resolvedTags)) linkTag.run(sessionId, tagId);
@@ -803,12 +806,17 @@ export function importEvent(
     if (dryRun) throw new DryRunFinished({ ...result, eventId: null });
 
     setRole(db, actorIdentityId, eventId, 'admin');
+    const row = db
+      .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
+      .get(eventId) as EventRow;
+    // An import is this event's creation: the line lists what it started as.
     audit(db, {
       identityId: actorIdentityId,
       eventId,
       action: 'import',
       entity: 'event',
       entityId: eventId,
+      changes: initialFields(CREATION_FIELDS, settingsReading(row)),
     });
     return result;
   };

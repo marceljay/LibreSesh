@@ -1771,6 +1771,7 @@ export function SchedulePage() {
           <SessionModal
             session={editing.session}
             rooms={bundle.rooms}
+            sessions={bundle.sessions}
             tags={bundle.tags}
             formats={bundle.formats}
             tracks={bundle.tracks}
@@ -1787,6 +1788,7 @@ export function SchedulePage() {
             onCancel={() => setEditing(null)}
             onSave={(body, opts) => void saveSession(body, opts)}
             canMove={canMove(editing.session)}
+            nostrEnabled={event.nostrEnabled}
             onDelete={
               editing.session && canDelete(editing.session)
                 ? () => void deleteSession(editing.session as SessionDto)

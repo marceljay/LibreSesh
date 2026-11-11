@@ -1,3 +1,12 @@
+---
+title: Finding things
+kind: spec
+status: active
+written: 2026-09-04
+updated: 2026-09-05
+decisions: []
+linear: [P-LIB-14, LIB-106]
+---
 # Finding things
 
 **Status:** spec (2026-09-04). Phase 1 built; phases 2–4 are not.

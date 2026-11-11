@@ -1,3 +1,12 @@
+---
+title: Forms to shadcn/ui on Base UI
+kind: plan
+status: built
+written: 2026-09-04
+updated: 2026-09-04
+decisions: []
+linear: [P-LIB-15]
+---
 # Migration: forms → shadcn/ui on Base UI
 
 **Decision (2026-09-04):** replace the hand-rolled form primitives with

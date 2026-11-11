@@ -1,3 +1,13 @@
+---
+title: OpenGrid, the original specification (v1.0)
+kind: spec
+status: superseded
+superseded_by: ../../ARCHITECTURE.md
+written: 2026-08-28
+updated: 2026-08-28
+decisions: []
+linear: []
+---
 # Spec: "OpenGrid" — a lightweight (un)conference scheduler
 
 Version: 1.0 (draft for implementation)
@@ -372,9 +382,9 @@ borders instead of shadows, dark-mode friendly tokens (dark mode itself is a
 stretch goal). Mobile-first: every screen must work at 360px wide. Respect
 `prefers-reduced-motion`. Focus rings visible.
 
-### 7.7 Design reference: `design/mockup.jsx`
+### 7.7 Design reference: `_planning/design/mockup.jsx`
 
-`design/mockup.jsx` is a static, clickable mockup **approved by the owner**.
+`_planning/design/mockup.jsx` is a static, clickable mockup **approved by the owner**.
 Treat it as the authoritative visual and interaction reference. Replicate:
 
 - Layout and component breakdown: sticky header (event identity, name/role

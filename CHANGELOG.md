@@ -4,8 +4,84 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The session form shows which times a room has left.** A taken slot used to
+  be found out by pressing Save and reading the refusal. The Start list now
+  greys the times that would run into another session in the chosen room, for
+  the day and length picked, and the Duration list greys the lengths that
+  would not fit from the chosen start; both follow the room, the day and a
+  repeat onto several days. A time typed past the list is named under the
+  fields — *"Rust for people who like Python" (10:00–10:45) is already in this
+  room* — and is not sent. Attendees are also kept off the hours a session
+  holds the floor. Placing a pitch does the same. An organiser may still
+  double-book through the session form, as before: the rows are greyed and
+  the overlap named, but they stay pickable. Saving as a draft is never held
+  back, since a draft claims no slot.
+
+### Fixed
+
+- **The identity sweep no longer takes the server down.** Every night, and at
+  each boot, identities that never became anybody are deleted after thirty
+  idle days. The audit log keeps a visitor's identity id when they type a
+  wrong password, and the schema has no cascades, so the first such row to
+  reach thirty days made the delete fail on its foreign key and the process
+  exit with it — production, 2 October, in a restart loop until the row was
+  older than the code. The sweep now nulls the pointer in the audit log and
+  on a notification's actor before it deletes, leaves alone an identity that
+  owns anything at all, and a sweep that fails is logged and skipped rather
+  than fatal.
+- **The Telegram poller no longer fails every quiet poll.** `getUpdates` is a
+  long poll that Telegram holds open for twenty-five seconds when nothing has
+  happened, and the call ran under the ten-second timeout meant for sending a
+  message. Every quiet poll was cut off and counted as a failure — seventeen
+  thousand in one production log, one line every twenty — and a real reply
+  could wait up to a minute for the backoff to clear. The poll now gets a
+  timeout longer than the time Telegram may hold it.
+
+## [0.8.0] - 2026-11-10
+
 ### Added
 
+- **The audit log says what a settings change changed.** A line used to say
+  "edited event" and leave the organiser to guess which of the fourteen
+  settings moved. Worse, the name on every line is looked up when the page is
+  read, so after a rename every earlier line — the creation included —
+  carried the new name and the old one was nowhere in the log. Each line
+  about the event's settings or its permissions now lists what moved, by the
+  label the form gives it, with the value before struck through and the value
+  after beside it: *Name: "Old" → "New"*, *Day starts: 08:00 → 09:00*,
+  *Star sessions: viewers, attendees → attendees*. The line that created the
+  event (or imported it) lists what it started as. A password change names
+  the password and nothing more. The filter box searches these too, so the
+  old name still finds the rename (migration 029).
+
+  **And every line keeps the name the thing had at the time.** Renaming an
+  event, a session or a room used to rewrite its whole history, because the
+  name beside each line was looked up when the page was read. The writer now
+  stores it, so the lines before a rename go on saying the old name and the
+  rename's own line says the new one. Lines from before this are frozen at
+  the names they showed when the upgrade ran (migration 030).
+
+- **An event can publish its programme to Nostr.** Organisers switch it on
+  from Manage → **Publish** → Nostr, behind a list of exactly what leaves the
+  instance: every session that is not a draft becomes a NIP-52 calendar entry
+  under the event's own key, kept equal to the database by a publish queue
+  that debounces a drag storm into one update and retries a refusing relay
+  with backoff; the event itself is a calendar and a profile, so a follower
+  sees its name rather than a bare `npub`. Deleting, drafting or opting out a
+  session sends a deletion request; **Retract everything** sends one for all
+  of it and switches off. Kind-1 notes ride the shared announcer beside
+  Telegram, one per trigger, each naming its sessions by address so a capable
+  client opens them. The signing key is generated once, encrypted at rest
+  under a key derived from the instance secret, exportable and importable
+  from the tab, and never appears in a response or an export. Authors and
+  organisers can keep a session or a pitch off Nostr with a box on the form,
+  ticked by default while the event publishes; an opted-out item is named in
+  no note either. The session sheet shows an *on Nostr* badge once a relay
+  has it. Nothing changes for an event that never switches it on.
+  `SECURITY.md` gains the key as a credential, a *What a Nostr relay sees*
+  section and the relay list as an accepted outbound risk.
 - **An event can announce itself into a Telegram group.** Organisers connect
   one from Manage → **Publish** → Telegram: add the bot, generate a code, type
   `/bind <code>` in the group. Publish is a new tab, because where the schedule
@@ -42,10 +118,18 @@ All notable changes to this project are documented here.
   four characters — and never travels in an export. It is the first plaintext
   credential in the database, and what that costs is in SECURITY.md.
 
-  **Livestream links, if you want them.** Off for every event until switched
-  on: a session link in a message still meets the password gate, and a stream
-  address does not, so handing one to a group is a disclosure choice of its own
-  rather than something acquired by picking a volume.
+  **You write the line.** Each session renders through a line of your own:
+  `{title}`, `{room}`, `{track}`, `{speakers}`, `{format}`, `{tags}`,
+  `{streams}` and `{time}` are filled in per session, anything in
+  `[square brackets]` disappears when what is inside it is empty, and the rest
+  is literal — *Annnoooounciiiiiing: {title}!* is a perfectly good line. The
+  brackets are what stop “Repair café, by ” on a session nobody is credited
+  for. A line that names something there is no value for, or leaves a bracket
+  open, is refused when you save it rather than at 09:45 on the day.
+  `{streams}` is the one that publishes something the password gate would
+  otherwise hold — a session link in a message still asks for the event
+  password, a stream address does not — so it is not in the line you start
+  with.
 
   Drafts, deleted sessions and archived events are never announced, and the
   connection never travels in an export. What a connected group can see is in
@@ -114,23 +198,22 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
-- **The identity sweep no longer takes the server down.** Every night, and at
-  each boot, identities that never became anybody are deleted after thirty
-  idle days. The audit log keeps a visitor's identity id when they type a
-  wrong password, and the schema has no cascades, so the first such row to
-  reach thirty days made the delete fail on its foreign key and the process
-  exit with it — production, 2 October, in a restart loop until the row was
-  older than the code. The sweep now nulls the pointer in the audit log and
-  on a notification's actor before it deletes, leaves alone an identity that
-  owns anything at all, and a sweep that fails is logged and skipped rather
-  than fatal.
-- **The Telegram poller no longer fails every quiet poll.** `getUpdates` is a
-  long poll that Telegram holds open for twenty-five seconds when nothing has
-  happened, and the call ran under the ten-second timeout meant for sending a
-  message. Every quiet poll was cut off and counted as a failure — seventeen
-  thousand in one production log, one line every twenty — and a real reply
-  could wait up to a minute for the backoff to clear. The poll now gets a
-  timeout longer than the time Telegram may hold it.
+- **A session going live no longer shoves its own title and time down the
+  block.** A grid block's badges — `draft`, `clash`, `competing`, `now` — sat
+  in the same row as the tag dashes. That row is the height of the dashes,
+  4px; a badge is a 16px chip, so any badge grew the row and carried the title,
+  the time and the lines under them 12px further down the block. The other
+  three badges are fixed properties of a session, so a block wearing one merely
+  looked different from its neighbours, but `now` arrives on the clock: at the
+  minute a session started, its text jumped down a line and fell out of step
+  with every block beside it, and on a short block the push sent the time under
+  the bottom edge, which is clipped. The badges are now drawn over the block's
+  top corner instead of inside its flow — the corner they already appeared to
+  occupy — so they cost the block no height and every block's title sits on the
+  same line whether or not it is running. The strip takes the block's own
+  background, so a title long enough to reach a chip truncates under it rather
+  than running through it.
+
 - **`/robots.txt` is a file, not the app.** Every path the server does not
   recognise is handed `index.html` so a deep link survives a refresh, and
   `robots.txt` was one of those paths: a crawler asking for it got a page of

@@ -4,7 +4,10 @@ import { openDb } from './db.js';
 import { DEMO_PASSWORDS, LONG_DEMO, seedDemoEvent } from './seed.js';
 import { formatPreflight, preflight } from './preflight.js';
 import { IDLE_IDENTITY_DAYS, sweepIdleIdentities } from './sweepIdentities.js';
-import { PollerPool } from './telegram.js';
+import { nextSlotText, PollerPool } from './telegram.js';
+import { rotateAtRest } from './secretsAtRest.js';
+import { PURPOSE as NOSTR_SECKEY } from './nostr/keys.js';
+import { startNostrSync } from './nostr/queue.js';
 
 // Before loadConfig — which throws on the first missing variable it meets —
 // and before openDb, which would mkdir the data directory and make an
@@ -45,6 +48,21 @@ if (config.seedDemoEvent) {
   }
 }
 
+// Secrets encrypted at rest follow the at-rest secret: after a rotation with
+// the old value in SECRETS_AT_REST_KEY_PREVIOUS, one boot moves every blob
+// to the new one and says so, and the variable can then be dropped.
+if (config.atRestSecretPrevious) {
+  const moved = rotateAtRest(
+    db,
+    { current: config.atRestSecret, previous: config.atRestSecretPrevious },
+    [{ table: 'events', column: 'nostr_seckey', purpose: NOSTR_SECKEY }],
+  );
+  console.log(
+    `secrets at rest: re-encrypted ${moved} under the current secret; ` +
+      'SECRETS_AT_REST_KEY_PREVIOUS can be removed.',
+  );
+}
+
 const { express: app, ctx } = createApp(db, config);
 
 // Identities that never became anybody are swept at boot and once a day
@@ -76,7 +94,9 @@ setInterval(sweep, 24 * 60 * 60_000).unref();
 // `added` and `changed` are write-path triggers, announced beside the audit row
 // rather than on a timer.
 const { announcer } = ctx;
-const pollers = new PollerPool(db, config.telegramBotToken, announcer);
+const pollers = new PollerPool(db, config.telegramBotToken, {
+  nextSlotText: (event, now) => nextSlotText(db, event, now, config.publicUrl),
+});
 pollers.reconcile();
 setInterval(() => {
   pollers.reconcile();
@@ -89,6 +109,10 @@ if (pollers.size > 0) {
     console.warn('telegram: no PUBLIC_URL, so announcements will carry no links');
   }
 }
+// Calendar events on the relays follow the database: a loop every ten
+// seconds publishes what the write paths marked, and a five-minute sweep
+// catches anything a write path missed.
+startNostrSync(db, config, ctx.nostrPool);
 
 // 0.0.0.0 so the port is reachable from outside a container.
 const server = app.listen(config.port, '0.0.0.0', () => {

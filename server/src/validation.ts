@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { LINK_RULE, safeLink } from './shared/links.js';
 import { badRequest } from './errors.js';
 import { isValidTimezone } from './shared/time.js';
+import { MAX_TEMPLATE } from './shared/telegramTemplate.js';
 
 /** Trimmed string that must still have content after trimming. */
 export const trimmed = (max: number) =>
@@ -349,6 +350,9 @@ export const sessionSchema = z.object({
   /** Keep it off the schedule. Absent leaves it as it is on a PATCH; on a
    *  create it means published, which is what every session was before. */
   draft: z.boolean().optional(),
+  /** Keep this one off Nostr while the event publishes there. The author's
+   *  and the organiser's choice; absent leaves it as it is on a PATCH. */
+  nostrOptOut: z.boolean().optional(),
 });
 export const sessionPatchSchema = sessionSchema.partial().extend({
   expectedUpdatedAt: isoInstantSchema.optional(),
@@ -408,8 +412,38 @@ export const proposalSchema = z.object({
   speakerId: z.number().int().positive().nullable().optional(),
   speakerName: optionalTrimmed(120).optional(),
   tagIds: z.array(z.number().int().positive()).max(20).optional(),
+  /** Keep this pitch off Nostr; handed on to the session it becomes. */
+  nostrOptOut: z.boolean().optional(),
 });
 export const proposalPatchSchema = proposalSchema.partial();
+
+/** Nostr publishing (`routes/nostr.ts`). */
+export const NOSTR_TRIGGERS = [
+  'up_next',
+  'digest',
+  'added',
+  'changed',
+  'pitched',
+  'placed',
+] as const;
+export type NostrTrigger = (typeof NOSTR_TRIGGERS)[number];
+/** Off the record only with an explicit acknowledgement of what leaves. */
+export const nostrEnableSchema = z.object({ acknowledged: z.literal(true) });
+/** A bech32 `nsec1…`: 5 chars of prefix, 58 of payload and checksum. */
+export const nostrImportSchema = z.object({
+  nsec: z.string().regex(/^nsec1[02-9ac-hj-np-z]{58}$/, 'Not an nsec'),
+});
+/** `wss://` on a public instance; the route refuses `ws://` in production. */
+const relayUrl = z
+  .string()
+  .trim()
+  .max(200)
+  .refine((u) => /^wss?:\/\/[^\s/]+/.test(u), { message: 'Relay URLs start with wss://' });
+export const nostrExampleSchema = z.object({ trigger: z.enum(NOSTR_TRIGGERS) });
+export const nostrPatchSchema = z.object({
+  relays: z.array(relayUrl).max(10).optional(),
+  triggers: z.array(z.enum(NOSTR_TRIGGERS)).max(NOSTR_TRIGGERS.length).optional(),
+});
 
 /** Placing a pitch onto the grid. */
 export const placeSchema = z.object({
@@ -451,7 +485,10 @@ export const telegramSettingsSchema = z
     mode: z.enum(['off', 'light', 'medium', 'heavy']).optional(),
     leadMin: z.number().int().min(1).max(180).optional(),
     botToken: telegramTokenSchema.nullable().optional(),
-    livestreams: z.boolean().optional(),
+    /** The line a session renders as. Its own grammar is checked in the route
+     *  by `checkTemplate`, which knows the placeholder names; this only holds
+     *  the shape and the ceiling. */
+    template: z.string().max(MAX_TEMPLATE).optional(),
     /** Local minute of day for the digest, so 0–1439. */
     digestMin: z.number().int().min(0).max(1439).optional(),
   })

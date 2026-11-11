@@ -121,6 +121,8 @@ export interface EventDto extends EventSummary {
    * turning it back on brings it back untouched.
    */
   pitchesEnabled: boolean;
+  /** The programme is published to Nostr: the forms say so and offer the opt-out. */
+  nostrEnabled: boolean;
 }
 
 /** A person as they appear on somebody else's record: id and name, nothing
@@ -313,6 +315,10 @@ export interface SessionDto {
    *  credited on it are ever sent one, and it claims no room or time: the
    *  clash and hold rules skip it until it is published. */
   draft: boolean;
+  /** Kept off Nostr by its author or an organiser. */
+  nostrOptOut: boolean;
+  /** Where it is on Nostr once a relay has accepted it; null otherwise. */
+  nostr: { naddr: string } | null;
 }
 
 export interface ContributionDto {
@@ -342,6 +348,8 @@ export interface ProposalDto {
   interestCount: number;
   /** Whether the requesting identity is one of them. */
   interested: boolean;
+  /** Kept off Nostr; the session it becomes inherits this. */
+  nostrOptOut: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -539,6 +547,8 @@ export interface EventExport {
     starCount: number;
     /** Only when set: a published session reads exactly as it always has. */
     draft?: true;
+    /** Only when set: the author's choice to keep it off Nostr travels. */
+    nostrOptOut?: true;
   }[];
   proposals?: {
     id: number;
@@ -552,6 +562,7 @@ export interface EventExport {
     createdAt: string;
     updatedAt: string;
     interestCount: number;
+    nostrOptOut?: true;
   }[];
   contributions?: {
     id: number;
@@ -565,10 +576,30 @@ export interface EventExport {
   }[];
 }
 
+/** A value the log can hold before or after a change: a setting, not a row. */
+export type AuditValue = string | number | boolean | null;
+
 /**
- * One line of the append-only write log. `entityLabel` is the thing's name at
- * read time — resolved for the page being shown rather than stored, because
- * the log records *what happened*, not what things were called then.
+ * One field an action changed, with the value before and after.
+ *
+ * Both present for an edit; `to` alone for a creation, which lists what the
+ * thing started as; neither for a secret — a password change says which
+ * password and nothing more, because the log must never hold one and its hash
+ * would tell the reader nothing. `field` is the API name of the setting
+ * (`startDate`, `auditKeep`) or, for permissions, the capability id.
+ */
+export interface AuditChangeDto {
+  field: string;
+  from?: AuditValue;
+  to?: AuditValue;
+}
+
+/**
+ * One line of the append-only write log. `entityLabel` is what the thing was
+ * called when the line was written, so a rename does not rewrite the lines
+ * before it; the rename's own line carries the new name and, in `changes`,
+ * the old. Where it links, and whether it is live or in the bin, are looked
+ * up at read time — those are about where the thing is now.
  */
 export interface AuditEntryDto {
   id: number;
@@ -588,7 +619,9 @@ export interface AuditEntryDto {
   action: string;
   entity: string;
   entityId: number | null;
-  /** Title or name, when it could still be looked up; otherwise empty. */
+  /** Title or name as it was when this was written. For a row from before
+   *  that was stored, the name now, when it could still be looked up;
+   *  otherwise empty. */
   entityLabel: string;
   /** Whether the thing is still there or in the bin — the difference between
    *  a line that opens the session and one that opens Trash. Null when it
@@ -597,6 +630,10 @@ export interface AuditEntryDto {
   /** The session a contribution belongs to: a note has no page of its own,
    *  so its line opens the session it was left on. Null for everything else. */
   entityParentId: number | null;
+  /** The fields this action changed, in the order the settings form shows
+   *  them. Empty for an action that is not an edit, and for rows written
+   *  before the log recorded this. */
+  changes: AuditChangeDto[];
 }
 
 /**
@@ -734,13 +771,44 @@ export interface TelegramStatus {
   mode: string;
   triggers: string[];
   leadMin: number;
-  /** Whether a message carries each session's livestream links. */
-  livestreams: boolean;
+  /** The line an organiser wrote for a session: `{placeholders}` and
+   *  `[optional parts]`, everything else literal. */
+  template: string;
   /** Local minute of day the morning digest goes out. */
   digestMin: number;
   /** A live bind code, if one has been minted and not yet used or expired. */
   bindCode: string | null;
   bindExpires: string | null;
+}
+
+/** The six things an announcer transport can post about (`announcer.ts`). */
+export type NostrTrigger = 'up_next' | 'digest' | 'added' | 'changed' | 'pitched' | 'placed';
+
+/** One relay's standing, derived from the publish queue. */
+export interface NostrRelayStatus {
+  url: string;
+  /** Rows this relay has not accepted the latest version of. */
+  pending: number;
+  /** Its latest refusal, as the relay worded it; null when it has none. */
+  lastError: string | null;
+}
+
+/** What `GET /e/:slug/nostr` answers. The private key is never in it. */
+export interface NostrStatus {
+  enabled: boolean;
+  /** The event's identity on Nostr, `npub1…`; null until first enabled. */
+  npub: string | null;
+  relays: string[];
+  triggers: NostrTrigger[];
+  counts: { published: number; dirty: number; pending: number; deleted: number };
+  relayStatus: NostrRelayStatus[];
+}
+
+/** What a relay said to *Send a test*. */
+export interface NostrRelayAnswer {
+  url: string;
+  ok: boolean;
+  message: string;
 }
 
 /** What `GET /e/:slug/login-health` answers (D3 §1c). */

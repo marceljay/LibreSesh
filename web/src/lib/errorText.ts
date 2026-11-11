@@ -1,4 +1,5 @@
 import { ApiError } from './api';
+import type { TemplateProblem } from '@shared/telegramTemplate';
 
 /**
  * The one place a failure becomes a sentence.
@@ -17,6 +18,28 @@ import { ApiError } from './api';
 
 const quoted = (value: unknown): string | null =>
   typeof value === 'string' && value.trim() !== '' ? value : null;
+
+/**
+ * What is wrong with a Telegram line, in a sentence.
+ *
+ * Said twice — by the panel as the line is typed, and here when the route
+ * refuses it — and one function so the two never say different things about
+ * the same problem.
+ */
+export function templateProblemText(problem: TemplateProblem): string {
+  switch (problem.code) {
+    case 'unbalanced':
+      return 'Every [ needs a matching ]';
+    case 'too_long':
+      return 'That line is too long';
+    case 'empty':
+      return 'The line cannot be blank';
+    case 'unknown_placeholder':
+      return problem.name
+        ? `There is no “{${problem.name}}” to fill in — see the list under the box`
+        : 'That line uses something there is no value for';
+  }
+}
 
 function byCode(err: ApiError): string | null {
   const d = err.details ?? {};
@@ -65,6 +88,16 @@ function byCode(err: ApiError): string | null {
       return 'Someone else changed this while you were editing';
     case 'tag_exists':
       return 'A tag with that name already exists';
+    case 'template_unknown_placeholder':
+    case 'template_unbalanced':
+    case 'template_too_long':
+    case 'template_empty': {
+      const name = quoted(d.name);
+      return templateProblemText({
+        code: err.code.slice('template_'.length) as TemplateProblem['code'],
+        ...(name === null ? {} : { name }),
+      });
+    }
     case 'telegram_refused': {
       // The single exception to the rule above, and it holds *because* it is
       // the exception: this prose is Telegram's, not ours. "bot was kicked

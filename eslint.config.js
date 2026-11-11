@@ -45,8 +45,9 @@ export default [
     ignores: [
       '**/dist/',
       'data/',
-      // The approved mockup is a reference artefact, not shipped source.
-      'design/mockup.jsx',
+      // Planning documents, including the approved mockup: reference
+      // artefacts, not shipped source.
+      '_planning/',
       // Worktrees are whole checkouts of other branches living inside the repo.
       // eslintrc skipped them for free by ignoring dot-directories; flat config
       // traverses them, so the exclusion has to be said out loud.

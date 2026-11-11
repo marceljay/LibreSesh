@@ -1,3 +1,12 @@
+---
+title: Profile and identity: data-model issues and improvements
+kind: backlog
+status: active
+written: 2026-09-09
+updated: 2026-09-09
+decisions: []
+linear: []
+---
 # Profile and identity: data-model issues and improvements
 
 Open items about people, identities, usernames, devices and merging. Split

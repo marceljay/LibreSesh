@@ -1,3 +1,12 @@
+---
+title: Identity, profiles, and the duplicate-person problem
+kind: spec
+status: built
+written: 2026-08-30
+updated: 2026-08-30
+decisions: []
+linear: []
+---
 # Identity, profiles, and the duplicate-person problem
 
 Status: **decided and shipped 2026-08-30** (A1 + B1 + B2, in that order, as

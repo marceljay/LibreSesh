@@ -71,6 +71,17 @@ export interface Config {
    * announcements simply carry no links.
    */
   publicUrl: string | null;
+  /**
+   * Encrypts secrets the server must read back in clear (a Nostr signing
+   * key, a bot token). Defaults to the cookie secret so there is one secret
+   * to manage; `SECRETS_AT_REST_KEY` keeps the two lives apart so the cookie
+   * secret can rotate without touching any stored key.
+   */
+  atRestSecret: string;
+  /** The old at-rest secret, for one boot after a rotation: blobs made under it are re-encrypted. */
+  atRestSecretPrevious?: string;
+  /** Relay list a newly enabled event starts with (D6). */
+  nostrDefaultRelays: string[];
 }
 
 /**
@@ -174,5 +185,15 @@ export function loadConfig(): Config {
     buildCommit: buildCommit(),
     telegramBotToken: (process.env.TELEGRAM_BOT_TOKEN ?? '').trim() || null,
     publicUrl: ((process.env.PUBLIC_URL ?? '').trim() || null)?.replace(/\/+$/, '') ?? null,
+    atRestSecret: process.env.SECRETS_AT_REST_KEY || cookie.secret,
+    atRestSecretPrevious: process.env.SECRETS_AT_REST_KEY_PREVIOUS || undefined,
+    nostrDefaultRelays: list(process.env.NOSTR_DEFAULT_RELAYS),
   };
 }
+
+/** A comma-separated env var as a trimmed list; unset or blank is empty. */
+const list = (raw: string | undefined): string[] =>
+  (raw ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);

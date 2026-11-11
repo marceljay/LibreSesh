@@ -1,3 +1,12 @@
+---
+title: Everyone who enters is a person
+kind: plan
+status: built
+written: 2026-09-02
+updated: 2026-09-02
+decisions: []
+linear: []
+---
 # Everyone who enters is a person
 
 Started 2026-09-02. Spec: `_planning/specs/self-as-speaker-and-merge-ux.md`.

@@ -15,6 +15,7 @@ import type {
   FormatDto,
   TrackDto,
   TrackWindowDto,
+  AuditValue,
 } from './shared/types.js';
 import type {
   BreakRow,
@@ -31,6 +32,7 @@ import type {
 } from './db.js';
 
 import { NameResolver } from './eventIdentity.js';
+import { naddrBySession } from './nostr/badge.js';
 
 export const toEventSummary = (e: EventRow): EventSummary => ({
   slug: e.slug,
@@ -52,6 +54,61 @@ export const toEventDto = (e: EventRow): EventDto => ({
   showOfficialBadge: e.show_official_badge === 1,
   defaultView: e.default_view === 'cal' ? 'cal' : 'list',
   pitchesEnabled: e.pitches_enabled === 1,
+  nostrEnabled: e.nostr_enabled === 1,
+});
+
+/**
+ * The settings the audit log itemises, in the order the Settings form shows
+ * them, so an edit's line reads the way the organiser remembers making it.
+ * Passwords are not here: the row records *that* one changed, never a value.
+ * Timezone is fixed at creation and listed so the creation line carries it.
+ */
+export const SETTINGS_FIELDS = [
+  'name',
+  'slug',
+  'timezone',
+  'startDate',
+  'endDate',
+  'dayStartMin',
+  'dayEndMin',
+  'weekRailFrom',
+  'defaultView',
+  'userRoleLabel',
+  'auditKeep',
+  'showOfficialBadge',
+  'pitchesEnabled',
+  'archived',
+] as const;
+
+export type SettingsField = (typeof SETTINGS_FIELDS)[number];
+
+/** What a creation line lists: enough to say what the event was, and no more.
+ *  Every other setting's starting value is the `from` of its first edit. */
+export const CREATION_FIELDS = [
+  'name',
+  'slug',
+  'timezone',
+  'startDate',
+  'endDate',
+] as const satisfies readonly SettingsField[];
+
+/** One reading of an event's settings, in the API's names and types, for
+ *  `diffFields` to compare against another. */
+export const settingsReading = (e: EventRow): Record<SettingsField, AuditValue> => ({
+  name: e.name,
+  slug: e.slug,
+  timezone: e.timezone,
+  startDate: e.start_date,
+  endDate: e.end_date,
+  dayStartMin: e.day_start_min,
+  dayEndMin: e.day_end_min,
+  weekRailFrom: e.week_rail_from,
+  defaultView: e.default_view,
+  userRoleLabel: e.user_role_label,
+  auditKeep: e.audit_keep,
+  showOfficialBadge: e.show_official_badge === 1,
+  pitchesEnabled: e.pitches_enabled === 1,
+  archived: e.archived === 1,
 });
 
 export const toRoomDto = (r: RoomRow): RoomDto => ({
@@ -260,6 +317,8 @@ export function toSessionDto(
   tagIds: number[],
   authorName: string,
   speakers: PersonRef[],
+  /** The session's address on Nostr, once a relay has it; see `naddrBySession`. */
+  nostr: { naddr: string } | null = null,
 ): SessionDto {
   return {
     id: row.id,
@@ -281,6 +340,8 @@ export function toSessionDto(
     updatedAt: row.updated_at,
     seriesId: row.series_id,
     draft: row.draft === 1,
+    nostrOptOut: row.nostr_optout === 1,
+    nostr,
   };
 }
 
@@ -324,7 +385,11 @@ export function loadSessionDto(db: Db, row: SessionRow): SessionDto {
   const tagIds = tagIdsBySession(db, [row.id]).get(row.id) ?? [];
   const names = new NameResolver(db, row.event_id);
   const speakers = speakersBySession(db, [row.id]).get(row.id) ?? [];
-  return toSessionDto(row, tagIds, names.get(row.created_by), speakers);
+  const event = db
+    .prepare<[number], EventRow>('SELECT * FROM events WHERE id = ?')
+    .get(row.event_id)!;
+  const nostr = naddrBySession(db, event, [row.id]).get(row.id) ?? null;
+  return toSessionDto(row, tagIds, names.get(row.created_by), speakers, nostr);
 }
 
 /** Proposal DTOs need per-viewer interest, so they are built with the viewer. */
@@ -405,6 +470,7 @@ export function toProposalDto(
     placedSessionId: row.placed_session_id,
     interestCount: extra.interestCount,
     interested: extra.interested,
+    nostrOptOut: row.nostr_optout === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

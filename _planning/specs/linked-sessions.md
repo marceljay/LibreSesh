@@ -1,3 +1,12 @@
+---
+title: Linked sessions
+kind: spec
+status: built
+written: 2026-09-03
+updated: 2026-09-03
+decisions: []
+linear: [P-LIB-19]
+---
 # Linked sessions
 
 Status: spec, approved 2026-09-03. Supersedes the "a repeat expands, it does

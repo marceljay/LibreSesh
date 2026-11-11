@@ -1,3 +1,12 @@
+---
+title: Permission integrity: prove the layer between predicate and pixel
+kind: plan
+status: built
+written: 2026-09-08
+updated: 2026-09-08
+decisions: []
+linear: [P-LIB-21]
+---
 # Permission integrity: prove the layer between predicate and pixel
 
 **Written 2026-09-08** on `fix/matrix-gating`; phases 1–3 landed the same

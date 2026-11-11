@@ -1,3 +1,12 @@
+---
+title: Dependency bumps: what is safe, what is not, and the order
+kind: plan
+status: active
+written: 2026-09-06
+updated: 2026-09-14
+decisions: []
+linear: [P-LIB-16]
+---
 # Dependency bumps: what is safe, what is not, and the order
 
 **Written 2026-09-05** against `dev` at `52fc390`. Suite 1146, lint clean.

@@ -25,6 +25,14 @@ ones arrive. Settings changes the number, and 0 keeps everything. That is a
 real trade rather than a detail: a low cap means someone making a great
 many edits can push an earlier action off the end.
 
+A line about the event's settings or permissions says what moved: each
+setting by the label the form gives it, with the value before and the value
+after, so a rename reads *Name: "Old" → "New"*. Every line names the thing
+as it was called when the line was written, so renaming an event, a session
+or a room leaves its earlier lines as they were; the line that created the
+event also lists what it started as. A password change says which password,
+never the password.
+
 ## When passwords are being guessed
 
 Above the audit log you will sometimes find a line saying how many password
@@ -128,36 +136,55 @@ pushes it up the screen.
 | --- | --- |
 | Off | Nothing. The group stays connected |
 | Light | One message before each start time |
-| Medium | That, plus the whole day each morning |
-| Heavy | That, plus a session as it is added, and when one moves |
+| Medium | That, the whole day each morning, and a pitch as it lands |
+| Heavy | That, plus every session an organiser adds, and when one moves |
 
 Everything starting at the same time goes out in **one** message, however many
 rooms that is: a busy slot is one notification, not five. **How early it says
 it** sets how long before the start time that message goes out.
 
-Each session in it is a line — the title, and who is giving it — with a second
-line listing its streams when you have those switched on.
+**Write the line yourself.** In **what is up next**, and in the **just added**
+and **just pitched** messages, each session renders through a line you write.
+The morning digest and the note about a session moving keep their own short
+shape — both are read across a whole day, so both stay one terse line a
+session.
 
-**The morning message** goes out at the time you set, on the venue's clock. It
-is one line a session for the whole day — no speakers, no links to streams,
-because it is read over breakfast to decide where to be. A day with nothing on
-it says nothing. If the server is restarted more than an hour after that time,
-that day's is skipped rather than arriving at lunchtime.
+Two things in your line are special and everything else is literal:
 
-**Added and moved** are the Heavy-only pair. A session added inside the *how
-early* window is announced as that slot rather than twice over, so a pitch
-placed five minutes before it runs produces one message and not two. Moves are
-held for up to a minute and go out together, so dragging a morning about is one
-message rather than a dozen — and only sessions the group has already been told
-about are mentioned, since announcing the move of a session nobody knew existed
-would disclose it. Repeating a session across days announces nothing: one click
-should not produce a fortnight of messages.
+- `{title}` and friends are filled in per session: `{title}`, `{room}`,
+  `{track}`, `{speakers}`, `{format}`, `{tags}`, `{streams}`, `{time}`.
+- Anything in `[square brackets]` disappears when everything inside it is
+  empty.
 
-**Livestreams.** Off unless you turn it on. With it on, a session that carries
-a stream gets that link in the announcement, under the speakers. Worth knowing
-before you do: the session link in a message still asks for the event password,
-and a stream address does not — anyone who can see the group, or anyone they
-forward the message to, can watch.
+So `{title}[, by {speakers}]` gives *“Repair café, by Ada Lovelace”*, and on a
+session nobody is credited for it gives *“Repair café”* — not *“Repair café,
+by ”*. That is the whole reason the brackets exist, and it is worth reaching
+for whenever a part of your line might be missing.
+
+Everything else is yours:
+
+```
+Annnoooounciiiiiing: {title}!
+```
+
+```
+{time} · {room} · {title}[, by {speakers}][
+Stream: {streams}]
+```
+
+The names sit under the box as buttons — press one and it lands where your
+cursor is, so there is nothing to spell. **[ ]** wraps whatever you have
+selected in brackets. Underneath that is the line as it will actually arrive,
+drawn from this event's own next session, redrawn as you type. A line that uses a name there is
+no value for, leaves a `[` unclosed, or is blank says so there and cannot be
+saved — so a broken line never reaches a group. And a session whose line would
+come out empty — nobody credited, no room, whatever your brackets dropped —
+shows its title instead, so no session is ever listed under no name. Angle brackets and the like are shown as
+typed rather than treated as formatting.
+
+`{streams}` is the one that publishes something the password gate would
+otherwise hold: anyone who can see the group can watch. Leave it out unless you
+mean it.
 
 **Example** shows exactly what these settings would post, drawn from your own
 schedule. Use it — this is the one screen in LibreSesh whose effect you cannot
@@ -167,6 +194,54 @@ see from the screen, because it lands in somebody else's Telegram tomorrow.
 from an archived event. Notes, questions and stars. The links in the messages
 still ask for the event password — the messages themselves do not, so treat
 connecting a group as publishing the programme to everyone in it.
+
+## Nostr
+
+**Manage Event → Publish → Nostr.** The event publishes its programme to
+Nostr under a key of its own, so anyone with a Nostr client can follow it:
+each session is a calendar entry that stays current as the schedule changes,
+and short notes go out when a pitch is placed, a slot is about to start, or a
+day begins.
+
+**Read the list, then switch it on.** The switch sits behind a list of what
+leaves this instance — titles, descriptions, times, rooms, speaker names,
+livestream links, and for pitches the pitcher's name — and a tick. Everything
+already written goes out too. Relays keep copies, and asking them to delete
+something is a request they may ignore, which is why the list comes first.
+
+**The identity.** Switching on makes the event a keypair. The public half is
+the `npub` people follow; **Copy** it, or **Open on njump** to see it in a
+browser. It belongs to the event, not to anyone in it, and it survives
+switching publishing off and on. The private half stays on the server,
+encrypted. **Export key** shows it once so you can keep a copy — if the
+instance's secret ever changes, the key is gone with it, and nothing already
+published can be updated or retracted. **Import key** replaces it with one you
+made elsewhere; that makes the event a different identity, and followers of
+the old one stop seeing it.
+
+**Relays.** One address per line, `wss://…`, up to ten. A new event starts
+with whatever list the instance provides. A relay added later receives the
+whole programme; one taken off the list is asked for nothing more, and what
+it had not accepted is forgotten. The **Delivery** table shows, per relay, what it has not
+accepted yet and its latest refusal in its own words; **Send a test** asks
+each relay now and shows what it said, without posting anything followers
+would see.
+
+**What it posts.** Six short notes, each a checkbox: a pitch placed on the
+grid, a slot about to start, the day's programme each morning, a session
+added, a session moved, a pitch made on the board. **Example** beside each
+shows the note as it would read today, from your own schedule. The calendar
+entries are kept current whatever is ticked.
+
+**Opting a session out.** While publishing is on, the session and pitch forms
+say so and carry a **Publish to Nostr** box, ticked by default. Its author or
+an organiser can untick it; a published session then gets a deletion request
+on the next pass, and no note names it or the pitch from then on.
+
+**Switching off** stops updates and notes and removes nothing. **Retract
+everything** asks every relay to delete every entry and the profile, then
+switches off; switching on again publishes the programme afresh under the
+same identity.
 
 ## Importing a schedule from JSON
 

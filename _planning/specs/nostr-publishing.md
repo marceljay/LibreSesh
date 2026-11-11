@@ -1,3 +1,12 @@
+---
+title: Nostr publishing
+kind: spec
+status: built
+written: 2026-09-16
+updated: 2026-09-17
+decisions: [D6, D7]
+linear: [P-LIB-32]
+---
 # Nostr publishing spec
 
 **Status:** designed 2026-09-16, not built. No branch yet. Decided in an
@@ -395,7 +404,10 @@ nostr:naddr1… · https://sesh.example/e/longconf/s/42
 ```
 
 `pitched` says the title, the pitcher's name and a line of the description,
-and links the board. `digest` is the day's programme, one line per session,
+and links the board. **An opted-out session or pitch is named in no note**:
+it drops out of its slot, the digest and a move, and a note that would name
+only opted-out items is not sent. The cut is in the Nostr transport, not the
+announcer, because Telegram still carries it. `digest` is the day's programme, one line per session,
 breaks included, capped at 40 lines with *"… and N more"*; an empty day posts
 nothing.
 

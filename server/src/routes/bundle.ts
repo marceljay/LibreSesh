@@ -13,6 +13,7 @@ import type {
   TrackRow,
 } from '../db.js';
 import { NameResolver, eventDisplayName } from '../eventIdentity.js';
+import { naddrBySession } from '../nostr/badge.js';
 import {
   speakersBySession,
   tagIdsBySession,
@@ -103,6 +104,11 @@ export function bundleRoutes(ctx: Ctx): Router {
       sessions.map((s) => s.id),
     );
     const facts = personFacts(ctx.db, eventId);
+    const onNostr = naddrBySession(
+      ctx.db,
+      req.event,
+      sessions.map((s) => s.id),
+    );
 
     // Admins see hidden contributions in the count; everyone else does not.
     const counts = ctx.db
@@ -126,7 +132,13 @@ export function bundleRoutes(ctx: Ctx): Router {
       tracks: tracks.map((t) => toTrackDto(t, trackWindowRows.get(t.id) ?? [])),
       breaks: breaks.map(toBreakDto),
       sessions: sessions.map((s) =>
-        toSessionDto(s, tagMap.get(s.id) ?? [], names.get(s.created_by), speakers.get(s.id) ?? []),
+        toSessionDto(
+          s,
+          tagMap.get(s.id) ?? [],
+          names.get(s.created_by),
+          speakers.get(s.id) ?? [],
+          onNostr.get(s.id) ?? null,
+        ),
       ),
       // Who holds each profile, at what role, and whether they have ever
       // used it is for organisers only — an attendee has no business being

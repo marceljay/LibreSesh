@@ -6,6 +6,7 @@ import { createApp, type App } from '../server/src/app.js';
 import { hashPassword } from '../server/src/auth.js';
 import type { Config } from '../server/src/config.js';
 import { openDb, type Db } from '../server/src/db.js';
+import type { Pool } from '../server/src/nostr/pool.js';
 import { zonedTimeToUtc } from '../server/src/shared/time.js';
 
 export const TEST_TIMEZONE = 'Europe/Berlin';
@@ -19,7 +20,14 @@ export interface Harness {
   close: () => void;
 }
 
-export function makeHarness(overrides: Partial<Config> = {}): Harness {
+/** A relay pool that accepts everything and remembers nothing; tests that
+ *  care hand `makeHarness` their own. */
+const silentPool: Pool = { publish: (relays) => relays.map(() => Promise.resolve('ok')) };
+
+export function makeHarness(
+  overrides: Partial<Config> = {},
+  nostrPool: Pool = silentPool,
+): Harness {
   const dir = mkdtempSync(join(tmpdir(), 'libresesh-test-'));
   const databasePath = join(dir, 'test.db');
   const db = openDb(databasePath);
@@ -40,9 +48,11 @@ export function makeHarness(overrides: Partial<Config> = {}): Harness {
     buildCommit: null,
     telegramBotToken: null,
     publicUrl: null,
+    atRestSecret: 'test-secret',
+    nostrDefaultRelays: [],
     ...overrides,
   };
-  const app = createApp(db, config);
+  const app = createApp(db, config, nostrPool);
   return {
     app,
     db,

@@ -146,7 +146,7 @@ web/public/        copied verbatim into the build: the icons, and the four docs
                    the running instance serves for AI agents — llms.txt,
                    agents.md, SKILL.md, api.md
 deploy/            Dockerfile, compose, Caddyfile, systemd unit, backup script
-design/mockup.jsx  approved UI reference — never imported
+_planning/         specs, plans, reviews, the approved mockup — see its README
 ARCHITECTURE.md    how it fits together
 SECURITY.md        threat model, accepted risks, and every code and link you can hand out
 CHANGELOG.md       what has shipped

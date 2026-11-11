@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-09-17
+Last updated: 2026-10-02
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -16,8 +16,8 @@ the state of a branch, not work to pick up.
 
 On `dev`; `main` is the released line and only takes merges. `origin/dev` sits
 at the same commit — its reflog shows an `update by push` after each one — so
-nothing local is unsaved. Suite at **1936**, lint clean, build clean. Most
-recent cut: **0.7.4**.
+nothing local is unsaved. Suite at **2090**, lint clean, build clean. Most
+recent cut: **0.7.4**; `main` also carries hotfix #134 (2026-10-02).
 
 - **The error boundary now covers the app** [LIB-128] (landed 2026-09-15, two
   commits on `dev`). It already caught a route that threw, but it sat inside
@@ -50,10 +50,18 @@ recent cut: **0.7.4**.
   will live too), 82 tests. Merged into `dev` on 2026-09-16 (PR #116). A review
   pass added migration 024 — livestream links in an announcement, off by default
   because a stream address does not meet the password gate. The next day
-  [LIB-211] and [LIB-212] landed too: `digest`, `added` and `changed` are built,
-  migration 025 carries the digest hour, and the four-rung ladder is back with
-  every rung naming a trigger that fires. The announcer moved onto the request
-  context, because two of the three are write-path triggers.
+  [LIB-211] and [LIB-212] landed too: `digest`, `added`, `changed` and `placed`
+  are built, migration 025 carries the digest hour, and the four-rung ladder is
+  back with every rung naming a trigger that fires. The announcer moved onto the
+  request context, because three of the four are write-path triggers. What a
+  session's line says is now a line the organiser writes — `{placeholders}`
+  and `[optional parts]`, migration 028, which replaced 027's ticked fields
+  and 024's livestream boolean; `placed` is separate from `added`
+  (migration 026) because placing a pitch — the case the feature exists for —
+  announced nothing at all until it was. A review pass on 2026-09-18 fixed the
+  pitch that lands in a slot already announced (it was silent), a move noted
+  while a tick was mid-send (it was dropped), a quote in a stream address (it
+  lost the slot) and a blank line (it was accepted).
   **The bot belongs to the event**: an
   organiser pastes a token from BotFather (migration 023) and needs nothing
   from whoever deployed the instance; `TELEGRAM_BOT_TOKEN` is only a
@@ -66,7 +74,14 @@ recent cut: **0.7.4**.
   first thing to do with a live token — and now more so, since three more
   triggers post without ever having been seen to post. Still open: room scope,
   lifting the loop into `announcer.ts` [LIB-214], and the deploy-doc issue whose
-  creation timed out.
+  creation timed out. The review filed five more, all yours to call: a deleted
+  session the group was told about announces nothing [LIB-222]; any group
+  member can `/unbind`, and SECURITY.md does not say so [LIB-223]; a restart
+  empties the announced set, so moves go quiet until re-announced [LIB-225];
+  saving a bot or minting a code discards an unsaved line [LIB-226]. Squashing
+  migrations 027 and 028 was filed as [LIB-224] and closed on 2026-09-22 — the
+  merge put both in every `dev` database, and the downgrade guard makes
+  undoing that a reset of each.
 
 - **UI pass from your checklist** [LIB-183] (live, 2026-09-04). You are walking the app
   and sending one item at a time; each lands as its own commit and its own
@@ -357,7 +372,7 @@ them.
     primitives. *Pass:* they still validate inline, and on a phone focusing one
     does **not** zoom the page (the 16px fix).
 19. **R28 · Forms close-out** [LIB-174] (2026-09-05, on `docs/forms-overhaul-close-out`,
-    the eight leftovers from `_planning/forms-overhaul-review.md`). At the
+    the eight leftovers from `_planning/reviews/2026-09-05-forms-overhaul-review.md`). At the
     login page: your browser or password manager **offers to save** the event
     password on entry and fills it next visit; Enter enters from the name box
     as well as the password box, and Enter with no name says *Pick a username
@@ -463,7 +478,7 @@ reused number would repoint a filename and every link to it. Rule recorded in
   `git reflog expire --expire-unreachable=now --all && git gc --prune=now` —
   irreversible, drops *all* unreachable objects, none of value today. Separately:
   `_planning/valley-2026-09-02.json` and its `.import.json` twin are gone from
-  disk (`export-to-import.py` remains); if that wasn't deliberate, an editor
+  disk (`_planning/tools/export-to-import.py` remains); if that wasn't deliberate, an editor
   buffer may be the last copy.
 - **D2 · The pitch board's server guard.** [LIB-100] You said deactivation is "a simple
   hide from UI and route". I went one step further: `POST /proposals` returns
@@ -539,6 +554,16 @@ reused number would repoint a filename and every link to it. Rule recorded in
   `wss://relay.nostr.band`. The list also rides in every njump link as relay
   hints, so a relay that drops NIP-52 kinds makes the session badge land on
   nothing.
+
+- **D7 · Do livestream links go to Nostr without a switch?** [LIB-240] Filed
+  2026-10-02 from the review of #131. A session's livestream links go into its
+  calendar entry whenever it carries them, for as long as it is on the relays;
+  Telegram has a dedicated setting for the same links because a stream
+  address is often the key to the room. Options: keep as is (SECURITY.md
+  already says so), a per-event switch off by default beside the triggers, or
+  no stream links in calendar entries at all. My pick if you do not: the
+  switch, off by default, since the enable warning is the only thing standing
+  between an organiser and a public stream address today.
 
 ## Blockers
 
@@ -744,7 +769,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
 - **A production event export is sitting untracked in a directory git will
   happily commit.** [LIB-111] Noticed 2026-09-02 when a `git add -A` swept
   `_planning/valley-2026-09-02.json` (72 KB, 2447 lines), its `.import.json`
-  twin and `export-to-import.py` into a commit; they were taken back out
+  twin and `_planning/tools/export-to-import.py` into a commit; they were taken back out
   before it was pushed, but nothing stops it happening again. `.gitignore`
   covers only `_planning/transcripts-backup/` and
   `docs/hosting.md`, so every other working file there is
@@ -820,7 +845,7 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   call site cannot win this with a class name.
 
 - **Profile and identity data-model items** [LIB-122, LIB-123, LIB-185] live in
-  `_planning/profile-and-identity-todo.md` (split out 2026-09-09 at your
+  `_planning/backlog/profile-and-identity.md` (split out 2026-09-09 at your
   request): the login page not suggesting device linking to a merged-out device,
   and the new one — a lost account cannot be merged back under its old
   username, because the username is held by the signed-out identity and the
@@ -974,36 +999,20 @@ _The only queue of future work, priority-ordered. Top High-Priority item = next 
   "derive state from props" that wants to be computed during render instead.
   Each rule turned back on is its own commit.
 
-- **Nostr publishing — the schedule announces itself under the event's own
-  key.** Designed 2026-09-16 in an interview; spec at
-  `_planning/specs/nostr-publishing.md`, Linear project *Nostr publishing*.
-  Write-only first iteration: NIP-52 calendar event sync (kind 31923 per
-  session, 31924 per event, kept equal to the database by a publish queue and a
-  coalescing loop) plus kind-1 notes for `placed`, `added`, `changed`, `up_next`, `digest` and
-  `pitched`, each a checkbox in a new **Publish** tab. Off by default, admin
-  switch with an explicit warning; attendee-written pitches and open sessions
-  go out **opt-out per item, default on**, and the forms say so. What the notes
-  say and when is transport-neutral and lives in
-  `_planning/specs/announcements.md`, shared with Telegram; only the announcer,
-  `PUBLIC_URL` and the Publish tab touch that branch, so the keys and the
-  calendar sync can go first if it is still open. Seven steps, one issue each:
-  - Land the shared announcer per `announcements.md`: extracted from
-    `telegram.ts` if merged, created fresh if not; six triggers, transports,
-    `pitched`/`placed` hooked in the proposal routes [LIB-214] (LIB-212 folds in).
-  - Keys and schema: `secretsAtRest.ts` (AES-GCM under an HKDF of the
-    at-rest secret, `COOKIE_SECRET` by default, `SECRETS_AT_REST_KEY` to
-    override, rotatable via `_PREVIOUS`; also the answer to LIB-213), the
-    migration, enable / disable / import-key / export-key routes,
-    SECURITY.md [LIB-215].
-  - Calendar sync: 31923/31924 builders, `markDirty` beside every `audit()`
-    that matters, the 10s loop, kind-5 deletions, resync, the sweep [LIB-216].
-  - Kind-1 notes: the Nostr transport and its plain-text renderer [LIB-217].
-  - Publish tab in Manage Event, Telegram's section moved in [LIB-218].
-  - Forms: the notice and the opt-out checkbox; the *on Nostr* badge [LIB-219].
-  - Verify on a public relay with Flockstr/Coracle and an ordinary client —
-    yours [LIB-220].
+- **Nostr publishing, what is left after the merge.** The build landed on
+  `dev` with #131 on 2026-09-28 (CHANGELOG, *Unreleased*); the spec is
+  `_planning/specs/nostr-publishing.md`, the plan
+  `_planning/plans/2026-09-16-nostr-publishing.md`, Linear project *Nostr
+  publishing*. Still open, all yours:
+  - Verify on a public relay with Flockstr or Coracle and an ordinary client,
+    on staging; the sandbox cannot reach one. Includes the at-rest secret
+    rotation with `_PREVIOUS` set for one boot [LIB-220].
+  - D6, the default relay list — until it is decided, a newly enabled event
+    starts with no relays and publishes nothing [LIB-221].
+  - D7, whether livestream links need a switch of their own before they go
+    into a calendar entry, as they have on Telegram [LIB-240].
   Not in this iteration: reading RSVPs back, signing in with a key,
-  remote signing (NIP-46), `p` tags for speakers. Open: D6 above.
+  remote signing (NIP-46), `p` tags for speakers.
 
 ## Medium Priority
 

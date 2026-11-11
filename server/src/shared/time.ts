@@ -70,6 +70,19 @@ export function localDate(instant: Date, timeZone: string): string {
   return `${pad(p.year, 4)}-${pad(p.month)}-${pad(p.day)}`;
 }
 
+/**
+ * 'HH:MM' as the clock reads it at the venue, never UTC.
+ *
+ * Through `zonedParts` rather than a bare `Intl` call, because some engines
+ * print midnight as 24:00 under `hour12: false` and the parts already fold
+ * that back. The bot and the Telegram preview both format a time with this,
+ * which is what keeps the line on screen the line the group gets.
+ */
+export function hhmm(instant: Date, timeZone: string): string {
+  const p = zonedParts(instant, timeZone);
+  return `${pad(p.hour)}:${pad(p.minute)}`;
+}
+
 /** Minutes since local midnight of an instant in `timeZone`. */
 export function localMinuteOfDay(instant: Date, timeZone: string): number {
   const p = zonedParts(instant, timeZone);

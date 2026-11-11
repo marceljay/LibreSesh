@@ -1,3 +1,12 @@
+---
+title: Forms in LibreSesh: briefing for evaluation
+kind: review
+status: final
+written: 2026-09-03
+updated: 2026-09-03
+decisions: []
+linear: [P-LIB-15]
+---
 # Forms in LibreSesh — briefing for evaluation
 
 A short map of how forms are built in this app, for an agent evaluating them.

@@ -52,6 +52,10 @@ const server = spawn(process.execPath, ['server/dist/index.js'], {
     COOKIE_SECRET: 'browser-pass',
     DEMO_MODE: '1',
     SERVE_STATIC: '1',
+    // A shape-valid token that belongs to nobody. It never reaches Telegram —
+    // nothing here can — but without one the Publish tab shows only the token
+    // field, and the steps below would have nothing to drive.
+    TELEGRAM_BOT_TOKEN: '123456789:AA-browser-pass-not-a-real-bot',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
 });
@@ -187,6 +191,43 @@ await step('time box masks 0930 to 09:30', async () => {
   if (value !== '09:30') throw new Error(`the box holds "${value}"`);
   await page.keyboard.press('Escape');
 });
+await step('a token button lands where the caret is', async () => {
+  // jsdom has no selection model, so the unit test can only prove the token
+  // reaches the box. Whether it lands *at the caret* — and whether the caret
+  // survives — is only answerable in a browser, and this control is unusable
+  // if it appends to the end instead.
+  await go(`/e/${SLUG}/admin?tab=publish`);
+  const box = page.getByLabel('The line each session renders as');
+  if (!(await box.count())) throw new Error('no template box — is a bot configured?');
+  await box.click();
+  await box.press('Control+a');
+  await box.pressSequentially('A B');
+  // Two lefts from the end puts the caret straight after the A.
+  await box.press('ArrowLeft');
+  await box.press('ArrowLeft');
+  await page.getByRole('button', { name: '{title}' }).click();
+  const value = await box.inputValue();
+  if (value !== 'A{title} B') throw new Error(`the box holds "${value}"`);
+  // And the caret is left after what was inserted, so a second token follows
+  // the first rather than scattering to the end of the line.
+  await page.getByRole('button', { name: '{room}' }).click();
+  const twice = await box.inputValue();
+  if (twice !== 'A{title}{room} B') throw new Error(`the box holds "${twice}"`);
+});
+
+await step('the line under the box redraws as it is typed', async () => {
+  await go(`/e/${SLUG}/admin?tab=publish`);
+  const box = page.getByLabel('The line each session renders as');
+  await box.click();
+  await box.press('Control+a');
+  await box.pressSequentially('Annnoooounciiiiiing: ');
+  await page.getByRole('button', { name: '{title}' }).click();
+  await page
+    .getByText(/Annnoooounciiiiiing:/)
+    .first()
+    .waitFor();
+});
+
 await step('follows the system theme', async () => {
   await go(`/e/${SLUG}`);
   await page.emulateMedia({ colorScheme: 'dark' });
