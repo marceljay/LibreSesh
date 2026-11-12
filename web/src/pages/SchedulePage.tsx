@@ -55,7 +55,8 @@ import {
 } from '../lib/sessionPerms';
 import { useHeaderFold } from './useHeaderFold';
 import { useSessionActions } from './useSessionActions';
-import { Tour, type TourStep } from '../components/Tour';
+import { scheduleTourSteps } from './scheduleTour';
+import { Tour } from '../components/Tour';
 import { EmptyState, Spinner, useToast } from '../components/ui';
 import { ViewSwitch } from '../components/ViewSwitch';
 
@@ -727,77 +728,14 @@ export function SchedulePage() {
   // never went through Arrange, it is Edit session on the row.
   const canArrange = !event.archived && role === 'admin' && view === 'cal';
 
-  // Ordered coach-marks. Role-conditional controls are dropped here; the Tour
-  // itself also skips any target that isn't in the DOM. Not memoised because
-  // Tour freezes its own copy on mount.
-  const participant = event.userRoleLabel;
-  const tourSteps: TourStep[] = [
-    {
-      target: 'identity',
-      title: 'This is you',
-      body: `You're known by a name on this device, not an account — you're here as ${participant}. Open it for your profile, your calendar links, or to sign out.`,
-    },
-    {
-      target: 'days',
-      title: 'Pick a day',
-      body: longEvent
-        ? 'One tab per day, a week at a time — the weeks are the rail above. On a phone all of it folds into the day button, with an arrow for the day either side. Dimmed days have nothing scheduled yet.'
-        : 'One tab per day of the event.',
-    },
-    {
-      target: 'view',
-      title: 'Grid or list',
-      body: hasTracks
-        ? 'Grid shows the columns side by side; list is a plain agenda that reads better on a phone. This event has tracks, so Grid asks whether to lay its columns out by room or by track — reading by track, each block says which room it is in.'
-        : 'Grid shows the rooms side by side; list is a plain agenda that reads better on a phone.',
-    },
-    /* One step, because it is one button now — and conditional, because it is
-       not always there: an event can turn the board off, and not everyone may
-       book a room. Spread in place rather than pushed at the end, so the tour
-       does not walk back up the page to reach it. */
-    ...(canWrite || event.pitchesEnabled
-      ? [
-          {
-            target: 'add',
-            title: 'Add or pitch a session',
-            body: 'Both live here. Add one with a room and a time to put it straight on the grid, or pitch an idea with neither and let people say they would turn up — organisers place the popular ones.',
-          },
-        ]
-      : []),
-    {
-      target: 'now',
-      title: 'Jump to now',
-      body: 'Scrolls the grid to the current time and the yellow now-line.',
-    },
-    {
-      target: 'session-block',
-      title: 'Open a session',
-      body: "Tap any block for its description, speaker and everyone's notes, links and questions. Dashed green blocks are non-official — anyone may add one, and something else can always run alongside it.",
-    },
-    {
-      target: 'filters',
-      title: 'Find and narrow',
-      body: 'Search finds a session on any day — press Enter for the full list of results. Filter narrows the day on screen by room, tag or text, and lives in the URL, so a filtered view can be shared as a link.',
-    },
-  ];
-  if (canArrange) {
-    tourSteps.push({
-      target: 'arrange',
-      title: 'Move things around',
-      body: 'Turn on Arrange, then drag a block to change its time or room, or drag its bottom edge to change its length. It snaps to 5 minutes and only moves what you may edit.',
-    });
-  }
-  if (role === 'admin') {
-    tourSteps.push({
-      target: 'manage',
-      title: 'Organiser tools',
-      body: 'Rooms, tags, passwords, duplicating the event and archiving all live behind Manage Event.',
-    });
-  }
-  tourSteps.push({
-    target: 'live',
-    title: "It's live",
-    body: 'Everyone else sees your changes within a second, with no refresh needed.',
+  // Not memoised because Tour freezes its own copy on mount.
+  const tourSteps = scheduleTourSteps({
+    participant: event.userRoleLabel,
+    longEvent,
+    hasTracks,
+    canAdd: canWrite || event.pitchesEnabled,
+    canArrange,
+    isAdmin: role === 'admin',
   });
 
   /* Folding is a movement rather than a cut: the rows shrink to nothing over

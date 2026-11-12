@@ -101,8 +101,12 @@ describe('on the schedule page', () => {
   });
 
   it('tells the tour in one stop, and only mentions tracks when there are some', () => {
-    expect(schedule).not.toContain("target: 'axis'");
-    expect(schedule).toContain("title: 'Grid or list'");
-    expect(schedule).toMatch(/body: hasTracks\s*\?/);
+    const tour = readFileSync(
+      join(__dirname, '..', 'web', 'src', 'pages', 'scheduleTour.ts'),
+      'utf8',
+    );
+    expect(tour).not.toContain("target: 'axis'");
+    expect(tour).toContain("title: 'Grid or list'");
+    expect(tour).toMatch(/body: hasTracks\s*\?/);
   });
 });

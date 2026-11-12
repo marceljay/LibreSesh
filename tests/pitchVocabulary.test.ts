@@ -35,6 +35,7 @@ const sessionModal = read('components', 'SessionModal.tsx');
 const login = read('components', 'Login.tsx');
 const newEvent = read('pages', 'NewEventPage.tsx');
 const schedule = read('pages', 'SchedulePage.tsx');
+const tour = read('pages', 'scheduleTour.ts');
 
 describe('adding a session does not call itself proposing', () => {
   it('heads the form the same way whoever opens it', () => {
@@ -54,7 +55,8 @@ describe('the word is gone from everything a person reads', () => {
   const copy: [string, string][] = [
     ['the login role picker', login],
     ['the new-event role labels', newEvent],
-    ['the schedule tour', schedule],
+    ['the schedule page', schedule],
+    ['the schedule tour', tour],
     ['the session form', sessionModal],
   ];
 
@@ -81,8 +83,8 @@ describe('pitch still means the board, and only the board', () => {
     // Adding and pitching share one button now, so the schedule's own wording
     // moved into it; the tour step names both ways in at once.
     expect(read('components', 'NewSessionMenu.tsx')).toContain('Pitch a session');
-    expect(schedule).toContain("title: 'Add or pitch a session'");
-    expect(schedule).toContain('pitch an idea with neither');
+    expect(tour).toContain("title: 'Add or pitch a session'");
+    expect(tour).toContain('pitch an idea with neither');
     expect(read('components', 'ProposalModal.tsx')).toContain("'Pitch a session'");
   });
 });
