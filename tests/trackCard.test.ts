@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 const WEB = join(__dirname, '..', 'web', 'src');
 const calendar = readFileSync(join(WEB, 'components', 'Calendar.tsx'), 'utf8');
 const schedule = readFileSync(join(WEB, 'pages', 'SchedulePage.tsx'), 'utf8');
+const columnInfo = readFileSync(join(WEB, 'pages', 'ScheduleColumnInfo.tsx'), 'utf8');
 const card = calendar.slice(
   calendar.indexOf('function ColumnCard('),
   calendar.indexOf('export interface CalendarProps'),
@@ -36,7 +37,7 @@ describe('a track column card', () => {
   it('is the name alone, and says everything else behind the ⓘ', () => {
     expect(calendar).not.toContain('column.detail');
     expect(schedule).toContain('href: `/e/${slug}/t/${track.id}`');
-    expect(schedule).toContain('in the programme, every day counted');
+    expect(columnInfo).toContain('in the programme, every day counted');
     expect(schedule).not.toContain('detail: (');
   });
 });
