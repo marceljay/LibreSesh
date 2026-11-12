@@ -125,7 +125,7 @@ describe('one colour picker, everywhere', () => {
   });
 
   it('makes the tag list the chips themselves, so pressing one edits it', () => {
-    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
+    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminProgramme.tsx'), 'utf8');
     // A neutral pill with a colour dot beside it showed the colour at a size
     // nobody could judge it at, and gave no hint the row was a way in.
     expect(admin).toMatch(/onClick=\{\(\) => setEditingTag\(tag\)\}/);
@@ -134,7 +134,7 @@ describe('one colour picker, everywhere', () => {
   });
 
   it('is used by tags, tracks and rooms alike', () => {
-    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
+    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminProgramme.tsx'), 'utf8');
     const editors = readFileSync(join(WEB_SRC, 'pages', 'AdminEditors.tsx'), 'utf8');
     const rooms = readFileSync(join(WEB_SRC, 'pages', 'AdminRooms.tsx'), 'utf8');
     expect(admin).toContain('palette={TAG_COLORS}');
@@ -144,7 +144,7 @@ describe('one colour picker, everywhere', () => {
   });
 
   it('shows the tag colour the server would pick anyway', () => {
-    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
+    const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminProgramme.tsx'), 'utf8');
     // `null` state, resolved against the live tags — so the swatch follows the
     // event until someone picks on purpose, and follows it again afterwards.
     expect(admin).toContain('const newTagColor = tagColor ?? suggestedTagColor;');

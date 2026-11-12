@@ -16,6 +16,8 @@ const read = (...parts: string[]) => readFileSync(join(WEB, ...parts), 'utf8');
 const CALLERS = [
   ['pages', 'SchedulePage.tsx'],
   ['pages', 'AdminPage.tsx'],
+  ['pages', 'AdminPeople.tsx'],
+  ['pages', 'AdminProgramme.tsx'],
   ['components', 'ProposalBoard.tsx'],
 ];
 
@@ -43,9 +45,9 @@ describe('confirming something that cannot be taken back', () => {
     const schedule = read('pages', 'SchedulePage.tsx');
     expect(schedule).toMatch(/It moves to the bin[\s\S]{0,120}restore|put it back/);
 
-    const admin = read('pages', 'AdminPage.tsx');
+    const programme = read('pages', 'AdminProgramme.tsx');
     for (const kind of ['rooms', 'tracks', 'tags']) {
-      expect(admin, kind).toContain(`The bin does not hold ${kind}`);
+      expect(programme, kind).toContain(`The bin does not hold ${kind}`);
     }
     expect(read('components', 'ProposalBoard.tsx')).toContain('the bin does not hold pitches');
   });
@@ -57,9 +59,9 @@ describe('confirming something that cannot be taken back', () => {
    * to warn anybody about.
    */
   it('no longer has a profile to warn about, because it no longer deletes one', () => {
-    const admin = read('pages', 'AdminPage.tsx');
-    expect(admin).not.toContain('The bin does not hold profiles');
-    expect(admin).not.toContain('api.deletePerson');
+    const people = read('pages', 'AdminPeople.tsx');
+    expect(people).not.toContain('The bin does not hold profiles');
+    expect(people).not.toContain('api.deletePerson');
   });
 
   it('does not dress archiving up as a deletion', () => {
