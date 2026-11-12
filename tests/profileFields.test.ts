@@ -117,7 +117,7 @@ describe('the profile page edits a field at a time', () => {
     // A deep link arrives with no history, so an organiser is told the tab.
     expect(page).toContain('Manage → People');
 
-    const admin = readFileSync('web/src/pages/AdminPage.tsx', 'utf8');
+    const admin = readFileSync('web/src/pages/AdminPeople.tsx', 'utf8');
     expect(admin).toMatch(/state=\{\{ back: \{ to: `\/e\/\$\{slug\}\/admin\?tab=people`/);
   });
 

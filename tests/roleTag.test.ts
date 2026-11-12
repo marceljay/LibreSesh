@@ -21,7 +21,7 @@ const read = (...parts: string[]) => readFileSync(join(WEB, ...parts), 'utf8');
 
 const ui = read('components', 'ui.tsx');
 const control = read('components', 'RoleControl.tsx');
-const admin = read('pages', 'AdminPage.tsx');
+const admin = read('pages', 'AdminPeople.tsx');
 const profile = read('pages', 'ProfilePage.tsx');
 
 describe('the role tag', () => {
