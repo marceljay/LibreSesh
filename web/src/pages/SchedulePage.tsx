@@ -1,17 +1,10 @@
-import { errorText } from '../lib/errorText';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
-import type {
-  ContributionDto,
-  ContributionKind,
-  RoomDto,
-  SessionDto,
-  TrackDto,
-} from '@shared/types';
+import type { ContributionDto, RoomDto, SessionDto, TrackDto } from '@shared/types';
 import { can } from '@shared/capabilities';
-import { dateRange, zonedTimeToUtc } from '@shared/time';
+import { dateRange } from '@shared/time';
 import { windowLabel, windowOn, type DayWindow } from '@shared/trackHours';
-import { ApiError, api, type SessionWrite } from '../lib/api';
+import { api } from '../lib/api';
 import {
   dayAfter,
   dayLabel,
@@ -45,7 +38,6 @@ import { ListView } from '../components/ListView';
 import { RAIL_FADE_CARD, Rail } from '../components/Rail';
 import { SearchBox } from '../components/SearchBox';
 import { SpeakerLinkPrompt } from '../components/SpeakerLinkPrompt';
-import type { SaveOpts } from '../components/SessionModal';
 const SessionModal = lazy(() =>
   import('../components/SessionModal').then((m) => ({ default: m.SessionModal })),
 );
@@ -62,8 +54,9 @@ import {
   type Viewer,
 } from '../lib/sessionPerms';
 import { useHeaderFold } from './useHeaderFold';
+import { useSessionActions } from './useSessionActions';
 import { Tour, type TourStep } from '../components/Tour';
-import { EmptyState, Spinner, useConfirm, useToast } from '../components/ui';
+import { EmptyState, Spinner, useToast } from '../components/ui';
 import { ViewSwitch } from '../components/ViewSwitch';
 
 const NOW_TICK_MS = 30_000;
@@ -151,7 +144,6 @@ export function SchedulePage() {
   const { slug = '', sessionId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const confirm = useConfirm();
   const { me } = useMe();
   const data = useEventData(slug);
   // `data.reload` is stable per slug, so the hook's callback is too.
@@ -174,7 +166,6 @@ export function SchedulePage() {
   // The session whose "Link matching sessions…" picker is open, over the editor.
   const [linkingExisting, setLinkingExisting] = useState<SessionDto | null>(null);
   const [showDrafts, setShowDrafts] = useState(false);
-  const [saving, setSaving] = useState(false);
   // The wall clock is state, not a counter, so everything derived from "now"
   // has a real dependency to recompute against.
   const [clock, setClock] = useState(() => Date.now());
@@ -535,30 +526,6 @@ export function SchedulePage() {
     [viewer.role],
   );
 
-  const reportError = useCallback(
-    (err: unknown) => {
-      toast.show(errorText(err));
-    },
-    [toast],
-  );
-
-  /** Optimistic star toggle; stars are private so there is no SSE echo to wait
-   *  for. Revert and toast if the server rejects it. */
-  const toggleStar = useCallback(
-    async (session: SessionDto) => {
-      const wasStarred = bundle?.starredSessionIds.includes(session.id) ?? false;
-      data.setStarred(session.id, !wasStarred);
-      try {
-        if (wasStarred) await api.unstarSession(slug, session.id);
-        else await api.starSession(slug, session.id);
-      } catch (err) {
-        data.setStarred(session.id, wasStarred);
-        reportError(err);
-      }
-    },
-    [bundle, data, reportError, slug],
-  );
-
   /**
    * A schedule opened while the event is running should open at the current
    * time. The day already defaults to today; without this the grid still
@@ -671,175 +638,26 @@ export function SchedulePage() {
     [bundle?.sessions, event, filters, timezone],
   );
 
-  /** PATCH on drop; a rejected move snaps back because we never mutated locally. */
-  const moveSession = useCallback(
-    async (session: SessionDto, startMin: number, durMin: number, roomId: number) => {
-      if (!event) return;
-      const date = place(session, timezone).date;
-      try {
-        const updated = await api.updateSession(slug, session.id, {
-          roomId,
-          startsAt: zonedTimeToUtc(date, startMin, timezone).toISOString(),
-          endsAt: zonedTimeToUtc(date, startMin + durMin, timezone).toISOString(),
-          expectedUpdatedAt: session.updatedAt,
-        });
-        data.apply({ type: 'session.updated', entity: updated });
-        toast.show(`Moved to ${fmtMin(startMin)}`);
-      } catch (err) {
-        if (err instanceof ApiError && err.code === 'stale') {
-          toast.show('Someone else moved that session — reloading');
-          void data.reload();
-        } else {
-          reportError(err);
-        }
-      }
-    },
-    [data, event, reportError, slug, timezone, toast],
-  );
-
-  const saveSession = useCallback(
-    async (body: SessionWrite, opts?: SaveOpts) => {
-      setSaving(true);
-      try {
-        if (editing?.session) {
-          const updated = await api.updateSession(slug, editing.session.id, {
-            ...body,
-            expectedUpdatedAt: editing.session.updatedAt,
-            ...(opts?.applyTo ? { applyTo: opts.applyTo } : {}),
-          });
-          data.apply({ type: 'session.updated', entity: updated });
-          // Siblings the edit reached arrive over the live channel; a series
-          // edit says how far it got, since some may not have been the user's.
-          const reach = updated.seriesApply;
-          if (reach && reach.applied < reach.considered) {
-            toast.show(
-              `Applied to ${reach.applied} of ${reach.considered} — the rest weren't yours to change`,
-            );
-          } else if (reach) {
-            toast.show(`Applied to ${reach.applied} linked sessions`);
-          } else {
-            toast.show('Session updated');
-          }
-        } else if (opts?.repeat) {
-          // One request, then every session it made applied here: the server
-          // broadcasts them too, and `apply` is idempotent, but a grid that
-          // waited for the echo would sit empty on a slow connection.
-          const { sessions } = await api.createSessionRepeat(slug, {
-            ...body,
-            repeat: opts.repeat,
-            ...(opts.link ? { link: true } : {}),
-          });
-          for (const created of sessions) {
-            data.apply({ type: 'session.created', entity: created });
-          }
-          toast.show(
-            opts.link
-              ? `${sessions.length} linked sessions added`
-              : `${sessions.length} sessions added`,
-          );
-        } else {
-          const created = await api.createSession(slug, body);
-          data.apply({ type: 'session.created', entity: created });
-          toast.show('Session added');
-        }
-        setEditing(null);
-      } catch (err) {
-        reportError(err);
-      } finally {
-        setSaving(false);
-      }
-    },
-    [data, editing, reportError, slug, toast],
-  );
-
-  const unlinkSession = useCallback(
-    async (session: SessionDto) => {
-      try {
-        const { sessions } = await api.unlinkSession(slug, session.id);
-        for (const updated of sessions) {
-          data.apply({ type: 'session.updated', entity: updated });
-        }
-        // Keep the form open on the now-unlinked session, so its own DTO is
-        // fresh and the linked controls fall away.
-        const mine = sessions.find((s) => s.id === session.id);
-        if (mine) setEditing({ session: mine });
-        toast.show('Unlinked from its series');
-      } catch (err) {
-        reportError(err);
-      }
-    },
-    [data, reportError, slug, toast],
-  );
-
-  const deleteSession = useCallback(
-    async (session: SessionDto) => {
-      const ok = await confirm({
-        title: `Delete “${session.title}”?`,
-        body: 'It moves to the bin, with its notes and questions. An organiser can put it back from Manage Event, under Trash.',
-      });
-      if (!ok) return;
-      try {
-        await api.deleteSession(slug, session.id);
-        data.apply({ type: 'session.deleted', entity: { id: session.id } });
-        setEditing(null);
-        closeSession();
-        toast.show('Session deleted');
-      } catch (err) {
-        reportError(err);
-      }
-    },
-    [closeSession, confirm, data, reportError, slug, toast],
-  );
-
-  const addContribution = useCallback(
-    async (kind: ContributionKind, body: string, url?: string) => {
-      if (!selected) return;
-      try {
-        const created = await api.addContribution(slug, selected.id, {
-          kind,
-          body,
-          url,
-        });
-        data.apply({ type: 'contribution.created', entity: created });
-        toast.show('Added — everyone sees it live');
-      } catch (err) {
-        reportError(err);
-      }
-    },
-    [data, reportError, selected, slug, toast],
-  );
-
-  const removeContribution = useCallback(
-    async (id: number) => {
-      if (!selected) return;
-      try {
-        await api.deleteContribution(slug, id);
-        data.apply({
-          type: 'contribution.deleted',
-          entity: { id, sessionId: selected.id },
-        });
-      } catch (err) {
-        reportError(err);
-      }
-    },
-    [data, reportError, selected, slug],
-  );
-
-  const toggleHidden = useCallback(
-    async (contribution: ContributionDto) => {
-      try {
-        const updated = await api.setContributionHidden(
-          slug,
-          contribution.id,
-          !contribution.hidden,
-        );
-        data.apply({ type: 'contribution.hidden', entity: updated });
-      } catch (err) {
-        reportError(err);
-      }
-    },
-    [data, reportError, slug],
-  );
+  const {
+    saving,
+    reportError,
+    toggleStar,
+    moveSession,
+    saveSession,
+    unlinkSession,
+    deleteSession,
+    addContribution,
+    removeContribution,
+    toggleHidden,
+  } = useSessionActions({
+    slug,
+    data,
+    timezone,
+    editing,
+    setEditing,
+    selected,
+    closeSession,
+  });
 
   // A speaker link is settled before anything else is drawn: the bundle that
   // loaded (or 401'd) under the old cookie is the wrong person's, and flashing

@@ -1133,9 +1133,11 @@ Filters live in the query string so a filtered view is a shareable link.
 A session has two presentations and one component. `/e/:slug/s/:id` opens it as
 a panel over the grid; `/e/:slug/s/:id/full` renders the same session as a
 page. Both routes mount `SchedulePage` — every handler the detail needs (star,
-edit, delete, contribute, hide) is defined there, along with the SSE stream
+edit, delete, contribute, hide) is set up there, along with the SSE stream
 that keeps it live, so a separate route component would have had to duplicate
-all of it. What differs between the two is `SessionDetail`'s `layout` prop:
+all of it. The handlers themselves are written in `pages/useSessionActions.ts`
+and the header's fold in `pages/useHeaderFold.ts`; `SchedulePage` calls each
+hook once and stays the only place that wires them to the page. What differs between the two is `SessionDetail`'s `layout` prop:
 one stacked column against two, and a `collapseAt` of three against `null`.
 The panel collapses each contribution kind to its three most recent so the
 composer stays reachable; the page is where you go to read the rest, so it

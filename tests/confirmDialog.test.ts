@@ -15,6 +15,7 @@ const read = (...parts: string[]) => readFileSync(join(WEB, ...parts), 'utf8');
 
 const CALLERS = [
   ['pages', 'SchedulePage.tsx'],
+  ['pages', 'useSessionActions.ts'],
   ['pages', 'AdminPage.tsx'],
   ['pages', 'AdminPeople.tsx'],
   ['pages', 'AdminProgramme.tsx'],
@@ -42,8 +43,8 @@ describe('confirming something that cannot be taken back', () => {
    * has to say plainly that there is none.
    */
   it('promises the bin only for the thing the bin actually holds', () => {
-    const schedule = read('pages', 'SchedulePage.tsx');
-    expect(schedule).toMatch(/It moves to the bin[\s\S]{0,120}restore|put it back/);
+    const actions = read('pages', 'useSessionActions.ts');
+    expect(actions).toMatch(/It moves to the bin[\s\S]{0,120}restore|put it back/);
 
     const programme = read('pages', 'AdminProgramme.tsx');
     for (const kind of ['rooms', 'tracks', 'tags']) {
