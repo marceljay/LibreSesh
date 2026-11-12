@@ -135,9 +135,11 @@ describe('one colour picker, everywhere', () => {
 
   it('is used by tags, tracks and rooms alike', () => {
     const admin = readFileSync(join(WEB_SRC, 'pages', 'AdminPage.tsx'), 'utf8');
+    const editors = readFileSync(join(WEB_SRC, 'pages', 'AdminEditors.tsx'), 'utf8');
     const rooms = readFileSync(join(WEB_SRC, 'pages', 'AdminRooms.tsx'), 'utf8');
     expect(admin).toContain('palette={TAG_COLORS}');
-    expect(admin).toContain('palette={ROOM_COLORS}');
+    expect(editors).toContain('palette={TAG_COLORS}');
+    expect(editors).toContain('palette={ROOM_COLORS}');
     expect(rooms).toContain('palette={ROOM_COLORS}');
   });
 
