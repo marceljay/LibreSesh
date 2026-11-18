@@ -107,7 +107,7 @@ describe('which People columns are showing', () => {
 describe('the People table that uses it', () => {
   const WEB = join(import.meta.dirname, '..', 'web', 'src');
   const read = (...parts: string[]) => readFileSync(join(WEB, ...parts), 'utf8');
-  const admin = read('pages', 'AdminPage.tsx');
+  const admin = read('pages', 'AdminPeople.tsx');
   const icons = read('components', 'icons.tsx');
 
   it('starts a wide screen with everything, and a narrow one without the two rare ones', () => {

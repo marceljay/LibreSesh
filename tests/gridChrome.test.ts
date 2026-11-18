@@ -18,6 +18,8 @@ import { describe, expect, it } from 'vitest';
  */
 const WEB_SRC = join(__dirname, '..', 'web', 'src');
 const schedule = readFileSync(join(WEB_SRC, 'pages', 'SchedulePage.tsx'), 'utf8');
+/** When the header folds is decided in the hook; `schedule` keeps the markup. */
+const fold = readFileSync(join(WEB_SRC, 'pages', 'useHeaderFold.ts'), 'utf8');
 const calendar = readFileSync(join(WEB_SRC, 'components', 'Calendar.tsx'), 'utf8');
 const rail = readFileSync(join(WEB_SRC, 'components', 'Rail.tsx'), 'utf8');
 
@@ -56,8 +58,8 @@ describe('the header folds once you are into the day', () => {
     // Two thresholds, not one: a header that folded and unfolded on the same
     // scroll position would flicker, because folding resizes the grid it is
     // measuring.
-    expect(schedule).toMatch(/if \(was\) return top > 0;/);
-    expect(schedule).toMatch(/return top > FOLD_AT &&/);
+    expect(fold).toMatch(/if \(was\) return top > 0;/);
+    expect(fold).toMatch(/return top > FOLD_AT &&/);
   });
 
   it('folds only where there is still something to scroll afterwards', () => {
@@ -70,18 +72,18 @@ describe('the header folds once you are into the day', () => {
     // form asked for a screenful below you as well, which refused to fold in
     // the bottom third of every day and, in a list — as long as its sessions
     // rather than as long as the day — almost everywhere.
-    expect(schedule).toMatch(/const slack = el\.scrollHeight - el\.clientHeight;/);
-    expect(schedule).toMatch(/return top > FOLD_AT && slack > gain \+ FOLD_AT;/);
+    expect(fold).toMatch(/const slack = el\.scrollHeight - el\.clientHeight;/);
+    expect(fold).toMatch(/return top > FOLD_AT && slack > gain \+ FOLD_AT;/);
     // `gain` is the rows alone: the event bar is not part of the fold.
-    expect(schedule).toMatch(/const gain = foldedRows\.current\?\.offsetHeight \?\? 0;/);
-    expect(schedule).not.toContain('foldedBar');
+    expect(fold).toMatch(/const gain = foldedRows\.current\?\.offsetHeight \?\? 0;/);
+    expect(fold).not.toContain('foldedBar');
   });
 
   it('ignores the scroll events the fold itself causes', () => {
     // Every height the animation passes through moves the scroll position, and
     // none of those movements are the reader scrolling.
-    expect(schedule).toMatch(/if \(foldInFlight\.current\) return;/);
-    expect(schedule).toMatch(
+    expect(fold).toMatch(/if \(foldInFlight\.current\) return;/);
+    expect(fold).toMatch(
       /foldInFlight\.current = false;\n\s*setFoldMoving\(false\);\n\s*readFold\(\);/,
     );
   });
@@ -107,15 +109,15 @@ describe('the header folds once you are into the day', () => {
   it('does not let a nudge undo a header opened by hand', () => {
     // The momentum still arriving when the button is pressed is not an
     // instruction to fold the header again.
-    expect(schedule).toMatch(/top > overrideFrom\.current \+ OVERRIDE_PX/);
-    expect(schedule).toMatch(/const OVERRIDE_PX = 120;/);
+    expect(fold).toMatch(/top > overrideFrom\.current \+ OVERRIDE_PX/);
+    expect(fold).toMatch(/const OVERRIDE_PX = 120;/);
   });
 
   it('folds over time rather than switching', () => {
     // A fold that happens in one frame reads as the header being cut off, and
     // as a jump in the grid that grows into the space. Long enough to follow,
     // short enough not to be waited on.
-    expect(schedule).toMatch(/const FOLD_MS = 700;/);
+    expect(fold).toMatch(/const FOLD_MS = 700;/);
     expect(schedule).toContain('duration-700');
   });
 
@@ -163,9 +165,9 @@ describe('the header folds once you are into the day', () => {
     expect(schedule).toMatch(/aria-label="Back to the top of the day"/);
     // Scrolled, not jumped: the same scroll the fold listens to, so the header
     // comes back on the way up rather than blinking into place at the top.
-    expect(schedule).toMatch(/scrollTo\(\{ top: 0, behavior: 'smooth' \}\)/);
+    expect(fold).toMatch(/scrollTo\(\{ top: 0, behavior: 'smooth' \}\)/);
     // Its own rule, so it still shows on a day too short to fold.
-    expect(schedule).toMatch(/setPastTop\(top > TOP_BUTTON_AT\)/);
+    expect(fold).toMatch(/setPastTop\(top > TOP_BUTTON_AT\)/);
     // Out of the way means out of reach, not merely invisible.
     expect(schedule).toMatch(/tabIndex=\{pastTop \? 0 : -1\}/);
   });
@@ -206,10 +208,10 @@ describe('the header folds once you are into the day', () => {
     // and <main> in the other — left the fold listening to a box that never
     // moved, in one view or the other. Which one has the overflow depends on
     // the day's length, the header's height and whether a banner is up.
-    expect(schedule).toMatch(/el\.scrollHeight > el\.clientHeight \+ 1/);
-    expect(schedule).toMatch(/const boxes = \[calRef\.current, mainRef\.current\]/);
+    expect(fold).toMatch(/el\.scrollHeight > el\.clientHeight \+ 1/);
+    expect(fold).toMatch(/const boxes = \[calRef\.current, mainRef\.current\]/);
     // And both are listened to: a listener on the wrong box hears nothing.
-    expect(schedule).toMatch(/for \(const el of boxes\) el\.addEventListener\('scroll', readFold/);
+    expect(fold).toMatch(/for \(const el of boxes\) el\.addEventListener\('scroll', readFold/);
   });
 
   it('pins the folding rows to the width that is there', () => {

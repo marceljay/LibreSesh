@@ -3,7 +3,7 @@
 The shared queue: what is in flight, what is blocked, and what is planned.
 Shipped work moves to [CHANGELOG.md](CHANGELOG.md) and is not repeated here.
 
-Last updated: 2026-10-02
+Last updated: 2026-11-12
 
 Every item below carries its Linear issue in brackets, `[LIB-123]`, and the
 issue holds the same text. Linear is the shared view; this file stays the
@@ -170,18 +170,17 @@ here:
   heartbeats but never states the model: last-write-wins, `assertNotStale`
   409 on an `updated_at` mismatch, no CRDT by design.
 
-- **The two files that keep growing.** [LIB-155] `SchedulePage.tsx` is **2,022 lines**
-  and `AdminPage.tsx` **2,665** (2026-09-05). The retired plan flagged
-  SchedulePage at 989 on 2026-08-29 and this entry said 2,018 and 2,657 a day
-  ago — both grew again with the bell and the header, which is the argument for
-  the entry rather than any one line count. Nothing is broken by it: it is a
-  reading cost, paid every time either file is opened, and it compounds. The
-  natural seams are already visible: SchedulePage holds every handler the
-  detail sheet needs (deliberately — see ARCHITECTURE §Frontend), so the split
-  is by *section* rather than by concern. AdminPage now has one obvious first
-  cut — the Settings tab is ~350 lines of form that the new `lib/adminSearch.ts`
-  index already describes from the outside. Not urgent, but it will not get
-  cheaper.
+- **The two files that keep growing, what is left.** [LIB-155] The first pass
+  is on `refactor/split-large-pages` (2026-11-12): `AdminPage.tsx` went from
+  2,710 lines to **822** and `SchedulePage.tsx` from 1,878 to **1,402**, by
+  moving whole tabs, editors and hooks into files of their own. Two pieces
+  were left on purpose:
+  - AdminPage's **Settings tab** (~250 lines of form plus its state). The
+    unsaved-changes guard on the tab bar reads that state, so moving the tab
+    means deciding where the draft lives first.
+  - SchedulePage's **render** (~700 lines of markup: header rows, grid, list,
+    modals). About 35 tests read that markup as text from `SchedulePage.tsx`,
+    so each section moved needs its tests pointed at the new file.
 
 ## Awaiting your review
 

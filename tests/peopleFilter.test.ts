@@ -280,7 +280,7 @@ describe('the People list', () => {
    */
   describe('the header that drives it', () => {
     const admin = readFileSync(
-      join(import.meta.dirname, '..', 'web', 'src', 'pages', 'AdminPage.tsx'),
+      join(import.meta.dirname, '..', 'web', 'src', 'pages', 'AdminPeople.tsx'),
       'utf8',
     );
 
@@ -321,7 +321,7 @@ describe('the People list', () => {
  */
 describe('putting a profile away', () => {
   const admin = readFileSync(
-    join(import.meta.dirname, '..', 'web', 'src', 'pages', 'AdminPage.tsx'),
+    join(import.meta.dirname, '..', 'web', 'src', 'pages', 'AdminPeople.tsx'),
     'utf8',
   );
 

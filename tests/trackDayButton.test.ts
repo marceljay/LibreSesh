@@ -8,10 +8,10 @@ import { describe, expect, it } from 'vitest';
  * as if every track kept a different window somewhere; most never do.
  *
  * Layout and composition, so there is no DOM here: `TrackHoursFields` is
- * private to the admin page, and the per-day rule itself is exercised over
+ * private to AdminEditors.tsx, and the per-day rule itself is exercised over
  * HTTP in trackHours.test.ts.
  */
-const page = readFileSync(join(__dirname, '..', 'web', 'src', 'pages', 'AdminPage.tsx'), 'utf8');
+const page = readFileSync(join(__dirname, '..', 'web', 'src', 'pages', 'AdminEditors.tsx'), 'utf8');
 const fields = page.slice(
   page.indexOf('function TrackHoursFields('),
   page.indexOf('function TrackEditor('),

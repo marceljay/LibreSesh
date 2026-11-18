@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 const WEB = join(__dirname, '..', 'web', 'src');
 const menu = readFileSync(join(WEB, 'components', 'NewSessionMenu.tsx'), 'utf8');
 const schedule = readFileSync(join(WEB, 'pages', 'SchedulePage.tsx'), 'utf8');
+const tour = readFileSync(join(WEB, 'pages', 'scheduleTour.ts'), 'utf8');
 
 describe('one button for both ways in', () => {
   it('offers each with a sentence, not just a label', () => {
@@ -104,23 +105,24 @@ describe('the full-page session view gets it too', () => {
 
 describe('the tour follows the merge', () => {
   it('walks the two as one step', () => {
-    expect(schedule).toContain("title: 'Add or pitch a session'");
+    expect(tour).toContain("title: 'Add or pitch a session'");
     // The old pair is gone: two steps for one button would stop twice on it.
-    expect(schedule).not.toContain("title: 'Pitch a session'");
-    expect(schedule).not.toContain("title: 'Add a session'");
+    expect(tour).not.toContain("title: 'Pitch a session'");
+    expect(tour).not.toContain("title: 'Add a session'");
   });
 
   it('only offers the step when the control is there', () => {
     // `data-tour="pitches"` lives inside the panel now, which does not exist
     // until the menu is opened — an unconditional step would point at nothing.
-    expect(schedule).toMatch(/\.\.\.\(canWrite \|\| event\.pitchesEnabled/);
+    expect(schedule).toContain('canAdd: canWrite || event.pitchesEnabled,');
+    expect(tour).toMatch(/\.\.\.\(canAdd\n/);
   });
 
   it('spreads it in place rather than pushing it to the end', () => {
     // Pushed steps run after the static ones, so the tour would walk back up
     // the page to reach a control in the view/axis row.
-    const step = schedule.indexOf("title: 'Add or pitch a session'");
-    const now = schedule.indexOf("title: 'Jump to now'");
+    const step = tour.indexOf("title: 'Add or pitch a session'");
+    const now = tour.indexOf("title: 'Jump to now'");
     expect(step).toBeGreaterThan(-1);
     expect(step).toBeLessThan(now);
   });
